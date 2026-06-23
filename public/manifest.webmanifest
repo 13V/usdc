@@ -1,0 +1,18 @@
+{
+  "name": "Divvy",
+  "short_name": "Divvy",
+  "description": "Split the bill, collect in USDC on Solana.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b0f14",
+  "theme_color": "#14f195",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}

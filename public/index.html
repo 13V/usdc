@@ -4,6 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Divvy — split the bill, collect in USDC</title>
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#14f195" />
+<link rel="apple-touch-icon" href="/icon.svg" />
+<link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <style>
   :root { color-scheme: light dark; --green:#14f195; --ink:#04121a; }
   * { box-sizing: border-box; }
@@ -66,6 +70,7 @@
   <div class="tabs">
     <button id="tabNew">New bill</button>
     <button id="tabHistory" class="secondary">Saved bills</button>
+    <button id="tabTrips" class="secondary">Trips</button>
   </div>
 
   <section id="form">
@@ -158,6 +163,8 @@
     <div id="histList"></div>
     <button id="histNew" class="secondary">New bill</button>
   </section>
+
+  <section id="trips" style="display:none"></section>
 
   <section id="result" style="display:none">
     <div id="settledBanner" class="badge paid" style="display:none; font-size:.9rem; padding:8px 12px;">✓ Settled — everyone paid</div>
@@ -391,6 +398,7 @@ async function createBill() {
 function render(bill) {
   $("form").style.display = "none";
   $("history").style.display = "none";
+  $("trips").style.display = "none";
   $("result").style.display = "block";
   $("settledBanner").style.display = bill.settled ? "block" : "none";
   $("billTitle").textContent = bill.title;
@@ -448,11 +456,22 @@ function showForm() {
   $("form").style.display = "block";
   $("result").style.display = "none";
   $("history").style.display = "none";
+  $("trips").style.display = "none";
+}
+
+// Switch to the Trips experience (rendered by trips.js into #trips).
+function showTrips() {
+  $("form").style.display = "none";
+  $("result").style.display = "none";
+  $("history").style.display = "none";
+  $("trips").style.display = "block";
+  if (window.Trips && typeof window.Trips.show === "function") window.Trips.show();
 }
 
 async function showHistory() {
   $("form").style.display = "none";
   $("result").style.display = "none";
+  $("trips").style.display = "none";
   $("history").style.display = "block";
   const list = $("histList");
   list.innerHTML = '<p class="muted">Loading…</p>';
@@ -501,6 +520,18 @@ $("reset").onclick = showForm;
 $("histNew").onclick = showForm;
 $("tabNew").onclick = showForm;
 $("tabHistory").onclick = showHistory;
+$("tabTrips").onclick = showTrips;
+
+// If we arrived via a share link (/t/<token>), trips.js auto-opens the trip;
+// surface the Trips section so its detail view is visible on first paint.
+if ((location.pathname || "").indexOf("/t/") === 0) {
+  $("form").style.display = "none";
+  $("trips").style.display = "block";
+}
+</script>
+<script src="/trips.js"></script>
+<script>
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 </script>
 </body>
 </html>

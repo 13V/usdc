@@ -30,7 +30,22 @@ import { validatePayment } from "./verify";
 import { qrToDataUrl } from "./qr";
 import { cardOptions } from "./onramp";
 import { fmt, toCents, withTip, SplitMode } from "./split";
-import { Cluster } from "./solanaPay";
+import { Cluster, buildSolanaPayUrl, newReference, USDC_MINT } from "./solanaPay";
+import { computeBalances, minimalSettlement } from "./ledger";
+import {
+  Trip,
+  SettlementTransfer,
+  createTrip,
+  listTrips,
+  getTrip,
+  getTripByIdOrToken,
+  addMember,
+  updateMember,
+  addExpense,
+  deleteExpense,
+  saveSettlement,
+  getSettlement,
+} from "./trips";
 import { scanReceipt, parseDataUrl, NoScanProvider } from "./scan";
 import {
   convertForeignCentsToUsd,
@@ -279,6 +294,286 @@ app.get("/api/onramp/:wallet/:amountCents", (req: Request, res: Response) => {
     return res.status(400).json({ error: "bad wallet address" });
   }
   res.json(cardOptions({ walletAddress: req.params.wallet, amountCents }));
+});
+
+// ---- Trips: shared multi-payer ledger -------------------------------------
+
+function memberName(trip: Trip, id: string): string {
+  const m = trip.members.find((x) => x.id === id);
+  return m ? m.name : id;
+}
+
+function serializeSettlement(trip: Trip) {
+  const stored = getSettlement(trip.id);
+  if (!stored) return null;
+  const transfers = stored.transfers.map((t: SettlementTransfer) => ({
+    from: t.from,
+    fromName: memberName(trip, t.from),
+    to: t.to,
+    toName: memberName(trip, t.to),
+    amountCents: t.amountCents,
+    amountFmt: fmt(t.amountCents),
+    url: t.url || null,
+    reference: t.reference || null,
+    needsWallet: !t.url,
+    paid: !!t.paid,
+  }));
+  const payable = transfers.filter((t) => !t.needsWallet);
+  const allPaid = payable.length > 0 && payable.every((t) => t.paid);
+  return { transfers, allPaid, createdAt: stored.createdAt };
+}
+
+function serializeTrip(trip: Trip) {
+  const memberIds = trip.members.map((m) => m.id);
+  const balances = computeBalances(
+    memberIds,
+    trip.expenses.map((e) => ({
+      amountCents: e.amountCents,
+      paidBy: e.paidBy,
+      participants: e.participants,
+    }))
+  );
+  const totalCents = trip.expenses.reduce((a, e) => a + e.amountCents, 0);
+
+  return {
+    id: trip.id,
+    name: trip.name,
+    shareToken: trip.shareToken,
+    shareUrlPath: `/t/${trip.shareToken}`,
+    cluster: trip.cluster,
+    createdAt: trip.createdAt,
+    members: trip.members.map((m) => ({ id: m.id, name: m.name, wallet: m.wallet || null })),
+    expenses: trip.expenses.map((e) => ({
+      id: e.id,
+      title: e.title,
+      amountCents: e.amountCents,
+      amountFmt: fmt(e.amountCents),
+      paidBy: e.paidBy,
+      paidByName: memberName(trip, e.paidBy),
+      participants: e.participants,
+      participantNames: e.participants.map((p) => memberName(trip, p)),
+      fx: e.fx || null,
+      fxNote: e.fx
+        ? `Originally ${formatForeign(e.fx.sourceAmount, e.fx.sourceCurrency)} ${
+            e.fx.sourceCurrency
+          } @ $${Number(e.fx.rate).toFixed(4)} (as of ${e.fx.asOf})`
+        : null,
+      createdAt: e.createdAt,
+    })),
+    totalCents,
+    totalFmt: fmt(totalCents),
+    balances: balances.map((b) => ({
+      memberId: b.memberId,
+      name: memberName(trip, b.memberId),
+      cents: b.cents,
+      fmt: fmt(Math.abs(b.cents)),
+      direction: b.cents > 0 ? "owed" : b.cents < 0 ? "owes" : "settled",
+    })),
+    settle: serializeSettlement(trip),
+  };
+}
+
+app.post("/api/trips", (req: Request, res: Response) => {
+  try {
+    const body = req.body as {
+      name?: string;
+      cluster?: Cluster;
+      members?: { name?: string; wallet?: string }[];
+    };
+    const name = String(body.name || "").trim();
+    const members = (body.members || [])
+      .map((m) => ({ name: String(m.name || "").trim(), wallet: m.wallet }))
+      .filter((m) => m.name);
+    if (!name) return res.status(400).json({ error: "need a name" });
+    if (members.length < 1) return res.status(400).json({ error: "need at least one member" });
+    const cluster = (body.cluster || (process.env.CLUSTER as Cluster) || "devnet") as Cluster;
+    const trip = createTrip(name, cluster, members);
+    res.json(serializeTrip(trip));
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+app.get("/api/trips", (_req: Request, res: Response) => {
+  const out = listTrips().map((trip) => {
+    const memberIds = trip.members.map((m) => m.id);
+    const balances = computeBalances(
+      memberIds,
+      trip.expenses.map((e) => ({
+        amountCents: e.amountCents,
+        paidBy: e.paidBy,
+        participants: e.participants,
+      }))
+    );
+    const totalCents = trip.expenses.reduce((a, e) => a + e.amountCents, 0);
+    return {
+      id: trip.id,
+      name: trip.name,
+      shareToken: trip.shareToken,
+      createdAt: trip.createdAt,
+      memberCount: trip.members.length,
+      expenseCount: trip.expenses.length,
+      totalCents,
+      totalFmt: fmt(totalCents),
+      settledUp: balances.every((b) => b.cents === 0),
+    };
+  });
+  res.json(out);
+});
+
+app.get("/api/trips/:idOrToken", (req: Request, res: Response) => {
+  const trip = getTripByIdOrToken(req.params.idOrToken);
+  if (!trip) return res.status(404).json({ error: "not found" });
+  res.json(serializeTrip(trip));
+});
+
+app.post("/api/trips/:id/members", (req: Request, res: Response) => {
+  try {
+    const body = req.body as { name?: string; wallet?: string };
+    if (!getTrip(req.params.id)) return res.status(404).json({ error: "not found" });
+    const trip = addMember(req.params.id, { name: String(body.name || ""), wallet: body.wallet });
+    res.json(serializeTrip(trip));
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+app.patch("/api/trips/:id/members/:mid", (req: Request, res: Response) => {
+  try {
+    const body = req.body as { name?: string; wallet?: string };
+    if (!getTrip(req.params.id)) return res.status(404).json({ error: "not found" });
+    const trip = updateMember(req.params.id, req.params.mid, body);
+    res.json(serializeTrip(trip));
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+app.post("/api/trips/:id/expenses", (req: Request, res: Response) => {
+  try {
+    const trip = getTrip(req.params.id);
+    if (!trip) return res.status(404).json({ error: "not found" });
+    const body = req.body as {
+      title?: string;
+      total?: number | string;
+      amountCents?: number;
+      paidBy?: string;
+      participants?: string[];
+      fx?: any;
+    };
+    const amountCents = body.amountCents ?? (body.total != null ? toCents(body.total) : NaN);
+    if (!Number.isInteger(amountCents) || amountCents <= 0) {
+      return res.status(400).json({ error: "need a positive amount (total or amountCents)" });
+    }
+    const participants =
+      body.participants && body.participants.length > 0
+        ? body.participants
+        : trip.members.map((m) => m.id);
+    const updated = addExpense(req.params.id, {
+      title: String(body.title || ""),
+      amountCents,
+      paidBy: String(body.paidBy || ""),
+      participants,
+      fx: body.fx,
+    });
+    res.json(serializeTrip(updated));
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+app.delete("/api/trips/:id/expenses/:eid", (req: Request, res: Response) => {
+  try {
+    if (!getTrip(req.params.id)) return res.status(404).json({ error: "not found" });
+    const trip = deleteExpense(req.params.id, req.params.eid);
+    res.json(serializeTrip(trip));
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+app.post("/api/trips/:id/settle", (req: Request, res: Response) => {
+  try {
+    const trip = getTrip(req.params.id);
+    if (!trip) return res.status(404).json({ error: "not found" });
+
+    const memberIds = trip.members.map((m) => m.id);
+    const balances = computeBalances(
+      memberIds,
+      trip.expenses.map((e) => ({
+        amountCents: e.amountCents,
+        paidBy: e.paidBy,
+        participants: e.participants,
+      }))
+    );
+    const plan = minimalSettlement(balances);
+
+    // Signature pins the settlement to the current set of balances. If nothing
+    // material changed, reuse the stored transfers (preserving references/urls/paid).
+    const signature = JSON.stringify(
+      [...balances].sort((a, b) => (a.memberId < b.memberId ? -1 : a.memberId > b.memberId ? 1 : 0))
+    );
+    const existing = getSettlement(trip.id);
+
+    let transfers: SettlementTransfer[];
+    if (existing && existing.signature === signature) {
+      transfers = existing.transfers;
+    } else {
+      transfers = plan.map((t) => {
+        const recipient = trip.members.find((m) => m.id === t.to);
+        if (recipient && recipient.wallet) {
+          const reference = newReference();
+          const url = buildSolanaPayUrl({
+            recipient: recipient.wallet,
+            amountCents: t.amountCents,
+            splToken: USDC_MINT[trip.cluster],
+            reference,
+            label: trip.name,
+            message: `${memberName(trip, t.from)} → ${memberName(trip, t.to)}`,
+          });
+          return { ...t, reference, url, paid: false };
+        }
+        return { ...t, reference: null, url: null, paid: false };
+      });
+      saveSettlement(trip.id, signature, transfers);
+    }
+
+    res.json(serializeTrip(getTrip(trip.id) as Trip));
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => {
+  const trip = getTrip(req.params.id);
+  if (!trip) return res.status(404).json({ error: "not found" });
+  const stored = getSettlement(trip.id);
+  if (!stored) return res.status(400).json({ error: "no settlement to verify; call /settle first" });
+  try {
+    const connection = new Connection(rpcUrl(trip.cluster), "confirmed");
+    for (const t of stored.transfers) {
+      if (t.paid) continue;
+      const recipient = trip.members.find((m) => m.id === t.to);
+      if (!t.reference || !recipient || !recipient.wallet) continue;
+      const valid = await validatePayment(connection, {
+        reference: t.reference,
+        recipient: recipient.wallet,
+        splToken: USDC_MINT[trip.cluster],
+        amountCents: t.amountCents,
+      });
+      if (valid.ok) t.paid = true;
+    }
+    saveSettlement(trip.id, stored.signature, stored.transfers);
+    res.json(serializeTrip(getTrip(trip.id) as Trip));
+  } catch (err) {
+    res.status(502).json({ error: `verify failed: ${(err as Error).message}` });
+  }
+});
+
+// Shareable SPA link: the frontend reads the token from the path. Declared
+// before any catch-all; it doesn't shadow /api or static assets.
+app.get("/t/:token", (_req: Request, res: Response) => {
+  res.sendFile(path.resolve(process.cwd(), "public/index.html"));
 });
 
 // ---- Pay page (server-rendered) -------------------------------------------

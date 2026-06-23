@@ -90,6 +90,41 @@ USD amount is what gets collected, not a live-reconverted figure.
   (`{ sourceCurrency, sourceAmount, rate, asOf, source }`); bills then record
   that **FX provenance** (surfaced as `fxNote` in the serialized bill).
 
+## Trips (shared multi-payer ledger)
+
+A **Trip** is a shared ledger for a group that pays for things over time — anyone
+with the link can add expenses. Each expense records who paid and who shared it;
+Divvy keeps **running net balances** (who's owed, who owes) and, on demand,
+computes a **minimal-transaction USDC settle-up**: the fewest transfers that zero
+everyone out (greedy min-cash-flow, at most *members − 1* transfers). Money stays
+**integer cents** end-to-end — balances always sum to exactly zero, and no penny
+is lost or created.
+
+Settle-up reuses the same rails as bills: each transfer **to a member with a
+wallet** becomes a [Solana Pay](https://docs.solanapay.com/) request (unique
+`reference`, exact USDC amount), and `POST .../settle/verify` flips a transfer to
+**paid** only after `validatePayment` confirms the exact amount, recipient ATA,
+and token mint at **`finalized`**. Members without a wallet are flagged
+`needsWallet` (settle them off-app). A settlement is **pinned to the current
+balances** by a signature, so re-settling without changes reuses the same links;
+adding/removing an expense invalidates it and regenerates.
+
+Every trip has a shareable **`/t/<token>`** link (the SPA reads the token from
+the path). Endpoints:
+
+- `POST /api/trips` — `{name, cluster?, members:[{name, wallet?}]}`
+- `GET  /api/trips` — summaries (`memberCount`, `expenseCount`, `totalCents`, `settledUp`)
+- `GET  /api/trips/:idOrToken` — full serialized trip (accepts the id **or** share token)
+- `POST /api/trips/:id/members` — `{name, wallet?}`
+- `PATCH /api/trips/:id/members/:mid` — `{name?, wallet?}`
+- `POST /api/trips/:id/expenses` — `{title, total?(USD) | amountCents?(int), paidBy, participants?(default ALL), fx?}`
+- `DELETE /api/trips/:id/expenses/:eid`
+- `POST /api/trips/:id/settle` — compute balances → minimal settlement (with Solana Pay links)
+- `POST /api/trips/:id/settle/verify` — check the chain, mark transfers paid
+- `GET  /t/:token` — serves the SPA for a shared trip link
+
+Trips, members, expenses, and settlements persist in **SQLite** (same `db.ts`).
+
 ## Money math (the guardrail)
 
 All money is **integer cents** — never floats. Every split is computed so the

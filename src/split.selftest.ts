@@ -15,6 +15,7 @@ import {
 } from "./split";
 import { buildSolanaPayUrl, amountFromCents, USDC_MINT } from "./solanaPay";
 import { usdCentsFromForeignCents, usdCentsFromForeignMajor } from "./fx";
+import { computeBalances, minimalSettlement } from "./ledger";
 
 let passed = 0;
 let failed = 0;
@@ -152,6 +153,72 @@ ok(
     "fx: converted total splits 4 ways and sums to the converted total exactly",
     sum(parts) === usdCents && parts.every((p) => Number.isInteger(p)),
     `${JSON.stringify(parts)} sum=${sum(parts)} total=${usdCents}`
+  );
+}
+
+// 12) Ledger: balances sum to 0 for a 3-member, multi-expense scenario.
+{
+  const ids = ["A", "B", "C"];
+  const balances = computeBalances(ids, [
+    { amountCents: 9000, paidBy: "A", participants: ["A", "B", "C"] }, // A fronts $90
+    { amountCents: 4500, paidBy: "B", participants: ["B", "C"] }, // B fronts $45 for B,C
+    { amountCents: 1001, paidBy: "C", participants: ["A", "B", "C"] }, // awkward pennies
+  ]);
+  ok(
+    "ledger: balances sum to 0 (3 members, multi-expense)",
+    sum(balances.map((b) => b.cents)) === 0,
+    JSON.stringify(balances)
+  );
+}
+
+// 13) Ledger: minimalSettlement zeroes all balances when applied; amounts are
+//     positive integers and at most (members - 1) transfers.
+{
+  const ids = ["A", "B", "C", "D"];
+  const balances = computeBalances(ids, [
+    { amountCents: 12000, paidBy: "A", participants: ["A", "B", "C", "D"] },
+    { amountCents: 3333, paidBy: "B", participants: ["A", "B", "C"] },
+    { amountCents: 7777, paidBy: "D", participants: ["A", "B", "C", "D"] },
+  ]);
+  const transfers = minimalSettlement(balances);
+  const copy = new Map(balances.map((b) => [b.memberId, b.cents]));
+  for (const t of transfers) {
+    copy.set(t.from, (copy.get(t.from) as number) + t.amountCents);
+    copy.set(t.to, (copy.get(t.to) as number) - t.amountCents);
+  }
+  const allZero = [...copy.values()].every((v) => v === 0);
+  const goodAmounts = transfers.every(
+    (t) => Number.isInteger(t.amountCents) && t.amountCents > 0
+  );
+  ok(
+    "ledger: minimalSettlement zeroes all balances, positive integer amounts, <= members-1 transfers",
+    allZero && goodAmounts && transfers.length <= ids.length - 1,
+    `${JSON.stringify(transfers)} -> ${JSON.stringify([...copy.entries()])}`
+  );
+}
+
+// 14) Ledger: known scenario. A pays $90 split A,B,C -> B and C each owe $30 to
+//     A; settlement = B->A 30, C->A 30 (2 transfers). Exact.
+{
+  const balances = computeBalances(["A", "B", "C"], [
+    { amountCents: 9000, paidBy: "A", participants: ["A", "B", "C"] },
+  ]);
+  const transfers = minimalSettlement(balances);
+  const norm = transfers
+    .map((t) => `${t.from}->${t.to}:${t.amountCents}`)
+    .sort()
+    .join(",");
+  ok(
+    "ledger: A pays $90/3 -> B->A 30, C->A 30 (2 transfers exact)",
+    JSON.stringify(balances) ===
+      JSON.stringify([
+        { memberId: "A", cents: 6000 },
+        { memberId: "B", cents: -3000 },
+        { memberId: "C", cents: -3000 },
+      ]) &&
+      transfers.length === 2 &&
+      norm === "B->A:3000,C->A:3000",
+    norm
   );
 }
 
