@@ -1,0 +1,146 @@
+/**
+ * bill.ts — Bill + BillParticipant model.
+ *
+ * createBill() computes the split, generates a unique reference per person, and
+ * builds each person's Solana Pay URL. Bills can be persisted to disk as JSON.
+ */
+
+import * as fs from "fs";
+import * as path from "path";
+import { randomUUID } from "crypto";
+import {
+  computeSplit,
+  SplitMode,
+  SplitShare,
+  fmt,
+} from "./split";
+import {
+  buildSolanaPayUrl,
+  newReference,
+  USDC_MINT,
+  Cluster,
+} from "./solanaPay";
+
+export interface BillParticipant {
+  name: string;
+  /** Amount owed, integer cents. */
+  amountCents: number;
+  /** Unique reference pubkey used to detect this person's payment. */
+  reference: string;
+  /** Solana Pay URL for this person. */
+  url: string;
+  /** Whether we've seen a confirmed payment for this reference. */
+  paid: boolean;
+  /** Confirmed signature, once paid. */
+  signature?: string;
+}
+
+export interface Bill {
+  id: string;
+  title: string;
+  createdAt: string;
+  cluster: Cluster;
+  /** Collector wallet (base58). */
+  collector: string;
+  /** USDC mint used. */
+  splToken: string;
+  /** Total to collect, integer cents. */
+  totalCents: number;
+  mode: SplitMode;
+  participants: BillParticipant[];
+}
+
+export interface CreateBillInput {
+  title: string;
+  cluster: Cluster;
+  collector: string;
+  totalCents: number;
+  names: string[];
+  mode: SplitMode;
+  weights?: number[];
+  customCents?: number[];
+}
+
+export function createBill(input: CreateBillInput): Bill {
+  const splToken = USDC_MINT[input.cluster];
+  if (!splToken) throw new Error(`createBill: no USDC mint for cluster ${input.cluster}`);
+
+  const shares: SplitShare[] = computeSplit({
+    totalCents: input.totalCents,
+    names: input.names,
+    mode: input.mode,
+    weights: input.weights,
+    customCents: input.customCents,
+  });
+
+  const participants: BillParticipant[] = shares.map((share) => {
+    const reference = newReference();
+    const url = buildSolanaPayUrl({
+      recipient: input.collector,
+      amountCents: share.cents,
+      splToken,
+      reference,
+      label: input.title,
+      message: `${share.name}'s share — ${fmt(share.cents)}`,
+    });
+    return {
+      name: share.name,
+      amountCents: share.cents,
+      reference,
+      url,
+      paid: false,
+    };
+  });
+
+  return {
+    id: randomUUID(),
+    title: input.title,
+    createdAt: new Date().toISOString(),
+    cluster: input.cluster,
+    collector: input.collector,
+    splToken,
+    totalCents: input.totalCents,
+    mode: input.mode,
+    participants,
+  };
+}
+
+/** Sum of everything collected so far (paid shares), in cents. */
+export function collectedCents(bill: Bill): number {
+  return bill.participants.filter((p) => p.paid).reduce((a, p) => a + p.amountCents, 0);
+}
+
+/** Sum of everything still outstanding, in cents. */
+export function outstandingCents(bill: Bill): number {
+  return bill.totalCents - collectedCents(bill);
+}
+
+// ---- File persistence (simple JSON, one file per bill) --------------------
+
+const BILLS_DIR = path.resolve(process.cwd(), "bills");
+
+export function billPath(id: string): string {
+  return path.join(BILLS_DIR, `${id}.json`);
+}
+
+export function saveBill(bill: Bill): string {
+  fs.mkdirSync(BILLS_DIR, { recursive: true });
+  const p = billPath(bill.id);
+  fs.writeFileSync(p, JSON.stringify(bill, null, 2));
+  return p;
+}
+
+export function loadBill(id: string): Bill {
+  const p = billPath(id);
+  if (!fs.existsSync(p)) throw new Error(`loadBill: no bill at ${p}`);
+  return JSON.parse(fs.readFileSync(p, "utf8")) as Bill;
+}
+
+export function listBills(): Bill[] {
+  if (!fs.existsSync(BILLS_DIR)) return [];
+  return fs
+    .readdirSync(BILLS_DIR)
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => JSON.parse(fs.readFileSync(path.join(BILLS_DIR, f), "utf8")) as Bill)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}

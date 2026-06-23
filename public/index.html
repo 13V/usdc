@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Divvy — split the bill, collect in USDC</title>
+<style>
+  :root { color-scheme: light dark; --green:#14f195; --ink:#04121a; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px;
+         max-width: 540px; margin-inline: auto; line-height: 1.5; }
+  h1 { font-size: 1.4rem; margin: 0 0 2px; }
+  .tag { color: #888; font-size: .9rem; margin-bottom: 16px; }
+  label { display:block; font-weight:600; font-size:.85rem; margin: 12px 0 4px; }
+  input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #8884;
+          font-size: 1rem; background: transparent; color: inherit; }
+  .row { display:flex; gap:10px; }
+  .row > div { flex:1; }
+  button { width:100%; padding:14px; margin-top:16px; border:0; border-radius:12px;
+           background: var(--green); color: var(--ink); font-weight:700; font-size:1rem; cursor:pointer; }
+  button.secondary { background: transparent; border:1px solid #8884; color: inherit; }
+  .person { border:1px solid #8884; border-radius:12px; padding:12px; margin:10px 0; display:flex;
+            align-items:center; gap:12px; }
+  .person img { width:72px; height:72px; image-rendering: pixelated; border-radius:6px; }
+  .person .meta { flex:1; min-width:0; }
+  .person .amt { font-weight:700; font-size:1.1rem; }
+  .person a { font-size:.8rem; word-break: break-all; }
+  .badge { font-size:.75rem; padding:3px 8px; border-radius:999px; background:#8883; }
+  .badge.paid { background: var(--green); color: var(--ink); }
+  .summary { display:flex; justify-content:space-between; margin:12px 0; font-weight:600; }
+  .muted { color:#888; font-size:.8rem; }
+</style>
+</head>
+<body>
+  <h1>Divvy</h1>
+  <div class="tag">Split the bill. Collect in USDC on Solana — instant, ~free, no chargebacks.</div>
+
+  <section id="form">
+    <label>What's it for?</label>
+    <input id="title" value="Dinner" />
+
+    <div class="row">
+      <div>
+        <label>Total ($)</label>
+        <input id="total" type="number" step="0.01" value="74.07" />
+      </div>
+      <div>
+        <label>Tip (%)</label>
+        <input id="tip" type="number" step="1" value="18" />
+      </div>
+    </div>
+
+    <label>Who's splitting? (comma-separated)</label>
+    <input id="names" value="Ava, Ben, Cy" />
+
+    <label>How?</label>
+    <select id="mode">
+      <option value="equal">Split equally</option>
+      <option value="weighted">Weighted (set weights below)</option>
+    </select>
+
+    <label>Weights (optional, comma-separated, matches names)</label>
+    <input id="weights" placeholder="e.g. 2,1,1" />
+
+    <button id="create">Generate payment links</button>
+    <p class="muted">Settles in USDC. No app needed to pay — wallet QR or pay-with-card.</p>
+  </section>
+
+  <section id="result" style="display:none">
+    <div class="summary"><span id="billTitle"></span><span id="billTotal"></span></div>
+    <div class="summary muted"><span id="collected"></span><span id="outstanding"></span></div>
+    <div id="people"></div>
+    <button id="check" class="secondary">Check payments</button>
+    <button id="reset" class="secondary">New bill</button>
+  </section>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let currentBill = null;
+
+async function createBill() {
+  const body = {
+    title: $("title").value,
+    total: $("total").value,
+    tipPercent: Number($("tip").value || 0),
+    names: $("names").value.split(",").map(s => s.trim()).filter(Boolean),
+    mode: $("mode").value,
+  };
+  if (body.mode === "weighted" && $("weights").value.trim()) {
+    body.weights = $("weights").value.split(",").map(Number);
+  }
+  const res = await fetch("/api/bills", {
+    method: "POST", headers: {"content-type":"application/json"}, body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) { alert(data.error || "Failed"); return; }
+  currentBill = data;
+  render(data);
+}
+
+function render(bill) {
+  $("form").style.display = "none";
+  $("result").style.display = "block";
+  $("billTitle").textContent = bill.title;
+  $("billTotal").textContent = bill.totalFmt;
+  $("collected").textContent = "Collected " + bill.collectedFmt;
+  $("outstanding").textContent = "Outstanding " + bill.outstandingFmt;
+  const people = $("people");
+  people.innerHTML = "";
+  for (const p of bill.participants) {
+    const div = document.createElement("div");
+    div.className = "person";
+    div.innerHTML = `
+      <img src="${qrSrc(p.url)}" alt="QR" />
+      <div class="meta">
+        <div class="amt">${p.name} — ${p.amountFmt}</div>
+        <a href="${p.payPath}" target="_blank">Open pay page</a>
+      </div>
+      <span class="badge ${p.paid ? "paid" : ""}">${p.paid ? "✓ paid" : "owes"}</span>`;
+    people.appendChild(div);
+  }
+}
+
+// Tiny client-side QR via a public image endpoint fallback; the per-person pay
+// page renders a proper Solana Pay QR server-side. Here we just link out.
+function qrSrc(data) {
+  return "https://api.qrserver.com/v1/create-qr-code/?size=72x72&data=" + encodeURIComponent(data);
+}
+
+async function check() {
+  if (!currentBill) return;
+  const res = await fetch(`/api/bills/${currentBill.id}/verify`, { method: "POST" });
+  const data = await res.json();
+  if (!res.ok) { alert(data.error || "verify failed"); return; }
+  currentBill = data;
+  render(data);
+  if (data.updated && data.updated.length) alert("Now paid: " + data.updated.join(", "));
+}
+
+$("create").onclick = createBill;
+$("check").onclick = check;
+$("reset").onclick = () => { $("form").style.display = "block"; $("result").style.display = "none"; };
+</script>
+</body>
+</html>
