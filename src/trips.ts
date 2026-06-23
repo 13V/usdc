@@ -20,6 +20,7 @@ export interface TripMember {
   id: string;
   name: string;
   wallet?: string;
+  userId?: string;
 }
 
 export interface TripExpense {
@@ -40,6 +41,7 @@ export interface Trip {
   createdAt: string;
   members: TripMember[];
   expenses: TripExpense[];
+  ownerUserId?: string;
 }
 
 /** A persisted settlement transfer (Transfer + payment-request fields). */
@@ -93,10 +95,30 @@ db.exec(`
   );
 `);
 
+// ---- Idempotent identity migrations ---------------------------------------
+// Progressive identity is ADDITIVE: existing trips simply have NULL here.
+
+function hasColumn(table: string, column: string): boolean {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  return cols.some((c) => c.name === column);
+}
+
+if (!hasColumn("trip_members", "user_id")) {
+  db.exec("ALTER TABLE trip_members ADD COLUMN user_id TEXT");
+}
+if (!hasColumn("trips", "owner_user_id")) {
+  db.exec("ALTER TABLE trips ADD COLUMN owner_user_id TEXT");
+}
+
 // ---- Row hydration ---------------------------------------------------------
 
 function hydrateMember(row: any): TripMember {
-  return { id: row.id, name: row.name, wallet: row.wallet ?? undefined };
+  return {
+    id: row.id,
+    name: row.name,
+    wallet: row.wallet ?? undefined,
+    userId: row.user_id ?? undefined,
+  };
 }
 
 function hydrateExpense(row: any): TripExpense {
@@ -128,6 +150,7 @@ function hydrateTrip(row: any): Trip {
     createdAt: row.created_at,
     members,
     expenses,
+    ownerUserId: row.owner_user_id ?? undefined,
   };
 }
 
@@ -136,7 +159,8 @@ function hydrateTrip(row: any): Trip {
 export function createTrip(
   name: string,
   cluster: Cluster,
-  members: { name: string; wallet?: string }[]
+  members: { name: string; wallet?: string }[],
+  ownerUserId?: string
 ): Trip {
   const trimmedName = String(name || "").trim();
   if (!trimmedName) throw new Error("createTrip: need a name");
@@ -150,14 +174,14 @@ export function createTrip(
   const createdAt = new Date().toISOString();
 
   const insertTrip = db.prepare(
-    "INSERT INTO trips (id, name, share_token, cluster, created_at) VALUES (?, ?, ?, ?, ?)"
+    "INSERT INTO trips (id, name, share_token, cluster, created_at, owner_user_id) VALUES (?, ?, ?, ?, ?, ?)"
   );
   const insertMember = db.prepare(
     "INSERT INTO trip_members (id, trip_id, name, wallet) VALUES (?, ?, ?, ?)"
   );
 
   const tx = db.transaction(() => {
-    insertTrip.run(id, trimmedName, shareToken, cluster, createdAt);
+    insertTrip.run(id, trimmedName, shareToken, cluster, createdAt, ownerUserId ?? null);
     for (const m of cleanMembers) {
       insertMember.run(crypto.randomUUID(), id, m.name, m.wallet ?? null);
     }
@@ -165,6 +189,39 @@ export function createTrip(
   tx();
 
   return getTrip(id) as Trip;
+}
+
+/**
+ * Claim an existing member slot for a signed-in user, routing settle-up to their
+ * wallet. Sets that member's user_id and wallet. Throws if the member is absent.
+ */
+export function claimMember(
+  tripId: string,
+  memberId: string,
+  userId: string,
+  wallet: string
+): Trip {
+  const trip = getTrip(tripId);
+  if (!trip) throw new Error("claimMember: trip not found");
+  const member = trip.members.find((m) => m.id === memberId);
+  if (!member) throw new Error("claimMember: member not found");
+  db.prepare(
+    "UPDATE trip_members SET user_id = ?, wallet = ? WHERE id = ? AND trip_id = ?"
+  ).run(userId, wallet, memberId, tripId);
+  return getTrip(tripId) as Trip;
+}
+
+/** Trips a user owns OR has claimed a member slot in, most recent first. */
+export function listTripsForUser(userId: string): Trip[] {
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT t.* FROM trips t
+       LEFT JOIN trip_members m ON m.trip_id = t.id
+       WHERE t.owner_user_id = ? OR m.user_id = ?
+       ORDER BY t.created_at DESC, t.rowid DESC`
+    )
+    .all(userId, userId);
+  return rows.map(hydrateTrip);
 }
 
 export function listTrips(): Trip[] {

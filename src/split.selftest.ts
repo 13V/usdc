@@ -16,6 +16,9 @@ import {
 import { buildSolanaPayUrl, amountFromCents, USDC_MINT } from "./solanaPay";
 import { usdCentsFromForeignCents, usdCentsFromForeignMajor } from "./fx";
 import { computeBalances, minimalSettlement } from "./ledger";
+import { signSession, verifySession, verifySignature } from "./auth";
+import nacl from "tweetnacl";
+import { Keypair } from "@solana/web3.js";
 
 let passed = 0;
 let failed = 0;
@@ -219,6 +222,35 @@ ok(
       transfers.length === 2 &&
       norm === "B->A:3000,C->A:3000",
     norm
+  );
+}
+
+// 15) Session token round-trips; a tampered token fails verification.
+{
+  const token = signSession("user-abc");
+  const ok1 = verifySession(token) === "user-abc";
+  // Flip a character in the payload to simulate tampering.
+  const tampered = (token[0] === "A" ? "B" : "A") + token.slice(1);
+  const ok2 = verifySession(tampered) === null;
+  // Garbage / wrong-shape tokens are rejected too.
+  const ok3 = verifySession("not-a-token") === null && verifySession("") === null;
+  ok("auth: session sign/verify round-trips, tampered + garbage tokens rejected", ok1 && ok2 && ok3);
+}
+
+// 16) SIWS signature: a real ed25519 signature verifies; wrong key/message fails.
+{
+  const kp = Keypair.generate();
+  const pubkey = kp.publicKey.toBase58();
+  const message =
+    "Divvy — sign in to prove you own this wallet.\nNonce: deadbeef\nIssued At: 2026-01-01T00:00:00.000Z";
+  const sig = nacl.sign.detached(new TextEncoder().encode(message), kp.secretKey);
+
+  const good = verifySignature(message, sig, pubkey);
+  const wrongKey = verifySignature(message, sig, Keypair.generate().publicKey.toBase58());
+  const wrongMsg = verifySignature(message + "tampered", sig, pubkey);
+  ok(
+    "auth: SIWS ed25519 verifies for signer, fails for wrong pubkey/message",
+    good && !wrongKey && !wrongMsg
   );
 }
 

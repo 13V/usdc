@@ -17,6 +17,18 @@
   const WALLET_KEY = "divvy.collector";
   const root = () => document.getElementById("trips");
 
+  // Identity helpers — degrade gracefully when window.Auth is absent or signed out.
+  function authUser() { return (window.Auth && window.Auth.user) || null; }
+  // authFetch-aware request: uses Auth.authFetch when available (adds Bearer),
+  // otherwise plain fetch. Anonymous calls keep working when signed out.
+  function authFetchFn() {
+    return (window.Auth && window.Auth.authFetch) ? window.Auth.authFetch : fetch;
+  }
+  // "My trips" toggle state (LIST view), only meaningful when signed in.
+  let mineOnly = false;
+  // Id of the trip currently shown in the DETAIL view (for live re-render on auth change).
+  let currentTripId = null;
+
   // ── helpers ────────────────────────────────────────────────────────────────
   function esc(s) {
     return String(s == null ? "" : s)
@@ -33,8 +45,16 @@
     return t.content.firstElementChild;
   }
 
+  // api(path, opts) — JSON helper. Pass opts.auth = true to attach the Bearer
+  // token (via Auth.authFetch) for calls that benefit from identity; anonymous
+  // requests still work when signed out.
   async function api(path, opts) {
-    const res = await fetch(path, Object.assign({ headers: { "content-type": "application/json" } }, opts || {}));
+    opts = opts || {};
+    const useAuth = opts.auth === true;
+    const fetchFn = useAuth ? authFetchFn() : fetch;
+    const reqOpts = Object.assign({ headers: { "content-type": "application/json" } }, opts);
+    delete reqOpts.auth;
+    const res = await fetchFn(path, reqOpts);
     let data = null;
     try { data = await res.json(); } catch (_) { data = null; }
     if (!res.ok) {
@@ -60,11 +80,16 @@
   async function showList() {
     const c = root();
     c.innerHTML = "";
+    currentTripId = null;
 
-    // seed the first member's wallet from the saved collector wallet ("you").
+    // seed the first member ("you"): prefer the signed-in user's primary wallet
+    // and display name; fall back to the saved collector wallet for signed-out.
     if (newTripMembers.length === 0) {
+      const u = authUser();
       const saved = (localStorage.getItem(WALLET_KEY) || "").trim();
-      newTripMembers = [{ name: "", wallet: saved, you: true }];
+      const wallet = (u && u.primaryWallet) ? u.primaryWallet : saved;
+      const name = u ? (u.displayName || (u.handle ? u.handle : "")) : "";
+      newTripMembers = [{ name: name, wallet: wallet, you: true }];
     }
 
     const view = el(`
@@ -87,10 +112,26 @@
           </div>
         </div>
 
+        <div id="tMineWrap" class="chips" style="display:none; margin-bottom:10px"></div>
         <div id="tList"><p class="muted">Loading…</p></div>
       </div>
     `);
     c.appendChild(view);
+
+    // "My trips" toggle — only meaningful when signed in.
+    const mineWrap = document.getElementById("tMineWrap");
+    if (authUser()) {
+      mineWrap.style.display = "flex";
+      const allChip = el(`<button type="button" class="chip${mineOnly ? "" : " selected"}">All trips</button>`);
+      const mineChip = el(`<button type="button" class="chip${mineOnly ? " selected" : ""}">My trips</button>`);
+      allChip.onclick = () => { if (mineOnly) { mineOnly = false; showList(); } };
+      mineChip.onclick = () => { if (!mineOnly) { mineOnly = true; showList(); } };
+      mineWrap.appendChild(allChip);
+      mineWrap.appendChild(mineChip);
+    } else {
+      // signed out: "My trips" isn't available, so always show all.
+      mineOnly = false;
+    }
 
     document.getElementById("tNewToggle").onclick = () => {
       const f = document.getElementById("tNewForm");
@@ -150,7 +191,7 @@
     if (members.length === 0) { status.textContent = "Add at least one member."; return; }
     status.textContent = "Creating…";
     try {
-      const trip = await api("/api/trips", { method: "POST", body: JSON.stringify({ name, members }) });
+      const trip = await api("/api/trips", { method: "POST", auth: true, body: JSON.stringify({ name, members }) });
       newTripMembers = []; // reset staged members
       showDetail(trip);
     } catch (err) {
@@ -161,9 +202,15 @@
   async function loadTripList() {
     const list = document.getElementById("tList");
     try {
-      const trips = await api("/api/trips");
+      // Signed in + "My trips" -> GET /api/trips?mine=1 (auth). Else all trips.
+      const useMine = mineOnly && authUser();
+      const trips = useMine
+        ? await api("/api/trips?mine=1", { auth: true })
+        : await api("/api/trips");
       if (!Array.isArray(trips) || trips.length === 0) {
-        list.innerHTML = '<p class="muted">No trips yet. Start one above.</p>';
+        list.innerHTML = useMine
+          ? '<p class="muted">None of your trips yet. Create one or claim your spot in a shared trip.</p>'
+          : '<p class="muted">No trips yet. Start one above.</p>';
         return;
       }
       list.innerHTML = "";
@@ -190,7 +237,7 @@
     const c = root();
     c.innerHTML = '<p class="muted">Loading trip…</p>';
     try {
-      const trip = await api("/api/trips/" + encodeURIComponent(idOrToken));
+      const trip = await api("/api/trips/" + encodeURIComponent(idOrToken), { auth: true });
       showDetail(trip);
     } catch (err) {
       c.innerHTML = '<p class="muted">Couldn\'t load this trip.</p>' +
@@ -201,11 +248,24 @@
   }
 
   // ── view: DETAIL ─────────────────────────────────────────────────────────────
+  // Resolve "my member" for a trip: prefer real identity (member.userId matches
+  // the signed-in user) over the localStorage "Who am I?" selector. Returns the
+  // member id, or "" if unknown.
+  function myMemberId(trip) {
+    const u = authUser();
+    if (u && Array.isArray(trip.members)) {
+      const mine = trip.members.find((m) => m.userId && m.userId === u.id);
+      if (mine) return mine.id;
+    }
+    return localStorage.getItem(meKey(trip.id)) || "";
+  }
+
   function showDetail(trip) {
     const c = root();
     c.innerHTML = "";
 
-    const meId = localStorage.getItem(meKey(trip.id)) || "";
+    currentTripId = trip.id || null;
+    const meId = myMemberId(trip);
 
     const view = el(`
       <div>
@@ -219,7 +279,7 @@
         <div class="summary muted"><span>${esc(trip.totalFmt || "")} total</span><span></span></div>
 
         <h1 style="font-size:1.05rem; margin-top:18px">Balances</h1>
-        <label style="margin-top:4px">Who am I?</label>
+        <label style="margin-top:4px" id="tMeLabel">Who am I?</label>
         <select id="tMe"></select>
         <div id="tBalances"></div>
 
@@ -402,6 +462,19 @@
 
   function renderMeSelector(trip, meId) {
     const sel = document.getElementById("tMe");
+    const label = document.getElementById("tMeLabel");
+    // When signed in AND identity resolves a claimed member, real identity wins:
+    // hide the manual selector. Keep it as a fallback for signed-out viewers (or
+    // signed-in users who haven't claimed a spot yet).
+    const u = authUser();
+    const claimedMine = u && trip.members.some((m) => m.userId && m.userId === u.id);
+    if (claimedMine) {
+      if (label) label.style.display = "none";
+      sel.style.display = "none";
+      return;
+    }
+    if (label) label.style.display = "";
+    sel.style.display = "";
     sel.innerHTML = '<option value="">— not set —</option>' +
       trip.members.map((m) => `<option value="${esc(m.id)}"${m.id === meId ? " selected" : ""}>${esc(m.name)}</option>`).join("");
     sel.onchange = () => {
@@ -444,14 +517,31 @@
   function renderMembersInDetail(trip) {
     const wrap = document.getElementById("tMemberList");
     wrap.innerHTML = "";
+    const u = authUser();
+    // Has the signed-in user already claimed a spot in this trip? If so, we don't
+    // offer "claim" on other members.
+    const alreadyClaimedMine = u && trip.members.some((m) => m.userId && m.userId === u.id);
     for (const m of trip.members) {
       const hasWallet = !!m.wallet;
+      // claimed indicator: a member linked to a user account.
+      const claimed = !!(m.claimed || m.userId);
+      const isMine = u && m.userId && m.userId === u.id;
+      const claimBadge = claimed
+        ? `<span class="badge paid" style="margin-left:8px">✓ ${isMine ? "you" : "linked"}</span>`
+        : `<span class="badge" style="margin-left:8px">unclaimed</span>`;
+      // Offer "This is me — claim" only when signed in, the member is unclaimed,
+      // and the user hasn't already claimed another member here.
+      const canClaim = u && !claimed && !alreadyClaimedMine;
+      const claimBtn = canClaim
+        ? `<button class="chip tClaim" type="button" style="margin:0">This is me — claim</button>`
+        : "";
       const row = el(`
-        <div class="person" style="flex-wrap:wrap">
+        <div class="person" style="flex-wrap:wrap${isMine ? "; border-color:var(--green)" : ""}">
           <div class="meta">
-            <div class="amt" style="font-size:1rem">${esc(m.name)}</div>
+            <div class="amt" style="font-size:1rem">${esc(m.name)}${claimBadge}</div>
             <div class="muted tWalletShow">${hasWallet ? esc(m.wallet) : "No wallet set — needed to receive settle-up."}</div>
           </div>
+          ${claimBtn}
           <button class="chip tWalletEdit" type="button" style="margin:0">${hasWallet ? "Edit wallet" : "Set wallet"}</button>
           <div class="tWalletForm" style="display:none; width:100%">
             <input class="tWalletInput" placeholder="Solana wallet" style="margin-top:8px" />
@@ -460,6 +550,21 @@
           </div>
         </div>
       `);
+      const claimEl = row.querySelector(".tClaim");
+      if (claimEl) {
+        claimEl.onclick = async () => {
+          claimEl.textContent = "Claiming…";
+          try {
+            const updated = await api(
+              "/api/trips/" + trip.id + "/members/" + m.id + "/claim",
+              { method: "POST", auth: true });
+            showDetail(updated);
+          } catch (err) {
+            claimEl.textContent = "This is me — claim";
+            alert(err.message || "Couldn't claim this spot.");
+          }
+        };
+      }
       const form = row.querySelector(".tWalletForm");
       const input = row.querySelector(".tWalletInput");
       input.value = m.wallet || "";
@@ -616,9 +721,26 @@
 
   window.Trips = { show, openShared };
 
+  // Re-render the visible trips view when sign-in state changes (so claim
+  // buttons, "My trips", and identity-driven "me" update live).
+  function onAuthChange() {
+    const c = root();
+    if (!c || c.style.display === "none") return; // not visible — nothing to redraw
+    if (c.querySelector("#tBackList") && currentTripId) {
+      // A trip detail is open — re-fetch so userId/claimed/identity reflect the
+      // new sign-in state, keeping the user on the same trip.
+      openTrip(currentTripId);
+    } else if (c.querySelector("#tList")) {
+      showList();
+    }
+  }
+
   // ── boot ─────────────────────────────────────────────────────────────────────
   document.addEventListener("DOMContentLoaded", () => {
     if (!root()) return;
+    if (window.Auth && typeof window.Auth.onChange === "function") {
+      window.Auth.onChange(onAuthChange);
+    }
     const path = location.pathname || "";
     if (path.indexOf("/t/") === 0) {
       const token = decodeURIComponent(path.slice(3).replace(/\/+$/, ""));

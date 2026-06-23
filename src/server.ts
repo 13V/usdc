@@ -45,7 +45,27 @@ import {
   deleteExpense,
   saveSettlement,
   getSettlement,
+  claimMember,
+  listTripsForUser,
 } from "./trips";
+import {
+  authOptional,
+  requireAuth,
+  issueNonce,
+  verifySiws,
+  privyConfigured,
+  verifyPrivyToken,
+  signSession,
+} from "./auth";
+import {
+  upsertUserByWallet,
+  upsertUserByIdentity,
+  getUser,
+  getPrimaryWallet,
+  setHandle,
+  setDisplayName,
+  serializeUser,
+} from "./users";
 import { scanReceipt, parseDataUrl, NoScanProvider } from "./scan";
 import {
   convertForeignCentsToUsd,
@@ -67,7 +87,73 @@ function rpcUrl(cluster: Cluster): string {
 const app = express();
 // Receipt images arrive as base64 in the JSON body, so allow a larger payload.
 app.use(express.json({ limit: "12mb" }));
+// Optional auth: populates req.userId from a Bearer session token when present.
+// NEVER blocks — anonymous/capability-link flows stay fully usable.
+app.use(authOptional);
 app.use(express.static(path.resolve(process.cwd(), "public")));
+
+// ---- Auth & identity (progressive, optional) ------------------------------
+
+app.get("/api/auth/config", (_req: Request, res: Response) => {
+  res.json({ siws: true, privy: privyConfigured() });
+});
+
+app.get("/api/auth/nonce", (_req: Request, res: Response) => {
+  res.json(issueNonce());
+});
+
+app.post("/api/auth/siws/verify", (req: Request, res: Response) => {
+  try {
+    const body = req.body as { pubkey?: string; signature?: string; message?: string };
+    const pubkey = String(body.pubkey || "");
+    const signatureB64 = String(body.signature || "");
+    const message = String(body.message || "");
+    if (!verifySiws({ pubkey, signatureB64, message })) {
+      return res.status(401).json({ error: "invalid signature or nonce" });
+    }
+    const user = upsertUserByWallet(pubkey);
+    res.json({ token: signSession(user.id), user: serializeUser(user) });
+  } catch (err) {
+    res.status(401).json({ error: (err as Error).message });
+  }
+});
+
+app.post("/api/auth/privy/verify", async (req: Request, res: Response) => {
+  if (!privyConfigured()) {
+    return res.status(501).json({ error: "privy not configured" });
+  }
+  try {
+    const body = req.body as { token?: string; wallet?: string };
+    const verified = await verifyPrivyToken(String(body.token || ""));
+    if (!verified) return res.status(401).json({ error: "invalid token" });
+    const user = upsertUserByIdentity("privy", verified.subject, { wallet: body.wallet });
+    res.json({ token: signSession(user.id), user: serializeUser(user) });
+  } catch (err) {
+    res.status(401).json({ error: (err as Error).message });
+  }
+});
+
+app.get("/api/me", (req: Request, res: Response) => {
+  if (!req.userId) return res.json({ user: null });
+  const user = getUser(req.userId);
+  res.json({ user: user ? serializeUser(user) : null });
+});
+
+app.patch("/api/me", requireAuth, (req: Request, res: Response) => {
+  const userId = req.userId as string;
+  const body = req.body as { handle?: string; displayName?: string };
+  try {
+    let user = getUser(userId);
+    if (!user) return res.status(404).json({ error: "not found" });
+    if (body.handle !== undefined) user = setHandle(userId, body.handle);
+    if (body.displayName !== undefined) user = setDisplayName(userId, body.displayName);
+    res.json({ user: serializeUser(user) });
+  } catch (err) {
+    const msg = (err as Error).message;
+    if (msg === "handle taken") return res.status(409).json({ error: msg });
+    res.status(400).json({ error: msg });
+  }
+});
 
 // ---- API ------------------------------------------------------------------
 
@@ -342,7 +428,14 @@ function serializeTrip(trip: Trip) {
     shareUrlPath: `/t/${trip.shareToken}`,
     cluster: trip.cluster,
     createdAt: trip.createdAt,
-    members: trip.members.map((m) => ({ id: m.id, name: m.name, wallet: m.wallet || null })),
+    ownerUserId: trip.ownerUserId || null,
+    members: trip.members.map((m) => ({
+      id: m.id,
+      name: m.name,
+      wallet: m.wallet || null,
+      userId: m.userId || null,
+      claimed: !!m.userId,
+    })),
     expenses: trip.expenses.map((e) => ({
       id: e.id,
       title: e.title,
@@ -387,38 +480,44 @@ app.post("/api/trips", (req: Request, res: Response) => {
     if (!name) return res.status(400).json({ error: "need a name" });
     if (members.length < 1) return res.status(400).json({ error: "need at least one member" });
     const cluster = (body.cluster || (process.env.CLUSTER as Cluster) || "devnet") as Cluster;
-    const trip = createTrip(name, cluster, members);
+    // If signed in, record ownership so this trip shows up in "my trips".
+    const trip = createTrip(name, cluster, members, req.userId);
     res.json(serializeTrip(trip));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
 });
 
-app.get("/api/trips", (_req: Request, res: Response) => {
-  const out = listTrips().map((trip) => {
-    const memberIds = trip.members.map((m) => m.id);
-    const balances = computeBalances(
-      memberIds,
-      trip.expenses.map((e) => ({
-        amountCents: e.amountCents,
-        paidBy: e.paidBy,
-        participants: e.participants,
-      }))
-    );
-    const totalCents = trip.expenses.reduce((a, e) => a + e.amountCents, 0);
-    return {
-      id: trip.id,
-      name: trip.name,
-      shareToken: trip.shareToken,
-      createdAt: trip.createdAt,
-      memberCount: trip.members.length,
-      expenseCount: trip.expenses.length,
-      totalCents,
-      totalFmt: fmt(totalCents),
-      settledUp: balances.every((b) => b.cents === 0),
-    };
-  });
-  res.json(out);
+function tripSummary(trip: Trip) {
+  const memberIds = trip.members.map((m) => m.id);
+  const balances = computeBalances(
+    memberIds,
+    trip.expenses.map((e) => ({
+      amountCents: e.amountCents,
+      paidBy: e.paidBy,
+      participants: e.participants,
+    }))
+  );
+  const totalCents = trip.expenses.reduce((a, e) => a + e.amountCents, 0);
+  return {
+    id: trip.id,
+    name: trip.name,
+    shareToken: trip.shareToken,
+    createdAt: trip.createdAt,
+    memberCount: trip.members.length,
+    expenseCount: trip.expenses.length,
+    totalCents,
+    totalFmt: fmt(totalCents),
+    settledUp: balances.every((b) => b.cents === 0),
+    ownerUserId: trip.ownerUserId || null,
+  };
+}
+
+app.get("/api/trips", (req: Request, res: Response) => {
+  // ?mine=1 (when signed in) -> only trips I own or have claimed a spot in.
+  const trips =
+    req.query.mine === "1" && req.userId ? listTripsForUser(req.userId) : listTrips();
+  res.json(trips.map(tripSummary));
 });
 
 app.get("/api/trips/:idOrToken", (req: Request, res: Response) => {
@@ -443,6 +542,22 @@ app.patch("/api/trips/:id/members/:mid", (req: Request, res: Response) => {
     const body = req.body as { name?: string; wallet?: string };
     if (!getTrip(req.params.id)) return res.status(404).json({ error: "not found" });
     const trip = updateMember(req.params.id, req.params.mid, body);
+    res.json(serializeTrip(trip));
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+// Claim your spot: a signed-in user takes over a member slot so settle-up routes
+// to their primary wallet. Requires auth; the capability link still governs who
+// can SEE the trip (per-member action authz is a fast-follow).
+app.post("/api/trips/:id/members/:mid/claim", requireAuth, (req: Request, res: Response) => {
+  try {
+    const userId = req.userId as string;
+    if (!getTrip(req.params.id)) return res.status(404).json({ error: "not found" });
+    const wallet = getPrimaryWallet(userId);
+    if (!wallet) return res.status(400).json({ error: "link a wallet first" });
+    const trip = claimMember(req.params.id, req.params.mid, userId, wallet);
     res.json(serializeTrip(trip));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });

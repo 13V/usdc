@@ -61,11 +61,26 @@
   .hist-item { border:1px solid #8884; border-radius:12px; padding:12px; margin:10px 0; cursor:pointer; }
   .hist-item .top { display:flex; justify-content:space-between; font-weight:700; }
   .hist-item .sub { display:flex; justify-content:space-between; }
+
+  /* Auth area (header) — compact, additive */
+  #authArea { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:16px; }
+  #authArea button, #authArea a.linklike { margin:0; width:auto; }
+  #authArea .linklike { font-size:.85rem; font-weight:600; color: var(--green);
+                        background:none; border:0; padding:0; cursor:pointer; text-decoration:none; }
+  #authArea button.connect { padding:9px 14px; font-size:.9rem; border-radius:999px; width:auto; }
+  #authArea .userchip { display:inline-flex; align-items:center; gap:8px; }
+  #authMsg { width:100%; font-size:.8rem; color:#888; }
+  #authMsg.err { color:#c0392b; }
+  #setHandleBox { width:100%; display:flex; gap:8px; align-items:center; margin-top:4px; }
+  #setHandleBox input { padding:9px 12px; font-size:.9rem; }
+  #setHandleBox button { width:auto; margin:0; padding:9px 14px; font-size:.9rem; border-radius:10px; }
 </style>
 </head>
 <body>
   <h1>Divvy</h1>
   <div class="tag">Split the bill. Collect in USDC on Solana — instant, ~free, no chargebacks.</div>
+
+  <div id="authArea"></div>
 
   <div class="tabs">
     <button id="tabNew">New bill</button>
@@ -528,7 +543,89 @@ if ((location.pathname || "").indexOf("/t/") === 0) {
   $("form").style.display = "none";
   $("trips").style.display = "block";
 }
+
+// ── Auth area (additive; signed-out flows untouched) ─────────────────────────
+function escHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function shortWallet(w) {
+  if (!w) return "";
+  return w.length > 12 ? w.slice(0, 4) + "…" + w.slice(-4) : w;
+}
+function authLabel(user) {
+  if (!user) return "";
+  if (user.displayName) return user.displayName;
+  if (user.handle) return "@" + user.handle;
+  return shortWallet(user.primaryWallet || (user.wallets && user.wallets[0]) || "you");
+}
+function setAuthMsg(text, isErr) {
+  const m = $("authMsg");
+  if (!m) return;
+  m.textContent = text || "";
+  m.className = isErr ? "err" : "";
+}
+function renderAuth(user) {
+  const area = $("authArea");
+  if (!area || !window.Auth) return;
+  area.innerHTML = "";
+  if (!user) {
+    area.innerHTML =
+      '<button class="connect" id="authConnect" type="button">Connect wallet</button>' +
+      '<button class="linklike" id="authEmail" type="button">Sign in with email</button>' +
+      '<div id="authMsg"></div>';
+    $("authConnect").onclick = async () => {
+      setAuthMsg("Connecting…");
+      try { await window.Auth.signInWithWallet(); }
+      catch (err) { setAuthMsg(err.message || "Couldn't connect.", true); }
+    };
+    $("authEmail").onclick = async () => {
+      setAuthMsg("");
+      try { await window.Auth.signInWithPrivy(); }
+      catch (err) { setAuthMsg(err.message || "Email sign-in unavailable.", true); }
+    };
+    return;
+  }
+
+  // Signed in: identity chip + sign out, and a one-time "set username" prompt.
+  const needsHandle = !user.handle;
+  area.innerHTML =
+    '<span class="chip userchip">' + escHtml(authLabel(user)) + '</span>' +
+    '<button class="linklike" id="authSignOut" type="button">Sign out</button>' +
+    (needsHandle
+      ? '<div id="setHandleBox">' +
+          '<input id="handleInput" placeholder="Set a username" maxlength="32" />' +
+          '<button id="handleSave" type="button">Save</button>' +
+        '</div>'
+      : "") +
+    '<div id="authMsg"></div>';
+  $("authSignOut").onclick = () => window.Auth.signOut();
+  if (needsHandle) {
+    $("handleSave").onclick = async () => {
+      const handle = ($("handleInput").value || "").trim();
+      if (!handle) { setAuthMsg("Enter a username.", true); return; }
+      setAuthMsg("Saving…");
+      try {
+        await window.Auth.updateProfile({ handle });
+        setAuthMsg("");
+      } catch (err) {
+        if (err.status === 409) setAuthMsg("That username is taken — try another.", true);
+        else setAuthMsg(err.message || "Couldn't save username.", true);
+      }
+    };
+  }
+}
+// auth.js loads after this inline script, so wire up once the DOM is ready
+// (by then window.Auth exists; its own DOMContentLoaded init() fires onChange).
+document.addEventListener("DOMContentLoaded", () => {
+  if (window.Auth) {
+    window.Auth.onChange(renderAuth);
+    renderAuth(window.Auth.user); // initial paint; init() re-fires after /api/me
+  }
+});
 </script>
+<script src="/auth.js"></script>
 <script src="/trips.js"></script>
 <script>
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});

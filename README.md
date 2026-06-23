@@ -125,6 +125,48 @@ the path). Endpoints:
 
 Trips, members, expenses, and settlements persist in **SQLite** (same `db.ts`).
 
+### Accounts & identity (progressive, optional)
+
+Identity in Divvy is **progressive and entirely optional** — it only ever *adds*
+abilities. Every anonymous flow keeps working unchanged: you can still create
+bills, trips, groups, scan, settle, and verify **without signing in**, because a
+**capability link is the access model** for a shared trip (`/t/<token>`). Auth
+adds identity-specific extras on top.
+
+- **Sign-In-With-Solana (SIWS)** — your **wallet is your identity**, no PII, no
+  password, fully working. `GET /api/auth/nonce` returns a one-time message; you
+  sign it with your wallet (ed25519, `tweetnacl`); `POST /api/auth/siws/verify`
+  checks the single-use nonce + signature and returns a session **token**. Send
+  it as `Authorization: Bearer <token>` on later calls.
+- **Privy (gated)** — `POST /api/auth/privy/verify` is enabled **only when
+  `PRIVY_APP_ID` is set**; it verifies a Privy JWT against Privy's remote JWKS
+  (`jose`) and links a `privy` identity (optionally attaching a wallet). Without
+  `PRIVY_APP_ID` the endpoint honestly returns `501 { error: "privy not
+  configured" }`.
+- **Claim your spot** — `POST /api/trips/:id/members/:mid/claim` (auth required)
+  lets a signed-in user take over a member slot; it routes that member's USDC
+  **settle-up to your primary wallet** automatically (400 `link a wallet first`
+  if you have none).
+- **My trips** — `GET /api/trips?mine=1` (when signed in) returns just the trips
+  you **own** or have **claimed a spot in**.
+- **Optional handles** — `PATCH /api/me { handle?, displayName? }` (auth) sets a
+  unique handle (409 if taken) and display name. `GET /api/me` returns the
+  current user (or `{ user: null }`).
+
+Session tokens are **stateless HMAC blobs** (no new dependency) signed with
+`SESSION_SECRET` (defaults to a dev secret — **set `SESSION_SECRET` in
+production**) and expire after 30 days.
+
+Auth endpoints: `GET /api/auth/config` → `{ siws:true, privy:<bool> }`,
+`GET /api/auth/nonce`, `POST /api/auth/siws/verify`, `POST /api/auth/privy/verify`,
+`GET /api/me`, `PATCH /api/me`. Users/identities/wallets persist in **SQLite**
+(`src/users.ts`).
+
+**Honest scope:** capability links remain the access model for shared trips —
+anyone with the link can view and edit a trip. Per-member action authorization
+(only *you* can act as your claimed member) is a deliberate **fast-follow**, not
+yet enforced.
+
 ## Money math (the guardrail)
 
 All money is **integer cents** — never floats. Every split is computed so the
