@@ -16,7 +16,7 @@
 import "dotenv/config";
 import * as path from "path";
 import express, { Request, Response } from "express";
-import { Connection, clusterApiUrl } from "@solana/web3.js";
+import { Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
 import { createBill, Bill, collectedCents, outstandingCents } from "./bill";
 import { store } from "./store";
 import { findPayment } from "./verify";
@@ -111,6 +111,22 @@ app.post("/api/bills/:id/verify", async (req: Request, res: Response) => {
   }
 });
 
+// Card on-ramp links for an arbitrary wallet + amount. Used by the embedded
+// pay page to top up a freshly created wallet.
+app.get("/api/onramp/:wallet/:amountCents", (req: Request, res: Response) => {
+  const amountCents = Number(req.params.amountCents);
+  if (!Number.isInteger(amountCents) || amountCents <= 0) {
+    return res.status(400).json({ error: "bad amount" });
+  }
+  try {
+    // eslint-disable-next-line no-new
+    new PublicKey(req.params.wallet);
+  } catch {
+    return res.status(400).json({ error: "bad wallet address" });
+  }
+  res.json(cardOptions({ walletAddress: req.params.wallet, amountCents }));
+});
+
 // ---- Pay page (server-rendered) -------------------------------------------
 
 app.get("/pay/:id/:name", async (req: Request, res: Response) => {
@@ -195,6 +211,11 @@ function renderPayPage(
     <div class="muted">Buys USDC and sends it to the collector.</div>
     <a class="btn" href="${esc(cards.moonpay)}" target="_blank" rel="noopener">Pay with card · MoonPay</a>
     <a class="btn" href="${esc(cards.coinbase)}" target="_blank" rel="noopener">Pay with card · Coinbase</a>
+  </div>
+  <div class="card">
+    <strong>No wallet at all?</strong>
+    <div class="muted">Sign in with email/phone — we make you a wallet, no seed phrase.</div>
+    <a class="btn" href="/embedded/?bill=${esc(bill.id)}&name=${encodeURIComponent(name)}">Create a wallet &amp; pay</a>
   </div>`}
   <p class="muted">Collector: <code>${esc(bill.collector)}</code></p>
 </body>

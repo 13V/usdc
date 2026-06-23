@@ -77,6 +77,30 @@ PAID.
 RPC_URL="https://devnet.helius-rpc.com/?api-key=..." npm run live-devnet
 ```
 
+## No-wallet pay path (embedded wallets, Privy)
+
+A friend with **no crypto wallet at all** can still pay without leaving the page.
+From a pay page, "Create a wallet & pay" opens an embedded-wallet flow
+(`web/`, a small Vite + React app served at `/embedded/`):
+
+1. Sign in with **email or phone** — Privy provisions a self-custodial Solana
+   wallet. No seed phrase for the friend to manage.
+2. If the new wallet is empty, top it up with a **card** (reuses the on-ramp,
+   pointed at the new wallet).
+3. Tap pay — it sends the exact USDC share to the collector with the bill's
+   `reference` attached (same on-chain trick as `liveDevnet.ts`), then tells the
+   server to flip the share to PAID.
+
+```bash
+# set VITE_PRIVY_APP_ID in .env (https://dashboard.privy.io), then:
+npm run build:web      # builds web/ -> public/embedded/ (served by Express)
+npm run web            # the "Create a wallet & pay" button now works
+```
+
+Without `VITE_PRIVY_APP_ID` the embedded page renders a clear "not configured"
+notice; the wallet-QR and card paths still work. The build output
+(`public/embedded/`) is generated and git-ignored.
+
 ## Project layout
 
 | File | Purpose |
@@ -92,6 +116,7 @@ RPC_URL="https://devnet.helius-rpc.com/?api-key=..." npm run live-devnet
 | `src/liveDevnet.ts` | Real end-to-end on devnet. |
 | `src/index.ts` | CLI: demo / new / status / qr / verify. |
 | `public/index.html` | Mobile-first UI. |
+| `web/` | Vite + React embedded-wallet (Privy) pay page, built to `public/embedded/`. |
 | `src/split.selftest.ts` | Offline money-math + URL tests. |
 
 ## Security / production notes
@@ -114,7 +139,7 @@ RPC_URL="https://devnet.helius-rpc.com/?api-key=..." npm run live-devnet
 2. Complete the live devnet demo on a non-rate-limited RPC; harden `verify.ts`.
 3. Wire real on-ramp keys so "Pay with card" actually charges.
 4. Web UI buildout: saved bills, multiple groups, settle-up history, persistent store.
-5. (Stretch) Embedded-wallet no-wallet path (Privy / Coinbase CDP).
+5. ✅ Embedded-wallet no-wallet path (Privy) — `web/`, served at `/embedded/`.
 
 ## License
 
