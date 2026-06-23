@@ -112,18 +112,53 @@ adding/removing an expense invalidates it and regenerates.
 Every trip has a shareable **`/t/<token>`** link (the SPA reads the token from
 the path). Endpoints:
 
-- `POST /api/trips` — `{name, cluster?, members:[{name, wallet?}]}`
-- `GET  /api/trips` — summaries (`memberCount`, `expenseCount`, `totalCents`, `settledUp`)
-- `GET  /api/trips/:idOrToken` — full serialized trip (accepts the id **or** share token)
+- `POST /api/trips` — `{name, cluster?, members:[{name, wallet?}]}` (open; if signed
+  in, the caller is recorded as owner)
+- `GET  /api/trips` — **requires a Bearer session** (401 if anonymous); returns
+  summaries for **only the trips you own or have claimed a spot in**. Summaries
+  **never include `shareToken`** (no capability-link leak). `?mine` is accepted
+  but is now the only behavior.
+- `GET  /api/trips/:idOrToken` — full serialized trip. Authorized if the path is
+  the **share token**, or `X-Trip-Token` matches, or you're the **owner / a
+  claimed member** (Bearer); otherwise **403**. When authorized, the full detail
+  MAY include `shareToken` (you already have access).
 - `POST /api/trips/:id/members` — `{name, wallet?}`
 - `PATCH /api/trips/:id/members/:mid` — `{name?, wallet?}`
 - `POST /api/trips/:id/expenses` — `{title, total?(USD) | amountCents?(int), paidBy, participants?(default ALL), fx?}`
-- `DELETE /api/trips/:id/expenses/:eid`
+- `DELETE /api/trips/:id/expenses/:eid` — **soft-delete** (marks the expense
+  `voided`; the row is kept for audit and excluded from balances/serialization)
 - `POST /api/trips/:id/settle` — compute balances → minimal settlement (with Solana Pay links)
 - `POST /api/trips/:id/settle/verify` — check the chain, mark transfers paid
 - `GET  /t/:token` — serves the SPA for a shared trip link
 
 Trips, members, expenses, and settlements persist in **SQLite** (same `db.ts`).
+
+#### Trip write-authorization (X-Trip-Token capability + identity)
+
+Every **mutating** trip route (`POST .../expenses`, `DELETE .../expenses/:eid`,
+`POST .../members`, `PATCH .../members/:mid`, `POST .../members/:mid/claim`,
+`POST .../settle`, `POST .../settle/verify`) is authorized by `authorizeTrip`:
+
+- the request carries header **`X-Trip-Token: <shareToken>`** matching the trip, **OR**
+- it carries a valid **Bearer session** whose user is the trip **owner** or a
+  **claimed member** of that trip.
+
+If the trip doesn't exist → **404**; if it exists but the caller isn't
+authorized → **403 `{error:"not authorized for this trip"}`**. The core check is
+a pure, offline-tested function `isTripAuthorized(...)` in `src/trips.ts`.
+
+**Per-member wallet authz.** A wallet change is a settle-up payout redirect, so
+`PATCH .../members/:mid` with a `wallet` requires a **session** check beyond the
+capability token: the caller must be the trip **owner** or own that member
+(`member.user_id === req.userId`). A bare `X-Trip-Token` is **not** enough to
+rewrite someone else's payout wallet (name-only edits follow the general trip
+authz). `claim` still requires auth and sets the member wallet to the caller's
+primary wallet.
+
+**Input validation** on writes: trip name 1..120, member name 1..80, expense
+title 1..140, `amountCents` integer 1..100,000,000 ($1M cap), participants a
+non-empty member subset, ≤50 members and ≤2000 expenses per trip, and any
+provided `wallet` is validated with `new PublicKey(...)` (400 on bad input).
 
 ### Accounts & identity (progressive, optional)
 
@@ -154,18 +189,29 @@ adds identity-specific extras on top.
   current user (or `{ user: null }`).
 
 Session tokens are **stateless HMAC blobs** (no new dependency) signed with
-`SESSION_SECRET` (defaults to a dev secret — **set `SESSION_SECRET` in
-production**) and expire after 30 days.
+`SESSION_SECRET` and expire after 30 days. **`SESSION_SECRET` is required in
+production:** if it's unset and `NODE_ENV === "production"` the server **throws
+at startup**; otherwise it falls back to a known insecure dev secret and logs a
+prominent one-time warning (`using insecure default SESSION_SECRET — set
+SESSION_SECRET in production`). Always set it before deploying.
 
 Auth endpoints: `GET /api/auth/config` → `{ siws:true, privy:<bool> }`,
 `GET /api/auth/nonce`, `POST /api/auth/siws/verify`, `POST /api/auth/privy/verify`,
 `GET /api/me`, `PATCH /api/me`. Users/identities/wallets persist in **SQLite**
 (`src/users.ts`).
 
-**Honest scope:** capability links remain the access model for shared trips —
-anyone with the link can view and edit a trip. Per-member action authorization
-(only *you* can act as your claimed member) is a deliberate **fast-follow**, not
-yet enforced.
+**Write-authorization is now enforced.** A **share token is a capability**: it
+authorizes viewing and editing a trip (sent in the path for `GET /t/<token>` or
+as `X-Trip-Token` on mutating routes), but it is **scoped to that trip** and is
+no longer leaked in trip-list summaries. A Bearer session as the trip **owner**
+or a **claimed member** also authorizes. Mutating routes return **403** when
+neither holds (see *Trip write-authorization* above). **Wallet (payout)
+changes** are stricter still: a bare capability token cannot redirect another
+member's wallet — only the owner or the member themselves (via session) can.
+
+**Next security pass (not yet done):** request **idempotency** keys,
+**rate-limiting**, settlement **replay-guards**, and **share-token rotation /
+revocation** are the deliberate fast-follow.
 
 ## Money math (the guardrail)
 
@@ -174,7 +220,7 @@ shares **sum to the total exactly** (fair largest-remainder penny distribution).
 There are offline self-tests for this; keep them green:
 
 ```bash
-npm test     # 8/8 money-math + URL tests
+npm test     # 18/18 money-math + URL + authz tests
 ```
 
 ## Quick start
@@ -184,7 +230,7 @@ npm install
 cp .env.example .env      # set COLLECTOR_WALLET (and RPC_URL for live devnet)
 
 npm run typecheck         # types clean
-npm test                  # 8/8 self-tests
+npm test                  # 18/18 self-tests
 npm run demo              # $74.07 + 18% tip = $87.40 -> 29.14 / 29.13 / 29.13
 npm run web               # web app on http://localhost:3000
 ```
