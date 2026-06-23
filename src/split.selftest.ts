@@ -14,6 +14,7 @@ import {
   withTip,
 } from "./split";
 import { buildSolanaPayUrl, amountFromCents, USDC_MINT } from "./solanaPay";
+import { usdCentsFromForeignCents, usdCentsFromForeignMajor } from "./fx";
 
 let passed = 0;
 let failed = 0;
@@ -126,6 +127,31 @@ ok(
       url.includes("label=Dinner%20Time") &&
       !url.includes("+"),
     url
+  );
+}
+
+// 9) FX money math — convert foreign MINOR units to USD cents, rounding once.
+//    2450.00 THB in minor units = 245000; at ~$0.0304/THB -> $74.48.
+ok(
+  "fx: usdCentsFromForeignCents(245000, 0.0304) rounds once to 7448",
+  usdCentsFromForeignCents(245000, 0.0304) === 7448,
+  String(usdCentsFromForeignCents(245000, 0.0304))
+);
+
+// 10) USD passthrough: rate 1, no value lost converting major dollars.
+ok(
+  "fx: usdCentsFromForeignMajor(87.40, 1) === 8740 (USD passthrough)",
+  usdCentsFromForeignMajor(87.4, 1) === 8740
+);
+
+// 11) Convert-then-split sums EXACTLY: foreign total -> USD cents -> split N ways.
+{
+  const usdCents = usdCentsFromForeignCents(245000, 0.0304); // 7448
+  const parts = distributeEven(usdCents, 4);
+  ok(
+    "fx: converted total splits 4 ways and sums to the converted total exactly",
+    sum(parts) === usdCents && parts.every((p) => Number.isInteger(p)),
+    `${JSON.stringify(parts)} sum=${sum(parts)} total=${usdCents}`
   );
 }
 

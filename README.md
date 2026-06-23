@@ -65,6 +65,31 @@ Bills and groups persist in **SQLite** (`better-sqlite3`, file at `DB_PATH` or
 `POST /api/scan` takes `{ image: "data:image/...;base64,..." }` and returns the
 detected total; it falls back to `{ needsManualEntry: true }` when no key is set.
 
+### Multi-currency
+
+Travelling? Scan a **local-currency receipt** — Thai baht, euros, yen — and it's
+**auto-converted to USDC at capture**. The foreign total is converted to USD
+**once** (rounded a single time into integer cents), and from there the normal
+split math takes over so every share still sums to the total exactly.
+
+The **locked rate is recorded and shown** with its source and timestamp, so the
+table can see exactly how the conversion was made — e.g. *"Originally ฿2,450.00
+THB @ $0.0304 (as of …)"*. Rates come from a **free, no-key source**
+(`open.er-api.com`), cached ~10 minutes, with a **static offline fallback** so
+the feature still works without a network (marked `source: "fallback"`).
+
+Note honestly: **1 USDC is treated as 1 USD**. USDC is a USD stablecoin and
+normally trades at par, but that peg *can* drift in a depeg event — the recorded
+USD amount is what gets collected, not a live-reconverted figure.
+
+- `GET /api/fx/:from/:amount` returns `{ from, amount, rate, asOf, source,
+  usdCents, usdFmt }` (e.g. `GET /api/fx/THB/2450`). USD quotes return rate `1`.
+- `POST /api/scan` echoes `converted`, `originalAmount/originalCurrency`,
+  `originalFmt`, `rate`, `fxAsOf`, `fxSource` for foreign receipts.
+- `POST /api/bills` accepts an optional `fx` field
+  (`{ sourceCurrency, sourceAmount, rate, asOf, source }`); bills then record
+  that **FX provenance** (surfaced as `fxNote` in the serialized bill).
+
 ## Money math (the guardrail)
 
 All money is **integer cents** — never floats. Every split is computed so the

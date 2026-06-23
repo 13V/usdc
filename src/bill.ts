@@ -35,6 +35,24 @@ export interface BillParticipant {
   signature?: string;
 }
 
+/**
+ * FX provenance recorded on a bill when its total came from a foreign-currency
+ * receipt. The total is always stored in USD cents; this is the locked record
+ * of how we got there, for transparency/fairness.
+ */
+export interface BillFx {
+  /** ISO code of the original currency, e.g. "THB". */
+  sourceCurrency: string;
+  /** Original major amount in that currency, e.g. 2450.00. */
+  sourceAmount: number;
+  /** USD per 1 unit of the source currency, locked at capture. */
+  rate: number;
+  /** When the rate was as-of. */
+  asOf: string;
+  /** Rate source, e.g. "open.er-api.com" or "fallback". */
+  source: string;
+}
+
 export interface Bill {
   id: string;
   title: string;
@@ -48,6 +66,8 @@ export interface Bill {
   totalCents: number;
   mode: SplitMode;
   participants: BillParticipant[];
+  /** Set when the total was converted from a foreign currency. */
+  fx?: BillFx;
 }
 
 export interface CreateBillInput {
@@ -59,6 +79,7 @@ export interface CreateBillInput {
   mode: SplitMode;
   weights?: number[];
   customCents?: number[];
+  fx?: BillFx;
 }
 
 export function createBill(input: CreateBillInput): Bill {
@@ -102,6 +123,7 @@ export function createBill(input: CreateBillInput): Bill {
     totalCents: input.totalCents,
     mode: input.mode,
     participants,
+    ...(input.fx ? { fx: input.fx } : {}),
   };
 }
 

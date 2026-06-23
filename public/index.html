@@ -92,6 +92,34 @@
       </div>
     </div>
 
+    <button id="toggleFx" class="toggle-link" type="button">Amount in another currency? ▾</button>
+    <div id="fxBox" style="display:none">
+      <div class="row">
+        <div style="flex:0 0 110px">
+          <label>Currency</label>
+          <select id="fxCurrency">
+            <option value="USD" selected>USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="THB">THB</option>
+            <option value="IDR">IDR</option>
+            <option value="JPY">JPY</option>
+            <option value="AUD">AUD</option>
+            <option value="VND">VND</option>
+            <option value="MXN">MXN</option>
+            <option value="INR">INR</option>
+            <option value="TRY">TRY</option>
+          </select>
+        </div>
+        <div>
+          <label>Amount</label>
+          <input id="fxAmount" type="number" step="0.01" placeholder="e.g. 2450" />
+        </div>
+      </div>
+      <button id="fxConvert" class="secondary" type="button">Convert to USD</button>
+      <div id="fxStatus" class="muted"></div>
+    </div>
+
     <label>How many people?</label>
     <div class="stepper">
       <button id="countMinus" class="secondary" type="button" aria-label="Fewer people">−</button>
@@ -135,6 +163,7 @@
     <div id="settledBanner" class="badge paid" style="display:none; font-size:.9rem; padding:8px 12px;">✓ Settled — everyone paid</div>
     <div class="summary"><span id="billTitle"></span><span id="billTotal"></span></div>
     <div class="summary muted"><span id="collected"></span><span id="outstanding"></span></div>
+    <div id="billFx" class="muted" style="display:none; margin:-4px 0 8px"></div>
     <div id="people"></div>
     <button id="check" class="secondary">Check payments</button>
     <button id="reset" class="secondary">New bill</button>
@@ -145,6 +174,10 @@ const $ = (id) => document.getElementById(id);
 let currentBill = null;
 let headcount = 2;
 let selectedGroupId = null;
+// FX provenance captured at scan/convert time, attached to the bill on create.
+let pendingFx = null;
+// Guard so our own writes to #total don't clear pendingFx (only user edits do).
+let programmaticTotal = false;
 
 // Persist the collector wallet on this device so you set it once.
 const WALLET_KEY = "divvy.collector";
@@ -211,6 +244,61 @@ $("names").addEventListener("input", () => {
   }
 });
 
+// ── Multi-currency / FX ──────────────────────────────────────────────────────
+// Programmatic writes to #total (scan/convert) must not clear pendingFx; only a
+// real user edit should. setTotal() flips a guard around the assignment.
+function setTotal(val) {
+  programmaticTotal = true;
+  $("total").value = val;
+  programmaticTotal = false;
+}
+$("total").addEventListener("input", () => {
+  if (!programmaticTotal) pendingFx = null;
+});
+
+// Collapsed "Amount in another currency?" disclosure.
+$("toggleFx").onclick = () => {
+  const box = $("fxBox");
+  const open = box.style.display === "none";
+  box.style.display = open ? "block" : "none";
+  $("toggleFx").textContent = open ? "Amount in another currency? ▴" : "Amount in another currency? ▾";
+};
+
+// Manual converter: GET /api/fx/<cur>/<amount> -> fill #total + capture pendingFx.
+$("fxConvert").onclick = async () => {
+  const cur = $("fxCurrency").value;
+  const amount = Number($("fxAmount").value);
+  if (cur === "USD") {
+    $("fxStatus").textContent = "Already in USD — enter it in the Total field.";
+    return;
+  }
+  if (!(amount > 0)) {
+    $("fxStatus").textContent = "Enter an amount to convert.";
+    return;
+  }
+  $("fxStatus").textContent = "Converting…";
+  try {
+    const res = await fetch(`/api/fx/${encodeURIComponent(cur)}/${encodeURIComponent(amount)}`);
+    const data = await res.json();
+    if (!res.ok) {
+      $("fxStatus").textContent = data.error || "Couldn't convert — try again or enter USD manually.";
+      return;
+    }
+    setTotal((data.usdCents / 100).toFixed(2));
+    pendingFx = {
+      sourceCurrency: data.from,
+      sourceAmount: data.amount,
+      rate: data.rate,
+      asOf: data.asOf,
+      source: data.source,
+    };
+    $("fxStatus").textContent =
+      `${data.amount} ${data.from} ≈ ${data.usdFmt}  ·  1 ${data.from} = $${data.rate}, as of ${data.asOf} — rate locked.`;
+  } catch (err) {
+    $("fxStatus").textContent = "Conversion failed — enter USD manually.";
+  }
+};
+
 // Scan a receipt photo -> prefill the total.
 $("receipt").addEventListener("change", async (e) => {
   const file = e.target.files && e.target.files[0];
@@ -229,10 +317,24 @@ $("receipt").addEventListener("change", async (e) => {
     });
     const data = await res.json();
     if (res.ok && Number(data.total) > 0) {
-      $("total").value = data.total;
+      setTotal(data.total); // USD used for the split
       $("tip").value = 0; // tip already in the scanned total if printed
       if (data.merchant) $("title").value = data.merchant;
-      $("scanStatus").textContent = `Detected ${data.totalFmt} (${data.confidence} confidence). Adjust if needed.`;
+      if (data.converted) {
+        pendingFx = {
+          sourceCurrency: data.originalCurrency,
+          sourceAmount: data.originalAmount,
+          rate: data.rate,
+          asOf: data.fxAsOf,
+          source: data.fxSource,
+        };
+        $("scanStatus").textContent =
+          `${data.originalFmt} ${data.originalCurrency} ≈ ${data.totalFmt}  ·  ` +
+          `1 ${data.originalCurrency} = $${data.rate}, as of ${data.fxAsOf} — rate locked.`;
+      } else {
+        pendingFx = null;
+        $("scanStatus").textContent = `Detected ${data.totalFmt} (${data.confidence} confidence). Adjust if needed.`;
+      }
     } else if (data.needsManualEntry) {
       $("scanStatus").textContent = "Receipt scanning isn't configured — enter the total below.";
     } else {
@@ -274,6 +376,9 @@ async function createBill() {
     body.weights = $("weights").value.split(",").map(Number);
   }
 
+  // Attach FX provenance when the total came from a foreign-currency scan/convert.
+  if (pendingFx) body.fx = pendingFx;
+
   const res = await fetch("/api/bills", {
     method: "POST", headers: {"content-type":"application/json"}, body: JSON.stringify(body)
   });
@@ -292,6 +397,9 @@ function render(bill) {
   $("billTotal").textContent = bill.totalFmt;
   $("collected").textContent = "Collected " + bill.collectedFmt;
   $("outstanding").textContent = "Outstanding " + bill.outstandingFmt;
+  const fxNote = fxNoteFor(bill);
+  if (fxNote) { $("billFx").textContent = fxNote; $("billFx").style.display = "block"; }
+  else { $("billFx").style.display = "none"; }
   const people = $("people");
   people.innerHTML = "";
   for (const p of bill.participants) {
@@ -306,6 +414,17 @@ function render(bill) {
       <span class="badge ${p.paid ? "paid" : ""}">${p.paid ? "✓ paid" : "owes"}</span>`;
     people.appendChild(div);
   }
+}
+
+// FX provenance line — prefer the server's fxNote; otherwise build from fx object.
+function fxNoteFor(bill) {
+  if (!bill) return "";
+  if (bill.fxNote) return bill.fxNote;
+  const fx = bill.fx;
+  if (fx && fx.sourceCurrency) {
+    return `Originally ${fx.sourceAmount} ${fx.sourceCurrency} @ $${fx.rate}`;
+  }
+  return "";
 }
 
 // Tiny client-side QR via a public image endpoint fallback; the per-person pay
@@ -349,9 +468,12 @@ async function showHistory() {
       const item = document.createElement("div");
       item.className = "hist-item";
       const badge = b.settled ? '<span class="badge paid">Settled ✓</span>' : '';
+      const fxNote = fxNoteFor(b);
+      const fxLine = fxNote ? `<div class="muted" style="margin-top:4px">${fxNote}</div>` : '';
       item.innerHTML = `
         <div class="top"><span>${b.title || "Bill"}</span><span>${b.totalFmt || ""}</span></div>
         <div class="sub muted"><span>Collected ${b.collectedFmt || ""}</span><span>Outstanding ${b.outstandingFmt || ""}</span></div>
+        ${fxLine}
         <div style="margin-top:6px">${badge}</div>`;
       item.onclick = () => loadBill(b.id);
       list.appendChild(item);

@@ -17,7 +17,7 @@ import "dotenv/config";
 import * as path from "path";
 import express, { Request, Response } from "express";
 import { Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
-import { createBill, Bill, collectedCents, outstandingCents } from "./bill";
+import { createBill, Bill, BillFx, collectedCents, outstandingCents } from "./bill";
 import { store } from "./store";
 import {
   listGroups,
@@ -32,6 +32,12 @@ import { cardOptions } from "./onramp";
 import { fmt, toCents, withTip, SplitMode } from "./split";
 import { Cluster } from "./solanaPay";
 import { scanReceipt, parseDataUrl, NoScanProvider } from "./scan";
+import {
+  convertForeignCentsToUsd,
+  convertMajorToUsd,
+  formatForeign,
+  isSupported,
+} from "./fx";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
@@ -63,6 +69,7 @@ interface CreateBillBody {
   groupId?: string;
   count?: number;
   saveGroupName?: string;
+  fx?: BillFx;
 }
 
 app.post("/api/bills", (req: Request, res: Response) => {
@@ -107,6 +114,7 @@ app.post("/api/bills", (req: Request, res: Response) => {
       mode: body.mode || "equal",
       weights: body.weights,
       customCents: body.customCents,
+      fx: body.fx,
     });
     store.put(bill);
     res.json(serializeBill(bill));
@@ -185,11 +193,41 @@ app.post("/api/scan", async (req: Request, res: Response) => {
   try {
     const { data, mediaType } = parseDataUrl(image);
     const result = await scanReceipt(data, mediaType);
+
+    // If the receipt is in a foreign currency, convert it to USD ONCE here so
+    // the split runs on USD cents. The original amount + locked rate are echoed
+    // back for transparency. Any conversion problem falls back to "as today".
+    if (result.currency && result.currency !== "USD" && isSupported(result.currency)) {
+      try {
+        const { usdCents, rate, asOf, source } = await convertForeignCentsToUsd(
+          result.totalCents,
+          result.currency
+        );
+        return res.json({
+          total: (usdCents / 100).toFixed(2), // USD dollars used for the split
+          totalFmt: fmt(usdCents), // USD
+          currency: result.currency,
+          merchant: result.merchant,
+          confidence: result.confidence,
+          converted: true,
+          originalAmount: result.totalCents / 100,
+          originalCurrency: result.currency,
+          originalFmt: formatForeign(result.totalCents / 100, result.currency),
+          rate,
+          fxAsOf: asOf,
+          fxSource: source,
+        });
+      } catch {
+        /* fall through to the USD/passthrough response below */
+      }
+    }
+
     res.json({
       ...result,
       totalFmt: fmt(result.totalCents),
       // Dollars for prefilling the form (the client re-derives cents via the API).
       total: (result.totalCents / 100).toFixed(2),
+      converted: false,
     });
   } catch (err) {
     if (err instanceof NoScanProvider) {
@@ -197,6 +235,33 @@ app.post("/api/scan", async (req: Request, res: Response) => {
       return res.status(503).json({ needsManualEntry: true, error: (err as Error).message });
     }
     res.status(502).json({ error: `scan failed: ${(err as Error).message}` });
+  }
+});
+
+// FX quote: convert a local-currency MAJOR amount to USD at the current locked
+// rate. e.g. GET /api/fx/THB/2450 -> USD value + rate/source/timestamp.
+app.get("/api/fx/:from/:amount", async (req: Request, res: Response) => {
+  const from = String(req.params.from || "").toUpperCase();
+  const amount = Number(req.params.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return res.status(400).json({ error: "bad amount" });
+  }
+  if (!isSupported(from)) {
+    return res.status(400).json({ error: `unsupported currency: ${from}` });
+  }
+  try {
+    const { usdCents, rate, asOf, source } = await convertMajorToUsd(amount, from);
+    res.json({
+      from,
+      amount,
+      rate,
+      asOf,
+      source,
+      usdCents,
+      usdFmt: fmt(usdCents),
+    });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
   }
 });
 
@@ -233,12 +298,19 @@ app.get("/pay/:id/:name", async (req: Request, res: Response) => {
 // ---- helpers --------------------------------------------------------------
 
 function serializeBill(bill: Bill) {
+  const fxNote = bill.fx
+    ? `Originally ${formatForeign(bill.fx.sourceAmount, bill.fx.sourceCurrency)} ${
+        bill.fx.sourceCurrency
+      } @ $${bill.fx.rate.toFixed(4)} (as of ${bill.fx.asOf})`
+    : undefined;
   return {
     ...bill,
     totalFmt: fmt(bill.totalCents),
     collectedFmt: fmt(collectedCents(bill)),
     outstandingFmt: fmt(outstandingCents(bill)),
     settled: outstandingCents(bill) === 0,
+    fx: bill.fx ?? null,
+    ...(fxNote ? { fxNote } : {}),
     participants: bill.participants.map((p) => ({
       ...p,
       amountFmt: fmt(p.amountCents),
