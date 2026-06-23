@@ -22,7 +22,7 @@ import {
 import { fmt, toCents, withTip, SplitMode } from "./split";
 import { Cluster } from "./solanaPay";
 import { qrToTerminal } from "./qr";
-import { findPayment } from "./verify";
+import { validatePayment } from "./verify";
 
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
 const COLLECTOR = process.env.COLLECTOR_WALLET || "11111111111111111111111111111111";
@@ -116,11 +116,16 @@ async function cmdVerify(id: string): Promise<void> {
   const connection = new Connection(rpcUrl(bill.cluster), "confirmed");
   for (const p of bill.participants) {
     if (p.paid) continue;
-    const found = await findPayment(connection, p.reference);
-    if (found) {
+    const valid = await validatePayment(connection, {
+      reference: p.reference,
+      recipient: bill.collector,
+      splToken: bill.splToken,
+      amountCents: p.amountCents,
+    });
+    if (valid.ok) {
       p.paid = true;
-      p.signature = found.signature;
-      console.log(`✓ ${p.name} paid — ${found.signature}`);
+      p.signature = valid.signature;
+      console.log(`✓ ${p.name} paid (validated) — ${valid.signature}`);
     }
   }
   saveBill(bill);

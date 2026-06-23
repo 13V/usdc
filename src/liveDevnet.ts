@@ -125,21 +125,28 @@ async function main(): Promise<void> {
   if (!found) throw new Error("findPayment did not locate the payment");
   console.log(`✓ findPayment matched signature ${found.signature} at slot ${found.slot}`);
 
-  // 6) Harden: validate exact amount + token at finalized.
-  console.log("Validating exact amount + token (finalized, may take a few seconds)…");
-  const valid = await validatePayment(connection, {
+  // 6) Harden: validate exact amount + recipient + token at "finalized". This
+  // is the production gate — poll until the tx finalizes (~15-30s on devnet).
+  console.log("Validating exact amount + recipient + token at finalized (polling)…");
+  const expected = {
     reference: reference.toBase58(),
     recipient: collector.publicKey.toBase58(),
     splToken: mint.toBase58(),
     amountCents: target.cents,
-  });
-  console.log(
-    valid.ok
-      ? `✓ validatePayment OK (sig ${valid.signature})`
-      : `… validatePayment not yet: ${valid.reason}`
-  );
+  };
+  let valid = await validatePayment(connection, expected);
+  for (let i = 0; i < 20 && !valid.ok; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    valid = await validatePayment(connection, expected);
+  }
+  if (valid.ok) {
+    console.log(`✓ validatePayment OK — finalized, exact amount + collector ATA (sig ${valid.signature})`);
+  } else {
+    console.log(`✗ validatePayment failed: ${valid.reason}`);
+    throw new Error("validatePayment did not confirm the transfer");
+  }
 
-  console.log("\nDONE — a real on-chain transfer flipped a payer to PAID.");
+  console.log("\nDONE — a real on-chain transfer was detected AND validated; payer is PAID.");
 }
 
 main().catch((err) => {

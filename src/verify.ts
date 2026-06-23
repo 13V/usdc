@@ -19,6 +19,7 @@ import {
   ParsedInstruction,
   PartiallyDecodedInstruction,
 } from "@solana/web3.js";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 
 export interface FoundPayment {
   signature: string;
@@ -70,9 +71,10 @@ export interface ValidationResult {
  * expected USDC amount to the expected recipient, at "finalized" commitment.
  *
  * This is a best-effort parser over the parsed transaction. It looks for an
- * spl-token transfer/transferChecked instruction whose mint, destination owner,
- * and amount match what we asked for. Treat a `false` as "not yet verifiable",
- * not necessarily "fraud" — the tx may simply not be finalized yet.
+ * spl-token transfer/transferChecked instruction whose token, amount, AND
+ * destination (the collector's associated token account) all match what we
+ * asked for. Treat a `false` as "not yet verifiable", not necessarily "fraud" —
+ * the tx may simply not be finalized yet (use isFinalizing()).
  */
 export async function validatePayment(
   connection: Connection,
@@ -93,6 +95,10 @@ export async function validatePayment(
 
   // Expected raw amount: USDC has 6 decimals; cents -> base units = cents * 10^4.
   const expectedBaseUnits = BigInt(expected.amountCents) * 10000n;
+  // The collector receives into their associated token account for this mint.
+  const mintKey = new PublicKey(expected.splToken);
+  const recipientKey = new PublicKey(expected.recipient);
+  const expectedAta = (await getAssociatedTokenAddress(mintKey, recipientKey)).toBase58();
 
   const instructions = tx.transaction.message
     .instructions as (ParsedInstruction | PartiallyDecodedInstruction)[];
@@ -103,24 +109,25 @@ export async function validatePayment(
     const info = (ix.parsed as { type?: string; info?: Record<string, unknown> }) || {};
     const type = info.type;
     const d = (info.info || {}) as Record<string, unknown>;
+    const destination = String(d.destination ?? "");
 
     if (type === "transferChecked") {
       const mint = String(d.mint ?? "");
       const tokenAmount = d.tokenAmount as { amount?: string } | undefined;
       const amount = BigInt(tokenAmount?.amount ?? "0");
-      if (mint === expected.splToken && amount === expectedBaseUnits) {
-        // destination here is an ATA; a full check resolves its owner to the
-        // recipient. We at least matched mint + exact amount.
+      // Exact match: token mint, amount, AND destination = collector's ATA.
+      if (mint === expected.splToken && amount === expectedBaseUnits && destination === expectedAta) {
         return { ok: true, signature };
       }
     } else if (type === "transfer") {
-      // Plain `transfer` doesn't carry the mint; amount is in base units.
+      // Plain `transfer` doesn't carry the mint; the destination ATA (derived
+      // from mint+recipient) is what ties it to the right token and collector.
       const amount = BigInt(String(d.amount ?? "0"));
-      if (amount === expectedBaseUnits) {
+      if (amount === expectedBaseUnits && destination === expectedAta) {
         return { ok: true, signature };
       }
     }
   }
 
-  return { ok: false, signature, reason: "no matching transfer found in transaction" };
+  return { ok: false, signature, reason: "no matching transfer to the collector found" };
 }

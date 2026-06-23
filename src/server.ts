@@ -26,7 +26,7 @@ import {
   getGroup,
   touchGroup,
 } from "./groups";
-import { findPayment } from "./verify";
+import { validatePayment } from "./verify";
 import { qrToDataUrl } from "./qr";
 import { cardOptions } from "./onramp";
 import { fmt, toCents, withTip, SplitMode } from "./split";
@@ -133,10 +133,17 @@ app.post("/api/bills/:id/verify", async (req: Request, res: Response) => {
     const updated: string[] = [];
     for (const p of bill.participants) {
       if (p.paid) continue;
-      const found = await findPayment(connection, p.reference);
-      if (found) {
+      // Production gate: only mark PAID once the transfer is validated at
+      // "finalized" with the exact amount, token, and collector ATA.
+      const valid = await validatePayment(connection, {
+        reference: p.reference,
+        recipient: bill.collector,
+        splToken: bill.splToken,
+        amountCents: p.amountCents,
+      });
+      if (valid.ok) {
         p.paid = true;
-        p.signature = found.signature;
+        p.signature = valid.signature;
         updated.push(p.name);
       }
     }

@@ -159,10 +159,11 @@ notice; the wallet-QR and card paths still work. The build output
 
 - **Devnet first.** Never point at mainnet without explicit review. `CLUSTER`
   defaults to `devnet`.
-- **Verification must be hardened.** A confirmed signature on a reference means
-  "something happened". Production must `validatePayment` — confirm exact amount,
-  recipient, and token mint at **`finalized`** — before marking PAID.
-  `validatePayment()` sketches this; wire it into the verify endpoints.
+- **Verification is hardened.** A confirmed signature on a reference only means
+  "something happened". The server + CLI verify paths mark PAID only after
+  `validatePayment` confirms the exact amount, the collector's associated token
+  account as destination, and the token mint, all at **`finalized`** commitment.
+  `findPayment` (confirmed) remains as a fast "seen it" hint used by the live demo.
 - **On-ramp keys.** The "Pay with card" URLs are correctly shaped but won't
   charge until you add real MoonPay/Coinbase keys (MoonPay URLs must be
   HMAC-signed server-side).
@@ -172,7 +173,9 @@ notice; the wallet-QR and card paths still work. The build output
 ## Roadmap
 
 1. ✅ Repo stood up; typecheck clean; 8/8 self-tests; web API working.
-2. Complete the live devnet demo on a non-rate-limited RPC; harden `verify.ts`.
+2. ✅ Live devnet demo on a Helius RPC — a real on-chain transfer flips a payer
+   to PAID; `verify.ts` hardened with `validatePayment` (exact amount + collector
+   ATA + token mint at `finalized`), wired into the server + CLI verify paths.
 3. Wire real on-ramp keys so "Pay with card" actually charges.
 4. ✅ Web UI buildout: headcount fast-path, saved groups, settle-up history, SQLite store.
 5. ✅ Embedded-wallet no-wallet path (Privy) — `web/`, served at `/embedded/`.
