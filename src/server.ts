@@ -73,6 +73,9 @@ import {
   formatForeign,
   isSupported,
 } from "./fx";
+import { dashboardRouter } from "./dashboard";
+import { iouRouter } from "./ious";
+import { activityRouter } from "./activity";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
@@ -91,6 +94,12 @@ app.use(express.json({ limit: "12mb" }));
 // NEVER blocks — anonymous/capability-link flows stay fully usable.
 app.use(authOptional);
 app.use(express.static(path.resolve(process.cwd(), "public")));
+
+// Hub feature routers (cross-trip balances, one-off IOUs, activity feed).
+// Each defines absolute /api paths and guards its own routes with requireAuth.
+app.use(dashboardRouter);
+app.use(iouRouter);
+app.use(activityRouter);
 
 // ---- Auth & identity (progressive, optional) ------------------------------
 

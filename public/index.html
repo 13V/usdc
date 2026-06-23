@@ -84,8 +84,10 @@
 
   <div class="tabs">
     <button id="tabNew">New bill</button>
-    <button id="tabHistory" class="secondary">Saved bills</button>
+    <button id="tabHome" class="secondary">Balances</button>
     <button id="tabTrips" class="secondary">Trips</button>
+    <button id="tabActivity" class="secondary">Activity</button>
+    <button id="tabHistory" class="secondary">Saved bills</button>
   </div>
 
   <section id="form">
@@ -180,6 +182,8 @@
   </section>
 
   <section id="trips" style="display:none"></section>
+  <section id="home" style="display:none"></section>
+  <section id="activity" style="display:none"></section>
 
   <section id="result" style="display:none">
     <div id="settledBanner" class="badge paid" style="display:none; font-size:.9rem; padding:8px 12px;">✓ Settled — everyone paid</div>
@@ -414,6 +418,8 @@ function render(bill) {
   $("form").style.display = "none";
   $("history").style.display = "none";
   $("trips").style.display = "none";
+  $("home").style.display = "none";
+  $("activity").style.display = "none";
   $("result").style.display = "block";
   $("settledBanner").style.display = bill.settled ? "block" : "none";
   $("billTitle").textContent = bill.title;
@@ -467,11 +473,17 @@ async function check() {
 }
 
 // ── History view ─────────────────────────────────────────────────────────────
+function hideAux() {
+  $("home").style.display = "none";
+  $("activity").style.display = "none";
+}
+
 function showForm() {
   $("form").style.display = "block";
   $("result").style.display = "none";
   $("history").style.display = "none";
   $("trips").style.display = "none";
+  hideAux();
 }
 
 // Switch to the Trips experience (rendered by trips.js into #trips).
@@ -480,13 +492,37 @@ function showTrips() {
   $("result").style.display = "none";
   $("history").style.display = "none";
   $("trips").style.display = "block";
+  hideAux();
   if (window.Trips && typeof window.Trips.show === "function") window.Trips.show();
+}
+
+// Cross-trip balances dashboard (rendered by home.js into #home).
+function showHome() {
+  $("form").style.display = "none";
+  $("result").style.display = "none";
+  $("history").style.display = "none";
+  $("trips").style.display = "none";
+  $("activity").style.display = "none";
+  $("home").style.display = "block";
+  if (window.Home && typeof window.Home.show === "function") window.Home.show();
+}
+
+// Activity feed (rendered by activity.js into #activity).
+function showActivity() {
+  $("form").style.display = "none";
+  $("result").style.display = "none";
+  $("history").style.display = "none";
+  $("trips").style.display = "none";
+  $("home").style.display = "none";
+  $("activity").style.display = "block";
+  if (window.Activity && typeof window.Activity.show === "function") window.Activity.show();
 }
 
 async function showHistory() {
   $("form").style.display = "none";
   $("result").style.display = "none";
   $("trips").style.display = "none";
+  hideAux();
   $("history").style.display = "block";
   const list = $("histList");
   list.innerHTML = '<p class="muted">Loading…</p>';
@@ -536,6 +572,8 @@ $("histNew").onclick = showForm;
 $("tabNew").onclick = showForm;
 $("tabHistory").onclick = showHistory;
 $("tabTrips").onclick = showTrips;
+$("tabHome").onclick = showHome;
+$("tabActivity").onclick = showActivity;
 
 // If we arrived via a share link (/t/<token>), trips.js auto-opens the trip;
 // surface the Trips section so its detail view is visible on first paint.
@@ -627,6 +665,8 @@ document.addEventListener("DOMContentLoaded", () => {
 </script>
 <script src="/auth.js"></script>
 <script src="/trips.js"></script>
+<script src="/home.js"></script>
+<script src="/activity.js"></script>
 <script>
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 </script>
