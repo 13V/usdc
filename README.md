@@ -51,6 +51,17 @@ The fast path for "we're out, I'll front it":
    with their own wallet (scan QR), a card (MoonPay/Coinbase), or by creating an
    embedded wallet in-page (Privy). You watch who's paid.
 
+The **default split is just a headcount stepper** — scan the total, tap "− N +",
+generate. No names needed. Want named people? Expand "Name them / use a group":
+type names once and **save them as a group** (`me, you, Andy`) so next time it's
+one tap. Every bill is saved to a **settle-up history** ("Saved bills") with a
+Settled ✓ badge, and you can reopen any past bill to re-check payments.
+
+Bills and groups persist in **SQLite** (`better-sqlite3`, file at `DB_PATH` or
+`./divvy.db`) — they survive a restart. New endpoints: `GET/POST /api/groups`,
+`DELETE /api/groups/:id`; `POST /api/bills` also accepts `count` (auto-names
+`Person 1..N`) or `groupId`.
+
 `POST /api/scan` takes `{ image: "data:image/...;base64,..." }` and returns the
 detected total; it falls back to `{ needsManualEntry: true }` when no key is set.
 
@@ -130,7 +141,9 @@ notice; the wallet-QR and card paths still work. The build output
 | `src/split.ts` | Money math. Integer cents, fair penny distribution. `dollars`, `fmt`, `toCents`, `withTip`. |
 | `src/solanaPay.ts` | Builds Solana Pay transfer-request URLs; USDC mints; references. |
 | `src/bill.ts` | Bill / participant model; `createBill()`; JSON file persistence. |
-| `src/store.ts` | In-memory multi-bill store for the web app (swap for a DB). |
+| `src/store.ts` | SQLite-backed multi-bill store (`db.ts`); same sync interface. |
+| `src/db.ts` | Opens the SQLite database; creates `bills` + `groups` tables. |
+| `src/groups.ts` | Saved-group model + SQLite CRUD (one-tap "me, you, Andy"). |
 | `src/verify.ts` | `findPayment()` by reference; `validatePayment()` (exact amount/token, finalized). |
 | `src/qr.ts` | Terminal + PNG + data-URL QR rendering. |
 | `src/onramp.ts` | No-wallet path: MoonPay / Coinbase Onramp "Pay with card" URLs. |
@@ -161,7 +174,7 @@ notice; the wallet-QR and card paths still work. The build output
 1. ✅ Repo stood up; typecheck clean; 8/8 self-tests; web API working.
 2. Complete the live devnet demo on a non-rate-limited RPC; harden `verify.ts`.
 3. Wire real on-ramp keys so "Pay with card" actually charges.
-4. Web UI buildout: saved bills, multiple groups, settle-up history, persistent store.
+4. ✅ Web UI buildout: headcount fast-path, saved groups, settle-up history, SQLite store.
 5. ✅ Embedded-wallet no-wallet path (Privy) — `web/`, served at `/embedded/`.
 
 ## License

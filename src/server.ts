@@ -19,6 +19,13 @@ import express, { Request, Response } from "express";
 import { Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
 import { createBill, Bill, collectedCents, outstandingCents } from "./bill";
 import { store } from "./store";
+import {
+  listGroups,
+  createGroup,
+  deleteGroup,
+  getGroup,
+  touchGroup,
+} from "./groups";
 import { findPayment } from "./verify";
 import { qrToDataUrl } from "./qr";
 import { cardOptions } from "./onramp";
@@ -53,14 +60,40 @@ interface CreateBillBody {
   customCents?: number[];
   collector?: string;
   cluster?: Cluster;
+  groupId?: string;
+  count?: number;
+  saveGroupName?: string;
 }
 
 app.post("/api/bills", (req: Request, res: Response) => {
   try {
     const body = req.body as CreateBillBody;
-    const names = (body.names || []).map((n) => String(n).trim()).filter(Boolean);
+
+    // Resolve participant names. Precedence: groupId > explicit names > count.
+    let names = (body.names || []).map((n) => String(n).trim()).filter(Boolean);
+
+    if (body.groupId) {
+      const group = getGroup(body.groupId);
+      if (!group) return res.status(404).json({ error: "group not found" });
+      names = group.members.map((m) => String(m).trim()).filter(Boolean);
+      touchGroup(body.groupId);
+    } else if (names.length === 0 && Number.isInteger(body.count) && (body.count as number) > 0) {
+      names = Array.from({ length: body.count as number }, (_v, i) => `Person ${i + 1}`);
+    }
+
     if (names.length === 0) return res.status(400).json({ error: "need at least one name" });
     if (body.total == null) return res.status(400).json({ error: "need a total" });
+
+    // Best-effort: persist this set of names as a reusable group. Never let a
+    // group-save failure block bill creation.
+    const saveGroupName = body.saveGroupName && String(body.saveGroupName).trim();
+    if (saveGroupName) {
+      try {
+        createGroup(saveGroupName, names);
+      } catch {
+        /* ignore — saving a group is a convenience, not a requirement */
+      }
+    }
 
     let totalCents = toCents(body.total);
     if (body.tipPercent) totalCents = withTip(totalCents, body.tipPercent);
@@ -107,10 +140,32 @@ app.post("/api/bills/:id/verify", async (req: Request, res: Response) => {
         updated.push(p.name);
       }
     }
+    store.put(bill);
     res.json({ ...serializeBill(bill), updated });
   } catch (err) {
     res.status(502).json({ error: `verify failed: ${(err as Error).message}` });
   }
+});
+
+// ---- Saved groups ---------------------------------------------------------
+
+app.get("/api/groups", (_req: Request, res: Response) => {
+  res.json(listGroups());
+});
+
+app.post("/api/groups", (req: Request, res: Response) => {
+  const body = req.body as { name?: string; members?: string[] };
+  try {
+    const group = createGroup(body.name || "", body.members || []);
+    res.json(group);
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+app.delete("/api/groups/:id", (req: Request, res: Response) => {
+  if (deleteGroup(req.params.id)) return res.json({ ok: true });
+  res.status(404).json({ error: "not found" });
 });
 
 // Scan a receipt photo -> detected total (so the host can skip typing it).
@@ -176,6 +231,7 @@ function serializeBill(bill: Bill) {
     totalFmt: fmt(bill.totalCents),
     collectedFmt: fmt(collectedCents(bill)),
     outstandingFmt: fmt(outstandingCents(bill)),
+    settled: outstandingCents(bill) === 0,
     participants: bill.participants.map((p) => ({
       ...p,
       amountFmt: fmt(p.amountCents),
