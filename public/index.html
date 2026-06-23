@@ -36,6 +36,15 @@
   <div class="tag">Split the bill. Collect in USDC on Solana — instant, ~free, no chargebacks.</div>
 
   <section id="form">
+    <label>Your wallet — where you collect</label>
+    <input id="collector" placeholder="Your Solana wallet address (base58)" />
+    <p class="muted">Saved on this device. Friends' payments land here. Attach a crypto card
+      (Coinbase Card, Crypto.com, etc.) to this wallet to spend what you collect.</p>
+
+    <label>Scan the receipt (optional)</label>
+    <input id="receipt" type="file" accept="image/*" capture="environment" />
+    <div id="scanStatus" class="muted"></div>
+
     <label>What's it for?</label>
     <input id="title" value="Dinner" />
 
@@ -78,6 +87,45 @@
 const $ = (id) => document.getElementById(id);
 let currentBill = null;
 
+// Persist the collector wallet on this device so you set it once.
+const WALLET_KEY = "divvy.collector";
+$("collector").value = localStorage.getItem(WALLET_KEY) || "";
+$("collector").addEventListener("change", () => {
+  localStorage.setItem(WALLET_KEY, $("collector").value.trim());
+});
+
+// Scan a receipt photo -> prefill the total.
+$("receipt").addEventListener("change", async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  $("scanStatus").textContent = "Reading receipt…";
+  try {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+    const res = await fetch("/api/scan", {
+      method: "POST", headers: {"content-type":"application/json"},
+      body: JSON.stringify({ image: dataUrl })
+    });
+    const data = await res.json();
+    if (res.ok && Number(data.total) > 0) {
+      $("total").value = data.total;
+      $("tip").value = 0; // tip already in the scanned total if printed
+      if (data.merchant) $("title").value = data.merchant;
+      $("scanStatus").textContent = `Detected ${data.totalFmt} (${data.confidence} confidence). Adjust if needed.`;
+    } else if (data.needsManualEntry) {
+      $("scanStatus").textContent = "Receipt scanning isn't configured — enter the total below.";
+    } else {
+      $("scanStatus").textContent = data.error || "Couldn't read the total — enter it below.";
+    }
+  } catch (err) {
+    $("scanStatus").textContent = "Scan failed — enter the total below.";
+  }
+});
+
 async function createBill() {
   const body = {
     title: $("title").value,
@@ -86,6 +134,11 @@ async function createBill() {
     names: $("names").value.split(",").map(s => s.trim()).filter(Boolean),
     mode: $("mode").value,
   };
+  const collector = $("collector").value.trim();
+  if (collector) {
+    body.collector = collector;
+    localStorage.setItem(WALLET_KEY, collector);
+  }
   if (body.mode === "weighted" && $("weights").value.trim()) {
     body.weights = $("weights").value.split(",").map(Number);
   }

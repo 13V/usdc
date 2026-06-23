@@ -22,6 +22,7 @@
     "live-devnet": "ts-node src/liveDevnet.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.1",
     "@privy-io/react-auth": "^2.13.0",
     "@solana/spl-token": "^0.4.9",
     "@solana/web3.js": "^1.95.4",

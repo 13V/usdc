@@ -32,6 +32,28 @@ fake utility.
 4. Each request embeds a unique throwaway **reference** pubkey. We find the
    payment on-chain by that reference and flip the person to **PAID**.
 
+## The dinner flow (scan → pick people → share links)
+
+The fast path for "we're out, I'll front it":
+
+1. **Set your wallet once.** On the web UI, paste your Solana wallet address — it's
+   saved on your device and every bill you make collects to it. This is the wallet
+   you'd **attach a crypto card to** (Coinbase Card, Crypto.com, etc.) so you can
+   spend what you collect. Divvy doesn't issue cards; it routes USDC to a wallet
+   you control.
+2. **Scan the receipt.** Snap a photo (`<input capture>` opens the camera on
+   mobile). Claude vision reads the **grand total** off it and prefills the amount
+   — no typing. Needs `ANTHROPIC_API_KEY`; without it you just type the total
+   (everything else still works). Money stays integer cents end-to-end.
+3. **Pick the people**, split equally/weighted, and Divvy generates a Solana Pay
+   USDC link + QR per person.
+4. **Share the links.** Each friend pays their share straight to your wallet —
+   with their own wallet (scan QR), a card (MoonPay/Coinbase), or by creating an
+   embedded wallet in-page (Privy). You watch who's paid.
+
+`POST /api/scan` takes `{ image: "data:image/...;base64,..." }` and returns the
+detected total; it falls back to `{ needsManualEntry: true }` when no key is set.
+
 ## Money math (the guardrail)
 
 All money is **integer cents** — never floats. Every split is computed so the
@@ -112,6 +134,7 @@ notice; the wallet-QR and card paths still work. The build output
 | `src/verify.ts` | `findPayment()` by reference; `validatePayment()` (exact amount/token, finalized). |
 | `src/qr.ts` | Terminal + PNG + data-URL QR rendering. |
 | `src/onramp.ts` | No-wallet path: MoonPay / Coinbase Onramp "Pay with card" URLs. |
+| `src/scan.ts` | Receipt scanning — Claude vision reads the total off a photo. |
 | `src/server.ts` | Express API + shareable server-rendered pay page. |
 | `src/liveDevnet.ts` | Real end-to-end on devnet. |
 | `src/index.ts` | CLI: demo / new / status / qr / verify. |

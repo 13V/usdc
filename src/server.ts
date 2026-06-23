@@ -24,6 +24,7 @@ import { qrToDataUrl } from "./qr";
 import { cardOptions } from "./onramp";
 import { fmt, toCents, withTip, SplitMode } from "./split";
 import { Cluster } from "./solanaPay";
+import { scanReceipt, parseDataUrl, NoScanProvider } from "./scan";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
@@ -36,7 +37,8 @@ function rpcUrl(cluster: Cluster): string {
 }
 
 const app = express();
-app.use(express.json());
+// Receipt images arrive as base64 in the JSON body, so allow a larger payload.
+app.use(express.json({ limit: "12mb" }));
 app.use(express.static(path.resolve(process.cwd(), "public")));
 
 // ---- API ------------------------------------------------------------------
@@ -108,6 +110,31 @@ app.post("/api/bills/:id/verify", async (req: Request, res: Response) => {
     res.json({ ...serializeBill(bill), updated });
   } catch (err) {
     res.status(502).json({ error: `verify failed: ${(err as Error).message}` });
+  }
+});
+
+// Scan a receipt photo -> detected total (so the host can skip typing it).
+// Body: { image: "data:image/jpeg;base64,..." | "<base64>" }
+app.post("/api/scan", async (req: Request, res: Response) => {
+  const image = (req.body as { image?: string }).image;
+  if (!image || typeof image !== "string") {
+    return res.status(400).json({ error: "need an image" });
+  }
+  try {
+    const { data, mediaType } = parseDataUrl(image);
+    const result = await scanReceipt(data, mediaType);
+    res.json({
+      ...result,
+      totalFmt: fmt(result.totalCents),
+      // Dollars for prefilling the form (the client re-derives cents via the API).
+      total: (result.totalCents / 100).toFixed(2),
+    });
+  } catch (err) {
+    if (err instanceof NoScanProvider) {
+      // Honest, graceful fallback: tell the client to ask for the total manually.
+      return res.status(503).json({ needsManualEntry: true, error: (err as Error).message });
+    }
+    res.status(502).json({ error: `scan failed: ${(err as Error).message}` });
   }
 });
 
