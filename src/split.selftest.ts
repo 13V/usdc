@@ -18,6 +18,7 @@ import { usdCentsFromForeignCents, usdCentsFromForeignMajor } from "./fx";
 import { computeBalances, minimalSettlement } from "./ledger";
 import { signSession, verifySession, verifySignature } from "./auth";
 import { isTripAuthorized } from "./trips";
+import { advanceDue } from "./recurring";
 import nacl from "tweetnacl";
 import { Keypair } from "@solana/web3.js";
 
@@ -288,6 +289,20 @@ ok(
   ok(
     "authz: owner session and claimed-member session authorize",
     owner === true && claimedMember === true
+  );
+}
+
+// 19) Recurring date math: advanceDue advances weekly/monthly/<n>d correctly.
+{
+  const wk = advanceDue("2026-01-15T00:00:00.000Z", "weekly");
+  const mo = advanceDue("2026-01-15T00:00:00.000Z", "monthly");
+  const days = advanceDue("2026-01-15T00:00:00.000Z", "10d");
+  ok(
+    "recurring: advanceDue weekly=+7d, monthly=+1mo, 10d=+10d",
+    wk === "2026-01-22T00:00:00.000Z" &&
+      mo === "2026-02-15T00:00:00.000Z" &&
+      days === "2026-01-25T00:00:00.000Z",
+    `${wk} | ${mo} | ${days}`
   );
 }
 

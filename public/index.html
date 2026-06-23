@@ -86,6 +86,7 @@
     <button id="tabNew">New bill</button>
     <button id="tabHome" class="secondary">Balances</button>
     <button id="tabTrips" class="secondary">Trips</button>
+    <button id="tabRecurring" class="secondary">Recurring</button>
     <button id="tabActivity" class="secondary">Activity</button>
     <button id="tabHistory" class="secondary">Saved bills</button>
   </div>
@@ -184,6 +185,7 @@
   <section id="trips" style="display:none"></section>
   <section id="home" style="display:none"></section>
   <section id="activity" style="display:none"></section>
+  <section id="recurring" style="display:none"></section>
 
   <section id="result" style="display:none">
     <div id="settledBanner" class="badge paid" style="display:none; font-size:.9rem; padding:8px 12px;">✓ Settled — everyone paid</div>
@@ -420,6 +422,7 @@ function render(bill) {
   $("trips").style.display = "none";
   $("home").style.display = "none";
   $("activity").style.display = "none";
+  $("recurring").style.display = "none";
   $("result").style.display = "block";
   $("settledBanner").style.display = bill.settled ? "block" : "none";
   $("billTitle").textContent = bill.title;
@@ -476,6 +479,7 @@ async function check() {
 function hideAux() {
   $("home").style.display = "none";
   $("activity").style.display = "none";
+  $("recurring").style.display = "none";
 }
 
 function showForm() {
@@ -503,6 +507,7 @@ function showHome() {
   $("history").style.display = "none";
   $("trips").style.display = "none";
   $("activity").style.display = "none";
+  $("recurring").style.display = "none";
   $("home").style.display = "block";
   if (window.Home && typeof window.Home.show === "function") window.Home.show();
 }
@@ -514,8 +519,21 @@ function showActivity() {
   $("history").style.display = "none";
   $("trips").style.display = "none";
   $("home").style.display = "none";
+  $("recurring").style.display = "none";
   $("activity").style.display = "block";
   if (window.Activity && typeof window.Activity.show === "function") window.Activity.show();
+}
+
+// Recurring splits (rendered by recurring.js into #recurring).
+function showRecurring() {
+  $("form").style.display = "none";
+  $("result").style.display = "none";
+  $("history").style.display = "none";
+  $("trips").style.display = "none";
+  $("home").style.display = "none";
+  $("activity").style.display = "none";
+  $("recurring").style.display = "block";
+  if (window.Recurring && typeof window.Recurring.show === "function") window.Recurring.show();
 }
 
 async function showHistory() {
@@ -574,6 +592,7 @@ $("tabHistory").onclick = showHistory;
 $("tabTrips").onclick = showTrips;
 $("tabHome").onclick = showHome;
 $("tabActivity").onclick = showActivity;
+$("tabRecurring").onclick = showRecurring;
 
 // If we arrived via a share link (/t/<token>), trips.js auto-opens the trip;
 // surface the Trips section so its detail view is visible on first paint.
@@ -667,6 +686,8 @@ document.addEventListener("DOMContentLoaded", () => {
 <script src="/trips.js"></script>
 <script src="/home.js"></script>
 <script src="/activity.js"></script>
+<script src="/recap.js"></script>
+<script src="/recurring.js"></script>
 <script>
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 </script>

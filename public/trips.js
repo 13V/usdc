@@ -352,6 +352,7 @@
 
         <div class="summary" style="align-items:center; margin-top:4px">
           <h1 style="font-size:1.4rem; margin:0">${esc(trip.name)}</h1>
+          <button id="tRecap" class="chip" type="button" style="margin:0">Recap ✨</button>
           <button id="tShare" class="chip" type="button" style="margin:0">Share</button>
         </div>
         <div id="tShareNote" class="muted" style="display:none">Link copied</div>
@@ -413,6 +414,12 @@
     c.appendChild(view);
 
     document.getElementById("tBackList").onclick = showList;
+
+    // Recap button: shareable settle-up recap card (recap.js).
+    var tRecap = document.getElementById("tRecap");
+    if (tRecap) tRecap.onclick = () => {
+      if (window.Recap && typeof window.Recap.open === "function") window.Recap.open(currentTripId);
+    };
 
     // Share button: native share with clipboard fallback.
     document.getElementById("tShare").onclick = async () => {

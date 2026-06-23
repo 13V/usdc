@@ -76,6 +76,7 @@ import {
 import { dashboardRouter } from "./dashboard";
 import { iouRouter } from "./ious";
 import { activityRouter } from "./activity";
+import { recurringRouter } from "./recurring";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
@@ -100,6 +101,7 @@ app.use(express.static(path.resolve(process.cwd(), "public")));
 app.use(dashboardRouter);
 app.use(iouRouter);
 app.use(activityRouter);
+app.use(recurringRouter);
 
 // ---- Auth & identity (progressive, optional) ------------------------------
 

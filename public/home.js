@@ -44,6 +44,64 @@
     return "https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=" + encodeURIComponent(url);
   }
 
+  // ── nudges / share-sheet reminders ───────────────────────────────────────────
+  // Share a friendly reminder via the native share sheet, falling back to copying
+  // the text to the clipboard. `noteEl` (optional) shows a transient confirmation.
+  async function shareReminder(text, noteEl) {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Divvy", text: text });
+        return;
+      } catch (_) { /* user cancelled or share failed — fall through to copy */ }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+    if (noteEl) {
+      noteEl.textContent = "Reminder copied";
+      noteEl.style.display = "block";
+      setTimeout(() => { noteEl.style.display = "none"; }, 2500);
+    }
+  }
+
+  // Build the reminder message for a counterparty/IOU who owes the current user.
+  function reminderText(name, amountFmt, link) {
+    let msg = "Hey " + (name || "there") + " — friendly reminder that you owe me " +
+      (amountFmt || "") + " on Divvy.";
+    if (link) msg += " Pay here: " + link;
+    return msg.trim();
+  }
+
+  // ── app badge ────────────────────────────────────────────────────────────────
+  // Track the latest "you owe" counts from the two data sources so we can combine
+  // them on each load and reflect the total in the app badge + a muted banner.
+  const openCounts = { balances: 0, ious: 0 };
+
+  function updateBadge() {
+    const total = (openCounts.balances || 0) + (openCounts.ious || 0);
+    try {
+      if (total > 0) {
+        if (navigator.setAppBadge) navigator.setAppBadge(total);
+      } else if (navigator.clearAppBadge) {
+        navigator.clearAppBadge();
+      }
+    } catch (_) { /* badge API may reject — ignore */ }
+    const banner = document.getElementById("hOpenBanner");
+    if (banner) {
+      if (total > 0) {
+        banner.textContent = total + " open debt" + (total === 1 ? "" : "s");
+        banner.style.display = "block";
+      } else {
+        banner.style.display = "none";
+      }
+    }
+  }
+
   // JSON helper over Auth.authFetch. Throws Error(message).status on non-2xx.
   async function api(path, opts) {
     opts = opts || {};
@@ -103,6 +161,7 @@
       <div>
         <h1 style="font-size:1.4rem">Balances</h1>
         <p class="tag">Who owes you, what you owe — across every trip and one-off IOU.</p>
+        <div id="hOpenBanner" class="muted" style="display:none; border:1px solid #8884; border-radius:10px; padding:8px 12px; margin-bottom:10px"></div>
         <div id="hBalances"><p class="muted">Loading…</p></div>
 
         <h1 style="font-size:1.05rem; margin-top:22px">IOUs</h1>
@@ -214,6 +273,15 @@
     `);
     wrap.appendChild(header);
 
+    // Build a quick lookup of trip link by name so a person's reminder can carry a
+    // trip link when one is available (counterparties don't include a link of
+    // their own).
+    const trips = Array.isArray(data.trips) ? data.trips : [];
+    const tripLinkByName = {};
+    for (const t of trips) {
+      if (t.tripName && t.shareUrlPath) tripLinkByName[t.tripName] = location.origin + t.shareUrlPath;
+    }
+
     // Per-counterparty list.
     const counterparties = Array.isArray(data.counterparties) ? data.counterparties : [];
     if (counterparties.length) {
@@ -224,19 +292,33 @@
           ? esc(cp.name) + " — you're owed " + esc(cp.fmt)
           : esc(cp.name) + " — you owe " + esc(cp.fmt);
         const row = el(`
-          <div class="person">
+          <div class="person" style="flex-wrap:wrap">
             <div class="meta">
               <div class="amt" style="font-size:1rem; color:${owed ? "var(--green)" : "inherit"}">${text}</div>
               ${cp.wallet ? `<div class="muted" style="word-break:break-all">${esc(cp.wallet)}</div>` : ""}
             </div>
           </div>
         `);
+        // Someone owes you -> offer a one-tap reminder via the share sheet.
+        if (owed) {
+          const remindBtn = el('<button class="chip" type="button" style="margin:0">Remind</button>');
+          const note = el('<div class="muted" style="width:100%; display:none">Reminder copied</div>');
+          remindBtn.onclick = () => {
+            const link = tripLinkByName[cp.name] || null; // best-effort trip link by shared name
+            shareReminder(reminderText(cp.name, cp.fmt, link), note);
+          };
+          row.appendChild(remindBtn);
+          row.appendChild(note);
+        }
         wrap.appendChild(row);
       }
     }
 
+    // Tally how many counterparties the user owes (for the badge/banner).
+    openCounts.balances = counterparties.filter((cp) => cp.direction === "owes").length;
+    updateBadge();
+
     // Per-trip list — each links to its share page.
-    const trips = Array.isArray(data.trips) ? data.trips : [];
     if (trips.length) {
       wrap.appendChild(el('<h1 style="font-size:1rem; margin-top:18px">By trip</h1>'));
       for (const t of trips) {
@@ -280,9 +362,15 @@
       return;
     }
     if (!Array.isArray(ious) || ious.length === 0) {
+      openCounts.ious = 0;
+      updateBadge();
       wrap.innerHTML = '<p class="muted">No IOUs yet.</p>';
       return;
     }
+    // Count open IOUs the user owes (status open + direction i_owe) for the badge.
+    openCounts.ious = ious.filter(
+      (iou) => iou.direction === "i_owe" && iou.status === "open").length;
+    updateBadge();
     wrap.innerHTML = "";
     for (const iou of ious) {
       wrap.appendChild(renderIou(iou));
@@ -312,6 +400,18 @@
         <button class="chip hIouDel" type="button" style="margin:0" aria-label="Delete">✕</button>
       </div>
     `);
+
+    // They owe you and it's still open -> offer a one-tap reminder (share sheet,
+    // clipboard fallback). Include the Solana Pay link when the IOU carries one.
+    if (!iOwe && !paid) {
+      const remindBtn = el('<button class="chip hIouRemind" type="button" style="margin:0">Remind</button>');
+      const note = el('<div class="muted" style="width:100%; display:none">Reminder copied</div>');
+      remindBtn.onclick = () => {
+        shareReminder(reminderText(iou.counterpartyName, iou.amountFmt, iou.url || null), note);
+      };
+      row.appendChild(remindBtn);
+      row.appendChild(note);
+    }
 
     // For an open IOU the current user owes, and which has a payment url: show a
     // QR + open-in-wallet link + a "Check payment" button.
