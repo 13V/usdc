@@ -25,7 +25,24 @@ declare global {
   }
 }
 
-const SESSION_SECRET = process.env.SESSION_SECRET || "divvy-dev-secret-change-me";
+// SESSION_SECRET must be set in production. In dev we fall back to a known
+// insecure default but warn loudly (once) so it's never shipped silently.
+function resolveSessionSecret(): string {
+  const fromEnv = process.env.SESSION_SECRET;
+  if (fromEnv) return fromEnv;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "SESSION_SECRET is required in production — set SESSION_SECRET in the environment."
+    );
+  }
+  // eslint-disable-next-line no-console
+  console.warn(
+    "⚠  using insecure default SESSION_SECRET — set SESSION_SECRET in production"
+  );
+  return "divvy-dev-secret-change-me";
+}
+
+const SESSION_SECRET = resolveSessionSecret();
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const NONCE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 

@@ -109,6 +109,11 @@ if (!hasColumn("trip_members", "user_id")) {
 if (!hasColumn("trips", "owner_user_id")) {
   db.exec("ALTER TABLE trips ADD COLUMN owner_user_id TEXT");
 }
+// Soft-delete: expenses are marked voided instead of hard-deleted, so the row
+// survives for audit but is excluded from balances/serialization.
+if (!hasColumn("expenses", "voided")) {
+  db.exec("ALTER TABLE expenses ADD COLUMN voided INTEGER NOT NULL DEFAULT 0");
+}
 
 // ---- Row hydration ---------------------------------------------------------
 
@@ -139,7 +144,9 @@ function hydrateTrip(row: any): Trip {
     .all(row.id)
     .map(hydrateMember);
   const expenses = db
-    .prepare("SELECT * FROM expenses WHERE trip_id = ? ORDER BY created_at ASC, rowid ASC")
+    .prepare(
+      "SELECT * FROM expenses WHERE trip_id = ? AND COALESCE(voided, 0) = 0 ORDER BY created_at ASC, rowid ASC"
+    )
     .all(row.id)
     .map(hydrateExpense);
   return {
@@ -334,7 +341,11 @@ export function addExpense(
 export function deleteExpense(tripId: string, expenseId: string): Trip {
   const trip = getTrip(tripId);
   if (!trip) throw new Error("deleteExpense: trip not found");
-  db.prepare("DELETE FROM expenses WHERE id = ? AND trip_id = ?").run(expenseId, tripId);
+  // Soft-delete: keep the row for audit, exclude it from reads/balances.
+  db.prepare("UPDATE expenses SET voided = 1 WHERE id = ? AND trip_id = ?").run(
+    expenseId,
+    tripId
+  );
   return getTrip(tripId) as Trip;
 }
 
@@ -353,6 +364,27 @@ export function saveSettlement(
        created_at = excluded.created_at`
   ).run(tripId, signature, JSON.stringify(transfers), createdAt);
   return { tripId, signature, transfers, createdAt };
+}
+
+/**
+ * Pure authorization check for a trip (no DB / no HTTP). A request is authorized
+ * if EITHER it carries the trip's share token, OR its session user is the trip
+ * owner or a claimed member of the trip. Offline-testable.
+ */
+export function isTripAuthorized(input: {
+  providedToken?: string | null;
+  shareToken: string;
+  userId?: string | null;
+  ownerUserId?: string | null;
+  memberUserIds: string[];
+}): boolean {
+  const { providedToken, shareToken, userId, ownerUserId, memberUserIds } = input;
+  if (providedToken && shareToken && providedToken === shareToken) return true;
+  if (userId) {
+    if (ownerUserId && ownerUserId === userId) return true;
+    if (memberUserIds.includes(userId)) return true;
+  }
+  return false;
 }
 
 export function getSettlement(tripId: string): StoredSettlement | undefined {

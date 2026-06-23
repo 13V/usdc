@@ -36,7 +36,6 @@ import {
   Trip,
   SettlementTransfer,
   createTrip,
-  listTrips,
   getTrip,
   getTripByIdOrToken,
   addMember,
@@ -47,6 +46,7 @@ import {
   getSettlement,
   claimMember,
   listTripsForUser,
+  isTripAuthorized,
 } from "./trips";
 import {
   authOptional,
@@ -389,6 +389,51 @@ function memberName(trip: Trip, id: string): string {
   return m ? m.name : id;
 }
 
+// ---- Trip write-auth + input validation -----------------------------------
+
+const MAX_TRIP_NAME = 120;
+const MAX_MEMBER_NAME = 80;
+const MAX_EXPENSE_TITLE = 140;
+const MAX_AMOUNT_CENTS = 100_000_000; // $1,000,000 cap
+const MAX_MEMBERS = 50;
+const MAX_EXPENSES = 2000;
+
+/**
+ * A request is authorized for a trip if EITHER it carries `X-Trip-Token`
+ * matching the trip's share token, OR it carries a valid Bearer session whose
+ * user is the trip owner or a claimed member of the trip.
+ */
+function authorizeTrip(req: Request, trip: Trip): boolean {
+  const providedToken = req.header("x-trip-token") || null;
+  return isTripAuthorized({
+    providedToken,
+    shareToken: trip.shareToken,
+    userId: req.userId || null,
+    ownerUserId: trip.ownerUserId || null,
+    memberUserIds: trip.members.map((m) => m.userId).filter((x): x is string => !!x),
+  });
+}
+
+/** Validate a Solana wallet string; throws a 400-style Error on bad input. */
+function assertValidWallet(wallet: string): void {
+  try {
+    // eslint-disable-next-line no-new
+    new PublicKey(wallet);
+  } catch {
+    throw new ValidationError("invalid wallet address");
+  }
+}
+
+class ValidationError extends Error {}
+
+function assertLen(value: string, label: string, min: number, max: number): string {
+  const v = String(value || "").trim();
+  if (v.length < min || v.length > max) {
+    throw new ValidationError(`${label} must be ${min}..${max} characters`);
+  }
+  return v;
+}
+
 function serializeSettlement(trip: Trip) {
   const stored = getSettlement(trip.id);
   if (!stored) return null;
@@ -473,12 +518,18 @@ app.post("/api/trips", (req: Request, res: Response) => {
       cluster?: Cluster;
       members?: { name?: string; wallet?: string }[];
     };
-    const name = String(body.name || "").trim();
+    const name = assertLen(String(body.name || ""), "trip name", 1, MAX_TRIP_NAME);
     const members = (body.members || [])
       .map((m) => ({ name: String(m.name || "").trim(), wallet: m.wallet }))
       .filter((m) => m.name);
-    if (!name) return res.status(400).json({ error: "need a name" });
     if (members.length < 1) return res.status(400).json({ error: "need at least one member" });
+    if (members.length > MAX_MEMBERS) {
+      return res.status(400).json({ error: `too many members (max ${MAX_MEMBERS})` });
+    }
+    for (const m of members) {
+      assertLen(m.name, "member name", 1, MAX_MEMBER_NAME);
+      if (m.wallet) assertValidWallet(String(m.wallet));
+    }
     const cluster = (body.cluster || (process.env.CLUSTER as Cluster) || "devnet") as Cluster;
     // If signed in, record ownership so this trip shows up in "my trips".
     const trip = createTrip(name, cluster, members, req.userId);
@@ -502,7 +553,8 @@ function tripSummary(trip: Trip) {
   return {
     id: trip.id,
     name: trip.name,
-    shareToken: trip.shareToken,
+    // shareToken intentionally omitted: list summaries must not hand out
+    // working capability links.
     createdAt: trip.createdAt,
     memberCount: trip.members.length,
     expenseCount: trip.expenses.length,
@@ -513,24 +565,40 @@ function tripSummary(trip: Trip) {
   };
 }
 
-app.get("/api/trips", (req: Request, res: Response) => {
-  // ?mine=1 (when signed in) -> only trips I own or have claimed a spot in.
-  const trips =
-    req.query.mine === "1" && req.userId ? listTripsForUser(req.userId) : listTrips();
+app.get("/api/trips", requireAuth, (req: Request, res: Response) => {
+  // Privacy-scoped: only trips the caller owns or has claimed a spot in.
+  // (?mine is accepted harmlessly; it's now the only behavior.)
+  const trips = listTripsForUser(req.userId as string);
   res.json(trips.map(tripSummary));
 });
 
 app.get("/api/trips/:idOrToken", (req: Request, res: Response) => {
   const trip = getTripByIdOrToken(req.params.idOrToken);
   if (!trip) return res.status(404).json({ error: "not found" });
+  // Authorized if the path was the share token (capability), if X-Trip-Token
+  // matches, or if the caller is the owner / a claimed member.
+  const pathIsToken = req.params.idOrToken === trip.shareToken;
+  if (!pathIsToken && !authorizeTrip(req, trip)) {
+    return res.status(403).json({ error: "not authorized for this trip" });
+  }
+  // They have access, so the full trip MAY include the shareToken.
   res.json(serializeTrip(trip));
 });
 
 app.post("/api/trips/:id/members", (req: Request, res: Response) => {
   try {
     const body = req.body as { name?: string; wallet?: string };
-    if (!getTrip(req.params.id)) return res.status(404).json({ error: "not found" });
-    const trip = addMember(req.params.id, { name: String(body.name || ""), wallet: body.wallet });
+    const existing = getTrip(req.params.id);
+    if (!existing) return res.status(404).json({ error: "not found" });
+    if (!authorizeTrip(req, existing)) {
+      return res.status(403).json({ error: "not authorized for this trip" });
+    }
+    if (existing.members.length >= MAX_MEMBERS) {
+      return res.status(400).json({ error: `too many members (max ${MAX_MEMBERS})` });
+    }
+    const name = assertLen(String(body.name || ""), "member name", 1, MAX_MEMBER_NAME);
+    if (body.wallet) assertValidWallet(String(body.wallet));
+    const trip = addMember(req.params.id, { name, wallet: body.wallet });
     res.json(serializeTrip(trip));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
@@ -540,7 +608,27 @@ app.post("/api/trips/:id/members", (req: Request, res: Response) => {
 app.patch("/api/trips/:id/members/:mid", (req: Request, res: Response) => {
   try {
     const body = req.body as { name?: string; wallet?: string };
-    if (!getTrip(req.params.id)) return res.status(404).json({ error: "not found" });
+    const existing = getTrip(req.params.id);
+    if (!existing) return res.status(404).json({ error: "not found" });
+    if (!authorizeTrip(req, existing)) {
+      return res.status(403).json({ error: "not authorized for this trip" });
+    }
+    const member = existing.members.find((m) => m.id === req.params.mid);
+    if (!member) return res.status(404).json({ error: "member not found" });
+
+    // Wallet changes are a payout redirect — require a SESSION check beyond the
+    // capability token: the caller must be the trip owner OR own this member.
+    if (body.wallet !== undefined && body.wallet) {
+      assertValidWallet(String(body.wallet));
+      const isOwner = !!req.userId && existing.ownerUserId === req.userId;
+      const isSelf = !!req.userId && member.userId === req.userId;
+      if (!isOwner && !isSelf) {
+        return res.status(403).json({ error: "not authorized for this trip" });
+      }
+    }
+    if (body.name !== undefined) {
+      assertLen(String(body.name), "member name", 1, MAX_MEMBER_NAME);
+    }
     const trip = updateMember(req.params.id, req.params.mid, body);
     res.json(serializeTrip(trip));
   } catch (err) {
@@ -554,7 +642,11 @@ app.patch("/api/trips/:id/members/:mid", (req: Request, res: Response) => {
 app.post("/api/trips/:id/members/:mid/claim", requireAuth, (req: Request, res: Response) => {
   try {
     const userId = req.userId as string;
-    if (!getTrip(req.params.id)) return res.status(404).json({ error: "not found" });
+    const existing = getTrip(req.params.id);
+    if (!existing) return res.status(404).json({ error: "not found" });
+    if (!authorizeTrip(req, existing)) {
+      return res.status(403).json({ error: "not authorized for this trip" });
+    }
     const wallet = getPrimaryWallet(userId);
     if (!wallet) return res.status(400).json({ error: "link a wallet first" });
     const trip = claimMember(req.params.id, req.params.mid, userId, wallet);
@@ -568,6 +660,9 @@ app.post("/api/trips/:id/expenses", (req: Request, res: Response) => {
   try {
     const trip = getTrip(req.params.id);
     if (!trip) return res.status(404).json({ error: "not found" });
+    if (!authorizeTrip(req, trip)) {
+      return res.status(403).json({ error: "not authorized for this trip" });
+    }
     const body = req.body as {
       title?: string;
       total?: number | string;
@@ -576,14 +671,26 @@ app.post("/api/trips/:id/expenses", (req: Request, res: Response) => {
       participants?: string[];
       fx?: any;
     };
+    if (trip.expenses.length >= MAX_EXPENSES) {
+      return res.status(400).json({ error: `too many expenses (max ${MAX_EXPENSES})` });
+    }
     const amountCents = body.amountCents ?? (body.total != null ? toCents(body.total) : NaN);
     if (!Number.isInteger(amountCents) || amountCents <= 0) {
       return res.status(400).json({ error: "need a positive amount (total or amountCents)" });
+    }
+    if (amountCents > MAX_AMOUNT_CENTS) {
+      return res.status(400).json({ error: `amount exceeds cap ($${MAX_AMOUNT_CENTS / 100})` });
+    }
+    if (body.title !== undefined && String(body.title).trim()) {
+      assertLen(String(body.title), "expense title", 1, MAX_EXPENSE_TITLE);
     }
     const participants =
       body.participants && body.participants.length > 0
         ? body.participants
         : trip.members.map((m) => m.id);
+    if (participants.length === 0) {
+      return res.status(400).json({ error: "need at least one participant" });
+    }
     const updated = addExpense(req.params.id, {
       title: String(body.title || ""),
       amountCents,
@@ -599,7 +706,11 @@ app.post("/api/trips/:id/expenses", (req: Request, res: Response) => {
 
 app.delete("/api/trips/:id/expenses/:eid", (req: Request, res: Response) => {
   try {
-    if (!getTrip(req.params.id)) return res.status(404).json({ error: "not found" });
+    const existing = getTrip(req.params.id);
+    if (!existing) return res.status(404).json({ error: "not found" });
+    if (!authorizeTrip(req, existing)) {
+      return res.status(403).json({ error: "not authorized for this trip" });
+    }
     const trip = deleteExpense(req.params.id, req.params.eid);
     res.json(serializeTrip(trip));
   } catch (err) {
@@ -611,6 +722,9 @@ app.post("/api/trips/:id/settle", (req: Request, res: Response) => {
   try {
     const trip = getTrip(req.params.id);
     if (!trip) return res.status(404).json({ error: "not found" });
+    if (!authorizeTrip(req, trip)) {
+      return res.status(403).json({ error: "not authorized for this trip" });
+    }
 
     const memberIds = trip.members.map((m) => m.id);
     const balances = computeBalances(
@@ -662,6 +776,9 @@ app.post("/api/trips/:id/settle", (req: Request, res: Response) => {
 app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => {
   const trip = getTrip(req.params.id);
   if (!trip) return res.status(404).json({ error: "not found" });
+  if (!authorizeTrip(req, trip)) {
+    return res.status(403).json({ error: "not authorized for this trip" });
+  }
   const stored = getSettlement(trip.id);
   if (!stored) return res.status(400).json({ error: "no settlement to verify; call /settle first" });
   try {

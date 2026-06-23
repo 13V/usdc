@@ -17,6 +17,7 @@ import { buildSolanaPayUrl, amountFromCents, USDC_MINT } from "./solanaPay";
 import { usdCentsFromForeignCents, usdCentsFromForeignMajor } from "./fx";
 import { computeBalances, minimalSettlement } from "./ledger";
 import { signSession, verifySession, verifySignature } from "./auth";
+import { isTripAuthorized } from "./trips";
 import nacl from "tweetnacl";
 import { Keypair } from "@solana/web3.js";
 
@@ -251,6 +252,42 @@ ok(
   ok(
     "auth: SIWS ed25519 verifies for signer, fails for wrong pubkey/message",
     good && !wrongKey && !wrongMsg
+  );
+}
+
+// 17) Trip authz: matching share token authorizes; wrong token + non-member
+//     session does NOT.
+{
+  const base = {
+    shareToken: "abc123",
+    ownerUserId: "owner-1",
+    memberUserIds: ["member-1", "member-2"],
+  };
+  const tokenMatch = isTripAuthorized({ ...base, providedToken: "abc123", userId: null });
+  const tokenWrongAndStranger = isTripAuthorized({
+    ...base,
+    providedToken: "nope",
+    userId: "stranger-9",
+  });
+  const noTokenNoUser = isTripAuthorized({ ...base, providedToken: null, userId: null });
+  ok(
+    "authz: token match authorizes; wrong token + non-member session -> false",
+    tokenMatch === true && tokenWrongAndStranger === false && noTokenNoUser === false
+  );
+}
+
+// 18) Trip authz: owner session and claimed-member session authorize (no token).
+{
+  const base = {
+    shareToken: "abc123",
+    ownerUserId: "owner-1",
+    memberUserIds: ["member-1", "member-2"],
+  };
+  const owner = isTripAuthorized({ ...base, providedToken: null, userId: "owner-1" });
+  const claimedMember = isTripAuthorized({ ...base, providedToken: null, userId: "member-2" });
+  ok(
+    "authz: owner session and claimed-member session authorize",
+    owner === true && claimedMember === true
   );
 }
 

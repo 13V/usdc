@@ -28,6 +28,11 @@
   let mineOnly = false;
   // Id of the trip currently shown in the DETAIL view (for live re-render on auth change).
   let currentTripId = null;
+  // Capability proof for the trip currently shown in the DETAIL view: the full
+  // trip's shareToken. Threaded into every MUTATING trip request as the
+  // `X-Trip-Token` header so the backend authorizes writes even when the Bearer
+  // session alone wouldn't. Reads/GETs never need it.
+  let currentTripToken = null;
 
   // ── helpers ────────────────────────────────────────────────────────────────
   function esc(s) {
@@ -48,20 +53,46 @@
   // api(path, opts) — JSON helper. Pass opts.auth = true to attach the Bearer
   // token (via Auth.authFetch) for calls that benefit from identity; anonymous
   // requests still work when signed out.
+  //
+  // Trip MUTATIONS (POST/PATCH/DELETE under /api/trips/:id/...) require a
+  // capability proof: the header `X-Trip-Token: <trip.shareToken>`. We attach it
+  // automatically from `currentTripToken` (set when a trip detail is loaded) for
+  // any non-GET request to a /api/trips/ subpath. Combined with Auth.authFetch
+  // this sends both the Bearer token AND X-Trip-Token when available.
   async function api(path, opts) {
     opts = opts || {};
     const useAuth = opts.auth === true;
     const fetchFn = useAuth ? authFetchFn() : fetch;
     const reqOpts = Object.assign({ headers: { "content-type": "application/json" } }, opts);
     delete reqOpts.auth;
+    // Attach the trip capability token on mutating trip requests.
+    const method = (reqOpts.method || "GET").toUpperCase();
+    const isMutation = method === "POST" || method === "PATCH" || method === "DELETE";
+    const isTripPath = path.indexOf("/api/trips/") === 0;
+    if (isMutation && isTripPath && currentTripToken) {
+      reqOpts.headers = Object.assign({}, reqOpts.headers, { "X-Trip-Token": currentTripToken });
+    }
     const res = await fetchFn(path, reqOpts);
     let data = null;
     try { data = await res.json(); } catch (_) { data = null; }
     if (!res.ok) {
       const msg = (data && data.error) || ("Request failed (" + res.status + ")");
-      throw new Error(msg);
+      const err = new Error(msg);
+      err.status = res.status;
+      err.data = data;
+      throw err;
     }
     return data;
+  }
+
+  // Irreversibility guard: before any action that sends USDC on-chain, make the
+  // user explicitly acknowledge that payments are final. Returns true to proceed.
+  function confirmIrreversible(amountFmt, toName) {
+    const amt = amountFmt || "this amount";
+    const to = toName || "the recipient";
+    return window.confirm(
+      "Payments are final — on-chain USDC has no refunds or chargebacks.\n\n" +
+      "You're paying " + amt + " to " + to + ".\n\nContinue?");
   }
 
   function qrSrc(url) {
@@ -81,6 +112,7 @@
     const c = root();
     c.innerHTML = "";
     currentTripId = null;
+    currentTripToken = null;
 
     // seed the first member ("you"): prefer the signed-in user's primary wallet
     // and display name; fall back to the saved collector wallet for signed-out.
@@ -199,14 +231,53 @@
     }
   }
 
+  // Render the signed-out state for the trip list: a friendly prompt plus a
+  // connect-wallet button that calls the existing Auth sign-in. On success the
+  // Auth onChange listener re-renders the list with the user's trips.
+  function renderSignedOutTrips() {
+    const list = document.getElementById("tList");
+    if (!list) return;
+    list.innerHTML = "";
+    const box = el(`
+      <div style="border:1px solid #8884; border-radius:12px; padding:16px; text-align:center">
+        <p style="margin:0 0 4px; font-weight:600">Sign in to see your trips</p>
+        <p class="muted" style="margin:0 0 12px">Connect a wallet to view trips you own or have claimed a spot in.</p>
+        <button id="tSignIn" class="connect" type="button" style="margin:0">Connect wallet</button>
+        <div id="tSignInMsg" class="muted" style="margin-top:8px"></div>
+      </div>
+    `);
+    list.appendChild(box);
+    const btn = box.querySelector("#tSignIn");
+    const msg = box.querySelector("#tSignInMsg");
+    btn.onclick = async () => {
+      if (!(window.Auth && typeof window.Auth.signInWithWallet === "function")) {
+        msg.textContent = "Sign-in is unavailable right now.";
+        return;
+      }
+      msg.textContent = "Connecting…";
+      try {
+        await window.Auth.signInWithWallet();
+        // Auth.onChange -> onAuthChange re-renders the list once signed in.
+      } catch (err) {
+        msg.textContent = err.message || "Couldn't connect.";
+      }
+    };
+  }
+
   async function loadTripList() {
     const list = document.getElementById("tList");
+    // GET /api/trips now requires a signed-in user. When signed out, skip the
+    // request and show the friendly connect-wallet state immediately.
+    if (!authUser()) {
+      renderSignedOutTrips();
+      return;
+    }
     try {
-      // Signed in + "My trips" -> GET /api/trips?mine=1 (auth). Else all trips.
+      // Signed in + "My trips" -> GET /api/trips?mine=1. Else all of the user's trips.
       const useMine = mineOnly && authUser();
       const trips = useMine
         ? await api("/api/trips?mine=1", { auth: true })
-        : await api("/api/trips");
+        : await api("/api/trips", { auth: true });
       if (!Array.isArray(trips) || trips.length === 0) {
         list.innerHTML = useMine
           ? '<p class="muted">None of your trips yet. Create one or claim your spot in a shared trip.</p>'
@@ -229,6 +300,12 @@
         list.appendChild(item);
       }
     } catch (err) {
+      // The session may have expired between paint and fetch -> 401. Fall back to
+      // the signed-out connect prompt rather than a dead error.
+      if (err && err.status === 401) {
+        renderSignedOutTrips();
+        return;
+      }
       list.innerHTML = '<p class="muted">Couldn\'t load trips.</p>';
     }
   }
@@ -265,6 +342,8 @@
     c.innerHTML = "";
 
     currentTripId = trip.id || null;
+    // Capture the full trip's shareToken as the capability proof for mutations.
+    currentTripToken = trip.shareToken || null;
     const meId = myMemberId(trip);
 
     const view = el(`
@@ -658,6 +737,10 @@
       return;
     }
 
+    // One-line reminder that on-chain USDC transfers can't be undone.
+    area.appendChild(el(
+      '<div class="muted" style="margin-bottom:8px">USDC payments are final — double-check the amount and recipient.</div>'));
+
     for (const t of transfers) {
       let inner;
       if (t.needsWallet) {
@@ -683,7 +766,18 @@
           </div>
           <span class="badge ${t.paid ? "paid" : ""}">${t.paid ? "✓ paid" : "unpaid"}</span>`;
       }
-      area.appendChild(el(`<div class="person">${inner}</div>`));
+      const rowEl = el(`<div class="person">${inner}</div>`);
+      // Guard the "Open in wallet" link: sending USDC is irreversible, so require
+      // an explicit confirm before navigating to the wallet/payment link.
+      const openLink = rowEl.querySelector("a");
+      if (openLink && t.url) {
+        openLink.addEventListener("click", (ev) => {
+          if (!confirmIrreversible(t.amountFmt, t.toName)) {
+            ev.preventDefault();
+          }
+        });
+      }
+      area.appendChild(rowEl);
     }
 
     const checkBtn = el('<button class="secondary" type="button">Check settlement</button>');
