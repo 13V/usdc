@@ -8,115 +8,531 @@
 <meta name="theme-color" content="#2775ca" />
 <link rel="apple-touch-icon" href="/icon.svg" />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
-  :root { color-scheme: light dark; --green:#2775ca; --ink:#04121a; }
+  /* ─────────────────────────────────────────────────────────────────────────
+     DIVVY DESIGN SYSTEM — dark on-chain receipt, USDC blue, mono numbers.
+     Tokens + global component classes (consumed by every screen).
+     ───────────────────────────────────────────────────────────────────────── */
+  :root {
+    color-scheme: dark;
+    --ink:#04121a;
+    --surface:#0a1f2b;
+    --surface-2:#0e2734;
+    --line:rgba(246,241,231,0.10);
+    --cream:#f6f1e7;
+    --muted:rgba(246,241,231,0.58);
+    --faint:rgba(246,241,231,0.38);
+    --accent:#2775ca;
+    --accent-ink:#04121a;
+    --accent-soft:rgba(39,117,202,0.14);
+    --accent-line:rgba(39,117,202,0.34);
+    --terra:#e0a892;
+    --terra-soft:rgba(224,168,146,0.13);
+    --radius:16px;
+    --radius-sm:12px;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Space Grotesk',-apple-system,system-ui,sans-serif;
+    /* legacy alias kept so any stray reference still resolves to brand blue */
+    --green:#2775ca;
+    --topbar-h:56px;
+    --tabbar-h:64px;
+  }
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 20px;
-         max-width: 540px; margin-inline: auto; line-height: 1.5; }
-  h1 { font-size: 1.4rem; margin: 0 0 2px; }
-  .tag { color: #888; font-size: .9rem; margin-bottom: 16px; }
-  label { display:block; font-weight:600; font-size:.85rem; margin: 12px 0 4px; }
-  input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #8884;
-          font-size: 1rem; background: transparent; color: inherit; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--sans);
+    margin: 0;
+    background: var(--ink);
+    color: var(--cream);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    padding: calc(var(--topbar-h) + env(safe-area-inset-top));
+    padding-bottom: calc(var(--tabbar-h) + 28px + env(safe-area-inset-bottom));
+  }
+  /* Centered single-column content shell */
+  #appMain {
+    max-width: 540px;
+    margin-inline: auto;
+    padding: 8px 18px 0;
+  }
+  h1 { font-size: 1.45rem; margin: 0 0 2px; font-weight: 700; letter-spacing: -0.01em; }
+  a { color: var(--accent); }
+
+  /* ── Tokens / utility ─────────────────────────────────────────────────── */
+  .mono { font-family: var(--mono); }
+  .muted { color: var(--muted); font-size: .82rem; }
+  .faint { color: var(--faint); }
+  .pos { color: var(--accent); }
+  .neg { color: var(--terra); }
+  .tag { color: var(--muted); font-size: .9rem; margin-bottom: 8px; }
+
+  /* ── Eyebrow micro-label ──────────────────────────────────────────────── */
+  .eyebrow {
+    display:block;
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    margin: 16px 0 7px;
+  }
+  /* native <label> inherits the eyebrow look across forms */
+  label { display:block; font-family: var(--mono); font-size:.68rem; letter-spacing:.12em;
+          text-transform:uppercase; color:var(--muted); font-weight:500; margin: 16px 0 7px; }
+
+  /* ── Card / receipt ───────────────────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin: 12px 0;
+  }
+  .receipt {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 16px 22px;
+    margin: 12px 0;
+  }
+  .receipt hr {
+    border: 0;
+    border-top: 1px dashed var(--line);
+    margin: 14px 0;
+  }
+  /* perforated bottom edge */
+  .receipt::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -8px;
+    height: 16px;
+    background:
+      radial-gradient(circle at 8px 8px, transparent 7px, var(--ink) 7px) repeat-x;
+    background-size: 16px 16px;
+    background-position: 0 -8px;
+  }
+
+  /* ── Buttons ──────────────────────────────────────────────────────────── */
+  .btn, button.btn, #appMain button {
+    -webkit-appearance: none; appearance: none;
+    width: 100%;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px;
+    margin-top: 14px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform .12s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
+  }
+  .btn:active, #appMain button:active { transform: scale(.97); }
+  .btn.ghost, button.ghost, button.secondary {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--cream);
+  }
+  .btn.ghost:hover, button.secondary:hover { border-color: var(--accent-line); }
+  .btn.sm, button.sm {
+    width: auto;
+    margin: 0;
+    padding: 9px 14px;
+    font-size: .9rem;
+    border-radius: 999px;
+  }
+  .btn[disabled], #appMain button[disabled] { opacity: .5; cursor: default; }
+
+  /* ── Pill / chip ──────────────────────────────────────────────────────── */
+  .pill {
+    display:inline-flex; align-items:center; gap:6px;
+    width:auto; margin:0;
+    padding:7px 13px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--cream);
+    font-size:.84rem; font-weight:600;
+    cursor:pointer;
+  }
+  .chip {
+    display:inline-flex; align-items:center; gap:8px;
+    width:auto; margin:0;
+    border:1px solid var(--line); border-radius:999px;
+    padding:8px 13px;
+    background: var(--surface-2);
+    color: var(--cream);
+    font-size:.85rem; font-weight:600;
+    cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, transform .12s ease;
+  }
+  .chip:active { transform: scale(.97); }
+  .chip.selected { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .chip .x { font-size:.85rem; opacity:.55; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+
+  /* ── Inputs ───────────────────────────────────────────────────────────── */
+  input, select, .input {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--cream);
+    font-family: var(--sans);
+    font-size: 1rem;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input::placeholder { color: var(--faint); }
+  input:focus, select:focus, .input:focus {
+    outline: none;
+    border-color: var(--accent-line);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  /* numbers & money read as mono */
+  input[type="number"], #total, #tip, #fxAmount { font-family: var(--mono); }
+  select { -webkit-appearance:none; appearance:none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 34px; }
+  input[type="file"] { padding: 9px 12px; font-size:.85rem; color: var(--muted); }
+  input[type="file"]::file-selector-button {
+    -webkit-appearance:none; appearance:none;
+    margin-right: 10px; padding: 7px 12px;
+    border-radius: 999px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--cream);
+    font-family: var(--sans); font-weight:600; font-size:.82rem; cursor:pointer;
+  }
   .row { display:flex; gap:10px; }
   .row > div { flex:1; }
-  button { width:100%; padding:14px; margin-top:16px; border:0; border-radius:12px;
-           background: var(--green); color: var(--ink); font-weight:700; font-size:1rem; cursor:pointer; }
-  button.secondary { background: transparent; border:1px solid #8884; color: inherit; }
-  .person { border:1px solid #8884; border-radius:12px; padding:12px; margin:10px 0; display:flex;
-            align-items:center; gap:12px; }
-  .person img { width:72px; height:72px; image-rendering: pixelated; border-radius:6px; }
+
+  /* ── Hero amount ──────────────────────────────────────────────────────── */
+  .hero-amount {
+    font-family: var(--mono);
+    font-size: 2.6rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+  .hero-amount.pos { color: var(--accent); }
+  .hero-amount.neg { color: var(--terra); }
+
+  /* ── List row + avatars ───────────────────────────────────────────────── */
+  .list-row, .row.list {
+    display:flex; gap:12px; align-items:center;
+    padding:12px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .meta { flex:1; min-width:0; }
+  .meta .title { font-weight:600; }
+  .meta .sub { font-family: var(--mono); font-size:.78rem; color: var(--muted); }
+  .avatar {
+    width:38px; height:38px; flex:0 0 auto;
+    border-radius:50%;
+    background: var(--surface-2);
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--mono); font-weight:600; font-size:.95rem;
+    color: var(--cream);
+  }
+  .avatar-stack { display:inline-flex; }
+  .avatar-stack > .avatar { border:2px solid var(--surface); }
+  .avatar-stack > .avatar + .avatar { margin-left:-10px; }
+
+  /* ── On-chain state chip ──────────────────────────────────────────────── */
+  .state-chip {
+    display:inline-flex; align-items:center; gap:7px;
+    padding:5px 11px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background: transparent;
+    font-family: var(--mono);
+    font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; font-weight:500;
+    color: var(--muted);
+  }
+  .state-chip i { width:7px; height:7px; border-radius:50%; background: currentColor; display:inline-block; }
+  .state-chip.reading { color: var(--muted); border-color: var(--line); }
+  .state-chip.confirmed { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+  .state-chip.finalized { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+  .state-chip.settled { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+
+  /* ── Empty states ─────────────────────────────────────────────────────── */
+  .empty { text-align:center; padding:36px 16px; }
+  .empty-glyph { font-size:40px; opacity:.5; line-height:1; }
+  .empty-title { margin-top:10px; font-weight:600; font-size:1.02rem; }
+  .empty-hint { margin-top:5px; color: var(--muted); font-size:.86rem; }
+
+  /* ── Skeleton shimmer ─────────────────────────────────────────────────── */
+  .skeleton {
+    position: relative; overflow: hidden;
+    height: 16px; border-radius: 8px;
+    background: var(--surface-2);
+    margin: 10px 0;
+  }
+  .skeleton.row-sk { height: 56px; border-radius: var(--radius-sm); }
+  .skeleton::after {
+    content:""; position:absolute; inset:0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(246,241,231,0.07), transparent);
+    animation: shimmer 1.3s infinite;
+  }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+
+  /* ── Toast ────────────────────────────────────────────────────────────── */
+  .toast {
+    position: fixed;
+    left: 50%; bottom: calc(var(--tabbar-h) + 22px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(8px);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--cream);
+    padding: 11px 16px;
+    border-radius: 999px;
+    font-size: .9rem; font-weight:600;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+    z-index: 60;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Headcount stepper ────────────────────────────────────────────────── */
+  .stepper {
+    display:flex; align-items:center; gap:14px;
+    margin-top:6px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 10px;
+  }
+  .stepper button {
+    width:54px; height:54px; margin:0; padding:0;
+    font-size:1.7rem; line-height:1;
+    border-radius:14px; flex:0 0 auto;
+    background: var(--surface); border:1px solid var(--line); color: var(--cream);
+  }
+  .stepper button:active { transform: scale(.94); }
+  .stepper .count { flex:1; text-align:center; font-family: var(--mono); font-size:2.1rem; font-weight:600; }
+  .stepper .count small { display:block; font-family: var(--sans); font-size:.66rem; font-weight:500;
+                          letter-spacing:.1em; text-transform:uppercase; color: var(--muted); margin-top:2px; }
+
+  /* ── Disclosure links ─────────────────────────────────────────────────── */
+  .toggle-link {
+    display:inline-block; margin-top:14px;
+    font-family: var(--mono); font-size:.74rem; letter-spacing:.04em; font-weight:500;
+    color: var(--accent); background:none; border:0; padding:4px 0; width:auto; cursor:pointer;
+  }
+  #advanced, #fxBox {
+    border:1px solid var(--line); border-radius:var(--radius);
+    background: var(--surface);
+    padding:2px 14px 16px; margin-top:10px;
+  }
+  #fxBox { padding-top:6px; }
+
+  /* ── Result / receipt people ──────────────────────────────────────────── */
+  .summary { display:flex; justify-content:space-between; align-items:baseline; margin:10px 0; font-weight:600; }
+  .summary.muted span { font-family: var(--mono); }
+  .person {
+    display:flex; align-items:center; gap:12px;
+    padding:12px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .person:last-child { border-bottom:0; }
+  .person img {
+    width:60px; height:60px; image-rendering: pixelated;
+    border-radius:10px; background:#fff; padding:4px; flex:0 0 auto;
+  }
   .person .meta { flex:1; min-width:0; }
-  .person .amt { font-weight:700; font-size:1.1rem; }
-  .person a { font-size:.8rem; word-break: break-all; }
-  .badge { font-size:.75rem; padding:3px 8px; border-radius:999px; background:#8883; }
-  .badge.paid { background: var(--green); color: var(--ink); }
-  .summary { display:flex; justify-content:space-between; margin:12px 0; font-weight:600; }
-  .muted { color:#888; font-size:.8rem; }
+  .person .amt { font-weight:600; }
+  .person .amt b { font-family: var(--mono); font-weight:600; }
+  .person a { font-size:.78rem; word-break: break-all; }
+  .badge {
+    font-family: var(--mono);
+    font-size:.66rem; letter-spacing:.08em; text-transform:uppercase;
+    padding:5px 10px; border-radius:999px;
+    border:1px solid var(--line); color: var(--muted);
+    white-space:nowrap; flex:0 0 auto;
+  }
+  .badge.paid { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 
-  /* Headcount stepper — the fast-path primary control */
-  .stepper { display:flex; align-items:center; gap:14px; margin-top:4px; }
-  .stepper button { width:56px; height:56px; margin:0; padding:0; font-size:1.8rem; line-height:1;
-                    border-radius:14px; flex:0 0 auto; }
-  .stepper button.secondary { color: inherit; }
-  .stepper .count { flex:1; text-align:center; font-size:2.2rem; font-weight:800; }
-  .stepper .count small { display:block; font-size:.7rem; font-weight:600; color:#888; }
+  /* ── History list ─────────────────────────────────────────────────────── */
+  .hist-item {
+    border:1px solid var(--line); border-radius:var(--radius);
+    background: var(--surface);
+    padding:14px; margin:10px 0; cursor:pointer;
+    transition: border-color .15s ease, transform .12s ease;
+  }
+  .hist-item:active { transform: scale(.99); }
+  .hist-item:hover { border-color: var(--accent-line); }
+  .hist-item .top { display:flex; justify-content:space-between; gap:10px; font-weight:600; }
+  .hist-item .top span:last-child { font-family: var(--mono); }
+  .hist-item .sub { display:flex; justify-content:space-between; gap:10px; margin-top:4px; }
+  .hist-item .sub span { font-family: var(--mono); font-size:.78rem; }
 
-  /* Collapsed "name them / use a group" disclosure */
-  .toggle-link { display:inline-block; margin-top:14px; font-size:.85rem; font-weight:600;
-                 color: var(--green); background:none; border:0; padding:0; width:auto; cursor:pointer; }
-  #advanced { border:1px solid #8884; border-radius:12px; padding:0 14px 14px; margin-top:10px; }
-
-  /* Saved-group chips */
-  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
-  .chip { border:1px solid #8884; border-radius:999px; padding:7px 12px; font-size:.85rem;
-          background:transparent; color:inherit; cursor:pointer; width:auto; margin:0; font-weight:600;
-          display:inline-flex; align-items:center; gap:8px; }
-  .chip.selected { background: var(--green); color: var(--ink); border-color: var(--green); }
-  .chip .x { font-size:.9rem; opacity:.6; }
-
-  /* Tabs / history */
-  .tabs { display:flex; gap:8px; margin-bottom:8px; }
-  .tabs button { margin-top:0; }
-  .hist-item { border:1px solid #8884; border-radius:12px; padding:12px; margin:10px 0; cursor:pointer; }
-  .hist-item .top { display:flex; justify-content:space-between; font-weight:700; }
-  .hist-item .sub { display:flex; justify-content:space-between; }
+  /* ── Top app bar ──────────────────────────────────────────────────────── */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    height: calc(var(--topbar-h) + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    display: flex; align-items: center; gap: 10px;
+    padding-inline: 18px;
+    background: rgba(4,18,26,0.82);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .brand { display:flex; align-items:center; gap:9px; }
+  .topbar .brand svg { width:26px; height:26px; display:block; border-radius:7px; }
+  .topbar .wordmark { font-weight:700; font-size:1.18rem; letter-spacing:-0.02em; }
+  .topbar #authArea { margin-left:auto; margin-bottom:0; }
 
   /* Auth area (header) — compact, additive */
-  #authArea { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:16px; }
+  #authArea { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:8px; }
   #authArea button, #authArea a.linklike { margin:0; width:auto; }
-  #authArea .linklike { font-size:.85rem; font-weight:600; color: var(--green);
+  #authArea .linklike { font-family: var(--sans); font-size:.85rem; font-weight:600; color: var(--accent);
                         background:none; border:0; padding:0; cursor:pointer; text-decoration:none; }
-  #authArea button.connect { padding:9px 14px; font-size:.9rem; border-radius:999px; width:auto; }
+  #authArea button.connect { padding:8px 13px; font-size:.85rem; border-radius:999px; width:auto; margin:0; }
+  #authArea button.connect#authCreate { background: transparent; border:1px solid var(--line); color: var(--cream); }
   #authArea .userchip { display:inline-flex; align-items:center; gap:8px; }
-  #authMsg { width:100%; font-size:.8rem; color:#888; }
-  #authMsg.err { color:#c0392b; }
+  #authMsg { width:100%; font-size:.8rem; color: var(--muted); text-align:right; }
+  #authMsg.err { color: var(--terra); }
   #setHandleBox { width:100%; display:flex; gap:8px; align-items:center; margin-top:4px; }
-  #setHandleBox input { padding:9px 12px; font-size:.9rem; }
-  #setHandleBox button { width:auto; margin:0; padding:9px 14px; font-size:.9rem; border-radius:10px; }
+  #setHandleBox input { padding:8px 12px; font-size:.9rem; }
+  #setHandleBox button { width:auto; margin:0; padding:8px 14px; font-size:.85rem; border-radius:999px; }
+
+  /* ── Bottom tab bar ───────────────────────────────────────────────────── */
+  .tabbar {
+    position: fixed; left:0; right:0; bottom:0; z-index: 50;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    display: grid; grid-template-columns: repeat(5, 1fr); align-items:center;
+    background: rgba(4,18,26,0.92);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
+  }
+  .tabbar .tab {
+    -webkit-appearance:none; appearance:none;
+    background: none; border: 0; margin: 0; width: auto;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 6px 0;
+    color: var(--faint);
+    font-family: var(--sans); font-size: .64rem; font-weight: 600; letter-spacing:.02em;
+    cursor: pointer;
+    transition: color .15s ease;
+  }
+  .tabbar .tab svg { width:23px; height:23px; display:block; }
+  .tabbar .tab.active { color: var(--cream); }
+  .tabbar .tab:active { transform: none; }
+  /* center raised FAB */
+  .tabbar .tab.fab {
+    position: relative;
+  }
+  .tabbar .tab.fab .fab-btn {
+    width: 52px; height: 52px; margin-top: -22px;
+    border-radius: 50%;
+    background: var(--accent); color: var(--accent-ink);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 8px 22px rgba(39,117,202,.45);
+    transition: transform .12s ease;
+  }
+  .tabbar .tab.fab:active .fab-btn { transform: scale(.93); }
+  .tabbar .tab.fab .fab-btn svg { width:26px; height:26px; }
+
+  /* ── "More" / You bottom sheet ────────────────────────────────────────── */
+  .sheet-scrim {
+    position: fixed; inset: 0; z-index: 70;
+    background: rgba(4,18,26,.6);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .sheet-scrim.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left:0; right:0; bottom:0; z-index: 71;
+    background: var(--surface);
+    border-top-left-radius: 22px; border-top-right-radius: 22px;
+    border-top: 1px solid var(--line);
+    padding: 10px 18px calc(22px + env(safe-area-inset-bottom));
+    max-width: 540px; margin-inline: auto;
+    transform: translateY(110%);
+    transition: transform .26s cubic-bezier(.22,1,.36,1);
+  }
+  .sheet-scrim.open .sheet { transform: translateY(0); }
+  .sheet .grabber { width:38px; height:4px; border-radius:999px; background: var(--line); margin: 4px auto 12px; }
+  .sheet .eyebrow { margin-top: 6px; }
+  .sheet-item {
+    -webkit-appearance:none; appearance:none;
+    width:100%; margin:0; text-align:left;
+    display:flex; align-items:center; gap:13px;
+    padding:14px 4px;
+    background:none; border:0; border-bottom:1px solid var(--line);
+    color: var(--cream); font-family: var(--sans); font-size:1rem; font-weight:600;
+    cursor:pointer;
+  }
+  .sheet-item:last-child { border-bottom:0; }
+  .sheet-item .ic { width:34px; height:34px; border-radius:10px; background: var(--surface-2);
+                    display:flex; align-items:center; justify-content:center; font-size:1.05rem; flex:0 0 auto; }
+
+  /* ── Motion: fade-and-rise sections/rows ──────────────────────────────── */
+  @keyframes rise { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
+  section[id]:not([style*="display: none"]) { animation: rise .22s ease both; }
+  .person, .hist-item, .list-row { animation: rise .2s ease both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::after, *::before { animation: none !important; transition: none !important; }
+    .skeleton::after { display:none; }
+  }
 </style>
 </head>
 <body>
-  <h1>Divvy</h1>
-  <div class="tag">Split the bill. Collect in USDC on Solana — instant, ~free, no chargebacks.</div>
+  <!-- ── Top app bar ──────────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="112" fill="#2775ca"/><polygon points="300,132 368,132 212,380 144,380" fill="#fff"/></svg>
+      <span class="wordmark">Divvy</span>
+    </div>
+    <div id="authArea"></div>
+  </header>
 
-  <div id="authArea"></div>
-
-  <div class="tabs">
-    <button id="tabNew">New bill</button>
-    <button id="tabHome" class="secondary">Balances</button>
-    <button id="tabFriends" class="secondary">Friends</button>
-    <button id="tabTrips" class="secondary">Trips</button>
-    <button id="tabRecurring" class="secondary">Recurring</button>
-    <button id="tabActivity" class="secondary">Activity</button>
-    <button id="tabHistory" class="secondary">Saved bills</button>
-  </div>
-
+  <main id="appMain">
   <section id="form">
-    <label>Your wallet — where you collect</label>
-    <input id="collector" placeholder="Your Solana wallet address (base58)" />
-    <p class="muted">Saved on this device. Friends' payments land here. Attach a crypto card
-      (Coinbase Card, Crypto.com, etc.) to this wallet to spend what you collect.</p>
-
-    <label>Scan the receipt (optional)</label>
-    <input id="receipt" type="file" accept="image/*" capture="environment" />
-    <div id="scanStatus" class="muted"></div>
-
-    <label>What's it for?</label>
-    <input id="title" value="Dinner" />
-
-    <div class="row">
-      <div>
-        <label>Total ($)</label>
-        <input id="total" type="number" step="0.01" value="74.07" />
-      </div>
-      <div>
-        <label>Tip (%)</label>
-        <input id="tip" type="number" step="1" value="18" />
-      </div>
+    <div class="tag">Split the bill. Collect in USDC on Solana — instant, ~free, no chargebacks.</div>
+    <div class="card">
+      <label for="collector">Your wallet — where you collect</label>
+      <input id="collector" placeholder="Your Solana wallet address (base58)" />
+      <p class="muted">Saved on this device. Friends' payments land here. Attach a crypto card
+        (Coinbase Card, Crypto.com, etc.) to this wallet to spend what you collect.</p>
     </div>
 
-    <button id="toggleFx" class="toggle-link" type="button">Amount in another currency? ▾</button>
+    <div class="card">
+      <label for="receipt">Scan the receipt (optional)</label>
+      <input id="receipt" type="file" accept="image/*" capture="environment" />
+      <div id="scanStatus" class="muted"></div>
+
+      <label for="title">What's it for?</label>
+      <input id="title" value="Dinner" />
+
+      <div class="row">
+        <div>
+          <label for="total">Total ($)</label>
+          <input id="total" type="number" step="0.01" value="74.07" />
+        </div>
+        <div>
+          <label for="tip">Tip (%)</label>
+          <input id="tip" type="number" step="1" value="18" />
+        </div>
+      </div>
+
+      <button id="toggleFx" class="toggle-link" type="button">Amount in another currency? ▾</button>
     <div id="fxBox" style="display:none">
       <div class="row">
         <div style="flex:0 0 110px">
@@ -140,18 +556,20 @@
           <input id="fxAmount" type="number" step="0.01" placeholder="e.g. 2450" />
         </div>
       </div>
-      <button id="fxConvert" class="secondary" type="button">Convert to USD</button>
+      <button id="fxConvert" class="secondary sm" type="button">Convert to USD</button>
       <div id="fxStatus" class="muted"></div>
     </div>
-
-    <label>How many people?</label>
-    <div class="stepper">
-      <button id="countMinus" class="secondary" type="button" aria-label="Fewer people">−</button>
-      <div class="count"><span id="countVal">2</span><small>people</small></div>
-      <button id="countPlus" class="secondary" type="button" aria-label="More people">+</button>
     </div>
 
-    <button id="toggleAdvanced" class="toggle-link" type="button">Name them / use a group ▾</button>
+    <div class="card">
+      <label>How many people?</label>
+      <div class="stepper">
+        <button id="countMinus" class="secondary" type="button" aria-label="Fewer people">−</button>
+        <div class="count"><span id="countVal">2</span><small>people</small></div>
+        <button id="countPlus" class="secondary" type="button" aria-label="More people">+</button>
+      </div>
+
+      <button id="toggleAdvanced" class="toggle-link" type="button">Name them / use a group ▾</button>
     <div id="advanced" style="display:none">
       <label>Saved groups</label>
       <div id="groupChips" class="chips"><span class="muted">No saved groups yet.</span></div>
@@ -172,13 +590,15 @@
       <label>Weights (optional, comma-separated, matches names)</label>
       <input id="weights" placeholder="e.g. 2,1,1" />
     </div>
+    </div>
 
     <button id="create">Generate payment links</button>
-    <p class="muted">Settles in USDC. No app needed to pay — wallet QR or pay-with-card.</p>
+    <p class="muted" style="text-align:center">Settles in USDC. No app needed to pay — wallet QR or pay-with-card.</p>
   </section>
 
   <section id="history" style="display:none">
-    <h1 style="font-size:1.1rem">Saved bills</h1>
+    <span class="eyebrow">History</span>
+    <h1>Saved bills</h1>
     <div id="histList"></div>
     <button id="histNew" class="secondary">New bill</button>
   </section>
@@ -190,14 +610,64 @@
   <section id="friends" style="display:none"></section>
 
   <section id="result" style="display:none">
-    <div id="settledBanner" class="badge paid" style="display:none; font-size:.9rem; padding:8px 12px;">✓ Settled — everyone paid</div>
-    <div class="summary"><span id="billTitle"></span><span id="billTotal"></span></div>
-    <div class="summary muted"><span id="collected"></span><span id="outstanding"></span></div>
-    <div id="billFx" class="muted" style="display:none; margin:-4px 0 8px"></div>
-    <div id="people"></div>
-    <button id="check" class="secondary">Check payments</button>
+    <div style="margin-bottom:6px">
+      <span id="settledBanner" class="state-chip settled" style="display:none">✓ Settled — everyone paid</span>
+    </div>
+    <div class="receipt">
+      <span class="eyebrow">On-chain receipt · USDC</span>
+      <div class="summary" style="margin-top:8px"><span id="billTitle" style="font-size:1.15rem"></span><span id="billTotal" class="mono" style="font-size:1.15rem"></span></div>
+      <div id="billFx" class="muted mono" style="display:none; margin:-2px 0 6px"></div>
+      <hr />
+      <div class="summary muted"><span id="collected"></span><span id="outstanding"></span></div>
+      <hr />
+      <div id="people"></div>
+    </div>
+    <button id="check">Check payments</button>
     <button id="reset" class="secondary">New bill</button>
   </section>
+  </main>
+
+  <!-- ── Bottom tab bar ───────────────────────────────────────────────── -->
+  <nav class="tabbar" role="navigation" aria-label="Primary">
+    <button id="tabHome" class="tab" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9h14v-9"/></svg>
+      <span>Home</span>
+    </button>
+    <button id="tabTrips" class="tab" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z"/></svg>
+      <span>Groups</span>
+    </button>
+    <button id="tabNew" class="tab fab" type="button" aria-label="New bill">
+      <span class="fab-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </span>
+    </button>
+    <button id="tabActivity" class="tab" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg>
+      <span>Activity</span>
+    </button>
+    <button id="tabMore" class="tab" type="button" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19a6.5 6.5 0 0 1 13 0"/></svg>
+      <span>You</span>
+    </button>
+  </nav>
+
+  <!-- ── "More" / You bottom sheet (holds secondary tabs) ─────────────── -->
+  <div id="moreScrim" class="sheet-scrim" aria-hidden="true">
+    <div class="sheet" role="dialog" aria-label="More">
+      <div class="grabber"></div>
+      <span class="eyebrow">More</span>
+      <button id="tabFriends" class="sheet-item" type="button">
+        <span class="ic">👥</span><span>Friends</span>
+      </button>
+      <button id="tabRecurring" class="sheet-item" type="button">
+        <span class="ic">🔁</span><span>Recurring</span>
+      </button>
+      <button id="tabHistory" class="sheet-item" type="button">
+        <span class="ic">🧾</span><span>Saved bills</span>
+      </button>
+    </div>
+  </div>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -443,7 +913,7 @@ function render(bill) {
     div.innerHTML = `
       <img src="${qrSrc(p.url)}" alt="QR" />
       <div class="meta">
-        <div class="amt">${p.name} — ${p.amountFmt}</div>
+        <div class="amt">${p.name} — <b>${p.amountFmt}</b></div>
         <a href="${p.payPath}" target="_blank">Open pay page</a>
       </div>
       <span class="badge ${p.paid ? "paid" : ""}">${p.paid ? "✓ paid" : "owes"}</span>`;
@@ -563,19 +1033,21 @@ async function showHistory() {
   hideAux();
   $("history").style.display = "block";
   const list = $("histList");
-  list.innerHTML = '<p class="muted">Loading…</p>';
+  list.innerHTML = '<div class="skeleton row-sk"></div><div class="skeleton row-sk"></div><div class="skeleton row-sk"></div>';
   try {
     const res = await fetch("/api/bills");
     const bills = await res.json();
     if (!Array.isArray(bills) || bills.length === 0) {
-      list.innerHTML = '<p class="muted">No saved bills yet.</p>';
+      list.innerHTML = '<div class="empty"><div class="empty-glyph">🧾</div>' +
+        '<div class="empty-title">No saved bills yet</div>' +
+        '<div class="empty-hint">Split your first bill and it\'ll show up here.</div></div>';
       return;
     }
     list.innerHTML = "";
     for (const b of bills) {
       const item = document.createElement("div");
       item.className = "hist-item";
-      const badge = b.settled ? '<span class="badge paid">Settled ✓</span>' : '';
+      const badge = b.settled ? '<span class="state-chip settled">Settled ✓</span>' : '<span class="state-chip reading"><i></i>Open</span>';
       const fxNote = fxNoteFor(b);
       const fxLine = fxNote ? `<div class="muted" style="margin-top:4px">${fxNote}</div>` : '';
       item.innerHTML = `
@@ -710,6 +1182,58 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAuth(window.Auth.user); // initial paint; init() re-fires after /api/me
   }
 });
+
+// ── Shell: More sheet, active-tab highlight, toast (additive) ────────────────
+(function () {
+  const scrim = $("moreScrim");
+  const moreBtn = $("tabMore");
+  function openMore() { scrim.classList.add("open"); scrim.setAttribute("aria-hidden", "false"); }
+  function closeMore() { scrim.classList.remove("open"); scrim.setAttribute("aria-hidden", "true"); }
+  if (moreBtn) moreBtn.onclick = openMore;
+  if (scrim) scrim.addEventListener("click", (e) => { if (e.target === scrim) closeMore(); });
+  // Secondary tabs live in the sheet; close it after a choice is made.
+  ["tabFriends", "tabRecurring", "tabHistory"].forEach((id) => {
+    const el = $(id);
+    if (el) el.addEventListener("click", closeMore);
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMore(); });
+
+  // Active-tab highlight. Primary nav buttons live in the bottom bar; the three
+  // sheet tabs map onto the "You" (More) entry so it lights up for them too.
+  const primary = { tabHome: "tabHome", tabTrips: "tabTrips", tabNew: "tabNew", tabActivity: "tabActivity" };
+  const sheetTabs = ["tabFriends", "tabRecurring", "tabHistory"];
+  function setActive(id) {
+    document.querySelectorAll(".tabbar .tab").forEach((t) => t.classList.remove("active"));
+    let target = primary[id];
+    if (sheetTabs.indexOf(id) !== -1) target = "tabMore";
+    const el = target && $(target);
+    if (el) el.classList.add("active");
+  }
+  // Wrap each tab's existing onclick so highlighting happens after their wiring.
+  ["tabHome", "tabTrips", "tabNew", "tabActivity", "tabFriends", "tabRecurring", "tabHistory"].forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("click", () => setActive(id));
+  });
+  setActive("tabNew"); // New bill / form is the default screen on load
+})();
+
+// Lightweight toast used across screens (window.toast(msg)).
+if (!window.toast) {
+  window.toast = function (msg) {
+    let el = document.getElementById("appToast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "appToast";
+      el.className = "toast";
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(window.__toastT);
+    window.__toastT = setTimeout(() => el.classList.remove("show"), 2400);
+  };
+}
 </script>
 <script src="/auth.js"></script>
 <script src="/trips.js"></script>
