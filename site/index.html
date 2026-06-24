@@ -11,11 +11,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="uploads/icon-16.png">
+<link rel="apple-touch-icon" href="uploads/apple-touch-icon.png">
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{background:#04121a;color:#F6F1E7;font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:clip}
-  ::selection{background:#14F195;color:#04121a}
+  ::selection{background:#2775CA;color:#04121a}
   @media (max-width:720px){ nav .navlink{display:none !important} nav{padding:16px 18px !important} }
   @media (max-width:780px){ .ed-grid{grid-template-columns:1fr !important} .ed-lead,.ed-rail{grid-column:auto !important} .ed-rail{margin-top:0 !important} .ed-rail .ed-indent{margin-left:0 !important} }
   @media (max-width:640px){
@@ -38,7 +41,7 @@
 <script src="./image-slot.js"></script>
 </helmet>
 
-<div id="divvy-root" style="--acc:#14F195;--usdc:#2775CA;--ink:#04121a;--surf:#081c28;--paper:#F6F1E7;--paperink:#2A2A28;position:relative;width:100%;min-height:100vh;background:#04121a;color:#F6F1E7;overflow-x:clip">
+<div id="divvy-root" style="--acc:#2775CA;--usdc:#2775CA;--ink:#04121a;--surf:#081c28;--paper:#F6F1E7;--paperink:#2A2A28;position:relative;width:100%;min-height:100vh;background:#04121a;color:#F6F1E7;overflow-x:clip">
 
   <!-- film grain overlay -->
   <div data-grain style="position:fixed;inset:-50%;width:200%;height:200%;pointer-events:none;z-index:90;opacity:0.05;mix-blend-mode:overlay;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/></svg>');animation:divvyGrain 1.2s steps(2) infinite"></div>
@@ -48,8 +51,8 @@
   <!-- NAV -->
   <nav style="position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px clamp(20px,5vw,64px);mix-blend-mode:normal">
     <a href="#top" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#F6F1E7">
-      <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;background:var(--acc);color:#04121a;font-weight:700;font-size:16px;font-family:'JetBrains Mono',monospace">÷</span>
-      <span style="font-weight:600;font-size:19px;letter-spacing:-0.02em">Divvy</span>
+      <img src="uploads/divvy-icon-blue-1024.png" alt="" style="width:26px;height:26px;border-radius:6px;display:block">
+      <img src="uploads/divvy-wordmark-white.png" alt="Divvy" style="height:20px;width:auto;display:block">
     </a>
     <div style="display:flex;align-items:center;gap:clamp(12px,2.4vw,30px)">
       <a href="#how" style="color:rgba(246,241,231,0.62);text-decoration:none;font-size:14px;font-family:'JetBrains Mono',monospace;letter-spacing:-0.01em" class="navlink">How it works</a>
@@ -117,21 +120,21 @@
       <!-- share cards (dealt out) -->
       <div data-sharewrap style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
         <div data-share class="tilt" style="position:absolute;width:152px;height:212px;opacity:0;transform-style:preserve-3d;will-change:transform">
-          <div class="sf-front" style="position:absolute;inset:0;backface-visibility:hidden;background:#0c2330;border:1px solid rgba(20,241,149,0.25);border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 24px 50px -20px rgba(0,0,0,0.8)">
+          <div class="sf-front" style="position:absolute;inset:0;backface-visibility:hidden;background:#0c2330;border:1px solid rgba(39,117,202,0.25);border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 24px 50px -20px rgba(0,0,0,0.8)">
             <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:rgba(246,241,231,0.45)">SHARE 01</div>
             <div><div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;letter-spacing:-0.02em">$29.14</div><div style="font-size:11px;color:rgba(246,241,231,0.5);margin-top:2px">Ava</div></div>
           </div>
           <div class="sf-back qr" data-seed="11" style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);background:#F6F1E7;border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:center"></div>
         </div>
         <div data-share class="tilt" style="position:absolute;width:152px;height:212px;opacity:0;transform-style:preserve-3d;will-change:transform">
-          <div class="sf-front" style="position:absolute;inset:0;backface-visibility:hidden;background:#0c2330;border:1px solid rgba(20,241,149,0.25);border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 24px 50px -20px rgba(0,0,0,0.8)">
+          <div class="sf-front" style="position:absolute;inset:0;backface-visibility:hidden;background:#0c2330;border:1px solid rgba(39,117,202,0.25);border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 24px 50px -20px rgba(0,0,0,0.8)">
             <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:rgba(246,241,231,0.45)">SHARE 02</div>
             <div><div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;letter-spacing:-0.02em">$29.13</div><div style="font-size:11px;color:rgba(246,241,231,0.5);margin-top:2px">Marco</div></div>
           </div>
           <div class="sf-back qr" data-seed="29" style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);background:#F6F1E7;border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:center"></div>
         </div>
         <div data-share class="tilt" style="position:absolute;width:152px;height:212px;opacity:0;transform-style:preserve-3d;will-change:transform">
-          <div class="sf-front" style="position:absolute;inset:0;backface-visibility:hidden;background:#0c2330;border:1px solid rgba(20,241,149,0.25);border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 24px 50px -20px rgba(0,0,0,0.8)">
+          <div class="sf-front" style="position:absolute;inset:0;backface-visibility:hidden;background:#0c2330;border:1px solid rgba(39,117,202,0.25);border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 24px 50px -20px rgba(0,0,0,0.8)">
             <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:rgba(246,241,231,0.45)">SHARE 03</div>
             <div><div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;letter-spacing:-0.02em">$29.13</div><div style="font-size:11px;color:rgba(246,241,231,0.5);margin-top:2px">Priya</div></div>
           </div>
@@ -143,7 +146,7 @@
       <div data-sumline style="position:absolute;top:calc(50% + 122px);left:50%;transform:translateX(-50%);opacity:0;white-space:nowrap;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.02em;color:rgba(246,241,231,0.75);background:rgba(8,28,40,0.85);border:1px solid rgba(246,241,231,0.1);padding:9px 16px;border-radius:999px;backdrop-filter:blur(6px)">29.14 + 29.13 + 29.13 = <span style="color:var(--acc);font-weight:700">87.40</span></div>
 
       <!-- settled stamp -->
-      <div data-stamp style="position:absolute;top:44%;left:50%;z-index:30;opacity:0;transform:translate(-50%,-50%) rotate(-14deg) scale(2.4);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:29px;letter-spacing:0.05em;color:var(--acc);background:#04121a;border:3px solid var(--acc);border-radius:10px;padding:10px 20px;text-transform:uppercase;box-shadow:0 0 0 6px rgba(20,241,149,0.10),0 20px 46px rgba(0,0,0,0.55);pointer-events:none">Settled ✓</div>
+      <div data-stamp style="position:absolute;top:44%;left:50%;z-index:30;opacity:0;transform:translate(-50%,-50%) rotate(-14deg) scale(2.4);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:29px;letter-spacing:0.05em;color:var(--acc);background:#04121a;border:3px solid var(--acc);border-radius:10px;padding:10px 20px;text-transform:uppercase;box-shadow:0 0 0 6px rgba(39,117,202,0.10),0 20px 46px rgba(0,0,0,0.55);pointer-events:none">Settled ✓</div>
     </div>
   </section>
 
@@ -167,13 +170,13 @@
       </div>
 
       <!-- floating settled share card -->
-      <div class="tilt m-bandcard" style="position:absolute;right:clamp(18px,5vw,72px);bottom:clamp(96px,13vw,128px);width:min(232px,52vw);background:rgba(8,28,40,0.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(20,241,149,0.32);border-radius:16px;padding:16px 16px 14px;box-shadow:0 34px 80px -28px rgba(0,0,0,0.9);z-index:3">
+      <div class="tilt m-bandcard" style="position:absolute;right:clamp(18px,5vw,72px);bottom:clamp(96px,13vw,128px);width:min(232px,52vw);background:rgba(8,28,40,0.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(39,117,202,0.32);border-radius:16px;padding:16px 16px 14px;box-shadow:0 34px 80px -28px rgba(0,0,0,0.9);z-index:3">
         <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:rgba(246,241,231,0.5)"><span>TABLE 12 · 3 PPL</span><span style="color:var(--acc)">SETTLED ✓</span></div>
         <div style="display:flex;align-items:baseline;gap:8px;margin:12px 0 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;letter-spacing:-0.02em">$87.40</span><span style="font-size:11px;color:rgba(246,241,231,0.45)">in USDC</span></div>
         <div style="display:flex;gap:8px">
-          <span style="position:relative;width:34px;height:34px;display:block;flex:none"><span style="position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(20,241,149,0.4);background:#0c2330"><img src="uploads/9c15d9647b9643dfbc5e522299d13593.png" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></span><span style="position:absolute;bottom:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--acc);color:#04121a;font-size:9px;display:flex;align-items:center;justify-content:center;border:2px solid #081c28;z-index:2">✓</span></span>
-          <span style="position:relative;width:34px;height:34px;display:block;flex:none"><span style="position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(20,241,149,0.4);background:#0c2330"><img src="uploads/TAEQ2OOMDRBRJJ7P2UOO2Y6TLA.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></span><span style="position:absolute;bottom:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--acc);color:#04121a;font-size:9px;display:flex;align-items:center;justify-content:center;border:2px solid #081c28;z-index:2">✓</span></span>
-          <span style="position:relative;width:34px;height:34px;display:block;flex:none"><span style="position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(20,241,149,0.4);background:#0c2330"><img src="uploads/images.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></span><span style="position:absolute;bottom:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--acc);color:#04121a;font-size:9px;display:flex;align-items:center;justify-content:center;border:2px solid #081c28;z-index:2">✓</span></span>
+          <span style="position:relative;width:34px;height:34px;display:block;flex:none"><span style="position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(39,117,202,0.4);background:#0c2330"><img src="uploads/9c15d9647b9643dfbc5e522299d13593.png" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></span><span style="position:absolute;bottom:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--acc);color:#04121a;font-size:9px;display:flex;align-items:center;justify-content:center;border:2px solid #081c28;z-index:2">✓</span></span>
+          <span style="position:relative;width:34px;height:34px;display:block;flex:none"><span style="position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(39,117,202,0.4);background:#0c2330"><img src="uploads/TAEQ2OOMDRBRJJ7P2UOO2Y6TLA.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></span><span style="position:absolute;bottom:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--acc);color:#04121a;font-size:9px;display:flex;align-items:center;justify-content:center;border:2px solid #081c28;z-index:2">✓</span></span>
+          <span style="position:relative;width:34px;height:34px;display:block;flex:none"><span style="position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(39,117,202,0.4);background:#0c2330"><img src="uploads/images.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></span><span style="position:absolute;bottom:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--acc);color:#04121a;font-size:9px;display:flex;align-items:center;justify-content:center;border:2px solid #081c28;z-index:2">✓</span></span>
         </div>
       </div>
     </div>
@@ -248,7 +251,7 @@
             </div>
             <div data-splitrows style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;max-width:380px">
               <sc-for list="{{ shares }}" as="s" hint-placeholder-count="3">
-                <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--acc);background:rgba(20,241,149,0.08);border:1px solid rgba(20,241,149,0.18);padding:5px 10px;border-radius:8px">${{ s.amount }}</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--acc);background:rgba(39,117,202,0.08);border:1px solid rgba(39,117,202,0.18);padding:5px 10px;border-radius:8px">${{ s.amount }}</span>
               </sc-for>
             </div>
           </div>
@@ -287,16 +290,16 @@
           <div style="position:relative;width:100%;height:100%;background:#F6F1E7;border-radius:6px;box-shadow:0 30px 70px -25px rgba(0,0,0,0.8);overflow:hidden;font-family:'JetBrains Mono',monospace;color:#2A2A28;padding:18px">
             <div style="display:flex;justify-content:space-between;align-items:flex-start">
               <div><div style="font-size:11px;font-weight:600;letter-spacing:0.06em">ร้านอาหาร</div><div style="font-size:9px;opacity:0.5;margin-top:3px">฿ THB · BANGKOK</div></div>
-              <div style="display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:0.08em;color:#0a6b45;background:rgba(20,241,149,0.16);border-radius:20px;padding:3px 8px"><span style="width:5px;height:5px;border-radius:50%;background:#0a6b45"></span>READING</div>
+              <div style="display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:0.08em;color:#1a5599;background:rgba(39,117,202,0.16);border-radius:20px;padding:3px 8px"><span style="width:5px;height:5px;border-radius:50%;background:#1a5599"></span>READING</div>
             </div>
             <div style="margin-top:16px;display:flex;flex-direction:column;gap:6px">
-              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>ทงคัตสึ</span><span>580</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(20,241,149,0.14);opacity:0"></span></div>
-              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>ราเมง</span><span>500</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(20,241,149,0.14);opacity:0"></span></div>
-              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>เกี๊ยวซ่า</span><span>280</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(20,241,149,0.14);opacity:0"></span></div>
-              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>ไฮบอล ×2</span><span>430</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(20,241,149,0.14);opacity:0"></span></div>
+              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>ทงคัตสึ</span><span>580</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(39,117,202,0.14);opacity:0"></span></div>
+              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>ราเมง</span><span>500</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(39,117,202,0.14);opacity:0"></span></div>
+              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>เกี๊ยวซ่า</span><span>280</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(39,117,202,0.14);opacity:0"></span></div>
+              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>ไฮบอล ×2</span><span>430</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(39,117,202,0.14);opacity:0"></span></div>
             </div>
-            <div style="position:absolute;bottom:16px;left:18px;right:18px;border-top:1px dashed rgba(42,42,40,0.3);padding-top:9px;display:flex;justify-content:space-between;align-items:center;font-size:12px"><span>รวม</span><span style="font-weight:700">฿2,450</span><span data-ocrtotal style="position:absolute;inset:5px -6px -5px;border:1.5px solid var(--acc);border-radius:4px;background:rgba(20,241,149,0.1);opacity:0"></span></div>
-            <div data-ocrbadge style="position:absolute;bottom:44px;right:13px;display:flex;align-items:center;gap:5px;font-size:8.5px;letter-spacing:0.05em;font-weight:700;color:#04121a;background:var(--acc);border-radius:6px;padding:4px 8px;box-shadow:0 8px 18px rgba(20,241,149,0.45);opacity:0">TOTAL ฿2,450 ✓</div>
+            <div style="position:absolute;bottom:16px;left:18px;right:18px;border-top:1px dashed rgba(42,42,40,0.3);padding-top:9px;display:flex;justify-content:space-between;align-items:center;font-size:12px"><span>รวม</span><span style="font-weight:700">฿2,450</span><span data-ocrtotal style="position:absolute;inset:5px -6px -5px;border:1.5px solid var(--acc);border-radius:4px;background:rgba(39,117,202,0.1);opacity:0"></span></div>
+            <div data-ocrbadge style="position:absolute;bottom:44px;right:13px;display:flex;align-items:center;gap:5px;font-size:8.5px;letter-spacing:0.05em;font-weight:700;color:#04121a;background:var(--acc);border-radius:6px;padding:4px 8px;box-shadow:0 8px 18px rgba(39,117,202,0.45);opacity:0">TOTAL ฿2,450 ✓</div>
             <!-- scan beam -->
             <div data-scanbeam style="position:absolute;left:0;right:0;top:0;height:3px;background:var(--acc);box-shadow:0 0 18px 4px var(--acc)"></div>
           </div>
@@ -305,9 +308,9 @@
         <div data-vis="1" class="howvis" style="position:absolute;inset:0;opacity:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px">
           <div data-splitlabel style="font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(246,241,231,0.6)">$87.40 <span style="opacity:0.45">÷ 3 =</span></div>
           <div style="position:relative;width:300px;height:170px">
-            <div data-splitcard style="position:absolute;left:50%;top:50%;width:116px;height:152px;margin:-76px 0 0 -58px;background:#0c2330;border:1px solid rgba(20,241,149,0.3);border-radius:12px;box-shadow:0 20px 40px -18px rgba(0,0,0,0.7);display:flex;flex-direction:column;justify-content:flex-end;padding:12px;font-family:'JetBrains Mono',monospace;"><div style="font-size:18px;font-weight:700">$29.14</div><div style="font-size:10px;color:rgba(246,241,231,0.5);margin-top:2px">Ava</div></div>
-            <div data-splitcard style="position:absolute;left:50%;top:50%;width:116px;height:152px;margin:-76px 0 0 -58px;background:#0c2330;border:1px solid rgba(20,241,149,0.3);border-radius:12px;box-shadow:0 20px 40px -18px rgba(0,0,0,0.7);display:flex;flex-direction:column;justify-content:flex-end;padding:12px;font-family:'JetBrains Mono',monospace;z-index:3"><div style="font-size:18px;font-weight:700">$29.13</div><div style="font-size:10px;color:rgba(246,241,231,0.5);margin-top:2px">Marco</div></div>
-            <div data-splitcard style="position:absolute;left:50%;top:50%;width:116px;height:152px;margin:-76px 0 0 -58px;background:#0c2330;border:1px solid rgba(20,241,149,0.3);border-radius:12px;box-shadow:0 20px 40px -18px rgba(0,0,0,0.7);display:flex;flex-direction:column;justify-content:flex-end;padding:12px;font-family:'JetBrains Mono',monospace;"><div style="font-size:18px;font-weight:700">$29.13</div><div style="font-size:10px;color:rgba(246,241,231,0.5);margin-top:2px">Priya</div></div>
+            <div data-splitcard style="position:absolute;left:50%;top:50%;width:116px;height:152px;margin:-76px 0 0 -58px;background:#0c2330;border:1px solid rgba(39,117,202,0.3);border-radius:12px;box-shadow:0 20px 40px -18px rgba(0,0,0,0.7);display:flex;flex-direction:column;justify-content:flex-end;padding:12px;font-family:'JetBrains Mono',monospace;"><div style="font-size:18px;font-weight:700">$29.14</div><div style="font-size:10px;color:rgba(246,241,231,0.5);margin-top:2px">Ava</div></div>
+            <div data-splitcard style="position:absolute;left:50%;top:50%;width:116px;height:152px;margin:-76px 0 0 -58px;background:#0c2330;border:1px solid rgba(39,117,202,0.3);border-radius:12px;box-shadow:0 20px 40px -18px rgba(0,0,0,0.7);display:flex;flex-direction:column;justify-content:flex-end;padding:12px;font-family:'JetBrains Mono',monospace;z-index:3"><div style="font-size:18px;font-weight:700">$29.13</div><div style="font-size:10px;color:rgba(246,241,231,0.5);margin-top:2px">Marco</div></div>
+            <div data-splitcard style="position:absolute;left:50%;top:50%;width:116px;height:152px;margin:-76px 0 0 -58px;background:#0c2330;border:1px solid rgba(39,117,202,0.3);border-radius:12px;box-shadow:0 20px 40px -18px rgba(0,0,0,0.7);display:flex;flex-direction:column;justify-content:flex-end;padding:12px;font-family:'JetBrains Mono',monospace;"><div style="font-size:18px;font-weight:700">$29.13</div><div style="font-size:10px;color:rgba(246,241,231,0.5);margin-top:2px">Priya</div></div>
           </div>
         </div>
         <!-- share: a link + QR, per person -->
@@ -315,17 +318,17 @@
           <div data-sharecard style="display:flex;align-items:center;gap:12px;width:256px;background:#F6F1E7;border-radius:12px;padding:11px 13px;box-shadow:0 18px 38px -18px rgba(0,0,0,0.7)">
             <div class="qr" data-seed="71" style="width:46px;height:46px;flex:none;display:flex"></div>
             <div style="flex:1;min-width:0;font-family:'JetBrains Mono',monospace;color:#2A2A28"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;font-weight:700">Ava</span><span style="font-size:14px;font-weight:700">$29.14</span></div><div style="font-size:9px;opacity:0.5;margin-top:3px">solana:pay · ref 7Bx…q9F</div></div>
-            <div data-sharesent style="font-size:10px;color:#0a6b45;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0">sent ✓</div>
+            <div data-sharesent style="font-size:10px;color:#1a5599;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0">sent ✓</div>
           </div>
           <div data-sharecard style="display:flex;align-items:center;gap:12px;width:256px;background:#F6F1E7;border-radius:12px;padding:11px 13px;box-shadow:0 18px 38px -18px rgba(0,0,0,0.7)">
             <div class="qr" data-seed="53" style="width:46px;height:46px;flex:none;display:flex"></div>
             <div style="flex:1;min-width:0;font-family:'JetBrains Mono',monospace;color:#2A2A28"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;font-weight:700">Marco</span><span style="font-size:14px;font-weight:700">$29.13</span></div><div style="font-size:9px;opacity:0.5;margin-top:3px">solana:pay · ref 3pQ…mZ1</div></div>
-            <div data-sharesent style="font-size:10px;color:#0a6b45;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0">sent ✓</div>
+            <div data-sharesent style="font-size:10px;color:#1a5599;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0">sent ✓</div>
           </div>
           <div data-sharecard style="display:flex;align-items:center;gap:12px;width:256px;background:#F6F1E7;border-radius:12px;padding:11px 13px;box-shadow:0 18px 38px -18px rgba(0,0,0,0.7)">
             <div class="qr" data-seed="67" style="width:46px;height:46px;flex:none;display:flex"></div>
             <div style="flex:1;min-width:0;font-family:'JetBrains Mono',monospace;color:#2A2A28"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;font-weight:700">Priya</span><span style="font-size:14px;font-weight:700">$29.13</span></div><div style="font-size:9px;opacity:0.5;margin-top:3px">solana:pay · ref Kv7…2qF</div></div>
-            <div data-sharesent style="font-size:10px;color:#0a6b45;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0">sent ✓</div>
+            <div data-sharesent style="font-size:10px;color:#1a5599;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0">sent ✓</div>
           </div>
         </div>
         <!-- settle: paid one by one, then stamp -->
@@ -335,7 +338,7 @@
             <div data-payrow style="display:flex;justify-content:space-between;align-items:center;background:#081c28;border:1px solid rgba(246,241,231,0.12);border-radius:10px;padding:11px 14px;font-family:'JetBrains Mono',monospace"><span style="font-size:13px;color:rgba(246,241,231,0.75)">Marco</span><span style="position:relative;width:54px;height:16px"><span data-paypending style="position:absolute;right:0;top:1px;font-size:13px;color:rgba(246,241,231,0.35);letter-spacing:2px">···</span><span data-paypaid style="position:absolute;right:0;font-size:12px;color:var(--acc);opacity:0">paid ✓</span></span></div>
             <div data-payrow style="display:flex;justify-content:space-between;align-items:center;background:#081c28;border:1px solid rgba(246,241,231,0.12);border-radius:10px;padding:11px 14px;font-family:'JetBrains Mono',monospace"><span style="font-size:13px;color:rgba(246,241,231,0.75)">Priya</span><span style="position:relative;width:54px;height:16px"><span data-paypending style="position:absolute;right:0;top:1px;font-size:13px;color:rgba(246,241,231,0.35);letter-spacing:2px">···</span><span data-paypaid style="position:absolute;right:0;font-size:12px;color:var(--acc);opacity:0">paid ✓</span></span></div>
           </div>
-          <div data-settlestamp style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:24px;letter-spacing:0.04em;color:var(--acc);border:3px solid var(--acc);border-radius:10px;padding:8px 18px;transform:rotate(-6deg);box-shadow:0 0 0 6px rgba(20,241,149,0.08);opacity:0">SETTLED ✓</div>
+          <div data-settlestamp style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:24px;letter-spacing:0.04em;color:var(--acc);border:3px solid var(--acc);border-radius:10px;padding:8px 18px;transform:rotate(-6deg);box-shadow:0 0 0 6px rgba(39,117,202,0.08);opacity:0">SETTLED ✓</div>
         </div>
       </div>
     </div>
@@ -403,10 +406,10 @@
                 </sc-if>
                 <sc-if value="{{ isInstant }}" hint-placeholder-val="{{ true }}">
                   <div style="display:flex;flex-direction:column;align-items:center;text-align:center">
-                    <div style="width:62px;height:62px;border-radius:18px;background:rgba(20,241,149,0.1);border:1px solid rgba(20,241,149,0.3);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--acc)">⊕</div>
+                    <div style="width:62px;height:62px;border-radius:18px;background:rgba(39,117,202,0.1);border:1px solid rgba(39,117,202,0.3);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--acc)">⊕</div>
                     <div style="margin-top:14px;font-size:15px;font-weight:600;color:#F6F1E7">Wallet created from the link</div>
                     <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(246,241,231,0.45)">no seed phrase · no extension</div>
-                    <div style="margin-top:14px;display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--acc);border:1px solid rgba(20,241,149,0.25);border-radius:8px;padding:6px 11px">G7c…wA7 · ready ✓</div>
+                    <div style="margin-top:14px;display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--acc);border:1px solid rgba(39,117,202,0.25);border-radius:8px;padding:6px 11px">G7c…wA7 · ready ✓</div>
                     <div style="margin-top:16px;width:100%;background:var(--acc);color:#04121a;font-weight:700;font-size:14px;text-align:center;padding:13px;border-radius:11px">Spin up &amp; settle</div>
                   </div>
                 </sc-if>
@@ -450,9 +453,9 @@
             <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;margin:22px 0">
               <div><div style="font-size:11px;opacity:0.5">BILLED</div><div style="font-size:28px;font-weight:700;letter-spacing:-0.02em">{{ billedSym }}{{ billedAmt }}</div><div style="font-size:11px;opacity:0.5">{{ billedCode }}</div></div>
               <div style="font-size:24px;opacity:0.4;padding-bottom:18px">→</div>
-              <div><div style="font-size:11px;opacity:0.5">SETTLED</div><div style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:#0a6b45">$74.48</div><div style="font-size:11px;opacity:0.5">USDC</div></div>
+              <div><div style="font-size:11px;opacity:0.5">SETTLED</div><div style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:#1a5599">$74.48</div><div style="font-size:11px;opacity:0.5">USDC</div></div>
             </div>
-            <div data-fxlock style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;background:rgba(20,241,149,0.14);color:#0a6b45;border:1px solid rgba(10,107,69,0.3);border-radius:8px;padding:6px 11px">
+            <div data-fxlock style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;background:rgba(39,117,202,0.14);color:#1a5599;border:1px solid rgba(26,85,153,0.3);border-radius:8px;padding:6px 11px">
               <span data-fxicon style="display:inline-block">🔒</span> {{ rateStr }}
             </div>
             <div style="margin-top:18px;border-top:1px dashed rgba(42,42,40,0.3);padding-top:12px;font-size:10px;opacity:0.5;letter-spacing:0.04em">LOCKED 2026-06-23T20:41:07Z · BLOCK 287,441,902</div>
@@ -481,12 +484,12 @@
 
           <div style="margin-bottom:20px">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span style="font-size:14px;color:rgba(246,241,231,0.7)">Trips a year</span><span style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--acc)">{{ trips }}</span></div>
-            <input type="range" min="1" max="24" step="1" value="{{ trips }}" onChange="{{ setTrips }}" style="width:100%;height:24px;accent-color:#14F195;cursor:pointer;background:transparent">
+            <input type="range" min="1" max="24" step="1" value="{{ trips }}" onChange="{{ setTrips }}" style="width:100%;height:24px;accent-color:#2775CA;cursor:pointer;background:transparent">
           </div>
 
           <div style="margin-bottom:26px">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span style="font-size:14px;color:rgba(246,241,231,0.7)">Avg bill you front</span><span style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--acc)">{{ avgBillStr }}</span></div>
-            <input type="range" min="200" max="4000" step="50" value="{{ avgBill }}" onChange="{{ setAvg }}" style="width:100%;height:24px;accent-color:#14F195;cursor:pointer;background:transparent">
+            <input type="range" min="200" max="4000" step="50" value="{{ avgBill }}" onChange="{{ setAvg }}" style="width:100%;height:24px;accent-color:#2775CA;cursor:pointer;background:transparent">
           </div>
 
           <div style="border-top:1px solid rgba(246,241,231,0.08);padding-top:22px;display:flex;flex-direction:column;gap:18px">
@@ -500,7 +503,7 @@
             </div>
             <div>
               <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-family:'JetBrains Mono',monospace"><span style="font-size:13px;color:var(--acc)">Divvy · USDC <span style="color:rgba(246,241,231,0.4)">· ~0%</span></span><span style="font-size:15px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums">{{ divvyYrStr }}</span></div>
-              <div style="height:10px;border-radius:6px;background:rgba(246,241,231,0.06);overflow:hidden"><div style="height:100%;border-radius:6px;width:{{ divvyPct }}%;min-width:6px;background:var(--acc);box-shadow:0 0 12px rgba(20,241,149,0.5);transition:width .5s cubic-bezier(.2,.8,.2,1)"></div></div>
+              <div style="height:10px;border-radius:6px;background:rgba(246,241,231,0.06);overflow:hidden"><div style="height:100%;border-radius:6px;width:{{ divvyPct }}%;min-width:6px;background:var(--acc);box-shadow:0 0 12px rgba(39,117,202,0.5);transition:width .5s cubic-bezier(.2,.8,.2,1)"></div></div>
             </div>
           </div>
         </div>
@@ -537,7 +540,7 @@
           <div class="xpl-left" style="padding:clamp(22px,2.6vw,30px);border-right:1px solid rgba(246,241,231,0.08)">
             <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:rgba(246,241,231,0.4);margin-bottom:24px">CONFIRMATIONS</div>
             <div style="position:relative;font-family:'JetBrains Mono',monospace;padding-left:2px">
-              <div style="position:absolute;left:7px;top:8px;bottom:18px;width:2px;background:linear-gradient(180deg,var(--acc),rgba(20,241,149,0.25))"></div>
+              <div style="position:absolute;left:7px;top:8px;bottom:18px;width:2px;background:linear-gradient(180deg,var(--acc),rgba(39,117,202,0.25))"></div>
               <div style="position:relative;padding-left:26px;margin-bottom:18px"><span style="position:absolute;left:1px;top:2px;width:12px;height:12px;border-radius:50%;background:#06171f;border:2px solid var(--acc)"></span><div style="font-size:13px;color:#F6F1E7">requested</div><div style="font-size:11px;color:rgba(246,241,231,0.4);margin-top:2px">20:41:03.118</div></div>
               <div style="position:relative;padding-left:26px;margin-bottom:18px"><span style="position:absolute;left:1px;top:2px;width:12px;height:12px;border-radius:50%;background:#06171f;border:2px solid var(--acc)"></span><div style="font-size:13px;color:#F6F1E7">signed</div><div style="font-size:11px;color:rgba(246,241,231,0.4);margin-top:2px">20:41:03.402</div></div>
               <div style="position:relative;padding-left:26px;margin-bottom:18px"><span style="position:absolute;left:1px;top:2px;width:12px;height:12px;border-radius:50%;background:#06171f;border:2px solid var(--acc)"></span><div style="font-size:13px;color:#F6F1E7">confirmed</div><div style="font-size:11px;color:rgba(246,241,231,0.4);margin-top:2px">20:41:03.612</div></div>
@@ -603,11 +606,11 @@
         <!-- settled -->
         <div data-parallax="0.07" style="position:relative;flex:1 1 200px;max-width:260px;background:#fff;border-radius:3px;padding:24px 22px 28px;transform:rotate(2deg);box-shadow:0 30px 60px -22px rgba(0,0,0,0.55)">
           <div style="position:absolute;top:-12px;left:56%;transform:translateX(-50%) rotate(5deg);width:80px;height:26px;background:rgba(244,240,228,0.46);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.45),0 1px 2px rgba(0,0,0,0.08);pointer-events:none"></div>
-          <div data-stampin data-rot="5" style="position:absolute;top:12px;right:10px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;letter-spacing:0.05em;color:#0a6b45;border:2px solid #0a6b45;border-radius:8px;padding:5px 9px;box-shadow:0 0 0 4px rgba(20,241,149,0.12)">SETTLED ✓</div>
+          <div data-stampin data-rot="5" style="position:absolute;top:12px;right:10px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;letter-spacing:0.05em;color:#1a5599;border:2px solid #1a5599;border-radius:8px;padding:5px 9px;box-shadow:0 0 0 4px rgba(39,117,202,0.12)">SETTLED ✓</div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:rgba(42,42,40,0.45)">WITH DIVVY</div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:rgba(42,42,40,0.55);margin:18px 0 10px">USDC · on-chain</div>
           <div style="font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#2A2A28">$1,204.16</div>
-          <div style="margin-top:18px;border-top:1px dashed rgba(42,42,40,0.25);padding-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#0a6b45">cleared · 20:41 · same night</div>
+          <div style="margin-top:18px;border-top:1px dashed rgba(42,42,40,0.25);padding-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#1a5599">cleared · 20:41 · same night</div>
         </div>
         </div>
       </div>
@@ -624,7 +627,7 @@
         <a href="#top" class="ghostbtn" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:rgba(246,241,231,0.85);font-weight:500;font-size:17px;padding:17px 26px;border-radius:13px;border:1px solid rgba(246,241,231,0.16);font-family:'JetBrains Mono',monospace">★ Star on GitHub</a>
       </div>
       <div data-reveal style="margin-top:clamp(70px,10vw,120px);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:20px;border-top:1px solid rgba(246,241,231,0.1);padding-top:28px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:rgba(246,241,231,0.4)">
-        <span style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;background:var(--acc);color:#04121a;font-weight:700">÷</span> Divvy</span>
+        <span style="display:flex;align-items:center;gap:10px"><img src="uploads/divvy-icon-blue-1024.png" alt="" style="width:22px;height:22px;border-radius:5px;display:block"><img src="uploads/divvy-wordmark-white.png" alt="Divvy" style="height:15px;width:auto;display:block"></span>
         <span>MIT · open source · built on Solana</span>
         <span>No token. No spread. No "trust me."</span>
       </div>
@@ -633,7 +636,7 @@
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100vh&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#14F195&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;grain&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100vh&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#2775CA&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;grain&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
 class Component extends DCLogic {
   state = { count: 3, trips: 8, avgBill: 1200, fx: 'THB', payTab: 'wallet' };
 
@@ -981,7 +984,7 @@ class Component extends DCLogic {
         payRows.forEach((r, i) => {
           etl.to(payPending[i], { opacity: 0, duration: 0.2 }, 0.5 + i * 0.5);
           etl.to(payPaid[i], { opacity: 1, duration: 0.3, ease: 'back.out(2)' }, '<0.05');
-          etl.to(r, { borderColor: 'rgba(20,241,149,0.45)', duration: 0.3 }, '<');
+          etl.to(r, { borderColor: 'rgba(39,117,202,0.45)', duration: 0.3 }, '<');
         });
         etl.to(settleStamp, { opacity: 1, scale: 1, rotation: -6, duration: 0.5, ease: 'back.out(2.2)' }, '+=0.15');
         etl.to({}, { duration: 1.1 });
@@ -1069,7 +1072,7 @@ class Component extends DCLogic {
         const dist = Math.hypot(dx, dy);
         if (dist < R + Math.max(rect.width, rect.height) / 2) {
           gsap.to(btn, { x: dx * 0.28, y: dy * 0.28, duration: 0.4, ease: 'power3.out' });
-          btn.style.boxShadow = '0 0 28px rgba(20,241,149,0.45)';
+          btn.style.boxShadow = '0 0 28px rgba(39,117,202,0.45)';
         } else {
           gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1,0.4)' });
           btn.style.boxShadow = 'none';

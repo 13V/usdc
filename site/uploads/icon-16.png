@@ -1,0 +1,41 @@
+DIVVY — LOGO ASSETS
+===================
+
+Brand colors
+------------
+Blue (primary):   #2C74C6
+Charcoal (dark):  #242C2F
+White:            #FFFFFF
+
+Typeface: geometric neo-grotesque (Liberation Sans Bold, Arial/Helvetica-metric).
+All text in these files is converted to vector outlines — no fonts required to view or render.
+
+Files
+-----
+svg/   Scalable vectors (use these everywhere you can — web, print, scaling)
+  divvy-wordmark-blue.svg        div/vy wordmark, blue, transparent bg
+  divvy-wordmark-white.svg       div/vy wordmark, white (for dark backgrounds)
+  divvy-icon-blue.svg            App icon — blue rounded square, white slash
+  divvy-icon-outline-dark.svg    App icon — outlined, for dark backgrounds
+  divvy-lockup-blue.svg          Wordmark + "Split the bill. Settle in USDC."
+  divvy-lockup-white.svg         Same lockup, white
+
+png/   High-resolution raster (transparent backgrounds)
+  divvy-wordmark-blue.png / -white.png      ~2400px wide
+  divvy-lockup-blue.png / -white.png        ~2400px wide
+  divvy-icon-blue-1024.png
+  divvy-icon-outline-dark-1024.png
+
+favicon/  Web + app icons (square, transparent)
+  favicon.ico              multi-size (16/32/48) — drop in site root
+  icon-16/32/48/192/512.png
+  apple-touch-icon.png     180px (iOS home screen)
+
+Favicon HTML (paste into <head>)
+--------------------------------
+<link rel="icon" href="/favicon/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon/icon-192.png">
+<link rel="apple-touch-icon" href="/favicon/apple-touch-icon.png">
+
+Need other sizes, an SVG favicon, or the slash angle tweaked? Just ask.
