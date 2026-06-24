@@ -77,6 +77,8 @@ import { dashboardRouter } from "./dashboard";
 import { iouRouter } from "./ious";
 import { activityRouter } from "./activity";
 import { recurringRouter } from "./recurring";
+import { friendsRouter } from "./friends";
+import { chatRouter } from "./chat";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
@@ -102,6 +104,8 @@ app.use(dashboardRouter);
 app.use(iouRouter);
 app.use(activityRouter);
 app.use(recurringRouter);
+app.use(friendsRouter);
+app.use(chatRouter);
 
 // ---- Auth & identity (progressive, optional) ------------------------------
 
@@ -527,11 +531,11 @@ app.post("/api/trips", (req: Request, res: Response) => {
     const body = req.body as {
       name?: string;
       cluster?: Cluster;
-      members?: { name?: string; wallet?: string }[];
+      members?: { name?: string; wallet?: string; userId?: string }[];
     };
     const name = assertLen(String(body.name || ""), "trip name", 1, MAX_TRIP_NAME);
     const members = (body.members || [])
-      .map((m) => ({ name: String(m.name || "").trim(), wallet: m.wallet }))
+      .map((m) => ({ name: String(m.name || "").trim(), wallet: m.wallet, userId: m.userId }))
       .filter((m) => m.name);
     if (members.length < 1) return res.status(400).json({ error: "need at least one member" });
     if (members.length > MAX_MEMBERS) {

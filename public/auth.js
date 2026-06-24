@@ -62,7 +62,19 @@
 
   // ── init: load current user from a stored token ─────────────────────────────
   async function init() {
-    if (!token()) { Auth.user = null; fire(); return; }
+    if (!token()) {
+      Auth.user = null;
+      // Best-effort: a returning user with a local wallet but no session gets
+      // silently re-signed-in. Never block init on it; ignore any failure.
+      if (hasLocalWallet()) {
+        try {
+          await signInWithCreatedWallet(); // fires onChange on success
+          return;
+        } catch (_) { /* stay signed-out and fall through to fire() */ }
+      }
+      fire();
+      return;
+    }
     try {
       const data = await authJson("/api/me");
       Auth.user = (data && data.user) || null;
@@ -88,6 +100,147 @@
     const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
     for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
     return btoa(bin);
+  }
+
+  function base64ToBytes(b64) {
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  // ── base58 (Bitcoin alphabet) — Uint8Array -> string ────────────────────────
+  // Used to encode a raw 32-byte Ed25519 public key as a Solana address.
+  const B58_ALPHABET =
+    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  function base58Encode(bytes) {
+    const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    if (arr.length === 0) return "";
+    // Count leading zero bytes — each maps to a leading "1".
+    let zeros = 0;
+    while (zeros < arr.length && arr[zeros] === 0) zeros++;
+    // Convert the big-endian byte array into base58 via repeated big-int math.
+    const digits = [0];
+    for (let i = zeros; i < arr.length; i++) {
+      let carry = arr[i];
+      for (let j = 0; j < digits.length; j++) {
+        carry += digits[j] << 8;
+        digits[j] = carry % 58;
+        carry = (carry / 58) | 0;
+      }
+      while (carry > 0) {
+        digits.push(carry % 58);
+        carry = (carry / 58) | 0;
+      }
+    }
+    let out = "";
+    for (let i = 0; i < zeros; i++) out += B58_ALPHABET[0];
+    for (let i = digits.length - 1; i >= 0; i--) out += B58_ALPHABET[digits[i]];
+    return out;
+  }
+
+  // ── Self-custodial in-browser wallet (Ed25519 via Web Crypto) ───────────────
+  // SECURITY NOTE: the generated private key (pkcs8, base64) lives in the
+  // browser's localStorage under "divvy.localWallet". This is suitable for
+  // devnet / MVP only — anyone with access to the device's storage can recover
+  // the key. For production, upgrade to a secure embedded wallet (e.g. a
+  // passkey-bound or TEE-backed signer) rather than persisting raw key material.
+  const LOCAL_WALLET_KEY = "divvy.localWallet";
+
+  function readLocalWallet() {
+    try {
+      const raw = localStorage.getItem(LOCAL_WALLET_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (obj && obj.address && obj.pkcs8B64) return obj;
+      return null;
+    } catch (_) { return null; }
+  }
+  function writeLocalWallet(wallet) {
+    try { localStorage.setItem(LOCAL_WALLET_KEY, JSON.stringify(wallet)); } catch (_) { /* non-persistent */ }
+  }
+  function hasLocalWallet() {
+    return !!readLocalWallet();
+  }
+
+  // Generate a fresh Ed25519 keypair. Returns { address, pkcs8B64, privateKey }.
+  // `address` is the base58-encoded raw 32-byte public key (the Solana address).
+  async function genKeypair() {
+    const kp = await crypto.subtle.generateKey(
+      { name: "Ed25519" }, true, ["sign", "verify"]);
+    const rawPub = new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey));
+    const pkcs8 = new Uint8Array(await crypto.subtle.exportKey("pkcs8", kp.privateKey));
+    return {
+      address: base58Encode(rawPub),
+      pkcs8B64: bytesToBase64(pkcs8),
+      privateKey: kp.privateKey,
+    };
+  }
+
+  // Import a persisted pkcs8 (base64) private key for signing.
+  async function importPrivateKey(pkcs8B64) {
+    return crypto.subtle.importKey(
+      "pkcs8", base64ToBytes(pkcs8B64), { name: "Ed25519" }, false, ["sign"]);
+  }
+
+  // Run the nonce -> sign -> verify flow with a CryptoKey private key.
+  // `address` is the base58 Solana address (raw pubkey). Returns Auth.user.
+  async function siwsSignInWithKey(address, privateKey) {
+    const { nonce, message } = await authJson("/api/auth/nonce");
+    void nonce; // nonce is embedded in `message`; we sign the message verbatim.
+    const messageBytes = new TextEncoder().encode(message);
+    const sig = await crypto.subtle.sign("Ed25519", privateKey, messageBytes);
+    const signature = bytesToBase64(new Uint8Array(sig));
+    const data = await authJson("/api/auth/siws/verify", {
+      method: "POST",
+      body: JSON.stringify({ pubkey: address, signature, message }),
+    });
+    setToken(data.token);
+    Auth.user = data.user || null;
+    fire();
+    return Auth.user;
+  }
+
+  // Create a brand-new browser wallet, persist it, and sign in.
+  async function createWallet() {
+    let kp;
+    try {
+      kp = await genKeypair();
+    } catch (err) {
+      throw new Error(
+        "Your browser can't create a wallet here — connect Phantom or use email instead.");
+    }
+    writeLocalWallet({ address: kp.address, pkcs8B64: kp.pkcs8B64 });
+    try {
+      return await siwsSignInWithKey(kp.address, kp.privateKey);
+    } catch (err) {
+      // Wallet is persisted; surface the sign-in failure but keep the keypair so
+      // the user can retry via signInWithCreatedWallet().
+      throw err;
+    }
+  }
+
+  // Sign in with an already-created browser wallet (returning users).
+  async function signInWithCreatedWallet() {
+    const wallet = readLocalWallet();
+    if (!wallet) throw new Error("No wallet created on this device yet.");
+    let privateKey;
+    try {
+      privateKey = await importPrivateKey(wallet.pkcs8B64);
+    } catch (err) {
+      throw new Error("Couldn't load your saved wallet on this device.");
+    }
+    return siwsSignInWithKey(wallet.address, privateKey);
+  }
+
+  // Return the persisted secret so a UI can let the user back it up.
+  // SECURITY NOTE: this exposes raw key material that lives in browser storage
+  // (devnet/MVP). Treat it like a seed phrase; do not log or transmit it. For
+  // production, upgrade to a secure embedded wallet instead of exporting keys.
+  function exportWalletSecret() {
+    const wallet = readLocalWallet();
+    if (!wallet) return null;
+    return { address: wallet.address, pkcs8B64: wallet.pkcs8B64 };
   }
 
   async function signInWithWallet() {
@@ -174,6 +327,11 @@
     signInWithPrivy,
     updateProfile,
     signOut,
+    // Self-custodial in-browser wallet (Ed25519 / Web Crypto).
+    createWallet,
+    signInWithCreatedWallet,
+    hasLocalWallet,
+    exportWalletSecret,
   };
   window.Auth = Auth;
 

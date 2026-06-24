@@ -352,6 +352,7 @@
 
         <div class="summary" style="align-items:center; margin-top:4px">
           <h1 style="font-size:1.4rem; margin:0">${esc(trip.name)}</h1>
+          <button id="tChat" class="chip" type="button" style="margin:0">Chat 💬</button>
           <button id="tRecap" class="chip" type="button" style="margin:0">Recap ✨</button>
           <button id="tShare" class="chip" type="button" style="margin:0">Share</button>
         </div>
@@ -414,6 +415,12 @@
     c.appendChild(view);
 
     document.getElementById("tBackList").onclick = showList;
+
+    // Chat button: group chat + receipt feed (chat.js).
+    var tChat = document.getElementById("tChat");
+    if (tChat) tChat.onclick = () => {
+      if (window.Chat && typeof window.Chat.open === "function") window.Chat.open(currentTripId, currentTripToken);
+    };
 
     // Recap button: shareable settle-up recap card (recap.js).
     var tRecap = document.getElementById("tRecap");

@@ -166,13 +166,13 @@ function hydrateTrip(row: any): Trip {
 export function createTrip(
   name: string,
   cluster: Cluster,
-  members: { name: string; wallet?: string }[],
+  members: { name: string; wallet?: string; userId?: string }[],
   ownerUserId?: string
 ): Trip {
   const trimmedName = String(name || "").trim();
   if (!trimmedName) throw new Error("createTrip: need a name");
   const cleanMembers = (members || [])
-    .map((m) => ({ name: String(m.name || "").trim(), wallet: m.wallet }))
+    .map((m) => ({ name: String(m.name || "").trim(), wallet: m.wallet, userId: m.userId }))
     .filter((m) => m.name);
   if (cleanMembers.length < 1) throw new Error("createTrip: need at least one member");
 
@@ -183,14 +183,17 @@ export function createTrip(
   const insertTrip = db.prepare(
     "INSERT INTO trips (id, name, share_token, cluster, created_at, owner_user_id) VALUES (?, ?, ?, ?, ?, ?)"
   );
+  // Members may link to an existing Divvy account (user_id) — e.g. a group
+  // started from your friends — so the group shows up in each friend's trips
+  // and settle-up routes to their wallet.
   const insertMember = db.prepare(
-    "INSERT INTO trip_members (id, trip_id, name, wallet) VALUES (?, ?, ?, ?)"
+    "INSERT INTO trip_members (id, trip_id, name, wallet, user_id) VALUES (?, ?, ?, ?, ?)"
   );
 
   const tx = db.transaction(() => {
     insertTrip.run(id, trimmedName, shareToken, cluster, createdAt, ownerUserId ?? null);
     for (const m of cleanMembers) {
-      insertMember.run(crypto.randomUUID(), id, m.name, m.wallet ?? null);
+      insertMember.run(crypto.randomUUID(), id, m.name, m.wallet ?? null, m.userId ?? null);
     }
   });
   tx();

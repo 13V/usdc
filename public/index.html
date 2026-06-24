@@ -85,6 +85,7 @@
   <div class="tabs">
     <button id="tabNew">New bill</button>
     <button id="tabHome" class="secondary">Balances</button>
+    <button id="tabFriends" class="secondary">Friends</button>
     <button id="tabTrips" class="secondary">Trips</button>
     <button id="tabRecurring" class="secondary">Recurring</button>
     <button id="tabActivity" class="secondary">Activity</button>
@@ -186,6 +187,7 @@
   <section id="home" style="display:none"></section>
   <section id="activity" style="display:none"></section>
   <section id="recurring" style="display:none"></section>
+  <section id="friends" style="display:none"></section>
 
   <section id="result" style="display:none">
     <div id="settledBanner" class="badge paid" style="display:none; font-size:.9rem; padding:8px 12px;">✓ Settled — everyone paid</div>
@@ -423,6 +425,7 @@ function render(bill) {
   $("home").style.display = "none";
   $("activity").style.display = "none";
   $("recurring").style.display = "none";
+  $("friends").style.display = "none";
   $("result").style.display = "block";
   $("settledBanner").style.display = bill.settled ? "block" : "none";
   $("billTitle").textContent = bill.title;
@@ -480,6 +483,20 @@ function hideAux() {
   $("home").style.display = "none";
   $("activity").style.display = "none";
   $("recurring").style.display = "none";
+  $("friends").style.display = "none";
+}
+
+// Friends + groups (rendered by friends.js into #friends).
+function showFriends() {
+  $("form").style.display = "none";
+  $("result").style.display = "none";
+  $("history").style.display = "none";
+  $("trips").style.display = "none";
+  $("home").style.display = "none";
+  $("activity").style.display = "none";
+  $("recurring").style.display = "none";
+  $("friends").style.display = "block";
+  if (window.Friends && typeof window.Friends.show === "function") window.Friends.show();
 }
 
 function showForm() {
@@ -508,6 +525,7 @@ function showHome() {
   $("trips").style.display = "none";
   $("activity").style.display = "none";
   $("recurring").style.display = "none";
+  $("friends").style.display = "none";
   $("home").style.display = "block";
   if (window.Home && typeof window.Home.show === "function") window.Home.show();
 }
@@ -520,6 +538,7 @@ function showActivity() {
   $("trips").style.display = "none";
   $("home").style.display = "none";
   $("recurring").style.display = "none";
+  $("friends").style.display = "none";
   $("activity").style.display = "block";
   if (window.Activity && typeof window.Activity.show === "function") window.Activity.show();
 }
@@ -532,6 +551,7 @@ function showRecurring() {
   $("trips").style.display = "none";
   $("home").style.display = "none";
   $("activity").style.display = "none";
+  $("friends").style.display = "none";
   $("recurring").style.display = "block";
   if (window.Recurring && typeof window.Recurring.show === "function") window.Recurring.show();
 }
@@ -591,6 +611,7 @@ $("tabNew").onclick = showForm;
 $("tabHistory").onclick = showHistory;
 $("tabTrips").onclick = showTrips;
 $("tabHome").onclick = showHome;
+$("tabFriends").onclick = showFriends;
 $("tabActivity").onclick = showActivity;
 $("tabRecurring").onclick = showRecurring;
 
@@ -630,12 +651,20 @@ function renderAuth(user) {
   if (!user) {
     area.innerHTML =
       '<button class="connect" id="authConnect" type="button">Connect wallet</button>' +
+      '<button class="connect" id="authCreate" type="button">Create a wallet</button>' +
       '<button class="linklike" id="authEmail" type="button">Sign in with email</button>' +
       '<div id="authMsg"></div>';
     $("authConnect").onclick = async () => {
       setAuthMsg("Connecting…");
       try { await window.Auth.signInWithWallet(); }
       catch (err) { setAuthMsg(err.message || "Couldn't connect.", true); }
+    };
+    $("authCreate").onclick = async () => {
+      setAuthMsg("Creating your Solana wallet…");
+      try {
+        await window.Auth.createWallet();
+        setAuthMsg("");
+      } catch (err) { setAuthMsg(err.message || "Couldn't create a wallet.", true); }
     };
     $("authEmail").onclick = async () => {
       setAuthMsg("");
@@ -688,6 +717,8 @@ document.addEventListener("DOMContentLoaded", () => {
 <script src="/activity.js"></script>
 <script src="/recap.js"></script>
 <script src="/recurring.js"></script>
+<script src="/friends.js"></script>
+<script src="/chat.js"></script>
 <script>
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 </script>
