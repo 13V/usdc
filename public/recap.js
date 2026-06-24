@@ -12,8 +12,19 @@
 (function () {
   "use strict";
 
-  const GREEN = "#2775ca";
-  const INK = "#04121a";
+  // Brand tokens mirrored from the styleguide :root (canvas can't read CSS vars).
+  const GREEN = "#2775ca";          // --accent (USDC blue); name kept for API/back-compat
+  const INK = "#04121a";            // --ink (app background)
+  const SURFACE = "#0a1f2b";        // --surface (cards)
+  const SURFACE_2 = "#0e2734";      // --surface-2 (raised rows)
+  const CREAM = "#f6f1e7";          // --cream (primary text)
+  const MUTED = "#a9b0a8";          // ~ --muted on dark (secondary text)
+  const FAINT = "#727a74";          // ~ --faint (tertiary / hints)
+  const TERRA = "#e0a892";          // --terra (you-owe / debit)
+  const ACCENT_SOFT = "rgba(39,117,202,0.14)"; // --accent-soft
+  const LINE = "rgba(246,241,231,0.10)";        // --line (hairline borders)
+  const SANS = "'Space Grotesk', -apple-system, system-ui, sans-serif";
+  const MONO = "'JetBrains Mono', ui-monospace, monospace";
 
   function authFetchFn() {
     return (window.Auth && window.Auth.authFetch) ? window.Auth.authFetch : fetch;
@@ -59,9 +70,9 @@
       "display:flex; align-items:center; justify-content:center; padding:16px;";
     const card = document.createElement("div");
     card.style.cssText =
-      "background:" + INK + "; color:#fff; border:1px solid #8884; border-radius:16px; " +
+      "background:" + SURFACE + "; color:" + CREAM + "; border:1px solid " + LINE + "; border-radius:16px; " +
       "max-width:420px; width:100%; max-height:90vh; overflow:auto; padding:16px; " +
-      "box-shadow:0 10px 40px rgba(0,0,0,.5);";
+      "font-family:" + SANS + "; box-shadow:0 10px 40px rgba(0,0,0,.5);";
     card.innerHTML = innerHtml;
     ov.appendChild(card);
     // Click outside the card closes.
@@ -74,10 +85,12 @@
 
   function showMessage(msg) {
     const card = buildOverlay(
-      '<p style="margin:0 0 12px; font-weight:600">Recap</p>' +
-      '<p class="muted" style="color:#bbb; margin:0 0 16px">' + esc(msg) + "</p>" +
+      '<div class="eyebrow" style="font-family:' + MONO + '; text-transform:uppercase; letter-spacing:.12em; ' +
+        'font-size:.68rem; color:' + MUTED + '; margin:0 0 8px">Recap</div>' +
+      '<p style="color:' + CREAM + '; margin:0 0 16px; font-size:1.05rem">' + esc(msg) + "</p>" +
       '<button id="recapClose" type="button" style="width:100%; padding:14px; border:0; ' +
-      "border-radius:12px; background:" + GREEN + "; color:" + INK + '; font-weight:700; cursor:pointer">Close</button>');
+      "border-radius:999px; background:" + GREEN + "; color:" + INK + "; font-weight:700; " +
+      "font-family:" + SANS + '; cursor:pointer">Close</button>');
     const b = card.querySelector("#recapClose");
     if (b) b.onclick = closeModal;
   }
@@ -118,59 +131,85 @@
     return balances.every((b) => b.direction === "settled");
   }
 
+  // Draw the Divvy slash mark (the "/" of the wordmark) as a chunky accent glyph.
+  function drawSlashMark(ctx, x, y, size, color) {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    const w = size * 0.5;     // stroke width of the slash
+    ctx.moveTo(x + size, y);
+    ctx.lineTo(x + size + w, y);
+    ctx.lineTo(x + w, y + size);
+    ctx.lineTo(x, y + size);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
   function drawCard(canvas, trip) {
     const W = 1080, H = 1080;
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext("2d");
 
-    // Background.
+    // Background — app ink.
     ctx.fillStyle = INK;
     ctx.fillRect(0, 0, W, H);
 
-    // Subtle green frame.
+    // Inner card surface (rounded), like a .card panel on the ink shell.
+    const M = 40;
+    ctx.fillStyle = SURFACE;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(M, M, W - M * 2, H - M * 2, 36);
+    else ctx.rect(M, M, W - M * 2, H - M * 2);
+    ctx.fill();
+
+    // Hairline accent frame.
     ctx.strokeStyle = GREEN;
-    ctx.lineWidth = 6;
-    ctx.strokeRect(40, 40, W - 80, H - 80);
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(M, M, W - M * 2, H - M * 2, 36);
+    else ctx.rect(M, M, W - M * 2, H - M * 2);
+    ctx.stroke();
 
-    const cx = 90;
+    const cx = 96;
 
-    // Brand wordmark.
+    // Brand lockup: slash mark + Divvy wordmark.
     ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = GREEN;
-    ctx.font = "700 56px -apple-system, system-ui, sans-serif";
-    ctx.fillText("Divvy", cx, 150);
-    ctx.fillStyle = "#7d8a91";
-    ctx.font = "600 26px -apple-system, system-ui, sans-serif";
-    ctx.fillText("settle-up recap", cx, 192);
+    drawSlashMark(ctx, cx, 104, 56, GREEN);
+    ctx.fillStyle = CREAM;
+    ctx.font = "700 60px " + SANS;
+    ctx.fillText("Divvy", cx + 96, 156);
 
-    // Trip name (wrapped, up to 2 lines).
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "800 72px -apple-system, system-ui, sans-serif";
-    let y = 320;
+    // Eyebrow micro-label (mono, uppercase).
+    ctx.fillStyle = MUTED;
+    ctx.font = "600 26px " + MONO;
+    ctx.fillText("S E T T L E - U P   R E C A P", cx, 214);
+
+    // Trip name (wrapped, up to 2 lines) — sans display.
+    ctx.fillStyle = CREAM;
+    ctx.font = "700 72px " + SANS;
+    let y = 330;
     y = wrapText(ctx, clean(trip.name) || "Trip", cx, y, W - cx * 2, 84, 2);
 
-    // Total spent.
-    y += 30;
-    ctx.fillStyle = "#9fb0b8";
-    ctx.font = "600 32px -apple-system, system-ui, sans-serif";
-    ctx.fillText("Total spent", cx, y);
-    y += 64;
+    // Hero stat — Total split (mono number in accent blue, money rule = paid/positive).
+    y += 36;
+    ctx.fillStyle = MUTED;
+    ctx.font = "600 30px " + SANS;
+    ctx.fillText("Total split", cx, y);
+    y += 78;
     ctx.fillStyle = GREEN;
-    ctx.font = "800 88px -apple-system, system-ui, sans-serif";
+    ctx.font = "600 104px " + MONO;
     ctx.fillText(clean(trip.totalFmt) || "$0.00", cx, y);
 
     // People count.
     const members = Array.isArray(trip.members) ? trip.members : [];
     const expenses = Array.isArray(trip.expenses) ? trip.expenses : [];
-    y += 80;
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "600 40px -apple-system, system-ui, sans-serif";
+    y += 84;
+    ctx.fillStyle = CREAM;
+    ctx.font = "600 38px " + SANS;
     ctx.fillText(members.length + " " + (members.length === 1 ? "person" : "people"), cx, y);
 
-    // A couple of detail lines: biggest expense + per-person average.
-    ctx.font = "500 34px -apple-system, system-ui, sans-serif";
-    ctx.fillStyle = "#9fb0b8";
-
+    // Breakdown: biggest expense + per-person average. Labels sans, numbers mono.
     // Biggest expense (by amountCents when available).
     let biggest = null;
     for (const e of expenses) {
@@ -178,7 +217,9 @@
       if (!biggest || (isFinite(c) && c > Number(biggest.amountCents))) biggest = e;
     }
     if (biggest) {
-      y += 72;
+      y += 70;
+      ctx.fillStyle = MUTED;
+      ctx.font = "500 34px " + SANS;
       const label = "Biggest: " + clean(biggest.title || "expense") +
         (biggest.amountFmt ? " — " + clean(biggest.amountFmt) : "");
       y = wrapText(ctx, label, cx, y, W - cx * 2, 44, 2);
@@ -189,28 +230,28 @@
     for (const e of expenses) { const c = Number(e.amountCents); if (isFinite(c)) totalCents += c; }
     if (members.length > 0 && totalCents > 0) {
       const avg = totalCents / members.length / 100;
-      y += biggest ? 14 : 72;
-      ctx.fillStyle = "#9fb0b8";
-      ctx.font = "500 34px -apple-system, system-ui, sans-serif";
+      y += biggest ? 14 : 70;
+      ctx.fillStyle = MUTED;
+      ctx.font = "500 34px " + SANS;
       ctx.fillText("~ $" + avg.toFixed(2) + " per person", cx, y);
     }
 
-    // "All settled" stamp.
+    // "All settled" stamp — accent-soft fill + accent outline (no green).
     if (allSettled(trip)) {
       ctx.save();
-      ctx.translate(W - 300, H - 230);
+      ctx.translate(W - 300, H - 250);
       ctx.rotate(-0.12);
       ctx.strokeStyle = GREEN;
-      ctx.lineWidth = 6;
-      ctx.fillStyle = "rgba(20,241,149,0.12)";
-      const sw = 340, sh = 110;
+      ctx.lineWidth = 5;
+      ctx.fillStyle = ACCENT_SOFT;
+      const sw = 360, sh = 112;
       ctx.beginPath();
-      if (ctx.roundRect) ctx.roundRect(-sw / 2, -sh / 2, sw, sh, 16);
+      if (ctx.roundRect) ctx.roundRect(-sw / 2, -sh / 2, sw, sh, 999);
       else ctx.rect(-sw / 2, -sh / 2, sw, sh);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = GREEN;
-      ctx.font = "800 44px -apple-system, system-ui, sans-serif";
+      ctx.font = "700 42px " + SANS;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("✓ All settled", 0, 4);
@@ -219,10 +260,17 @@
       ctx.textBaseline = "alphabetic";
     }
 
-    // Footer tagline.
-    ctx.fillStyle = "#5f6e75";
-    ctx.font = "500 28px -apple-system, system-ui, sans-serif";
-    ctx.fillText("Split the bill. Settle in USDC on Solana.", cx, H - 110);
+    // Footer: hairline divider + tagline + wordmark.
+    ctx.strokeStyle = LINE;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, H - 160);
+    ctx.lineTo(W - cx, H - 160);
+    ctx.stroke();
+
+    ctx.fillStyle = FAINT;
+    ctx.font = "500 28px " + SANS;
+    ctx.fillText("Split the bill. Settle in USDC on Solana.", cx, H - 108);
 
     return canvas;
   }
@@ -281,22 +329,27 @@
       " total, settled in USDC on Divvy." + (shareLink ? " " + shareLink : "");
 
     const card = buildOverlay(
-      '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px">' +
-        '<span style="font-weight:700">Trip recap</span>' +
+      '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px">' +
+        '<span class="eyebrow" style="font-family:' + MONO + '; text-transform:uppercase; letter-spacing:.12em; ' +
+          'font-size:.68rem; color:' + MUTED + '">Trip recap</span>' +
         '<button id="recapX" type="button" aria-label="Close" style="width:auto; margin:0; padding:6px 12px; ' +
-          'border:1px solid #8884; border-radius:999px; background:transparent; color:#fff; cursor:pointer">✕</button>' +
+          "border:1px solid " + LINE + "; border-radius:999px; background:transparent; color:" + CREAM + "; " +
+          "font-family:" + SANS + '; cursor:pointer">✕</button>' +
       "</div>" +
       '<img id="recapImg" alt="Recap card for ' + esc(tripName) + '" ' +
-        'style="width:100%; border-radius:12px; display:block; margin-bottom:14px" />' +
+        "style=\"width:100%; border-radius:14px; display:block; margin-bottom:14px; border:1px solid " + LINE + '"/>' +
       '<div style="display:flex; gap:10px">' +
-        '<button id="recapShare" type="button" style="flex:1; padding:14px; border:0; border-radius:12px; ' +
-          "background:" + GREEN + "; color:" + INK + '; font-weight:700; cursor:pointer">Share</button>' +
+        '<button id="recapShare" type="button" style="flex:1; padding:14px; border:0; border-radius:999px; ' +
+          "background:" + GREEN + "; color:" + INK + "; font-weight:700; font-family:" + SANS + '; cursor:pointer">Share</button>' +
         '<a id="recapDownload" download="divvy-recap.png" style="flex:1; text-align:center; padding:14px; ' +
-          'border:1px solid #8884; border-radius:12px; color:#fff; text-decoration:none; cursor:pointer">Download</a>' +
+          "border:1px solid " + LINE + "; border-radius:999px; color:" + CREAM + "; background:" + SURFACE_2 + "; " +
+          "text-decoration:none; font-weight:600; font-family:" + SANS + '; cursor:pointer">Download</a>' +
       "</div>" +
-      '<button id="recapCopy" type="button" style="width:100%; margin-top:10px; padding:12px; border:1px solid #8884; ' +
-        'border-radius:12px; background:transparent; color:#fff; cursor:pointer">Copy link</button>' +
-      '<div id="recapNote" class="muted" style="color:#9fb0b8; margin-top:8px; min-height:1em"></div>');
+      '<button id="recapCopy" type="button" style="width:100%; margin-top:10px; padding:12px; ' +
+        "border:1px solid " + LINE + "; border-radius:999px; background:transparent; color:" + CREAM + "; " +
+        "font-family:" + SANS + '; cursor:pointer">Copy link</button>' +
+      '<div id="recapNote" class="muted" style="color:' + MUTED + "; font-family:" + MONO + '; font-size:.85rem; ' +
+        'margin-top:8px; min-height:1em"></div>');
 
     const img = card.querySelector("#recapImg");
     if (img) img.src = dataUrl;

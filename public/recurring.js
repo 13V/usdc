@@ -70,11 +70,12 @@
     if (!c) return;
     c.innerHTML = "";
     const box = el(`
-      <div style="border:1px solid #8884; border-radius:12px; padding:16px; text-align:center">
-        <p style="margin:0 0 4px; font-weight:600">Sign in to manage recurring splits</p>
-        <p class="muted" style="margin:0 0 12px">Connect a wallet to set up rent, subscriptions, and other repeating expenses.</p>
-        <button id="rSignIn" class="connect" type="button" style="margin:0">Connect wallet</button>
-        <div id="rSignInMsg" class="muted" style="margin-top:8px"></div>
+      <div class="card empty">
+        <div class="empty-glyph">↻</div>
+        <div class="empty-title">Sign in to manage recurring splits</div>
+        <p class="empty-hint">Connect a wallet to set up rent, subscriptions, and other repeating expenses.</p>
+        <button id="rSignIn" class="btn" type="button" style="margin-top:14px">Connect wallet</button>
+        <div id="rSignInMsg" class="eyebrow" style="margin-top:10px"></div>
       </div>
     `);
     c.appendChild(box);
@@ -109,39 +110,43 @@
     c.innerHTML = "";
     const view = el(`
       <div>
-        <h1 style="font-size:1.4rem">Recurring</h1>
-        <p class="tag">Rent, subscriptions, the weekly grocery run — set it once and Divvy adds the expense to the trip automatically each period.</p>
+        <h1 style="font-size:1.4rem; margin:0 0 4px">Recurring</h1>
+        <p class="empty-hint" style="margin:0 0 14px">Rent, subscriptions, the weekly grocery run — set it once and Divvy adds the expense to the trip automatically each period.</p>
 
-        <div id="rNewWrap" style="border:1px solid #8884; border-radius:12px; padding:0 14px 14px; margin-bottom:14px;">
-          <button id="rNewToggle" class="toggle-link" type="button">＋ New recurring</button>
-          <div id="rNewForm" style="display:none">
-            <label>Trip</label>
-            <select id="rTrip"><option value="">Loading your trips…</option></select>
+        <div id="rNewWrap" class="card" style="margin:12px 0">
+          <button id="rNewToggle" class="btn ghost sm" type="button" style="width:auto">＋ New recurring split</button>
+          <div id="rNewForm" style="display:none; margin-top:14px">
+            <div class="eyebrow" style="margin-bottom:6px">Trip</div>
+            <select id="rTrip" class="input" style="width:100%; margin-bottom:14px"><option value="">Loading your trips…</option></select>
 
-            <label>What's it for?</label>
-            <input id="rTitle" placeholder="e.g. Rent" />
+            <div class="eyebrow" style="margin-bottom:6px">What's it for?</div>
+            <input id="rTitle" class="input" style="width:100%; margin-bottom:14px" placeholder="e.g. Rent" />
 
-            <label>Amount ($)</label>
-            <input id="rAmount" type="number" step="0.01" placeholder="0.00" />
+            <div class="eyebrow" style="margin-bottom:6px">Amount ($)</div>
+            <input id="rAmount" class="input mono" type="number" step="0.01" style="width:100%; margin-bottom:14px" placeholder="0.00" />
 
-            <label>How often?</label>
-            <select id="rInterval">
+            <div class="eyebrow" style="margin-bottom:6px">How often?</div>
+            <select id="rInterval" class="input" style="width:100%; margin-bottom:14px">
               <option value="weekly">Weekly</option>
               <option value="monthly" selected>Monthly</option>
             </select>
 
-            <label>Paid by</label>
-            <select id="rPaidBy"><option value="">Pick a trip first</option></select>
+            <div class="eyebrow" style="margin-bottom:6px">Paid by</div>
+            <select id="rPaidBy" class="input" style="width:100%; margin-bottom:14px"><option value="">Pick a trip first</option></select>
 
-            <label>Split among</label>
-            <div id="rParts" class="chips"><span class="muted">Pick a trip first.</span></div>
+            <div class="eyebrow" style="margin-bottom:6px">Split among</div>
+            <div id="rParts" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px"><span class="empty-hint">Pick a trip first.</span></div>
 
-            <button id="rSave">Add recurring split</button>
-            <div id="rStatus" class="muted"></div>
+            <button id="rSave" class="btn" type="button" style="width:100%">Add recurring split</button>
+            <div id="rStatus" class="eyebrow" style="margin-top:10px; text-align:center"></div>
           </div>
         </div>
 
-        <div id="rList"><p class="muted">Loading…</p></div>
+        <div id="rList">
+          <div class="skeleton" style="height:64px; margin:12px 0"></div>
+          <div class="skeleton" style="height:64px; margin:12px 0"></div>
+          <div class="skeleton" style="height:64px; margin:12px 0"></div>
+        </div>
       </div>
     `);
     c.appendChild(view);
@@ -150,7 +155,7 @@
       const f = view.querySelector("#rNewForm");
       const open = f.style.display === "none";
       f.style.display = open ? "block" : "none";
-      view.querySelector("#rNewToggle").textContent = open ? "＋ New recurring ▴" : "＋ New recurring";
+      view.querySelector("#rNewToggle").textContent = open ? "＋ New recurring split ▴" : "＋ New recurring split";
       if (open) await loadTripsIntoPicker();
     };
 
@@ -197,7 +202,7 @@
     const members = (trip && Array.isArray(trip.members)) ? trip.members : [];
     if (!trip || members.length === 0) {
       paidBy.innerHTML = '<option value="">Pick a trip first</option>';
-      parts.innerHTML = '<span class="muted">Pick a trip first.</span>';
+      parts.innerHTML = '<span class="empty-hint">Pick a trip first.</span>';
       return;
     }
     paidBy.innerHTML = members.map((m) =>
@@ -250,33 +255,54 @@
       items = Array.isArray(raw) ? raw : (raw && raw.rules) || [];
     } catch (err) {
       if (err && err.status === 401) { renderSignedOut(); return; }
-      wrap.innerHTML = '<p class="muted">Couldn\'t load recurring splits.</p>';
+      wrap.innerHTML = '<p class="empty-hint" style="text-align:center; padding:16px">Couldn\'t load recurring splits.</p>';
       return;
     }
     if (!Array.isArray(items) || items.length === 0) {
-      wrap.innerHTML = '<p class="muted">No recurring splits yet. Add one above.</p>';
+      const empty = el(`
+        <div class="card empty">
+          <div class="empty-glyph">↻</div>
+          <div class="empty-title">No recurring splits yet</div>
+          <p class="empty-hint">Set up rent, subscriptions, or the weekly grocery run once — Divvy adds it to the trip every period.</p>
+          <button id="rEmptyNew" class="btn" type="button" style="margin-top:14px">New recurring split</button>
+        </div>
+      `);
+      wrap.innerHTML = "";
+      wrap.appendChild(empty);
+      const emptyBtn = empty.querySelector("#rEmptyNew");
+      if (emptyBtn) emptyBtn.onclick = () => {
+        const toggle = document.getElementById("rNewToggle");
+        if (toggle) toggle.click();
+      };
       return;
     }
     wrap.innerHTML = "";
-    wrap.appendChild(el('<h1 style="font-size:1.05rem; margin-top:6px">Your recurring splits</h1>'));
+    wrap.appendChild(el('<div class="eyebrow" style="margin:18px 0 6px">Your recurring splits</div>'));
     for (const it of items) {
       wrap.appendChild(renderItem(it));
     }
   }
 
   function renderItem(it) {
-    const summary =
-      esc(it.title) + " — " + esc(it.amountFmt || "") +
-      " · " + esc(it.interval || "") +
-      " · next " + esc(shortDate(it.nextDue)) +
-      " · " + esc(it.tripName || "");
+    const interval = String(it.interval || "period");
+    const cadence = interval.toUpperCase();
+    const amount = it.amountFmt || "";
     const row = el(`
-      <div class="person" style="flex-wrap:wrap">
-        <div class="meta">
-          <div class="amt" style="font-size:1rem">${summary}</div>
-          <div class="muted">Added to ${esc(it.tripName || "the trip")} automatically each ${esc(it.interval || "period")}.</div>
+      <div class="card">
+        <div class="row" style="border-bottom:none; padding:0">
+          <div class="meta" style="flex:1; min-width:0">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+              <span style="font-weight:600">${esc(it.title)}</span>
+              <span class="state-chip confirmed"><i></i>${esc(cadence)}</span>
+              <span class="state-chip settled"><i></i>ACTIVE</span>
+            </div>
+            <div class="eyebrow" style="margin-top:6px; text-transform:none; letter-spacing:0">
+              <span class="mono">${esc(interval)}</span> · next <span class="mono">${esc(shortDate(it.nextDue))}</span> · ${esc(it.tripName || "")}
+            </div>
+          </div>
+          <div class="mono" style="color:var(--accent); font-weight:600; white-space:nowrap">${esc(amount)}</div>
+          <button class="pill rDel" type="button" style="margin:0" aria-label="Delete">✕</button>
         </div>
-        <button class="chip rDel" type="button" style="margin:0" aria-label="Delete">✕</button>
       </div>
     `);
     row.querySelector(".rDel").onclick = async () => {

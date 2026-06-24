@@ -69,17 +69,68 @@
     }
   }
 
+  // Day bucket key + label for grouping the feed by date.
+  function dayKey(at) {
+    const t = new Date(at).getTime();
+    if (!isFinite(t)) return "";
+    const d = new Date(t);
+    return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate();
+  }
+  function dayLabel(at) {
+    const t = new Date(at).getTime();
+    if (!isFinite(t)) return "EARLIER";
+    const d = new Date(t);
+    const today = new Date();
+    const yest = new Date(); yest.setDate(today.getDate() - 1);
+    if (dayKey(d) === dayKey(today)) return "TODAY";
+    if (dayKey(d) === dayKey(yest)) return "YESTERDAY";
+    try {
+      return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }).toUpperCase();
+    } catch (_) {
+      return "EARLIER";
+    }
+  }
+
+  // Infer a money-rule color from a formatted amount string.
+  // Leading "-" / "owe" => you owe (terra). "+" / "paid" / plain positive => accent.
+  function amountColor(amountFmt) {
+    const s = String(amountFmt || "").trim().toLowerCase();
+    if (!s) return "var(--cream)";
+    if (/^[-−]/.test(s) || /\bowe/.test(s)) return "var(--terra)";
+    return "var(--accent)";
+  }
+
+  // Pick a leading glyph + (optional) on-chain state chip from the event type.
+  // Type strings are best-effort; unknown types fall back to a neutral dot.
+  function eventVisual(type) {
+    const t = String(type || "").toLowerCase();
+    if (/settl|paid|payment|pay/.test(t))
+      return { glyph: "↗", chip: "settled", chipLabel: "SETTLED" };
+    if (/final/.test(t))
+      return { glyph: "✓", chip: "finalized", chipLabel: "FINALIZED" };
+    if (/confirm|chain|tx|onchain/.test(t))
+      return { glyph: "⛓", chip: "confirmed", chipLabel: "CONFIRMED" };
+    if (/expense|bill|add|charge/.test(t))
+      return { glyph: "＋", chip: null, chipLabel: "" };
+    if (/join|member|invite/.test(t))
+      return { glyph: "◍", chip: null, chipLabel: "" };
+    if (/trip|create|new/.test(t))
+      return { glyph: "✦", chip: null, chipLabel: "" };
+    return { glyph: "•", chip: null, chipLabel: "" };
+  }
+
   // ── signed-out state ─────────────────────────────────────────────────────────
   function renderSignedOut() {
     const c = root();
     if (!c) return;
     c.innerHTML = "";
     const box = el(`
-      <div style="border:1px solid #8884; border-radius:12px; padding:16px; text-align:center">
-        <p style="margin:0 0 4px; font-weight:600">Sign in to see your activity</p>
-        <p class="muted" style="margin:0 0 12px">Connect a wallet to see recent expenses, payments, and IOUs.</p>
-        <button id="aSignIn" class="connect" type="button" style="margin:0">Connect wallet</button>
-        <div id="aSignInMsg" class="muted" style="margin-top:8px"></div>
+      <div class="empty">
+        <div class="empty-glyph">◎</div>
+        <p class="empty-title">Sign in to see your activity</p>
+        <p class="empty-hint">Connect a wallet to see recent expenses, payments, and IOUs.</p>
+        <button id="aSignIn" class="btn" type="button" style="margin-top:16px">Connect wallet</button>
+        <div id="aSignInMsg" class="eyebrow" style="margin-top:10px"></div>
       </div>
     `);
     c.appendChild(box);
@@ -100,6 +151,55 @@
     };
   }
 
+  // A loading placeholder: a few shimmer rows.
+  function skeletonRows(n) {
+    let out = "";
+    for (let i = 0; i < (n || 3); i++) {
+      out += `
+        <div class="row" style="border-bottom:1px solid var(--line)">
+          <div class="skeleton" style="width:38px;height:38px;border-radius:999px;flex:0 0 auto"></div>
+          <div style="flex:1 1 auto">
+            <div class="skeleton" style="height:12px;width:62%;border-radius:6px"></div>
+            <div class="skeleton" style="height:10px;width:34%;border-radius:6px;margin-top:8px"></div>
+          </div>
+          <div class="skeleton" style="height:14px;width:54px;border-radius:6px;flex:0 0 auto"></div>
+        </div>`;
+    }
+    return out;
+  }
+
+  // Build one feed row for an activity item.
+  function buildRow(it) {
+    const vis = eventVisual(it.type);
+    const when = relTime(it.at);
+    const trip = it.tripName ? `<span class="muted">${esc(it.tripName)}</span>` : "";
+    const chip = vis.chip
+      ? `<span class="state-chip ${esc(vis.chip)}"><i></i>${esc(vis.chipLabel)}</span>`
+      : "";
+
+    const amount = it.amountFmt
+      ? `<span class="mono" style="font-weight:600;white-space:nowrap;color:${amountColor(it.amountFmt)}">${esc(it.amountFmt)}</span>`
+      : "";
+
+    const sub = [trip, chip].filter(Boolean).join('<span class="faint">·</span>');
+
+    return el(`
+      <div class="row" style="cursor:default;border-bottom:1px solid var(--line)">
+        <div class="avatar" aria-hidden="true">${esc(vis.glyph)}</div>
+        <div class="meta" style="flex:1 1 auto;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:8px;justify-content:space-between">
+            <span style="font-weight:600;overflow:hidden;text-overflow:ellipsis">${esc(it.text)}</span>
+            ${amount}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:3px">
+            <span class="eyebrow" style="margin:0">${esc(when)}</span>
+            ${sub}
+          </div>
+        </div>
+      </div>
+    `);
+  }
+
   // ── main render ──────────────────────────────────────────────────────────────
   async function render() {
     const c = root();
@@ -110,9 +210,10 @@
     c.innerHTML = "";
     const view = el(`
       <div>
-        <h1 style="font-size:1.4rem">Activity</h1>
-        <p class="tag">Recent expenses, payments, and IOUs across your trips.</p>
-        <div id="aList"><p class="muted">Loading…</p></div>
+        <p class="eyebrow" style="margin:0 0 6px">ON-CHAIN ACTIVITY</p>
+        <h1 style="font-size:1.6rem;margin:0 0 4px">Activity</h1>
+        <p class="tag muted" style="margin:0 0 14px">Recent expenses, payments, and IOUs across your trips.</p>
+        <div id="aList">${skeletonRows(3)}</div>
       </div>
     `);
     c.appendChild(view);
@@ -123,37 +224,39 @@
       items = await api("/api/activity");
     } catch (err) {
       if (err && err.status === 401) { renderSignedOut(); return; }
-      list.innerHTML = '<p class="muted">Couldn\'t load activity.</p>';
+      list.innerHTML = `
+        <div class="empty">
+          <div class="empty-glyph">⚠</div>
+          <p class="empty-title">Couldn't load activity</p>
+          <p class="empty-hint">Check your connection and try again.</p>
+        </div>`;
       return;
     }
 
     if (!Array.isArray(items) || items.length === 0) {
-      list.innerHTML = '<p class="muted">No activity yet.</p>';
+      list.innerHTML = `
+        <div class="empty">
+          <div class="empty-glyph">🧾</div>
+          <p class="empty-title">No activity yet</p>
+          <p class="empty-hint">Add an expense or settle up — your feed of on-chain receipts shows up here.</p>
+        </div>`;
       return;
     }
 
     list.innerHTML = "";
+
+    // Group consecutive items by day with a small mono date header.
+    let lastDay = null;
     for (const it of items) {
-      const amount = it.amountFmt
-        ? `<span class="badge">${esc(it.amountFmt)}</span>`
-        : "";
-      const when = relTime(it.at);
-      const trip = it.tripName
-        ? `<span class="muted">${esc(it.tripName)}</span>`
-        : "<span></span>";
-      const row = el(`
-        <div class="hist-item" style="cursor:default">
-          <div class="top">
-            <span>${esc(it.text)}</span>
-            <span>${amount}</span>
-          </div>
-          <div class="sub muted">
-            ${trip}
-            <span>${esc(when)}</span>
-          </div>
-        </div>
-      `);
-      list.appendChild(row);
+      const key = dayKey(it.at);
+      if (key !== lastDay) {
+        lastDay = key;
+        const header = el(`
+          <p class="eyebrow" style="margin:18px 0 4px">${esc(dayLabel(it.at))}</p>
+        `);
+        list.appendChild(header);
+      }
+      list.appendChild(buildRow(it));
     }
   }
 
