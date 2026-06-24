@@ -1,0 +1,30 @@
+{
+  "name": "divvy-mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "~56.0.12",
+    "expo-status-bar": "~56.0.4",
+    "expo-secure-store": "~15.0.7",
+    "expo-image-picker": "~17.0.8",
+    "react": "19.2.3",
+    "react-native": "0.85.3",
+    "react-native-get-random-values": "~1.11.0",
+    "react-native-safe-area-context": "5.4.0",
+    "@solana/web3.js": "^1.95.8",
+    "tweetnacl": "^1.0.3",
+    "bs58": "^6.0.0",
+    "buffer": "^6.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "private": true
+}
