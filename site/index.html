@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#04121a;color:#F6F1E7;font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:clip}
+  ::selection{background:#14F195;color:#04121a}
+  @media (max-width:720px){ nav .navlink{display:none !important} nav{padding:16px 18px !important} }
+  @media (max-width:780px){ .ed-grid{grid-template-columns:1fr !important} .ed-lead,.ed-rail{grid-column:auto !important} .ed-rail{margin-top:0 !important} .ed-rail .ed-indent{margin-left:0 !important} }
+  @media (max-width:640px){
+    .m-hero{padding-top:104px !important;padding-bottom:56px !important}
+    .m-herostats{flex-wrap:wrap !important;gap:8px 16px !important}
+    [data-stage]{min-height:min(480px,62vh) !important}
+    .m-bandcard{top:78px !important;bottom:auto !important;right:14px !important;left:auto !important;width:min(220px,60vw) !important}
+    [data-howpin]{align-items:flex-start !important;padding:72px 20px 28px !important;gap:14px !important}
+    .m-howsteps{height:clamp(240px,36vh,300px) !important}
+    .m-howvis{height:clamp(190px,28vh,280px) !important}
+  }
+  @media (max-width:820px){ .xpl-body{grid-template-columns:1fr !important} .xpl-left{border-right:none !important;border-bottom:1px solid rgba(246,241,231,0.08) !important} }
+  @keyframes divvyGrain{0%{transform:translate(0,0)}10%{transform:translate(-4%,-3%)}20%{transform:translate(-8%,4%)}30%{transform:translate(3%,-7%)}40%{transform:translate(-3%,8%)}50%{transform:translate(-8%,3%)}60%{transform:translate(6%,2%)}70%{transform:translate(-3%,5%)}80%{transform:translate(4%,-6%)}90%{transform:translate(-6%,4%)}100%{transform:translate(0,0)}}
+  @keyframes divvyBlink{0%,49%{opacity:1}50%,100%{opacity:0}}
+  @keyframes divvyShimmer{0%{transform:translateX(-120%)}100%{transform:translateX(220%)}}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+<script src="./image-slot.js"></script>
+</helmet>
+
+<div id="divvy-root" style="--acc:#14F195;--usdc:#2775CA;--ink:#04121a;--surf:#081c28;--paper:#F6F1E7;--paperink:#2A2A28;position:relative;width:100%;min-height:100vh;background:#04121a;color:#F6F1E7;overflow-x:clip">
+
+  <!-- film grain overlay -->
+  <div data-grain style="position:fixed;inset:-50%;width:200%;height:200%;pointer-events:none;z-index:90;opacity:0.05;mix-blend-mode:overlay;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/></svg>');animation:divvyGrain 1.2s steps(2) infinite"></div>
+  <!-- vignette -->
+  <div style="position:fixed;inset:0;pointer-events:none;z-index:89;background:radial-gradient(120% 100% at 50% 0%,transparent 55%,rgba(0,0,0,0.45) 100%)"></div>
+
+  <!-- NAV -->
+  <nav style="position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:20px clamp(20px,5vw,64px);mix-blend-mode:normal">
+    <a href="#top" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#F6F1E7">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;background:var(--acc);color:#04121a;font-weight:700;font-size:16px;font-family:'JetBrains Mono',monospace">÷</span>
+      <span style="font-weight:600;font-size:19px;letter-spacing:-0.02em">Divvy</span>
+    </a>
+    <div style="display:flex;align-items:center;gap:clamp(12px,2.4vw,30px)">
+      <a href="#how" style="color:rgba(246,241,231,0.62);text-decoration:none;font-size:14px;font-family:'JetBrains Mono',monospace;letter-spacing:-0.01em" class="navlink">How it works</a>
+      <a href="#pay" style="color:rgba(246,241,231,0.62);text-decoration:none;font-size:14px;font-family:'JetBrains Mono',monospace;letter-spacing:-0.01em" class="navlink navhide">Pay</a>
+      <a href="#trust" style="color:rgba(246,241,231,0.62);text-decoration:none;font-size:14px;font-family:'JetBrains Mono',monospace;letter-spacing:-0.01em" class="navlink navhide">Trust</a>
+      <a href="#footer" class="magnetic" style="position:relative;display:inline-flex;align-items:center;gap:8px;text-decoration:none;background:var(--acc);color:#04121a;font-weight:600;font-size:14px;padding:9px 16px;border-radius:9px;letter-spacing:-0.01em">Split a bill</a>
+    </div>
+  </nav>
+
+  <!-- ================= HERO ================= -->
+  <section id="top" class="m-hero" style="position:relative;min-height:100vh;overflow-x:clip;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:clamp(24px,4vw,64px);align-items:center;padding:128px clamp(20px,5vw,64px) 80px;max-width:1480px;margin:0 auto">
+
+    <div style="position:relative;z-index:2">
+      <div data-anim="up" style="display:inline-flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.18em;color:rgba(246,241,231,0.55);margin-bottom:28px">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)"></span>
+        USDC · SOLANA · OPEN SOURCE
+      </div>
+      <h1 data-anim="up" style="margin:0;font-size:clamp(44px,7.2vw,92px);line-height:0.96;letter-spacing:-0.04em;font-weight:600">Split the bill.<br>Settle in <span style="color:var(--acc)">USDC</span>.</h1>
+      <p data-anim="up" style="margin:28px 0 0;max-width:30ch;font-size:clamp(16px,1.5vw,19px);line-height:1.5;color:rgba(246,241,231,0.66);font-weight:400">Instant, ≈free, no chargebacks. You front the bill — Divvy collects each person's share to a wallet you control.</p>
+      <div data-anim="up" style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:40px">
+        <a href="#footer" class="magnetic" style="position:relative;display:inline-flex;align-items:center;gap:10px;text-decoration:none;background:var(--acc);color:#04121a;font-weight:600;font-size:16px;padding:15px 26px;border-radius:12px;letter-spacing:-0.01em">Split a bill <span style="font-family:'JetBrains Mono',monospace">→</span></a>
+        <a href="#how" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:rgba(246,241,231,0.8);font-weight:500;font-size:16px;padding:15px 18px;border-radius:12px;border:1px solid rgba(246,241,231,0.14)" class="ghostbtn">See how it settles</a>
+      </div>
+      <div data-anim="up" class="m-herostats" style="display:flex;gap:26px;margin-top:48px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:rgba(246,241,231,0.42);letter-spacing:0.02em">
+        <span>≈ $0.0002 / tx</span><span style="color:rgba(246,241,231,0.2)">|</span><span>~400ms finality</span><span style="color:rgba(246,241,231,0.2)">|</span><span>no token</span>
+      </div>
+    </div>
+
+    <!-- RECEIPT STAGE -->
+    <div data-stage style="position:relative;z-index:1;min-height:min(620px,82vh);display:flex;align-items:center;justify-content:center;perspective:1400px">
+
+      <!-- the receipt -->
+      <div data-receipt style="position:relative;width:min(330px,86%);background:#F6F1E7;color:#2A2A28;border-radius:4px;padding:26px 26px 36px;font-family:'JetBrains Mono',monospace;box-shadow:0 40px 90px -30px rgba(0,0,0,0.7),0 8px 24px rgba(0,0,0,0.4);transform-origin:center top;-webkit-mask-image:radial-gradient(circle at 8px 100%,transparent 0 6px,#000 6px),radial-gradient(circle at 24px 100%,transparent 0 6px,#000 6px);will-change:transform">
+        <div style="position:absolute;inset:0;pointer-events:none;opacity:0.5;mix-blend-mode:multiply;background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><filter id=%22p%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.04%22 numOctaves=%223%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23p)%22 opacity=%220.06%22/></svg>')"></div>
+        <!-- coffee ring + smudge (analog wear) -->
+        <div style="position:absolute;top:-26px;right:-20px;width:104px;height:104px;border-radius:50%;pointer-events:none;mix-blend-mode:multiply;opacity:0.6;background:radial-gradient(circle,transparent 54%,rgba(120,72,30,0.30) 57%,rgba(120,72,30,0.12) 65%,transparent 70%);transform:rotate(10deg) scaleY(0.9)"></div>
+        <div style="position:absolute;bottom:58px;left:-12px;width:62px;height:34px;border-radius:50%;pointer-events:none;mix-blend-mode:multiply;opacity:0.5;background:radial-gradient(ellipse,rgba(120,72,30,0.22),rgba(120,72,30,0.05) 60%,transparent 72%);filter:blur(2px);transform:rotate(-18deg)"></div>
+        <div data-rline style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px;font-weight:600;letter-spacing:0.04em;margin-bottom:2px">
+          <span>DIVVY</span><span style="opacity:0.5;font-weight:400">TABLE 12</span>
+        </div>
+        <div data-rline style="font-size:10.5px;opacity:0.5;letter-spacing:0.05em;margin-bottom:14px">JUN 23 2026 · 20:41 · BANGKOK</div>
+        <div data-rline style="border-top:1px dashed rgba(42,42,40,0.35);margin-bottom:12px"></div>
+
+        <div data-rline class="ritem" style="display:flex;align-items:baseline;font-size:12.5px;margin:7px 0"><span>Tonkatsu set</span><span style="flex:1;border-bottom:1.5px dotted rgba(42,42,40,0.4);margin:0 6px;transform:translateY(-3px)"></span><span>18.50</span></div>
+        <div data-rline class="ritem" style="display:flex;align-items:baseline;font-size:12.5px;margin:7px 0"><span>Shoyu ramen</span><span style="flex:1;border-bottom:1.5px dotted rgba(42,42,40,0.4);margin:0 6px;transform:translateY(-3px)"></span><span>16.00</span></div>
+        <div data-rline class="ritem" style="display:flex;align-items:baseline;font-size:12.5px;margin:7px 0"><span>Gyoza (6)</span><span style="flex:1;border-bottom:1.5px dotted rgba(42,42,40,0.4);margin:0 6px;transform:translateY(-3px)"></span><span>8.50</span></div>
+        <div data-rline class="ritem" style="display:flex;align-items:baseline;font-size:12.5px;margin:7px 0"><span>Karaage</span><span style="flex:1;border-bottom:1.5px dotted rgba(42,42,40,0.4);margin:0 6px;transform:translateY(-3px)"></span><span>9.20</span></div>
+        <div data-rline class="ritem" style="display:flex;align-items:baseline;font-size:12.5px;margin:7px 0"><span>Highball ×2</span><span style="flex:1;border-bottom:1.5px dotted rgba(42,42,40,0.4);margin:0 6px;transform:translateY(-3px)"></span><span>13.80</span></div>
+        <div data-rline class="ritem" style="display:flex;align-items:baseline;font-size:12.5px;margin:7px 0"><span>Matcha latte</span><span style="flex:1;border-bottom:1.5px dotted rgba(42,42,40,0.4);margin:0 6px;transform:translateY(-3px)"></span><span>8.07</span></div>
+
+        <div data-rline style="display:flex;justify-content:space-between;font-size:12px;opacity:0.62;margin-top:14px"><span>Subtotal</span><span>74.07</span></div>
+        <div data-rline style="display:flex;justify-content:space-between;font-size:12px;opacity:0.62;margin:5px 0"><span>Tip 18% <span style="font-style:italic;opacity:0.7">(thanks!)</span></span><span>13.33</span></div>
+        <div data-rline style="border-top:1px solid rgba(42,42,40,0.3);margin:12px 0 10px"></div>
+        <div data-rline style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:13px;font-weight:600;letter-spacing:0.04em">TOTAL</span>
+          <span data-total style="font-size:30px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">$0.00</span>
+        </div>
+        <!-- perforation tear line -->
+        <div data-perf style="position:absolute;left:-6px;right:-6px;bottom:64px;height:14px;display:flex;align-items:center;gap:5px;padding:0 8px;opacity:0">
+          <span style="flex:1;border-top:1.5px dashed rgba(42,42,40,0.45)"></span>
+        </div>
+        <div data-rline style="margin-top:16px;font-size:9.5px;letter-spacing:0.04em;opacity:0.45;line-height:1.5">ref 7Bx…q9F · verified on-chain<br>solana · usdc · no chargebacks</div>
+      </div>
+
+      <!-- share cards (dealt out) -->
+      <div data-sharewrap style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+        <div data-share class="tilt" style="position:absolute;width:152px;height:212px;opacity:0;transform-style:preserve-3d;will-change:transform">
+          <div class="sf-front" style="position:absolute;inset:0;backface-visibility:hidden;background:#0c2330;border:1px solid rgba(20,241,149,0.25);border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 24px 50px -20px rgba(0,0,0,0.8)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:rgba(246,241,231,0.45)">SHARE 01</div>
+            <div><div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;letter-spacing:-0.02em">$29.14</div><div style="font-size:11px;color:rgba(246,241,231,0.5);margin-top:2px">Ava</div></div>
+          </div>
+          <div class="sf-back qr" data-seed="11" style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);background:#F6F1E7;border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:center"></div>
+        </div>
+        <div data-share class="tilt" style="position:absolute;width:152px;height:212px;opacity:0;transform-style:preserve-3d;will-change:transform">
+          <div class="sf-front" style="position:absolute;inset:0;backface-visibility:hidden;background:#0c2330;border:1px solid rgba(20,241,149,0.25);border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 24px 50px -20px rgba(0,0,0,0.8)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:rgba(246,241,231,0.45)">SHARE 02</div>
+            <div><div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;letter-spacing:-0.02em">$29.13</div><div style="font-size:11px;color:rgba(246,241,231,0.5);margin-top:2px">Marco</div></div>
+          </div>
+          <div class="sf-back qr" data-seed="29" style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);background:#F6F1E7;border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:center"></div>
+        </div>
+        <div data-share class="tilt" style="position:absolute;width:152px;height:212px;opacity:0;transform-style:preserve-3d;will-change:transform">
+          <div class="sf-front" style="position:absolute;inset:0;backface-visibility:hidden;background:#0c2330;border:1px solid rgba(20,241,149,0.25);border-radius:14px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 24px 50px -20px rgba(0,0,0,0.8)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:rgba(246,241,231,0.45)">SHARE 03</div>
+            <div><div style="font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:700;letter-spacing:-0.02em">$29.13</div><div style="font-size:11px;color:rgba(246,241,231,0.5);margin-top:2px">Priya</div></div>
+          </div>
+          <div class="sf-back qr" data-seed="47" style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);background:#F6F1E7;border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:center"></div>
+        </div>
+      </div>
+
+      <!-- sum-back ribbon -->
+      <div data-sumline style="position:absolute;top:calc(50% + 122px);left:50%;transform:translateX(-50%);opacity:0;white-space:nowrap;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.02em;color:rgba(246,241,231,0.75);background:rgba(8,28,40,0.85);border:1px solid rgba(246,241,231,0.1);padding:9px 16px;border-radius:999px;backdrop-filter:blur(6px)">29.14 + 29.13 + 29.13 = <span style="color:var(--acc);font-weight:700">87.40</span></div>
+
+      <!-- settled stamp -->
+      <div data-stamp style="position:absolute;top:44%;left:50%;z-index:30;opacity:0;transform:translate(-50%,-50%) rotate(-14deg) scale(2.4);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:29px;letter-spacing:0.05em;color:var(--acc);background:#04121a;border:3px solid var(--acc);border-radius:10px;padding:10px 20px;text-transform:uppercase;box-shadow:0 0 0 6px rgba(20,241,149,0.10),0 20px 46px rgba(0,0,0,0.55);pointer-events:none">Settled ✓</div>
+    </div>
+  </section>
+
+  <!-- ================= PHOTO BAND — THE REAL MOMENT ================= -->
+  <section style="position:relative;background:#04121a;overflow:hidden">
+    <div style="position:relative;width:100%;height:min(84vh,780px);overflow:hidden">
+      <image-slot id="scene-table" src="uploads/sasha-matveeva-CsvXGuqLU6A-unsplash.jpg" style="position:absolute;inset:0;width:100%;height:100%" shape="rect" fit="cover" placeholder="Drop a wide photo — friends around the restaurant table"></image-slot>
+      <!-- legibility gradients -->
+      <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(4,18,26,0.55) 0%,rgba(4,18,26,0) 26%,rgba(4,18,26,0.18) 58%,rgba(4,18,26,0.94) 100%)"></div>
+      <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(4,18,26,0.72) 0%,rgba(4,18,26,0) 46%)"></div>
+
+      <!-- top caption -->
+      <div data-reveal style="position:absolute;top:clamp(24px,5vw,56px);left:clamp(20px,5vw,64px);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.18em;color:rgba(246,241,231,0.72);display:flex;align-items:center;gap:10px">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)"></span> 21:14 · THE BILL ARRIVES
+      </div>
+
+      <!-- bottom-left line -->
+      <div style="position:absolute;left:clamp(20px,5vw,64px);bottom:clamp(40px,7vw,84px);max-width:20ch;z-index:3">
+        <h2 data-reveal style="margin:0;font-size:clamp(30px,4.8vw,62px);line-height:1.0;letter-spacing:-0.035em;font-weight:600">Someone always<br>fronts it.</h2>
+        <p data-reveal style="margin:18px 0 0;max-width:34ch;font-size:clamp(15px,1.5vw,18px);line-height:1.5;color:rgba(246,241,231,0.74)">Tonight that's you. By the time the plates are cleared, everyone's square — settled at the table, in USDC.</p>
+      </div>
+
+      <!-- floating settled share card -->
+      <div class="tilt m-bandcard" style="position:absolute;right:clamp(18px,5vw,72px);bottom:clamp(96px,13vw,128px);width:min(232px,52vw);background:rgba(8,28,40,0.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(20,241,149,0.32);border-radius:16px;padding:16px 16px 14px;box-shadow:0 34px 80px -28px rgba(0,0,0,0.9);z-index:3">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.12em;color:rgba(246,241,231,0.5)"><span>TABLE 12 · 3 PPL</span><span style="color:var(--acc)">SETTLED ✓</span></div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin:12px 0 14px"><span style="font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;letter-spacing:-0.02em">$87.40</span><span style="font-size:11px;color:rgba(246,241,231,0.45)">in USDC</span></div>
+        <div style="display:flex;gap:8px">
+          <span style="position:relative;width:34px;height:34px;display:block;flex:none"><span style="position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(20,241,149,0.4);background:#0c2330"><img src="uploads/9c15d9647b9643dfbc5e522299d13593.png" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></span><span style="position:absolute;bottom:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--acc);color:#04121a;font-size:9px;display:flex;align-items:center;justify-content:center;border:2px solid #081c28;z-index:2">✓</span></span>
+          <span style="position:relative;width:34px;height:34px;display:block;flex:none"><span style="position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(20,241,149,0.4);background:#0c2330"><img src="uploads/TAEQ2OOMDRBRJJ7P2UOO2Y6TLA.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></span><span style="position:absolute;bottom:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--acc);color:#04121a;font-size:9px;display:flex;align-items:center;justify-content:center;border:2px solid #081c28;z-index:2">✓</span></span>
+          <span style="position:relative;width:34px;height:34px;display:block;flex:none"><span style="position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(20,241,149,0.4);background:#0c2330"><img src="uploads/images.jpg" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></span><span style="position:absolute;bottom:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--acc);color:#04121a;font-size:9px;display:flex;align-items:center;justify-content:center;border:2px solid #081c28;z-index:2">✓</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SECTION 2 — NOT FOR EVERYONE ================= -->
+  <section style="position:relative;background:#F6F1E7;color:#2A2A28">
+    <!-- torn top edge -->
+    <div style="position:absolute;top:-1px;left:0;right:0;height:26px;background:#F6F1E7;-webkit-mask:repeating-linear-gradient(90deg,#000 0 13px,transparent 13px 26px) 0 0/26px 26px,linear-gradient(#000,#000) 0 13px/100% 100% no-repeat;mask:repeating-linear-gradient(90deg,#000 0 13px,transparent 13px 26px) 0 0/26px 26px;transform:translateY(-100%)"></div>
+    <div style="max-width:1480px;margin:0 auto;padding:clamp(80px,11vw,160px) clamp(20px,5vw,64px)">
+      <div data-reveal style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.18em;color:rgba(42,42,40,0.5);margin-bottom:22px">01 — THE HONEST PART</div>
+      <h2 data-reveal style="margin:0;font-size:clamp(34px,5.6vw,72px);line-height:0.98;letter-spacing:-0.035em;font-weight:600;max-width:16ch">It's not for everyone. On&nbsp;purpose.</h2>
+      <p data-reveal style="margin:26px 0 0;max-width:52ch;font-size:clamp(16px,1.7vw,21px);line-height:1.5;color:rgba(42,42,40,0.7)">Divvy won't beat Venmo or Zelle for splitting tacos with your hometown friends. We're not trying to. It earns its place in exactly three rooms:</p>
+
+      <div class="ed-grid" style="display:grid;grid-template-columns:repeat(12,1fr);gap:clamp(30px,4vw,60px) clamp(24px,4vw,64px);align-items:start;margin-top:clamp(48px,7vw,96px)">
+        <!-- 01 — lead -->
+        <div data-reveal class="ed-lead" style="grid-column:1 / span 6">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:clamp(86px,11vw,150px);font-weight:700;letter-spacing:-0.05em;line-height:0.78;color:#2A2A28">01</div>
+          <h3 style="margin:20px 0 14px;font-size:clamp(26px,3.1vw,38px);font-weight:600;letter-spacing:-0.03em;max-width:13ch">Crypto-native groups</h3>
+          <p style="margin:0;max-width:42ch;font-size:clamp(15px,1.5vw,18px);line-height:1.55;color:rgba(42,42,40,0.66)">Everyone already holds USDC. No "download this app, link your bank, wait three days." A link, a tap, settled — before the waiter's back with the card machine.</p>
+        </div>
+        <!-- 02 + 03 — offset right rail -->
+        <div class="ed-rail" style="grid-column:8 / span 5;display:flex;flex-direction:column;gap:clamp(30px,4vw,52px);margin-top:clamp(0px,5vw,80px)">
+          <div data-reveal style="border-top:1.5px solid rgba(42,42,40,0.28);padding-top:22px;display:grid;grid-template-columns:auto 1fr;gap:clamp(14px,1.6vw,22px);align-items:start">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:clamp(32px,3.2vw,44px);font-weight:700;letter-spacing:-0.03em;line-height:0.85;color:rgba(42,42,40,0.34)">02</div>
+            <div>
+              <h3 style="margin:0 0 8px;font-size:clamp(20px,2vw,25px);font-weight:600;letter-spacing:-0.02em">Travel &amp; cross-border</h3>
+              <p style="margin:0;font-size:15px;line-height:1.55;color:rgba(42,42,40,0.62)">Four passports, one dinner. Settle in a single borderless currency with no FX spread skimmed off each transfer.</p>
+            </div>
+          </div>
+          <div data-reveal class="ed-indent" style="border-top:1.5px solid rgba(42,42,40,0.28);padding-top:22px;margin-left:clamp(0px,3vw,44px);display:grid;grid-template-columns:auto 1fr;gap:clamp(14px,1.6vw,22px);align-items:start">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:clamp(32px,3.2vw,44px);font-weight:700;letter-spacing:-0.03em;line-height:0.85;color:rgba(42,42,40,0.34)">03</div>
+            <div>
+              <h3 style="margin:0 0 8px;font-size:clamp(20px,2vw,25px);font-weight:600;letter-spacing:-0.02em">Weak-fiat-rail markets</h3>
+              <p style="margin:0;font-size:15px;line-height:1.55;color:rgba(42,42,40,0.62)">Dollars that move when the local rails don't. When the bank app is down, the chain isn't.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div data-reveal style="margin-top:clamp(56px,8vw,104px);border-top:1px solid rgba(42,42,40,0.18);padding-top:32px;display:flex;flex-wrap:wrap;gap:18px 44px;align-items:baseline">
+        <span style="font-size:clamp(26px,3.4vw,40px);font-weight:600;letter-spacing:-0.025em">No token. No spread. No "trust me."</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(42,42,40,0.5);letter-spacing:0.02em">— the whole trust model, in five words.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SECTION 3 — HOW IT WORKS (pinned) ================= -->
+  <section id="how" data-howwrap style="position:relative;background:#04121a;height:360vh">
+    <div data-howpin style="position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:clamp(20px,4vw,72px);padding:80px clamp(20px,5vw,64px) 40px;max-width:1480px;margin:0 auto;box-sizing:border-box">
+
+      <!-- left: step copy -->
+      <div style="position:relative;z-index:2;flex:1 1 340px;min-width:0">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.18em;color:rgba(246,241,231,0.5);margin-bottom:22px">02 — HOW IT WORKS</div>
+        <div class="m-howsteps" style="position:relative;height:clamp(220px,33vh,300px)">
+          <div data-step="0" class="howstep" style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;opacity:1">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--acc);letter-spacing:0.1em;margin-bottom:14px">STEP 01 / SCAN</div>
+            <h3 style="margin:0;font-size:clamp(32px,4.4vw,56px);line-height:1;letter-spacing:-0.03em;font-weight:600">Snap the receipt.</h3>
+            <p style="margin:20px 0 0;max-width:34ch;font-size:17px;line-height:1.55;color:rgba(246,241,231,0.62)">Claude reads the total straight off the paper — even a ฿ receipt in Thai. No typing, no math, no arguing about the tip.</p>
+          </div>
+          <div data-step="1" class="howstep" style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;opacity:0">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--acc);letter-spacing:0.1em;margin-bottom:14px">STEP 02 / SPLIT</div>
+            <h3 style="margin:0;font-size:clamp(32px,4.4vw,56px);line-height:1;letter-spacing:-0.03em;font-weight:600">Fairly. To the cent.</h3>
+            <p style="margin:20px 0 0;max-width:34ch;font-size:17px;line-height:1.55;color:rgba(246,241,231,0.62)">Tap <span style="font-family:'JetBrains Mono',monospace;color:#F6F1E7">− N +</span> for the headcount, or pull from a saved group. Integer-cents math means every share sums to the total exactly.</p>
+            <!-- interactive stepper -->
+            <div style="margin-top:26px;display:inline-flex;align-items:center;gap:18px;background:#081c28;border:1px solid rgba(246,241,231,0.1);border-radius:14px;padding:12px 16px">
+              <button data-dec class="magnetic" style="width:38px;height:38px;border-radius:10px;border:1px solid rgba(246,241,231,0.15);background:transparent;color:#F6F1E7;font-size:22px;cursor:pointer;font-family:'JetBrains Mono',monospace;line-height:1">−</button>
+              <div style="text-align:center;min-width:54px"><div style="font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;line-height:1">{{ count }}</div><div style="font-size:10px;color:rgba(246,241,231,0.4);letter-spacing:0.1em">PEOPLE</div></div>
+              <button data-inc class="magnetic" style="width:38px;height:38px;border-radius:10px;border:1px solid rgba(246,241,231,0.15);background:transparent;color:#F6F1E7;font-size:22px;cursor:pointer;font-family:'JetBrains Mono',monospace;line-height:1">+</button>
+              <div style="height:38px;width:1px;background:rgba(246,241,231,0.12)"></div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(246,241,231,0.55);letter-spacing:0.01em">$87.40 →</div>
+            </div>
+            <div data-splitrows style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;max-width:380px">
+              <sc-for list="{{ shares }}" as="s" hint-placeholder-count="3">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--acc);background:rgba(20,241,149,0.08);border:1px solid rgba(20,241,149,0.18);padding:5px 10px;border-radius:8px">${{ s.amount }}</span>
+              </sc-for>
+            </div>
+          </div>
+          <div data-step="2" class="howstep" style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;opacity:0">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--acc);letter-spacing:0.1em;margin-bottom:14px">STEP 03 / SHARE</div>
+            <h3 style="margin:0;font-size:clamp(32px,4.4vw,56px);line-height:1;letter-spacing:-0.03em;font-weight:600">A link + QR, per person.</h3>
+            <p style="margin:20px 0 0;max-width:34ch;font-size:17px;line-height:1.55;color:rgba(246,241,231,0.62)">Each share becomes a Solana Pay USDC link with its own QR — and its own reference pubkey, so the chain knows exactly who paid.</p>
+          </div>
+          <div data-step="3" class="howstep" style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;opacity:0">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--acc);letter-spacing:0.1em;margin-bottom:14px">STEP 04 / SETTLE</div>
+            <h3 style="margin:0;font-size:clamp(32px,4.4vw,56px);line-height:1;letter-spacing:-0.03em;font-weight:600">Watch it land.</h3>
+            <p style="margin:20px 0 0;max-width:34ch;font-size:17px;line-height:1.55;color:rgba(246,241,231,0.62)">Paid shares clear in ~400ms, ≈free, no chargebacks. You see who's in, who's out, and a <span style="color:var(--acc)">Settled ✓</span> when the table's square.</p>
+          </div>
+        </div>
+        <!-- progress -->
+        <div style="display:flex;gap:10px;margin-top:36px">
+          <span data-prog="0" style="height:3px;flex:1;background:var(--acc);border-radius:2px;transition:opacity .3s"></span>
+          <span data-prog="1" style="height:3px;flex:1;background:rgba(246,241,231,0.18);border-radius:2px;transition:background .3s"></span>
+          <span data-prog="2" style="height:3px;flex:1;background:rgba(246,241,231,0.18);border-radius:2px;transition:background .3s"></span>
+          <span data-prog="3" style="height:3px;flex:1;background:rgba(246,241,231,0.18);border-radius:2px;transition:background .3s"></span>
+        </div>
+      </div>
+
+      <!-- right: morphing visual -->
+      <div class="m-howvis" style="position:relative;flex:1 1 340px;min-width:0;height:clamp(240px,46vh,540px);display:flex;align-items:center;justify-content:center;perspective:1200px">
+        <!-- scan frame -->
+        <div data-vis="0" class="howvis" style="position:absolute;width:236px;height:330px;opacity:1;display:flex;align-items:center;justify-content:center">
+          <!-- camera reticle -->
+          <div style="position:absolute;inset:-13px;pointer-events:none">
+            <span style="position:absolute;top:0;left:0;width:22px;height:22px;border-top:2px solid var(--acc);border-left:2px solid var(--acc);border-radius:4px 0 0 0"></span>
+            <span style="position:absolute;top:0;right:0;width:22px;height:22px;border-top:2px solid var(--acc);border-right:2px solid var(--acc);border-radius:0 4px 0 0"></span>
+            <span style="position:absolute;bottom:0;left:0;width:22px;height:22px;border-bottom:2px solid var(--acc);border-left:2px solid var(--acc);border-radius:0 0 0 4px"></span>
+            <span style="position:absolute;bottom:0;right:0;width:22px;height:22px;border-bottom:2px solid var(--acc);border-right:2px solid var(--acc);border-radius:0 0 4px 0"></span>
+          </div>
+          <!-- the paper -->
+          <div style="position:relative;width:100%;height:100%;background:#F6F1E7;border-radius:6px;box-shadow:0 30px 70px -25px rgba(0,0,0,0.8);overflow:hidden;font-family:'JetBrains Mono',monospace;color:#2A2A28;padding:18px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div><div style="font-size:11px;font-weight:600;letter-spacing:0.06em">ร้านอาหาร</div><div style="font-size:9px;opacity:0.5;margin-top:3px">฿ THB · BANGKOK</div></div>
+              <div style="display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:0.08em;color:#0a6b45;background:rgba(20,241,149,0.16);border-radius:20px;padding:3px 8px"><span style="width:5px;height:5px;border-radius:50%;background:#0a6b45"></span>READING</div>
+            </div>
+            <div style="margin-top:16px;display:flex;flex-direction:column;gap:6px">
+              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>ทงคัตสึ</span><span>580</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(20,241,149,0.14);opacity:0"></span></div>
+              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>ราเมง</span><span>500</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(20,241,149,0.14);opacity:0"></span></div>
+              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>เกี๊ยวซ่า</span><span>280</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(20,241,149,0.14);opacity:0"></span></div>
+              <div style="position:relative;display:flex;justify-content:space-between;font-size:10px;opacity:0.82;padding:2px 0"><span>ไฮบอล ×2</span><span>430</span><span data-ocr style="position:absolute;inset:0 -5px;border:1px solid var(--acc);border-radius:3px;background:rgba(20,241,149,0.14);opacity:0"></span></div>
+            </div>
+            <div style="position:absolute;bottom:16px;left:18px;right:18px;border-top:1px dashed rgba(42,42,40,0.3);padding-top:9px;display:flex;justify-content:space-between;align-items:center;font-size:12px"><span>รวม</span><span style="font-weight:700">฿2,450</span><span data-ocrtotal style="position:absolute;inset:5px -6px -5px;border:1.5px solid var(--acc);border-radius:4px;background:rgba(20,241,149,0.1);opacity:0"></span></div>
+            <div data-ocrbadge style="position:absolute;bottom:44px;right:13px;display:flex;align-items:center;gap:5px;font-size:8.5px;letter-spacing:0.05em;font-weight:700;color:#04121a;background:var(--acc);border-radius:6px;padding:4px 8px;box-shadow:0 8px 18px rgba(20,241,149,0.45);opacity:0">TOTAL ฿2,450 ✓</div>
+            <!-- scan beam -->
+            <div data-scanbeam style="position:absolute;left:0;right:0;top:0;height:3px;background:var(--acc);box-shadow:0 0 18px 4px var(--acc)"></div>
+          </div>
+        </div>
+        <!-- split: deal into shares -->
+        <div data-vis="1" class="howvis" style="position:absolute;inset:0;opacity:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px">
+          <div data-splitlabel style="font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(246,241,231,0.6)">$87.40 <span style="opacity:0.45">÷ 3 =</span></div>
+          <div style="position:relative;width:300px;height:170px">
+            <div data-splitcard style="position:absolute;left:50%;top:50%;width:116px;height:152px;margin:-76px 0 0 -58px;background:#0c2330;border:1px solid rgba(20,241,149,0.3);border-radius:12px;box-shadow:0 20px 40px -18px rgba(0,0,0,0.7);display:flex;flex-direction:column;justify-content:flex-end;padding:12px;font-family:'JetBrains Mono',monospace;"><div style="font-size:18px;font-weight:700">$29.14</div><div style="font-size:10px;color:rgba(246,241,231,0.5);margin-top:2px">Ava</div></div>
+            <div data-splitcard style="position:absolute;left:50%;top:50%;width:116px;height:152px;margin:-76px 0 0 -58px;background:#0c2330;border:1px solid rgba(20,241,149,0.3);border-radius:12px;box-shadow:0 20px 40px -18px rgba(0,0,0,0.7);display:flex;flex-direction:column;justify-content:flex-end;padding:12px;font-family:'JetBrains Mono',monospace;z-index:3"><div style="font-size:18px;font-weight:700">$29.13</div><div style="font-size:10px;color:rgba(246,241,231,0.5);margin-top:2px">Marco</div></div>
+            <div data-splitcard style="position:absolute;left:50%;top:50%;width:116px;height:152px;margin:-76px 0 0 -58px;background:#0c2330;border:1px solid rgba(20,241,149,0.3);border-radius:12px;box-shadow:0 20px 40px -18px rgba(0,0,0,0.7);display:flex;flex-direction:column;justify-content:flex-end;padding:12px;font-family:'JetBrains Mono',monospace;"><div style="font-size:18px;font-weight:700">$29.13</div><div style="font-size:10px;color:rgba(246,241,231,0.5);margin-top:2px">Priya</div></div>
+          </div>
+        </div>
+        <!-- share: a link + QR, per person -->
+        <div data-vis="2" class="howvis" style="position:absolute;inset:0;opacity:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+          <div data-sharecard style="display:flex;align-items:center;gap:12px;width:256px;background:#F6F1E7;border-radius:12px;padding:11px 13px;box-shadow:0 18px 38px -18px rgba(0,0,0,0.7)">
+            <div class="qr" data-seed="71" style="width:46px;height:46px;flex:none;display:flex"></div>
+            <div style="flex:1;min-width:0;font-family:'JetBrains Mono',monospace;color:#2A2A28"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;font-weight:700">Ava</span><span style="font-size:14px;font-weight:700">$29.14</span></div><div style="font-size:9px;opacity:0.5;margin-top:3px">solana:pay · ref 7Bx…q9F</div></div>
+            <div data-sharesent style="font-size:10px;color:#0a6b45;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0">sent ✓</div>
+          </div>
+          <div data-sharecard style="display:flex;align-items:center;gap:12px;width:256px;background:#F6F1E7;border-radius:12px;padding:11px 13px;box-shadow:0 18px 38px -18px rgba(0,0,0,0.7)">
+            <div class="qr" data-seed="53" style="width:46px;height:46px;flex:none;display:flex"></div>
+            <div style="flex:1;min-width:0;font-family:'JetBrains Mono',monospace;color:#2A2A28"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;font-weight:700">Marco</span><span style="font-size:14px;font-weight:700">$29.13</span></div><div style="font-size:9px;opacity:0.5;margin-top:3px">solana:pay · ref 3pQ…mZ1</div></div>
+            <div data-sharesent style="font-size:10px;color:#0a6b45;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0">sent ✓</div>
+          </div>
+          <div data-sharecard style="display:flex;align-items:center;gap:12px;width:256px;background:#F6F1E7;border-radius:12px;padding:11px 13px;box-shadow:0 18px 38px -18px rgba(0,0,0,0.7)">
+            <div class="qr" data-seed="67" style="width:46px;height:46px;flex:none;display:flex"></div>
+            <div style="flex:1;min-width:0;font-family:'JetBrains Mono',monospace;color:#2A2A28"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;font-weight:700">Priya</span><span style="font-size:14px;font-weight:700">$29.13</span></div><div style="font-size:9px;opacity:0.5;margin-top:3px">solana:pay · ref Kv7…2qF</div></div>
+            <div data-sharesent style="font-size:10px;color:#0a6b45;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0">sent ✓</div>
+          </div>
+        </div>
+        <!-- settle: paid one by one, then stamp -->
+        <div data-vis="3" class="howvis" style="position:absolute;inset:0;opacity:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+          <div style="display:flex;flex-direction:column;gap:9px;width:234px">
+            <div data-payrow style="display:flex;justify-content:space-between;align-items:center;background:#081c28;border:1px solid rgba(246,241,231,0.12);border-radius:10px;padding:11px 14px;font-family:'JetBrains Mono',monospace"><span style="font-size:13px;color:rgba(246,241,231,0.75)">Ava</span><span style="position:relative;width:54px;height:16px"><span data-paypending style="position:absolute;right:0;top:1px;font-size:13px;color:rgba(246,241,231,0.35);letter-spacing:2px">···</span><span data-paypaid style="position:absolute;right:0;font-size:12px;color:var(--acc);opacity:0">paid ✓</span></span></div>
+            <div data-payrow style="display:flex;justify-content:space-between;align-items:center;background:#081c28;border:1px solid rgba(246,241,231,0.12);border-radius:10px;padding:11px 14px;font-family:'JetBrains Mono',monospace"><span style="font-size:13px;color:rgba(246,241,231,0.75)">Marco</span><span style="position:relative;width:54px;height:16px"><span data-paypending style="position:absolute;right:0;top:1px;font-size:13px;color:rgba(246,241,231,0.35);letter-spacing:2px">···</span><span data-paypaid style="position:absolute;right:0;font-size:12px;color:var(--acc);opacity:0">paid ✓</span></span></div>
+            <div data-payrow style="display:flex;justify-content:space-between;align-items:center;background:#081c28;border:1px solid rgba(246,241,231,0.12);border-radius:10px;padding:11px 14px;font-family:'JetBrains Mono',monospace"><span style="font-size:13px;color:rgba(246,241,231,0.75)">Priya</span><span style="position:relative;width:54px;height:16px"><span data-paypending style="position:absolute;right:0;top:1px;font-size:13px;color:rgba(246,241,231,0.35);letter-spacing:2px">···</span><span data-paypaid style="position:absolute;right:0;font-size:12px;color:var(--acc);opacity:0">paid ✓</span></span></div>
+          </div>
+          <div data-settlestamp style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:24px;letter-spacing:0.04em;color:var(--acc);border:3px solid var(--acc);border-radius:10px;padding:8px 18px;transform:rotate(-6deg);box-shadow:0 0 0 6px rgba(20,241,149,0.08);opacity:0">SETTLED ✓</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SECTION 4 — THREE WAYS TO PAY ================= -->
+  <section id="pay" style="position:relative;background:#081c28">
+    <div style="max-width:1480px;margin:0 auto;padding:clamp(80px,11vw,150px) clamp(20px,5vw,64px)">
+      <div data-reveal style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.18em;color:rgba(246,241,231,0.5);margin-bottom:22px">03 — PAYING IS THE EASY PART</div>
+      <h2 data-reveal style="margin:0;font-size:clamp(34px,5.6vw,72px);line-height:0.98;letter-spacing:-0.035em;font-weight:600;max-width:18ch">No app required to pay.</h2>
+      <p data-reveal style="margin:24px 0 0;max-width:46ch;font-size:clamp(16px,1.7vw,20px);line-height:1.5;color:rgba(246,241,231,0.62)">Send the link. Your friend picks how they settle — three ways, none of them "make an account first."</p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:clamp(32px,5vw,72px);margin-top:clamp(48px,7vw,84px);align-items:center">
+
+        <!-- left: active-method copy -->
+        <div data-reveal>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.14em;color:var(--acc);margin-bottom:16px">{{ activeTag }}</div>
+          <h3 style="margin:0;font-size:clamp(26px,3vw,40px);font-weight:600;letter-spacing:-0.025em">{{ activeTitle }}</h3>
+          <p style="margin:20px 0 0;max-width:38ch;font-size:clamp(15px,1.6vw,18px);line-height:1.55;color:rgba(246,241,231,0.62)">{{ activeBlurb }}</p>
+          <div style="margin-top:26px;display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:rgba(246,241,231,0.45)"><span style="color:var(--acc)">↗</span> tap a method on the phone</div>
+        </div>
+
+        <!-- right: the friend's phone -->
+        <div data-reveal style="display:flex;justify-content:center">
+          <div style="position:relative;width:min(338px,92%);background:#0a1c26;border:1px solid rgba(246,241,231,0.12);border-radius:34px;padding:9px;box-shadow:0 50px 110px -40px rgba(0,0,0,0.85)">
+            <div style="background:#04121a;border-radius:27px;overflow:hidden;padding:16px 16px 18px">
+
+              <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(246,241,231,0.4);margin-bottom:16px">
+                <span>20:41</span><span>divvy.link/s/7Bx2</span><span>5G ▰▰▰</span>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--acc);color:#04121a;font-weight:700;font-size:13px;font-family:'JetBrains Mono',monospace">÷</span><span style="font-size:14px;font-weight:600">Pay your share</span></div>
+
+              <div style="background:#081c28;border:1px solid rgba(246,241,231,0.08);border-radius:14px;padding:16px;text-align:center">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;letter-spacing:-0.02em">$29.14</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(246,241,231,0.45);margin-top:4px">your share · Table 12 → you.sol</div>
+              </div>
+
+              <div style="display:flex;gap:6px;background:#081c28;border:1px solid rgba(246,241,231,0.1);border-radius:12px;padding:5px;margin:18px 0 16px">
+                <sc-for list="{{ payTabs }}" as="t" hint-placeholder-count="3">
+                  <button onClick="{{ t.select }}" style="flex:1;appearance:none;border:0;background:none;padding:0;cursor:pointer;font:inherit">
+                    <sc-if value="{{ t.active }}" hint-placeholder-val="{{ true }}"><span style="display:block;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:9px 6px;border-radius:8px;background:var(--acc);color:#04121a;font-weight:700">{{ t.label }}</span></sc-if>
+                    <sc-if value="{{ t.inactive }}" hint-placeholder-val="{{ true }}"><span style="display:block;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12.5px;padding:9px 6px;border-radius:8px;color:rgba(246,241,231,0.55)">{{ t.label }}</span></sc-if>
+                  </button>
+                </sc-for>
+              </div>
+
+              <div style="min-height:212px">
+                <sc-if value="{{ isWallet }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;align-items:center;text-align:center">
+                    <div class="qr" data-seed="91" style="width:150px;aspect-ratio:1;background:#F6F1E7;border-radius:14px;padding:11px;display:flex"></div>
+                    <div style="margin-top:14px;font-size:13px;color:rgba(246,241,231,0.6)">Scan with Phantom or Solflare</div>
+                    <div style="margin-top:14px;width:100%;background:var(--acc);color:#04121a;font-weight:700;font-size:14px;text-align:center;padding:13px;border-radius:11px">Approve in wallet</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ isCard }}" hint-placeholder-val="{{ true }}">
+                  <div>
+                    <div style="display:flex;align-items:center;gap:12px;background:#081c28;border:1px solid rgba(246,241,231,0.1);border-radius:12px;padding:14px">
+                      <div style="width:40px;height:26px;border-radius:5px;background:linear-gradient(135deg,#2775CA,#1a4f8a);flex:none"></div>
+                      <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:rgba(246,241,231,0.8);letter-spacing:0.06em">•••• •••• •••• 4291</div>
+                    </div>
+                    <div style="margin-top:12px;display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(246,241,231,0.45)"><span style="color:var(--usdc)">●</span> via MoonPay — card → USDC, no chain</div>
+                    <div style="margin-top:46px;width:100%;background:var(--acc);color:#04121a;font-weight:700;font-size:14px;text-align:center;padding:13px;border-radius:11px">Pay $29.14</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ isInstant }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;align-items:center;text-align:center">
+                    <div style="width:62px;height:62px;border-radius:18px;background:rgba(20,241,149,0.1);border:1px solid rgba(20,241,149,0.3);display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--acc)">⊕</div>
+                    <div style="margin-top:14px;font-size:15px;font-weight:600;color:#F6F1E7">Wallet created from the link</div>
+                    <div style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(246,241,231,0.45)">no seed phrase · no extension</div>
+                    <div style="margin-top:14px;display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--acc);border:1px solid rgba(20,241,149,0.25);border-radius:8px;padding:6px 11px">G7c…wA7 · ready ✓</div>
+                    <div style="margin-top:16px;width:100%;background:var(--acc);color:#04121a;font-weight:700;font-size:14px;text-align:center;padding:13px;border-radius:11px">Spin up &amp; settle</div>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div style="margin-top:16px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:rgba(246,241,231,0.35);letter-spacing:0.04em">no app · no account · settles in ~400ms</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SECTION 5 — ONE CURRENCY, NO BORDERS ================= -->
+  <section style="position:relative;background:#04121a">
+    <div style="max-width:1480px;margin:0 auto;padding:clamp(80px,11vw,150px) clamp(20px,5vw,64px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:clamp(32px,5vw,80px);align-items:center">
+      <div>
+        <div data-reveal style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.18em;color:rgba(246,241,231,0.5);margin-bottom:22px">04 — TRAVEL</div>
+        <h2 data-reveal style="margin:0;font-size:clamp(34px,5vw,64px);line-height:1;letter-spacing:-0.035em;font-weight:600;max-width:14ch">One currency.<br>No borders.</h2>
+        <p data-reveal style="margin:24px 0 0;max-width:42ch;font-size:clamp(16px,1.6vw,19px);line-height:1.55;color:rgba(246,241,231,0.62)">Scan a baht, euro, or yen receipt. Divvy settles everyone in USDC at a locked, timestamped rate — so nobody eats the FX spread or argues about whose bank had the worse day.</p>
+        <p data-reveal style="margin:20px 0 0;font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(246,241,231,0.45)">rate locked at scan · timestamped on-chain · no spread</p>
+        <div data-reveal style="margin-top:30px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:rgba(246,241,231,0.4);margin-bottom:12px">SAME DINNER · ANY RECEIPT →</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ fxList }}" as="c" hint-placeholder-count="5">
+              <button onClick="{{ c.select }}" style="appearance:none;border:0;background:none;padding:0;cursor:pointer;font:inherit;line-height:0">
+                <sc-if value="{{ c.active }}" hint-placeholder-val="{{ true }}"><span style="display:inline-block;font-family:'JetBrains Mono',monospace;font-size:13px;padding:7px 12px;border-radius:9px;background:var(--acc);color:#04121a;border:1px solid var(--acc);font-weight:700">{{ c.label }}</span></sc-if>
+                <sc-if value="{{ c.inactive }}" hint-placeholder-val="{{ true }}"><span style="display:inline-block;font-family:'JetBrains Mono',monospace;font-size:13px;padding:7px 12px;border-radius:9px;background:transparent;color:rgba(246,241,231,0.6);border:1px solid rgba(246,241,231,0.16)">{{ c.label }}</span></sc-if>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <!-- villa photo + settlement pass, composited -->
+      <div data-reveal style="position:relative;perspective:1200px;padding:clamp(16px,3vw,40px) 0">
+        <image-slot id="scene-villa" src="uploads/kimson-doan-AZMmUy2qL6A-unsplash.jpg" style="display:block;width:min(84%,420px);height:auto;aspect-ratio:4/5;margin:0 auto;transform:rotate(-2.5deg);border-radius:6px;box-shadow:0 44px 100px -34px rgba(0,0,0,0.65)" shape="rounded" radius="6" fit="cover" placeholder="Drop a holiday-villa photo — friends, pool, terrace…"></image-slot>
+        <div class="tilt" style="position:absolute;left:clamp(-4px,1vw,16px);bottom:clamp(0px,2vw,24px);width:min(82%,372px);display:grid;grid-template-columns:minmax(0,1fr) clamp(72px,20%,104px);background:#F6F1E7;color:#2A2A28;border-radius:14px;overflow:hidden;box-shadow:0 40px 90px -24px rgba(0,0,0,0.8);font-family:'JetBrains Mono',monospace;transform:rotate(3deg)">
+          <div style="padding:clamp(18px,4vw,24px);min-width:0">
+            <div style="display:flex;justify-content:space-between;font-size:10px;letter-spacing:0.14em;opacity:0.55">DIVVY · SETTLEMENT PASS</div>
+            <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;margin:22px 0">
+              <div><div style="font-size:11px;opacity:0.5">BILLED</div><div style="font-size:28px;font-weight:700;letter-spacing:-0.02em">{{ billedSym }}{{ billedAmt }}</div><div style="font-size:11px;opacity:0.5">{{ billedCode }}</div></div>
+              <div style="font-size:24px;opacity:0.4;padding-bottom:18px">→</div>
+              <div><div style="font-size:11px;opacity:0.5">SETTLED</div><div style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:#0a6b45">$74.48</div><div style="font-size:11px;opacity:0.5">USDC</div></div>
+            </div>
+            <div data-fxlock style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;background:rgba(20,241,149,0.14);color:#0a6b45;border:1px solid rgba(10,107,69,0.3);border-radius:8px;padding:6px 11px">
+              <span data-fxicon style="display:inline-block">🔒</span> {{ rateStr }}
+            </div>
+            <div style="margin-top:18px;border-top:1px dashed rgba(42,42,40,0.3);padding-top:12px;font-size:10px;opacity:0.5;letter-spacing:0.04em">LOCKED 2026-06-23T20:41:07Z · BLOCK 287,441,902</div>
+          </div>
+          <div style="border-left:2px dashed rgba(42,42,40,0.3);background:#ece5d6;display:flex;align-items:center;justify-content:center;padding:14px">
+            <div class="qr" data-seed="113" style="width:88px;aspect-ratio:1;display:flex"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SECTION 5b — COUNT THE COST (money) ================= -->
+  <section style="position:relative;background:#04121a;overflow-x:clip">
+    <div style="position:absolute;top:8%;right:-2%;font-family:'JetBrains Mono',monospace;font-size:clamp(180px,32vw,440px);font-weight:700;line-height:0.8;color:rgba(246,241,231,0.022);pointer-events:none;user-select:none" data-parallax="0.06">%</div>
+    <div style="position:relative;max-width:1480px;margin:0 auto;padding:clamp(80px,11vw,150px) clamp(20px,5vw,64px)">
+      <div data-reveal style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.18em;color:rgba(246,241,231,0.5);margin-bottom:22px">05 — COUNT THE COST</div>
+      <h2 data-reveal style="margin:0;font-size:clamp(34px,5.6vw,72px);line-height:0.98;letter-spacing:-0.035em;font-weight:600;max-width:17ch">Fronting the bill shouldn't cost you twice.</h2>
+      <p data-reveal style="margin:24px 0 0;max-width:50ch;font-size:clamp(16px,1.7vw,20px);line-height:1.5;color:rgba(246,241,231,0.62)">Dinner's already paid. The fees and FX spread on <em style="font-style:normal;color:#F6F1E7">getting paid back</em> are the part nobody mentions — until a year of trips quietly adds up to a flight you could've bought.</p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:clamp(24px,3vw,52px);margin-top:clamp(48px,7vw,80px);align-items:center">
+
+        <!-- spread calculator -->
+        <div data-reveal style="background:#081c28;border:1px solid rgba(246,241,231,0.09);border-radius:20px;padding:clamp(22px,3vw,32px)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.1em;color:rgba(246,241,231,0.4);border-bottom:1px solid rgba(246,241,231,0.1);padding-bottom:16px;margin-bottom:22px"><span>THE SPREAD, OVER A YEAR</span><span style="color:rgba(246,241,231,0.5)">drag to feel it</span></div>
+
+          <div style="margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span style="font-size:14px;color:rgba(246,241,231,0.7)">Trips a year</span><span style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--acc)">{{ trips }}</span></div>
+            <input type="range" min="1" max="24" step="1" value="{{ trips }}" onChange="{{ setTrips }}" style="width:100%;height:24px;accent-color:#14F195;cursor:pointer;background:transparent">
+          </div>
+
+          <div style="margin-bottom:26px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span style="font-size:14px;color:rgba(246,241,231,0.7)">Avg bill you front</span><span style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--acc)">{{ avgBillStr }}</span></div>
+            <input type="range" min="200" max="4000" step="50" value="{{ avgBill }}" onChange="{{ setAvg }}" style="width:100%;height:24px;accent-color:#14F195;cursor:pointer;background:transparent">
+          </div>
+
+          <div style="border-top:1px solid rgba(246,241,231,0.08);padding-top:22px;display:flex;flex-direction:column;gap:18px">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-family:'JetBrains Mono',monospace"><span style="font-size:13px;color:rgba(246,241,231,0.78)">Card abroad <span style="color:rgba(246,241,231,0.4)">· 3.1%</span></span><span style="font-size:15px;font-weight:700;color:#e0a892;font-variant-numeric:tabular-nums">−{{ cardYrStr }}</span></div>
+              <div style="height:10px;border-radius:6px;background:rgba(246,241,231,0.06);overflow:hidden"><div style="height:100%;border-radius:6px;width:{{ cardPct }}%;background:linear-gradient(90deg,rgba(214,138,111,0.9),rgba(214,138,111,0.35));transition:width .5s cubic-bezier(.2,.8,.2,1)"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-family:'JetBrains Mono',monospace"><span style="font-size:13px;color:rgba(246,241,231,0.78)">Venmo instant <span style="color:rgba(246,241,231,0.4)">· 1.75%</span></span><span style="font-size:15px;font-weight:700;color:#e0a892;font-variant-numeric:tabular-nums">−{{ venmoYrStr }}</span></div>
+              <div style="height:10px;border-radius:6px;background:rgba(246,241,231,0.06);overflow:hidden"><div style="height:100%;border-radius:6px;width:{{ venmoPct }}%;background:linear-gradient(90deg,rgba(214,138,111,0.72),rgba(214,138,111,0.28));transition:width .5s cubic-bezier(.2,.8,.2,1)"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-family:'JetBrains Mono',monospace"><span style="font-size:13px;color:var(--acc)">Divvy · USDC <span style="color:rgba(246,241,231,0.4)">· ~0%</span></span><span style="font-size:15px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums">{{ divvyYrStr }}</span></div>
+              <div style="height:10px;border-radius:6px;background:rgba(246,241,231,0.06);overflow:hidden"><div style="height:100%;border-radius:6px;width:{{ divvyPct }}%;min-width:6px;background:var(--acc);box-shadow:0 0 12px rgba(20,241,149,0.5);transition:width .5s cubic-bezier(.2,.8,.2,1)"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div data-reveal>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.06em;color:rgba(246,241,231,0.45)">YOU KEEP vs CARD FX · PER YEAR</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:clamp(52px,8.5vw,100px);font-weight:700;letter-spacing:-0.04em;line-height:1;color:var(--acc);margin:10px 0 0;font-variant-numeric:tabular-nums">{{ keepStr }}</div>
+          <p style="margin:22px 0 0;max-width:36ch;font-size:17px;line-height:1.55;color:rgba(246,241,231,0.66)">Even against Venmo's gentler 1.75%, that's <span style="color:#F6F1E7">{{ venmoYrStr }}</span> a year you stop handing over. The spread you never see funds someone else's margin — not your next flight.</p>
+          <div style="margin-top:22px;display:inline-flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:13px;color:rgba(246,241,231,0.55);border:1px solid rgba(246,241,231,0.12);border-radius:9px;padding:9px 14px">no token · no spread · no "trust me"</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SECTION 6 — TRUST & THE MATH ================= -->
+  <section id="trust" style="position:relative;background:#081c28">
+    <div style="max-width:1480px;margin:0 auto;padding:clamp(80px,11vw,150px) clamp(20px,5vw,64px)">
+      <div data-reveal style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.18em;color:rgba(246,241,231,0.5);margin-bottom:22px">06 — TRUST & THE MATH</div>
+      <h2 data-reveal style="margin:0;font-size:clamp(34px,5.6vw,72px);line-height:0.98;letter-spacing:-0.035em;font-weight:600;max-width:16ch">Auditable, not "trust me."</h2>
+
+      <!-- on-chain transaction inspector -->
+      <div data-reveal style="margin-top:clamp(48px,7vw,80px);background:#06171f;border:1px solid rgba(246,241,231,0.1);border-radius:16px;overflow:hidden;box-shadow:0 44px 100px -44px rgba(0,0,0,0.75)">
+
+        <!-- explorer address bar -->
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:13px clamp(14px,2.2vw,22px);border-bottom:1px solid rgba(246,241,231,0.08);background:rgba(8,28,40,0.55)">
+          <div style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(246,241,231,0.5)"><span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:var(--acc);color:#04121a;font-weight:700;font-size:12px">÷</span>explorer</div>
+          <div style="flex:1;min-width:170px;display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:rgba(246,241,231,0.7);background:#04121a;border:1px solid rgba(246,241,231,0.1);border-radius:9px;padding:8px 12px;overflow:hidden"><span style="color:rgba(246,241,231,0.32)">tx/</span><span style="color:#F6F1E7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">5x8Kq2nT…vR4mZ1qF</span><span style="margin-left:auto;color:rgba(246,241,231,0.3);flex:none">⧉</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--acc);white-space:nowrap"><span style="width:7px;height:7px;border-radius:50%;background:var(--acc);box-shadow:0 0 10px var(--acc)"></span>FINALIZED</div>
+        </div>
+
+        <!-- body: timeline + balance changes -->
+        <div class="xpl-body" style="display:grid;grid-template-columns:minmax(0,256px) minmax(0,1fr)">
+          <!-- confirmations timeline -->
+          <div class="xpl-left" style="padding:clamp(22px,2.6vw,30px);border-right:1px solid rgba(246,241,231,0.08)">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:rgba(246,241,231,0.4);margin-bottom:24px">CONFIRMATIONS</div>
+            <div style="position:relative;font-family:'JetBrains Mono',monospace;padding-left:2px">
+              <div style="position:absolute;left:7px;top:8px;bottom:18px;width:2px;background:linear-gradient(180deg,var(--acc),rgba(20,241,149,0.25))"></div>
+              <div style="position:relative;padding-left:26px;margin-bottom:18px"><span style="position:absolute;left:1px;top:2px;width:12px;height:12px;border-radius:50%;background:#06171f;border:2px solid var(--acc)"></span><div style="font-size:13px;color:#F6F1E7">requested</div><div style="font-size:11px;color:rgba(246,241,231,0.4);margin-top:2px">20:41:03.118</div></div>
+              <div style="position:relative;padding-left:26px;margin-bottom:18px"><span style="position:absolute;left:1px;top:2px;width:12px;height:12px;border-radius:50%;background:#06171f;border:2px solid var(--acc)"></span><div style="font-size:13px;color:#F6F1E7">signed</div><div style="font-size:11px;color:rgba(246,241,231,0.4);margin-top:2px">20:41:03.402</div></div>
+              <div style="position:relative;padding-left:26px;margin-bottom:18px"><span style="position:absolute;left:1px;top:2px;width:12px;height:12px;border-radius:50%;background:#06171f;border:2px solid var(--acc)"></span><div style="font-size:13px;color:#F6F1E7">confirmed</div><div style="font-size:11px;color:rgba(246,241,231,0.4);margin-top:2px">20:41:03.612</div></div>
+              <div style="position:relative;padding-left:26px"><span style="position:absolute;left:1px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)"></span><div style="font-size:13px;color:var(--acc);font-weight:700">settled ✓</div><div style="font-size:11px;color:rgba(246,241,231,0.4);margin-top:2px">20:41:03.788</div></div>
+            </div>
+            <div style="margin-top:24px;padding-top:16px;border-top:1px solid rgba(246,241,231,0.08);font-family:'JetBrains Mono',monospace;font-size:11px;line-height:2;color:rgba(246,241,231,0.45)">
+              <div style="display:flex;justify-content:space-between"><span>slot</span><span style="color:rgba(246,241,231,0.65)">287,441,902</span></div>
+              <div style="display:flex;justify-content:space-between"><span>time</span><span style="color:rgba(246,241,231,0.65)">~412 ms</span></div>
+              <div style="display:flex;justify-content:space-between"><span>fee</span><span style="color:rgba(246,241,231,0.65)">0.000005 ◎ <span style="color:rgba(246,241,231,0.32)">≈$0.0002</span></span></div>
+            </div>
+          </div>
+
+          <!-- balance changes -->
+          <div style="padding:clamp(22px,2.6vw,30px);font-family:'JetBrains Mono',monospace">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;font-size:11px;letter-spacing:0.14em;color:rgba(246,241,231,0.4);margin-bottom:6px"><span>TOKEN BALANCE CHANGES · USDC</span><span style="color:rgba(246,241,231,0.3)">3 transfers</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid rgba(246,241,231,0.06)"><span style="display:flex;align-items:baseline;gap:10px;min-width:0"><span style="font-size:15px;color:#F6F1E7">ava.sol</span><span style="font-size:11px;color:rgba(246,241,231,0.32);white-space:nowrap">7Bx2…q9F</span></span><span style="font-size:15px;color:rgba(246,241,231,0.85);font-variant-numeric:tabular-nums">−29.14</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid rgba(246,241,231,0.06)"><span style="display:flex;align-items:baseline;gap:10px;min-width:0"><span style="font-size:15px;color:#F6F1E7">marco.sol</span><span style="font-size:11px;color:rgba(246,241,231,0.32);white-space:nowrap">3pQ9…mZ1</span></span><span style="font-size:15px;color:rgba(246,241,231,0.85);font-variant-numeric:tabular-nums">−29.13</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid rgba(246,241,231,0.06)"><span style="display:flex;align-items:baseline;gap:10px;min-width:0"><span style="font-size:15px;color:#F6F1E7">priya.sol</span><span style="font-size:11px;color:rgba(246,241,231,0.32);white-space:nowrap">Kv7R…2qF</span></span><span style="font-size:15px;color:rgba(246,241,231,0.85);font-variant-numeric:tabular-nums">−29.13</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:18px 0 4px;margin-top:6px;border-top:1px solid rgba(246,241,231,0.18)"><span style="display:flex;align-items:baseline;gap:10px;min-width:0"><span style="font-size:16px;font-weight:700;color:#F6F1E7">your wallet</span><span style="font-size:11px;color:rgba(246,241,231,0.32);white-space:nowrap">D1vY…wA7</span></span><span style="font-size:clamp(20px,2.4vw,26px);font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums">+87.40</span></div>
+            <p style="margin:18px 0 0;font-family:'Space Grotesk',sans-serif;font-size:13px;line-height:1.55;color:rgba(246,241,231,0.5)"><span style="color:rgba(246,241,231,0.78)">Integer-cents.</span> Every share sums to the total exactly — the odd cent lands on someone, never lost to rounding.</p>
+          </div>
+        </div>
+
+        <!-- program log: guarantees as passed checks -->
+        <div style="border-top:1px solid rgba(246,241,231,0.08);background:#04121a;padding:clamp(18px,2.2vw,24px) clamp(16px,2.2vw,30px)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:rgba(246,241,231,0.4);margin-bottom:18px">PROGRAM LOG · CHECKS PASSED</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px 26px">
+            <div style="display:flex;gap:10px;align-items:flex-start;font-family:'JetBrains Mono',monospace"><span style="color:var(--acc);font-size:13px;line-height:1.4">✓</span><span><span style="font-size:13.5px;color:#F6F1E7">no token</span><span style="display:block;font-size:11.5px;color:rgba(246,241,231,0.45);margin-top:3px;line-height:1.5">plain USDC — nothing minted to pump</span></span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;font-family:'JetBrains Mono',monospace"><span style="color:var(--acc);font-size:13px;line-height:1.4">✓</span><span><span style="font-size:13.5px;color:#F6F1E7">no spread</span><span style="display:block;font-size:11.5px;color:rgba(246,241,231,0.45);margin-top:3px;line-height:1.5">rate passed through untouched</span></span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;font-family:'JetBrains Mono',monospace"><span style="color:var(--acc);font-size:13px;line-height:1.4">✓</span><span><span style="font-size:13.5px;color:#F6F1E7">no custody</span><span style="display:block;font-size:11.5px;color:rgba(246,241,231,0.45);margin-top:3px;line-height:1.5">wallet → wallet — Divvy never holds funds</span></span></div>
+            <div style="display:flex;gap:10px;align-items:flex-start;font-family:'JetBrains Mono',monospace"><span style="color:var(--acc);font-size:13px;line-height:1.4">✓</span><span><span style="font-size:13.5px;color:var(--acc)">MIT</span><span style="display:block;font-size:11.5px;color:rgba(246,241,231,0.45);margin-top:3px;line-height:1.5">open source — audit every line</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SECTION 7 — THE LONG GAME (friendship) ================= -->
+  <section style="position:relative;background:#F6F1E7;color:#2A2A28;overflow-x:clip">
+    <div style="position:absolute;top:-1px;left:0;right:0;height:26px;background:#F6F1E7;-webkit-mask:repeating-linear-gradient(90deg,#000 0 13px,transparent 13px 26px) 0 0/26px 26px;mask:repeating-linear-gradient(90deg,#000 0 13px,transparent 13px 26px) 0 0/26px 26px;transform:translateY(-100%)"></div>
+    <div style="max-width:1480px;margin:0 auto;padding:clamp(80px,11vw,150px) clamp(20px,5vw,64px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:clamp(40px,6vw,90px);align-items:center">
+      <div>
+        <div data-reveal style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.18em;color:rgba(42,42,40,0.5);margin-bottom:22px">07 — THE PART THAT ISN'T MONEY</div>
+        <h2 data-reveal style="margin:0;font-size:clamp(34px,5.4vw,68px);line-height:0.98;letter-spacing:-0.035em;font-weight:600;max-width:14ch">The bill outlives the dinner.</h2>
+        <p data-reveal style="margin:26px 0 0;max-width:46ch;font-size:clamp(16px,1.7vw,21px);line-height:1.55;color:rgba(42,42,40,0.72)">Nobody falls out over $14. They fall out over $240 — fronted at the airport, remembered at every group dinner since, brought up at none.</p>
+        <p data-reveal style="margin:18px 0 0;max-width:46ch;font-size:clamp(16px,1.7vw,21px);line-height:1.55;color:rgba(42,42,40,0.72)">Money between friends should vanish the second it's paid — not sit in someone's head for three weeks.</p>
+        <p data-reveal style="margin:28px 0 0;max-width:42ch;font-size:17px;line-height:1.5;font-weight:600;color:#2A2A28">Send the link before the plates are cleared. Settle at the table. Keep the friend.</p>
+      </div>
+
+      <!-- restaurant photo print + the two notes, scrapbook -->
+      <div data-reveal style="position:relative;display:flex;flex-direction:column;align-items:center">
+        <image-slot id="scene-friends" src="uploads/kimson-doan-AZMmUy2qL6A-unsplash.jpg" style="display:block;width:min(94%,440px);height:auto;aspect-ratio:5/4;transform:rotate(-3deg);border:10px solid #fff;border-bottom-width:48px;border-radius:3px;box-shadow:0 36px 76px -30px rgba(0,0,0,0.5)" shape="rect" fit="cover" placeholder="Drop a photo of friends at the restaurant"></image-slot>
+        <div style="position:relative;z-index:2;display:flex;flex-wrap:wrap;gap:clamp(14px,2.4vw,26px);justify-content:center;margin-top:-44px;width:100%">
+        <!-- aged IOU -->
+        <div data-parallax="0.03" style="position:relative;flex:1 1 200px;max-width:260px;background:#efe7d4;border-radius:3px;padding:24px 22px 28px;transform:rotate(-3deg);box-shadow:0 24px 50px -22px rgba(0,0,0,0.45);filter:saturate(0.82)">
+          <div style="position:absolute;top:-13px;left:38%;transform:translateX(-50%) rotate(-6deg);width:84px;height:27px;background:rgba(206,196,170,0.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.32),0 1px 2px rgba(0,0,0,0.10);pointer-events:none"></div>
+          <div style="position:absolute;top:14px;right:16px;width:54px;height:54px;border-radius:50%;border:6px solid rgba(120,72,30,0.12);opacity:0.7"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:rgba(42,42,40,0.45)">THE OLD WAY</div>
+          <div style="font-style:italic;font-size:20px;color:rgba(42,42,40,0.7);margin:18px 0 10px;transform:rotate(-1.5deg)">“i'll get you back!”</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#2A2A28">$1,204.16</div>
+          <div style="margin-top:18px;border-top:1px dashed rgba(42,42,40,0.3);padding-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(140,60,20,0.8)"><span data-countup data-to="23" data-dec="0" data-suf=" DAYS">0 DAYS</span> unsettled</div>
+        </div>
+        <!-- settled -->
+        <div data-parallax="0.07" style="position:relative;flex:1 1 200px;max-width:260px;background:#fff;border-radius:3px;padding:24px 22px 28px;transform:rotate(2deg);box-shadow:0 30px 60px -22px rgba(0,0,0,0.55)">
+          <div style="position:absolute;top:-12px;left:56%;transform:translateX(-50%) rotate(5deg);width:80px;height:26px;background:rgba(244,240,228,0.46);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.45),0 1px 2px rgba(0,0,0,0.08);pointer-events:none"></div>
+          <div data-stampin data-rot="5" style="position:absolute;top:12px;right:10px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;letter-spacing:0.05em;color:#0a6b45;border:2px solid #0a6b45;border-radius:8px;padding:5px 9px;box-shadow:0 0 0 4px rgba(20,241,149,0.12)">SETTLED ✓</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.14em;color:rgba(42,42,40,0.45)">WITH DIVVY</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:rgba(42,42,40,0.55);margin:18px 0 10px">USDC · on-chain</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:#2A2A28">$1,204.16</div>
+          <div style="margin-top:18px;border-top:1px dashed rgba(42,42,40,0.25);padding-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#0a6b45">cleared · 20:41 · same night</div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER CTA ================= -->
+  <section id="footer" style="position:relative;background:#04121a">
+    <div style="max-width:1480px;margin:0 auto;padding:clamp(90px,13vw,180px) clamp(20px,5vw,64px) 64px;text-align:center">
+      <h2 data-reveal style="margin:0 auto;font-size:clamp(40px,8vw,108px);line-height:0.94;letter-spacing:-0.04em;font-weight:600;max-width:14ch">Split the bill.<br>Settle in <span style="color:var(--acc)">USDC</span>.</h2>
+      <p data-reveal style="margin:26px auto 0;max-width:40ch;font-size:clamp(16px,1.7vw,20px);line-height:1.5;color:rgba(246,241,231,0.6)">Instant, ≈free, no chargebacks. For the groups it's actually built for.</p>
+      <div data-reveal style="display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-top:42px">
+        <a href="#top" class="magnetic" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;background:var(--acc);color:#04121a;font-weight:600;font-size:17px;padding:17px 30px;border-radius:13px">Split a bill <span style="font-family:'JetBrains Mono',monospace">→</span></a>
+        <a href="#top" class="ghostbtn" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:rgba(246,241,231,0.85);font-weight:500;font-size:17px;padding:17px 26px;border-radius:13px;border:1px solid rgba(246,241,231,0.16);font-family:'JetBrains Mono',monospace">★ Star on GitHub</a>
+      </div>
+      <div data-reveal style="margin-top:clamp(70px,10vw,120px);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:20px;border-top:1px solid rgba(246,241,231,0.1);padding-top:28px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:rgba(246,241,231,0.4)">
+        <span style="display:flex;align-items:center;gap:10px"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;background:var(--acc);color:#04121a;font-weight:700">÷</span> Divvy</span>
+        <span>MIT · open source · built on Solana</span>
+        <span>No token. No spread. No "trust me."</span>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:&quot;100vh&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#14F195&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;grain&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { count: 3, trips: 8, avgBill: 1200, fx: 'THB', payTab: 'wallet' };
+
+  renderVals() {
+    const n = this.state.count;
+    const cents = 8740;
+    const base = Math.floor(cents / n);
+    const rem = cents - base * n;
+    const shares = [];
+    for (let i = 0; i < n; i++) {
+      const c = base + (i < rem ? 1 : 0);
+      shares.push({ amount: (c / 100).toFixed(2) });
+    }
+    const trips = this.state.trips, avg = this.state.avgBill;
+    const cardYr = trips * avg * 0.031;
+    const venmoYr = trips * avg * 0.0175;
+    const divvyYr = trips * 0.0002;
+    const f0 = (x) => '$' + Math.round(x).toLocaleString('en-US');
+    // multi-currency settlement pass — same dinner, any receipt
+    const SETTLED = 74.48;
+    const fxRates = [
+      { code: 'THB', sym: '฿', rate: 0.0304, dec: 2 },
+      { code: 'EUR', sym: '€', rate: 1.09, dec: 2 },
+      { code: 'JPY', sym: '¥', rate: 0.0066, dec: 0 },
+      { code: 'GBP', sym: '£', rate: 1.27, dec: 2 },
+      { code: 'SGD', sym: 'S$', rate: 0.741, dec: 2 },
+    ];
+    const fxActive = fxRates.find(c => c.code === this.state.fx) || fxRates[0];
+    const billedAmt = (SETTLED / fxActive.rate).toLocaleString('en-US', { minimumFractionDigits: fxActive.dec, maximumFractionDigits: fxActive.dec });
+    const fxList = fxRates.map(c => ({
+      label: c.sym + ' ' + c.code,
+      active: c.code === fxActive.code,
+      inactive: c.code !== fxActive.code,
+      select: () => this.setState({ fx: c.code }),
+    }));
+    // pay-sheet switcher
+    const payDefs = {
+      wallet: { tag: 'OPTION A', title: 'Their own wallet', blurb: 'Scan the QR with Phantom or Solflare and approve once. Funds are already on-chain — no app install, no signup.' },
+      card: { tag: 'OPTION B', title: 'A card', blurb: 'No crypto at all. MoonPay or Coinbase turns their card into USDC at checkout. They never see a chain.' },
+      instant: { tag: 'OPTION C', title: 'A wallet, instantly', blurb: 'No seed phrase, no extension. An embedded wallet spins up from the link itself. First-timers settle in seconds.' },
+    };
+    const pt = this.state.payTab;
+    const pd = payDefs[pt] || payDefs.wallet;
+    const payTabs = [
+      { key: 'wallet', label: 'Wallet' },
+      { key: 'card', label: 'Card' },
+      { key: 'instant', label: 'Instant' },
+    ].map((t) => ({ label: t.label, active: t.key === pt, inactive: t.key !== pt, select: () => this.setState({ payTab: t.key }) }));
+    return {
+      count: n,
+      shares,
+      inc: () => this.setState(s => ({ count: Math.min(12, s.count + 1) })),
+      dec: () => this.setState(s => ({ count: Math.max(2, s.count - 1) })),
+      trips, avgBill: avg, avgBillStr: f0(avg),
+      cardYrStr: f0(cardYr), venmoYrStr: f0(venmoYr), divvyYrStr: '≈$0',
+      keepStr: f0(cardYr),
+      cardPct: (Math.sqrt(cardYr / 2976) * 100).toFixed(1),
+      venmoPct: (Math.sqrt(venmoYr / 2976) * 100).toFixed(1),
+      divvyPct: Math.max(0.8, Math.sqrt(divvyYr / 2976) * 100).toFixed(1),
+      setTrips: (e) => this.setState({ trips: +e.target.value }),
+      setAvg: (e) => this.setState({ avgBill: +e.target.value }),
+      billedSym: fxActive.sym, billedAmt, billedCode: fxActive.code,
+      rateStr: fxActive.sym + billedAmt + ' ' + fxActive.code + ' @ $' + fxActive.rate.toFixed(4),
+      fxList,
+      activeTag: pd.tag, activeTitle: pd.title, activeBlurb: pd.blurb,
+      isWallet: pt === 'wallet', isCard: pt === 'card', isInstant: pt === 'instant',
+      payTabs,
+    };
+  }
+
+  componentDidMount() {
+    this.root = document.getElementById('divvy-root');
+    if (!this.root) return;
+    this.reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.buildQRs();
+    this.wireStepper();
+    this.applyAccent();
+    // failsafe reveal if libs never load
+    this._fallback = setTimeout(() => this.revealAll(), 2600);
+    this.waitForLibs(() => {
+      clearTimeout(this._fallback);
+      if (this.reduce) { this.revealAll(); this.staticHero(); return; }
+      this.initMotion();
+    });
+  }
+
+  componentDidUpdate() { this.applyAccent(); this.fillEmptyQRs(); }
+
+  fillEmptyQRs() { if (!this.root) return; this.root.querySelectorAll('.qr').forEach((el) => { if (!el.firstChild) el.innerHTML = this.qrMarkup(parseInt(el.getAttribute('data-seed') || '7', 10), '#0a1a12'); }); }
+
+  componentWillUnmount() {
+    try { if (this._lenis) this._lenis.destroy(); } catch (e) {}
+    try { (this._triggers || []).forEach(t => { try { t.kill(); } catch (e) {} }); } catch (e) {}
+    try { if (this._ticker && window.gsap) window.gsap.ticker.remove(this._ticker); } catch (e) {}
+    try { if (this._magMove) window.removeEventListener('pointermove', this._magMove); } catch (e) {}
+    if (this._raf) cancelAnimationFrame(this._raf);
+  }
+
+  applyAccent() {
+    if (this.root && this.props && this.props.accent) this.root.style.setProperty('--acc', this.props.accent);
+    if (this.root) this.root.querySelector('[data-grain]').style.display = (this.props && this.props.grain === false) ? 'none' : 'block';
+  }
+
+  waitForLibs(cb) {
+    let tries = 0;
+    const check = () => {
+      const ready = window.gsap && window.ScrollTrigger;
+      if (ready) { cb(); return; }
+      if (tries++ > 80) { cb(); return; } // give up; degrade gracefully
+      setTimeout(check, 50);
+    };
+    check();
+  }
+
+  // ---------- QR generation (decorative, not scannable) ----------
+  buildQRs() {
+    const dark = '#0a1a12';
+    this.root.querySelectorAll('.qr').forEach(el => {
+      const seed = parseInt(el.getAttribute('data-seed') || '7', 10);
+      el.innerHTML = this.qrMarkup(seed, dark);
+    });
+  }
+  qrMarkup(seed, dark) {
+    const N = 25;
+    let s = seed * 9301 + 49297;
+    const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+    const m = [];
+    for (let y = 0; y < N; y++) { m[y] = []; for (let x = 0; x < N; x++) m[y][x] = rnd() > 0.5 ? 1 : 0; }
+    const finder = (ox, oy) => {
+      for (let y = 0; y < 7; y++) for (let x = 0; x < 7; x++) {
+        const edge = x === 0 || y === 0 || x === 6 || y === 6;
+        const core = x >= 2 && x <= 4 && y >= 2 && y <= 4;
+        m[oy + y][ox + x] = (edge || core) ? 1 : 0;
+      }
+      for (let i = 0; i < 8; i++) { if (oy + 7 < N) m[oy + 7][ox + i] = 0; if (ox + 7 < N && oy + i < N) m[oy + i][ox + 7] = 0; }
+    };
+    finder(0, 0); finder(N - 7, 0); finder(0, N - 7);
+    let cells = '';
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) cells += `<i style="background:${m[y][x] ? dark : 'transparent'}"></i>`;
+    return `<div style="width:100%;height:100%;display:grid;grid-template-columns:repeat(${N},1fr);grid-template-rows:repeat(${N},1fr)">${cells}</div>`;
+  }
+
+  // ---------- stepper ----------
+  wireStepper() {
+    const v = this.renderVals();
+    const dec = this.root.querySelector('[data-dec]');
+    const inc = this.root.querySelector('[data-inc]');
+    if (dec) dec.addEventListener('click', () => { this.renderVals().dec(); });
+    if (inc) inc.addEventListener('click', () => { this.renderVals().inc(); });
+  }
+
+  // ---------- reveal fallback ----------
+  revealAll() {
+    if (!this.root) return;
+    this.root.querySelectorAll('[data-reveal],[data-anim]').forEach(el => {
+      el.style.opacity = '1'; el.style.transform = 'none'; el.style.filter = 'none';
+    });
+    this.root.querySelectorAll('[data-countup]').forEach(el => {
+      const dec = parseInt(el.dataset.dec || '0', 10);
+      el.textContent = (el.dataset.pre || '') + (parseFloat(el.dataset.to) || 0).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + (el.dataset.suf || '');
+    });
+    this.root.querySelectorAll('[data-stampin]').forEach(el => { el.style.opacity = '1'; el.style.transform = 'rotate(' + (el.dataset.rot || '-8') + 'deg)'; });
+    this.staticHero();
+  }
+  staticHero() {
+    if (!this.root) return;
+    const tot = this.root.querySelector('[data-total]');
+    if (tot) tot.textContent = '$87.40';
+    const stamp = this.root.querySelector('[data-stamp]');
+    if (stamp) { stamp.style.opacity = '1'; stamp.style.transform = 'translate(-50%,-50%) rotate(-9deg) scale(1)'; }
+  }
+
+  // ---------- motion ----------
+  initMotion() {
+    this.setupLenis();
+    this.heroTimeline();
+    this.setupScrollDriven();
+    this.magnetic();
+    this.tilt();
+  }
+
+  setupLenis() {
+    if (!window.Lenis) return;
+    const lenis = new window.Lenis({ duration: 1.1, easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true });
+    this._lenis = lenis;
+    window.__divvyLenis = lenis;
+    lenis.on('scroll', () => { if (window.__divvyScroll) window.__divvyScroll.handler(); });
+    this._ticker = (time) => lenis.raf(time * 1000);
+    window.gsap.ticker.add(this._ticker);
+    window.gsap.ticker.lagSmoothing(0);
+    // anchor links via lenis
+    this.root.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const id = a.getAttribute('href');
+        const target = id === '#top' ? 0 : document.querySelector(id);
+        if (target !== null) { e.preventDefault(); lenis.scrollTo(target, { offset: id === '#top' ? 0 : -10 }); }
+      });
+    });
+  }
+
+  heroTimeline() {
+    const gsap = window.gsap;
+    const r = this.root;
+    const lines = r.querySelectorAll('[data-rline]');
+    const total = r.querySelector('[data-total]');
+    const perf = r.querySelector('[data-perf]');
+    const receipt = r.querySelector('[data-receipt]');
+    const shares = r.querySelectorAll('[data-share]');
+    const sumline = r.querySelector('[data-sumline]');
+    const stamp = r.querySelector('[data-stamp]');
+    const anims = r.querySelectorAll('[data-stage] ~ * [data-anim], [data-anim]');
+
+    // hero copy reveal
+    gsap.set(r.querySelectorAll('#top [data-anim]'), { y: 26, opacity: 0, filter: 'blur(8px)' });
+    gsap.to(r.querySelectorAll('#top [data-anim]'), { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.85, stagger: 0.07, ease: 'power3.out', delay: 0.15 });
+
+    gsap.set(lines, { opacity: 0, y: 8 });
+    gsap.set(shares, { opacity: 0 });
+
+    const stageEl = r.querySelector('[data-stage]');
+    const cardW = (shares[0] && shares[0].offsetWidth) || 152;
+    const sw = stageEl ? stageEl.clientWidth : 360;
+    const off = Math.max(72, Math.min(164, sw / 2 - cardW / 2 - 6));
+    const fan = [{ x: -off, r: -10, y: 16 }, { x: 0, r: 0, y: -12 }, { x: off, r: 10, y: 16 }];
+    const counter = { v: 0 };
+    const tl = gsap.timeline({ delay: 0.5 });
+
+    // 1. print lines
+    tl.to(lines, { opacity: 1, y: 0, duration: 0.18, stagger: 0.07, ease: 'power1.out' });
+    // 2. count up total
+    tl.to(counter, { v: 87.40, duration: 1.0, ease: 'power2.out', onUpdate: () => { total.textContent = '$' + counter.v.toFixed(2); } }, '-=0.2');
+    // 3. perforation tear
+    tl.to(perf, { opacity: 1, duration: 0.18 }, '+=0.25');
+    tl.to(receipt, { x: -2, duration: 0.05, repeat: 5, yoyo: true, ease: 'none' });
+    // 4. receipt recedes, deal cards
+    tl.to(receipt, { scale: 0.84, opacity: 0, y: 10, duration: 0.5, ease: 'power2.inOut' }, '+=0.1');
+    tl.to(shares, { opacity: 1, duration: 0.01 }, '<');
+    shares.forEach((card, i) => {
+      gsap.set(card, { x: 0, y: 0, rotateY: 0, rotationZ: 0, scale: 0.9 });
+      tl.to(card, { x: fan[i].x, y: fan[i].y, rotationZ: fan[i].r, scale: 1, duration: 0.55, ease: 'back.out(1.5)' }, i === 0 ? '<' : '<0.08');
+    });
+    // 5. flip to QR
+    tl.to(shares, { rotateY: 180, duration: 0.6, stagger: 0.1, ease: 'power3.inOut' }, '+=0.15');
+    // 6. sum ribbon
+    tl.fromTo(sumline, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, '-=0.1');
+    // 7. stamp
+    tl.fromTo(stamp, { opacity: 0, scale: 2.4, rotation: -14 }, { opacity: 1, scale: 1, rotation: -9, duration: 0.5, ease: 'back.out(2.2)' }, '+=0.2');
+    tl.to(stamp, { scale: 1.04, duration: 0.12, yoyo: true, repeat: 1, ease: 'power1.inOut' });
+  }
+
+  // Unified scroll-driven engine as a WINDOW-LEVEL SINGLETON so it survives the
+  // preview's mount/unmount churn. getBoundingClientRect each tick -> no IO, no ScrollTrigger.
+  setupScrollDriven() {
+    const gsap = window.gsap;
+    const root = this.root;
+
+    // (re)build the controller bound to the CURRENT live DOM
+    const reveals = Array.from(root.querySelectorAll('[data-reveal]')).map(el => {
+      gsap.set(el, { y: 34, opacity: 0, filter: 'blur(6px)' });
+      return { el, done: false };
+    });
+
+    // count-ups, stamp-ins, parallax
+    const fmt = (v, dec) => v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    const animateCount = (el) => {
+      const to = parseFloat(el.dataset.to) || 0;
+      const dec = parseInt(el.dataset.dec || '0', 10);
+      const pre = el.dataset.pre || '', suf = el.dataset.suf || '';
+      const o = { v: parseFloat(el.dataset.from || '0') };
+      gsap.to(o, { v: to, duration: 1.35, ease: 'power2.out', onUpdate: () => { el.textContent = pre + fmt(o.v, dec) + suf; } });
+    };
+    const counters = Array.from(root.querySelectorAll('[data-countup]')).map(el => ({ el, done: false }));
+    const stamps = Array.from(root.querySelectorAll('[data-stampin]')).map(el => {
+      const rot = parseFloat(el.dataset.rot || '-8');
+      gsap.set(el, { opacity: 0, scale: 1.7, rotation: rot - 8 });
+      return { el, done: false, rot };
+    });
+    const px = Array.from(root.querySelectorAll('[data-parallax]'));
+
+    let how = null;
+    const wrap = root.querySelector('[data-howwrap]');
+    if (wrap) {
+      const steps = root.querySelectorAll('.howstep');
+      const viss = root.querySelectorAll('.howvis');
+      const progs = root.querySelectorAll('[data-prog]');
+      const beam = root.querySelector('[data-scanbeam]');
+      if (beam) gsap.to(beam, { top: '100%', duration: 1.6, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+      // OCR detection: boxes light across line items, then the total locks on
+      const ocr = root.querySelectorAll('[data-ocr]');
+      const ocrTotal = root.querySelector('[data-ocrtotal]');
+      const ocrBadge = root.querySelector('[data-ocrbadge]');
+      if (ocr.length) {
+        gsap.set(ocr, { opacity: 0, scaleX: 0.8, transformOrigin: 'left center' });
+        gsap.set([ocrTotal, ocrBadge], { opacity: 0 });
+        const otl = gsap.timeline({ repeat: -1, repeatDelay: 0.6 });
+        otl.to(ocr, { opacity: 1, scaleX: 1, duration: 0.16, stagger: 0.34, ease: 'power2.out' }, 0.25);
+        otl.fromTo(ocrTotal, { opacity: 0, scaleX: 0.8 }, { opacity: 1, scaleX: 1, duration: 0.22, ease: 'power2.out' }, '>0.05');
+        otl.fromTo(ocrBadge, { opacity: 0, y: 8, scale: 0.85 }, { opacity: 1, y: 0, scale: 1, duration: 0.34, ease: 'back.out(2.2)' }, '<0.02');
+        otl.to({}, { duration: 1.0 });
+        otl.to(ocr, { opacity: 0, duration: 0.3 }, '+=0.1');
+        otl.to([ocrTotal, ocrBadge], { opacity: 0, duration: 0.3 }, '<');
+      }
+
+      // SPLIT — deal shares out of a stack
+      const splitCards = root.querySelectorAll('[data-splitcard]');
+      const splitLabel = root.querySelector('[data-splitlabel]');
+      if (splitCards.length === 3) {
+        const fan = [{ x: -78, r: -10 }, { x: 0, r: 0 }, { x: 78, r: 10 }];
+        gsap.set(splitCards, { x: 0, rotate: 0, y: 12, opacity: 0, scale: 0.92 });
+        gsap.set(splitLabel, { opacity: 0, y: 6 });
+        const stl = gsap.timeline({ repeat: -1, repeatDelay: 0.8 });
+        stl.to(splitLabel, { opacity: 1, y: 0, duration: 0.3 }, 0);
+        splitCards.forEach((c, i) => stl.to(c, { x: fan[i].x, rotate: fan[i].r, y: 0, opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.5)' }, 0.2 + i * 0.13));
+        stl.to({}, { duration: 1.2 });
+        stl.to(splitCards, { x: 0, rotate: 0, y: 12, opacity: 0, scale: 0.92, duration: 0.4, ease: 'power2.in' }, '+=0.1');
+        stl.to(splitLabel, { opacity: 0, duration: 0.3 }, '<');
+      }
+
+      // SHARE — per-person card + 'sent' ping
+      const shareCards2 = root.querySelectorAll('[data-sharecard]');
+      const shareSents = root.querySelectorAll('[data-sharesent]');
+      if (shareCards2.length) {
+        gsap.set(shareCards2, { x: 46, opacity: 0 });
+        gsap.set(shareSents, { opacity: 0 });
+        const shl = gsap.timeline({ repeat: -1, repeatDelay: 0.8 });
+        shareCards2.forEach((c, i) => {
+          shl.to(c, { x: 0, opacity: 1, duration: 0.4, ease: 'power3.out' }, i * 0.46);
+          shl.fromTo(shareSents[i], { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.26, ease: 'back.out(2.4)' }, i * 0.46 + 0.32);
+        });
+        shl.to({}, { duration: 1.0 });
+        shl.to(shareCards2, { x: 46, opacity: 0, duration: 0.35 }, '+=0.1');
+        shl.to(shareSents, { opacity: 0, duration: 0.2 }, '<');
+      }
+
+      // SETTLE — rows flip pending->paid, then the stamp lands
+      const payRows = root.querySelectorAll('[data-payrow]');
+      const payPending = root.querySelectorAll('[data-paypending]');
+      const payPaid = root.querySelectorAll('[data-paypaid]');
+      const settleStamp = root.querySelector('[data-settlestamp]');
+      if (payRows.length) {
+        gsap.set(payPaid, { opacity: 0 });
+        gsap.set(payPending, { opacity: 1 });
+        gsap.set(settleStamp, { opacity: 0, scale: 1.6, rotation: -14 });
+        const etl = gsap.timeline({ repeat: -1, repeatDelay: 0.8 });
+        payRows.forEach((r, i) => {
+          etl.to(payPending[i], { opacity: 0, duration: 0.2 }, 0.5 + i * 0.5);
+          etl.to(payPaid[i], { opacity: 1, duration: 0.3, ease: 'back.out(2)' }, '<0.05');
+          etl.to(r, { borderColor: 'rgba(20,241,149,0.45)', duration: 0.3 }, '<');
+        });
+        etl.to(settleStamp, { opacity: 1, scale: 1, rotation: -6, duration: 0.5, ease: 'back.out(2.2)' }, '+=0.15');
+        etl.to({}, { duration: 1.1 });
+        etl.to(payPaid, { opacity: 0, duration: 0.3 }, '+=0.1');
+        etl.to(settleStamp, { opacity: 0, duration: 0.3 }, '<');
+        etl.to(payPending, { opacity: 1, duration: 0.01 }, '<');
+        etl.to(payRows, { borderColor: 'rgba(246,241,231,0.12)', duration: 0.3 }, '<');
+      }
+      const setStep = (idx) => {
+        steps.forEach((s, i) => gsap.to(s, { opacity: i === idx ? 1 : 0, y: i === idx ? 0 : 18, duration: 0.4, ease: 'power2.out' }));
+        viss.forEach((s, i) => gsap.to(s, { opacity: i === idx ? 1 : 0, scale: i === idx ? 1 : 0.94, duration: 0.45, ease: 'power2.out' }));
+        progs.forEach((p, i) => { p.style.background = i <= idx ? 'var(--acc)' : 'rgba(246,241,231,0.18)'; });
+      };
+      setStep(0);
+      how = { wrap, setStep, cur: 0 };
+    }
+
+    const tick = () => {
+      try {
+        const vh = window.innerHeight;
+        for (let i = 0; i < reveals.length; i++) {
+          const r = reveals[i];
+          if (r.done || !r.el.isConnected) continue;
+          const rect = r.el.getBoundingClientRect();
+          if (rect.top < vh * 0.9 && rect.bottom > 0) {
+            r.done = true;
+            gsap.to(r.el, { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.8, ease: 'power3.out' });
+          }
+        }
+        for (let i = 0; i < counters.length; i++) {
+          const c = counters[i];
+          if (c.done || !c.el.isConnected) continue;
+          const rect = c.el.getBoundingClientRect();
+          if (rect.top < vh * 0.85 && rect.bottom > 0) { c.done = true; animateCount(c.el); }
+        }
+        for (let i = 0; i < stamps.length; i++) {
+          const s = stamps[i];
+          if (s.done || !s.el.isConnected) continue;
+          const rect = s.el.getBoundingClientRect();
+          if (rect.top < vh * 0.82 && rect.bottom > 0) { s.done = true; gsap.to(s.el, { opacity: 1, scale: 1, rotation: s.rot, duration: 0.62, ease: 'back.out(2.4)' }); }
+        }
+        for (let i = 0; i < px.length; i++) {
+          const el = px[i];
+          if (!el.isConnected) continue;
+          const rect = el.getBoundingClientRect();
+          const center = rect.top + rect.height / 2;
+          const speed = parseFloat(el.dataset.parallax) || 0.08;
+          el.style.transform = 'translate3d(0,' + ((center - vh / 2) * -speed).toFixed(1) + 'px,0)';
+        }
+        if (how && how.wrap.isConnected) {
+          const rect = how.wrap.getBoundingClientRect();
+          const total = rect.height - vh;
+          const p = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0;
+          const idx = Math.min(3, Math.floor(p * 3.999));
+          if (idx !== how.cur) { how.cur = idx; how.setStep(idx); }
+        }
+      } catch (e) { window.__divvyErr = String((e && e.stack) || e); }
+    };
+
+    // install the one global controller (replace any stale one)
+    const prev = window.__divvyScroll;
+    if (prev) {
+      window.removeEventListener('scroll', prev.handler);
+      window.removeEventListener('resize', prev.handler);
+      if (prev.raf) cancelAnimationFrame(prev.raf);
+    }
+    const ctl = { handler: tick, raf: null };
+    window.__divvyScroll = ctl;
+    window.addEventListener('scroll', ctl.handler, { passive: true });
+    window.addEventListener('resize', ctl.handler, { passive: true });
+    // perpetual rAF loop — never tied to component teardown
+    const loop = () => { tick(); ctl.raf = requestAnimationFrame(loop); };
+    loop();
+  }
+
+  magnetic() {
+    const gsap = window.gsap;
+    const btns = this.root.querySelectorAll('.magnetic');
+    const R = 90;
+    const onMove = (e) => {
+      btns.forEach(btn => {
+        const rect = btn.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+        const dx = e.clientX - cx, dy = e.clientY - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist < R + Math.max(rect.width, rect.height) / 2) {
+          gsap.to(btn, { x: dx * 0.28, y: dy * 0.28, duration: 0.4, ease: 'power3.out' });
+          btn.style.boxShadow = '0 0 28px rgba(20,241,149,0.45)';
+        } else {
+          gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1,0.4)' });
+          btn.style.boxShadow = 'none';
+        }
+      });
+    };
+    window.addEventListener('pointermove', onMove);
+    this._magMove = onMove;
+  }
+
+  tilt() {
+    const gsap = window.gsap;
+    this.root.querySelectorAll('.tilt').forEach(card => {
+      const parent = card.closest('[class*="paycard"]') || card;
+      const enter = card;
+      card.addEventListener('pointermove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / rect.width - 0.5;
+        const py = (e.clientY - rect.top) / rect.height - 0.5;
+        gsap.to(card, { rotateY: px * 12, rotateX: -py * 12, transformPerspective: 800, duration: 0.4, ease: 'power2.out' });
+      });
+      card.addEventListener('pointerleave', () => gsap.to(card, { rotateY: 0, rotateX: 0, duration: 0.6, ease: 'power3.out' }));
+    });
+  }
+
+  countUps() {
+    // reserved for future inline counters; hero handles its own
+  }
+}
+</script>
+</body>
+</html>

@@ -14,3 +14,6 @@ divvy.db
 divvy.db-shm
 divvy.db-wal
 *.db
+
+# Landing page (deployed to GitHub Pages) — keep its assets despite *.png above.
+!site/**
