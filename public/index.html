@@ -118,7 +118,11 @@
   }
 
   /* ── Buttons ──────────────────────────────────────────────────────────── */
-  .btn, button.btn, #appMain button {
+  /* Primary pill. The #appMain blanket intentionally skips the variant classes
+     (.secondary/.ghost/.chip/.toggle-link/.sm/.pill) and the stepper so those
+     keep their own look instead of being forced into an accent pill. */
+  .btn, button.btn,
+  #appMain button:not(.secondary):not(.ghost):not(.chip):not(.toggle-link):not(.sm):not(.pill) {
     -webkit-appearance: none; appearance: none;
     width: 100%;
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -135,12 +139,21 @@
     cursor: pointer;
     transition: transform .12s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
   }
-  .btn:active, #appMain button:active { transform: scale(.97); }
+  .btn:active,
+  #appMain button:not(.secondary):not(.ghost):not(.chip):not(.toggle-link):not(.sm):not(.pill):active { transform: scale(.97); }
+  /* Ghost/secondary is a COMPLETE pill (the blanket base above skips variants,
+     so these carry their own full shape). */
   .btn.ghost, button.ghost, button.secondary {
-    background: transparent;
-    border: 1px solid var(--line);
-    color: var(--cream);
+    -webkit-appearance: none; appearance: none;
+    width: 100%;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px; margin-top: 14px;
+    border-radius: 999px;
+    background: transparent; border: 1px solid var(--line); color: var(--cream);
+    font-family: var(--sans); font-weight: 700; font-size: 1rem; line-height: 1; cursor: pointer;
+    transition: transform .12s ease, border-color .15s ease, background .15s ease;
   }
+  .btn.ghost:active, button.ghost:active, button.secondary:active { transform: scale(.97); }
   .btn.ghost:hover, button.secondary:hover { border-color: var(--accent-line); }
   .btn.sm, button.sm {
     width: auto;
@@ -315,23 +328,30 @@
     border-radius: var(--radius);
     padding: 10px;
   }
-  .stepper button {
-    width:54px; height:54px; margin:0; padding:0;
-    font-size:1.7rem; line-height:1;
-    border-radius:14px; flex:0 0 auto;
+  /* Scoped under #appMain so these beat the blanket `#appMain button` accent
+     pill and stay as fixed 54px square steppers. */
+  .stepper button, #appMain .stepper button {
+    width:54px; height:54px; margin:0; padding:0; flex:0 0 auto;
+    font-size:1.7rem; line-height:1; font-weight:600;
+    border-radius:14px;
     background: var(--surface); border:1px solid var(--line); color: var(--cream);
+    box-shadow:none;
   }
-  .stepper button:active { transform: scale(.94); }
+  #appMain .stepper button:active { transform: scale(.94); }
   .stepper .count { flex:1; text-align:center; font-family: var(--mono); font-size:2.1rem; font-weight:600; }
   .stepper .count small { display:block; font-family: var(--sans); font-size:.66rem; font-weight:500;
                           letter-spacing:.1em; text-transform:uppercase; color: var(--muted); margin-top:2px; }
 
   /* ── Disclosure links ─────────────────────────────────────────────────── */
-  .toggle-link {
+  /* Higher specificity than `#appMain button` so disclosure links stay as
+     subtle text links, not accent pill buttons. */
+  .toggle-link, #appMain button.toggle-link {
     display:inline-block; margin-top:14px;
     font-family: var(--mono); font-size:.74rem; letter-spacing:.04em; font-weight:500;
-    color: var(--accent); background:none; border:0; padding:4px 0; width:auto; cursor:pointer;
+    color: var(--accent); background:none; border:0; box-shadow:none;
+    padding:4px 0; width:auto; cursor:pointer; text-align:left;
   }
+  #appMain button.toggle-link:active { transform:none; }
   #advanced, #fxBox {
     border:1px solid var(--line); border-radius:var(--radius);
     background: var(--surface);
@@ -400,7 +420,11 @@
   #authArea button, #authArea a.linklike { margin:0; width:auto; }
   #authArea .linklike { font-family: var(--sans); font-size:.85rem; font-weight:600; color: var(--accent);
                         background:none; border:0; padding:0; cursor:pointer; text-decoration:none; }
-  #authArea button.connect { padding:8px 13px; font-size:.85rem; border-radius:999px; width:auto; margin:0; }
+  /* Primary connect = accent pill; create = ghost. (Topbar sits outside
+     #appMain, so these need their brand styles set explicitly.) */
+  #authArea button.connect { padding:8px 14px; font-size:.85rem; font-family: var(--sans);
+    font-weight:700; border:0; border-radius:999px; width:auto; margin:0; cursor:pointer;
+    background: var(--accent); color: var(--accent-ink); }
   #authArea button.connect#authCreate { background: transparent; border:1px solid var(--line); color: var(--cream); }
   #authArea .userchip { display:inline-flex; align-items:center; gap:8px; }
   #authMsg { width:100%; font-size:.8rem; color: var(--muted); text-align:right; }
