@@ -6,13 +6,16 @@
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
 
+// Brand palette, aligned to the marketing site (USDC blue accent on ink).
+// `green` is kept as the accent key (now USDC blue #2775ca) so existing screens
+// that reference COLORS.green pick up the new brand without per-call changes.
 export const COLORS = {
-  green: "#14f195",
+  green: "#2775ca",
   ink: "#04121a",
-  bg: "#0b0f14",
-  card: "#121821",
-  border: "#2a3340",
-  text: "#e8eef5",
+  bg: "#04121a",
+  card: "#081c28",
+  border: "#123040",
+  text: "#f6f1e7",
   muted: "#8a97a6",
-  danger: "#ff5d6c",
+  danger: "#e0a892",
 };

@@ -26,7 +26,7 @@
 (function () {
   "use strict";
 
-  const GREEN = "#14f195";
+  const GREEN = "#2775ca";
   const INK = "#04121a";
   const POLL_MS = 4000;
   // Client-side downscale target: longest edge ~1000px, JPEG quality ~0.7.

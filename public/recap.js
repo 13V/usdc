@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  const GREEN = "#14f195";
+  const GREEN = "#2775ca";
   const INK = "#04121a";
 
   function authFetchFn() {

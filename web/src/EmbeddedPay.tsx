@@ -50,7 +50,7 @@ const btn: React.CSSProperties = {
   color: "inherit",
   background: "transparent",
 };
-const primary: React.CSSProperties = { ...btn, background: "#14f195", color: "#04121a", border: 0 };
+const primary: React.CSSProperties = { ...btn, background: "#2775ca", color: "#04121a", border: 0 };
 
 export function EmbeddedPay() {
   const q = useQuery();
@@ -148,7 +148,7 @@ export function EmbeddedPay() {
       </div>
 
       {paid ? (
-        <div style={{ ...box, background: "#14f195", color: "#04121a", fontWeight: 700, textAlign: "center" }}>
+        <div style={{ ...box, background: "#2775ca", color: "#04121a", fontWeight: 700, textAlign: "center" }}>
           ✓ Paid — thank you!
         </div>
       ) : !ready ? (
