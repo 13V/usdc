@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #050d15; }
+  .ns-scroll::-webkit-scrollbar { width: 0; height: 0; }
+  .ns-row::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes nsScanLine { 0% { top:8%; } 100% { top:88%; } }
+  @keyframes nsSeg { from { opacity:.4; } to { opacity:1; } }
+  input.ns-amt { all:unset; }
+</style>
+</helmet>
+
+<div style="position:relative; width:390px; height:844px; background:#0B1622; overflow:hidden; font-family:'General Sans','Space Grotesk',sans-serif; color:#F4F7FA; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;">
+
+  <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 18%, rgba(244,247,250,0.024) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>
+  <div style="position:absolute; left:50%; top:-40px; width:380px; height:300px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.18) 0%, rgba(39,117,202,0) 68%); pointer-events:none;"></div>
+
+  <!-- status bar -->
+  <div style="position:relative; z-index:3; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 30px 0 32px; flex:none;">
+    <span style="font-family:'Space Mono',monospace; font-size:14px; font-weight:700;">9:41</span>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:rgba(244,247,250,0.6);">5G</span>
+      <div style="width:24px; height:12px; border:1px solid rgba(244,247,250,0.45); border-radius:3px; padding:1.5px; display:flex; align-items:center;"><div style="width:100%; height:100%; background:#F4F7FA; border-radius:1px;"></div></div>
+    </div>
+  </div>
+
+  <!-- top bar -->
+  <div style="position:relative; z-index:3; display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 20px; flex:none;">
+    <div style="width:38px; height:38px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4F7FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </div>
+    <span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">{{ eyebrow }}</span>
+    <div style="width:38px;"></div>
+  </div>
+
+  <div class="ns-scroll" style="position:relative; z-index:2; flex:1; overflow-y:auto; scrollbar-width:none; padding:6px 20px 18px;">
+
+    <h1 style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:30px; letter-spacing:-0.6px; margin:4px 2px 0; color:#F4F7FA;">{{ headline }}</h1>
+
+    <sc-if value="{{ inGroup }}" hint-placeholder-val="{{ false }}">
+      <div style="display:inline-flex; align-items:center; gap:7px; background:rgba(39,117,202,0.14); border:1px solid rgba(39,117,202,0.35); border-radius:999px; padding:4px 11px 4px 8px; margin:11px 2px 0;">
+        <span style="font-size:14px;">{{ groupEmoji }}</span>
+        <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.5px; color:#9fccf5;">adding to {{ groupName }}</span>
+      </div>
+    </sc-if>
+
+    <!-- scan hero -->
+    <div style="position:relative; border-radius:22px; overflow:hidden; border:1.5px dashed rgba(39,117,202,0.5); background:linear-gradient(160deg, rgba(39,117,202,0.14), rgba(39,117,202,0.04)); padding:22px 20px; display:flex; align-items:center; gap:16px; cursor:pointer; margin-top:16px;">
+      <div style="position:absolute; left:14px; right:14px; height:2px; background:linear-gradient(90deg, transparent, #3DE8C7, transparent); border-radius:2px; box-shadow:0 0 10px rgba(61,232,199,0.8); animation:nsScanLine 2.6s ease-in-out infinite alternate;"></div>
+      <div style="width:54px; height:54px; border-radius:15px; background:#13212E; border:1px solid rgba(244,247,250,0.12); display:flex; align-items:center; justify-content:center; flex:none;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M3 12h18"/></svg>
+      </div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:18px; color:#F4F7FA;">scan receipt</div>
+        <div style="font-family:'General Sans',sans-serif; font-size:13px; color:rgba(244,247,250,0.55); margin-top:2px;">snap it, we'll read the total</div>
+      </div>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div style="text-align:center; margin-top:11px;">
+      <span style="font-family:'General Sans',sans-serif; font-size:13px; color:rgba(244,247,250,0.5); border-bottom:1px solid rgba(244,247,250,0.2); padding-bottom:1px; cursor:pointer;">enter manually</span>
+    </div>
+
+    <!-- what's it for -->
+    <div style="margin-top:22px;">
+      <label style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">WHAT'S IT FOR?</label>
+      <div style="display:flex; align-items:center; gap:11px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:15px; padding:14px 16px; margin-top:9px;">
+        <span style="font-size:22px;">🍜</span>
+        <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:500; font-size:18px; color:#F4F7FA;">dinner</span>
+        <span style="width:1.5px; height:20px; background:#3DE8C7; margin-left:1px; border-radius:2px;"></span>
+      </div>
+    </div>
+
+    <!-- total -->
+    <div style="margin-top:16px;">
+      <label style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">TOTAL</label>
+      <div style="background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:15px; padding:13px 16px; margin-top:9px;">
+        <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:30px; letter-spacing:-1px; color:#F4F7FA;"><span style="font-size:18px; opacity:.5;">$</span>96<span style="font-size:18px; opacity:.5;">.00</span></span>
+      </div>
+    </div>
+
+    <!-- tip -->
+    <div style="margin-top:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <label style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">TIP</label>
+        <span style="font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.3px; color:rgba(244,247,250,0.38);">scanned totals often include it</span>
+      </div>
+      <div style="display:flex; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:13px; padding:4px; margin-top:9px; gap:3px;">
+        <sc-for list="{{ tipOptions }}" as="opt" hint-placeholder-count="5">
+          <button onClick="{{ opt.set }}" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:42px; border-radius:9px; background:{{ opt.bg }}; font-family:'Space Mono',monospace; font-weight:700; font-size:13px; color:{{ opt.fg }};">{{ opt.label }}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{ isCustomTip }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:center; gap:10px; background:#0B1622; border:1px solid rgba(39,117,202,0.4); border-radius:12px; padding:11px 14px; margin-top:8px;">
+          <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1px; color:rgba(244,247,250,0.5);">CUSTOM TIP</span>
+          <div style="flex:1;"></div>
+          <input class="ns-amt" value="{{ customTip }}" onInput="{{ setCustomTip }}" inputmode="decimal" placeholder="0" style="font-family:'Space Mono',monospace; font-weight:700; font-size:16px; color:#F4F7FA; width:44px; text-align:right;" />
+          <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:16px; color:rgba(244,247,250,0.4);">%</span>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- PAID BY -->
+    <div style="margin-top:20px;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <label style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">PAID BY</label>
+        <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.5px; color:#9fccf5;">{{ paidByLabel }}</span>
+      </div>
+      <div class="ns-row" style="display:flex; gap:9px; overflow-x:auto; scrollbar-width:none; margin-top:9px; padding:2px;">
+        <sc-for list="{{ paidChips }}" as="p" hint-placeholder-count="5">
+          <button onClick="{{ p.set }}" style="appearance:none; cursor:pointer; flex:none; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:none; padding:2px; opacity:{{ p.opacity }};">
+            <div style="width:46px; height:46px; border-radius:50%; background:{{ p.bg }}; display:flex; align-items:center; justify-content:center; font-size:22px; border:2.5px solid {{ p.ring }}; box-shadow:{{ p.glow }};">{{ p.emoji }}</div>
+            <span style="font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.3px; color:{{ p.nameColor }};">{{ p.name }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- SPLIT BETWEEN -->
+    <div style="margin-top:22px;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <label style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">SPLIT BETWEEN</label>
+        <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.4);">{{ includedCount }} of {{ totalMembers }}</span>
+      </div>
+
+      <!-- mode toggle -->
+      <div style="display:flex; background:#0B1622; border:1px solid rgba(244,247,250,0.1); border-radius:13px; padding:4px; margin-top:9px; gap:3px;">
+        <sc-for list="{{ modeOptions }}" as="m" hint-placeholder-count="3">
+          <button onClick="{{ m.set }}" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:38px; border-radius:9px; background:{{ m.bg }}; font-family:'General Sans',sans-serif; font-weight:500; font-size:13px; color:{{ m.fg }};">{{ m.label }}</button>
+        </sc-for>
+      </div>
+
+      <!-- tappable member avatars -->
+      <div class="ns-row" style="display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; margin-top:13px; padding:2px;">
+        <sc-for list="{{ memberChips }}" as="m" hint-placeholder-count="5">
+          <button onClick="{{ m.toggle }}" style="appearance:none; cursor:pointer; flex:none; position:relative; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:none; padding:2px; opacity:{{ m.opacity }};">
+            <div style="position:relative; width:46px; height:46px; border-radius:50%; background:{{ m.bg }}; display:flex; align-items:center; justify-content:center; font-size:22px; border:2.5px solid {{ m.ring }}; filter:{{ m.filter }};">{{ m.emoji }}
+              <sc-if value="{{ m.included }}" hint-placeholder-val="{{ true }}"><span style="position:absolute; right:-3px; bottom:-3px; width:18px; height:18px; border-radius:50%; background:#2775CA; border:2px solid #0B1622; display:flex; align-items:center; justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></sc-if>
+            </div>
+            <span style="font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.3px; color:{{ m.nameColor }};">{{ m.name }}</span>
+          </button>
+        </sc-for>
+      </div>
+
+      <!-- ===== EQUALLY body ===== -->
+      <sc-if value="{{ isEqually }}" hint-placeholder-val="{{ true }}">
+        <div style="position:relative; margin-top:16px; border-radius:20px; overflow:hidden; background:#13212E; border:1px solid rgba(244,247,250,0.09); padding:18px 18px 20px;">
+          <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 8%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>
+          <div style="position:relative;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between;">
+              <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">EACH CHIPS IN</span>
+              <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.42);">{{ tipNote }}</span>
+            </div>
+            <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:42px; line-height:1; letter-spacing:-1.5px; color:#3DE8C7; margin-top:8px;"><span style="font-size:24px; opacity:.55;">$</span>{{ shareWhole }}<span style="font-size:24px; opacity:.55;">{{ shareCents }}</span></div>
+            <div style="display:flex; gap:3px; height:14px; margin-top:16px; border-radius:8px; overflow:hidden;">
+              <sc-for list="{{ segments }}" as="seg" hint-placeholder-count="4">
+                <div style="flex:{{ seg.grow }}; background:{{ seg.color }}; animation:nsSeg .3s ease;"></div>
+              </sc-for>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;">
+              <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.5);">{{ includedCount }} × ${{ shareWhole }}{{ shareCents }}</span>
+              <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.5);">= ${{ grandWhole }}{{ grandCents }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== CUSTOM body ===== -->
+      <sc-if value="{{ isCustom }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:16px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:20px; padding:8px 8px;">
+          <sc-for list="{{ customRows }}" as="r" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:12px; padding:9px 10px;">
+              <div style="width:36px; height:36px; border-radius:50%; background:{{ r.bg }}; display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;">{{ r.emoji }}</div>
+              <span style="flex:1; font-family:'Clash Display','General Sans',sans-serif; font-weight:500; font-size:16px; color:#F4F7FA;">{{ r.name }}</span>
+              <div style="display:flex; align-items:center; gap:2px; background:#0B1622; border:1px solid {{ r.border }}; border-radius:11px; padding:8px 12px; min-width:96px; justify-content:flex-end;">
+                <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:16px; color:rgba(244,247,250,0.4);">$</span>
+                <input class="ns-amt" value="{{ r.value }}" onInput="{{ r.set }}" inputmode="decimal" style="font-family:'Space Mono',monospace; font-weight:700; font-size:16px; color:#F4F7FA; width:58px; text-align:right;" />
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; background:{{ leftBg }}; border:1px solid {{ leftBorder }}; border-radius:14px; padding:13px 16px; margin-top:11px;">
+          <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.55);">{{ leftEyebrow }}</span>
+          <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:17px; color:{{ leftColor }};">{{ leftLabel }}</span>
+        </div>
+      </sc-if>
+
+      <!-- ===== BY ITEM body ===== -->
+      <sc-if value="{{ isByItem }}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{ hasReceipt }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:8px;">
+            <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.42); margin:8px 2px 11px;">tap a line item to assign it →</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{ itemRows }}" as="it" hint-placeholder-count="5">
+                <button onClick="{{ it.assign }}" style="appearance:none; cursor:pointer; width:100%; display:flex; align-items:center; gap:12px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:14px; padding:11px 13px; text-align:left;" style-active="transform:scale(0.99);">
+                  <span style="font-size:20px; flex:none;">{{ it.emoji }}</span>
+                  <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">{{ it.label }}</span>
+                  <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:14px; color:rgba(244,247,250,0.75);">${{ it.price }}</span>
+                  <div style="width:30px; height:30px; border-radius:50%; background:{{ it.bg }}; display:flex; align-items:center; justify-content:center; font-size:15px; flex:none;">{{ it.who }}</div>
+                </button>
+              </sc-for>
+            </div>
+            <div style="margin-top:13px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:16px; padding:6px 6px;">
+              <sc-for list="{{ byItemTotals }}" as="t" hint-placeholder-count="4">
+                <div style="display:flex; align-items:center; gap:11px; padding:8px 10px;">
+                  <div style="width:30px; height:30px; border-radius:50%; background:{{ t.bg }}; display:flex; align-items:center; justify-content:center; font-size:15px; flex:none;">{{ t.emoji }}</div>
+                  <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:14px; color:rgba(244,247,250,0.85);">{{ t.name }}</span>
+                  <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:15px; color:#3DE8C7;">${{ t.total }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noReceipt }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px; border:1.5px dashed rgba(244,247,250,0.16); border-radius:18px; padding:26px 20px; text-align:center;">
+            <div style="font-size:30px;">🧾</div>
+            <div style="font-family:'Clash Display','General Sans',sans-serif; font-weight:500; font-size:16px; color:#F4F7FA; margin-top:8px;">scan a receipt first</div>
+            <div style="font-family:'General Sans',sans-serif; font-size:13px; color:rgba(244,247,250,0.5); margin-top:4px;">we'll pull out the line items so you can tap to assign them.</div>
+          </div>
+        </sc-if>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <!-- send footer -->
+  <div style="position:relative; z-index:3; flex:none; padding:14px 20px calc(14px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(11,22,34,0) 0%, #0B1622 24%);">
+    <button style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 12px 30px rgba(39,117,202,0.45);" style-hover="filter:brightness(1.06);" style-active="transform:translateY(1px);">
+      <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:17px; color:#fff;">{{ sendLabel }}</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+    </button>
+    <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.36); text-align:center; margin-top:10px;">no app needed to pay. dollars, just faster.</div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 390, &quot;height&quot;: 844 },
+  &quot;inGroup&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot; },
+  &quot;groupEmoji&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;🗼&quot;, &quot;tsType&quot;: &quot;string&quot; },
+  &quot;groupName&quot;: { &quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;tokyo trip&quot;, &quot;tsType&quot;: &quot;string&quot; }
+}">
+class Component extends DCLogic {
+  MEMBERS = [
+    { id: 'you',   name: 'you',   emoji: '🦊', bg: 'linear-gradient(150deg,#FFC65C,#FF6B5E)' },
+    { id: 'marco', name: 'marco', emoji: '🐢', bg: 'linear-gradient(150deg,#7fc0ff,#2775CA)' },
+    { id: 'ava',   name: 'ava',   emoji: '🌸', bg: 'linear-gradient(150deg,#3DE8C7,#2775CA)' },
+    { id: 'theo',  name: 'theo',  emoji: '🦝', bg: 'linear-gradient(150deg,#FFC65C,#FFB23E)' },
+    { id: 'sofia', name: 'sofia', emoji: '🐙', bg: 'linear-gradient(150deg,#FF8A7E,#FF6B5E)' },
+  ];
+  ITEMS = [
+    { id: 'i0', label: 'tonkotsu ramen', emoji: '🍜', price: 22 },
+    { id: 'i1', label: 'gyoza',          emoji: '🥟', price: 9 },
+    { id: 'i2', label: 'chicken karaage',emoji: '🍗', price: 14 },
+    { id: 'i3', label: 'sapporo ×4',     emoji: '🍺', price: 32 },
+    { id: 'i4', label: 'edamame',        emoji: '🫛', price: 7 },
+    { id: 'i5', label: 'matcha cake',    emoji: '🍰', price: 12 },
+  ];
+  BASE = 96;
+
+  TIPS = [
+    { key: 'none', label: 'none', pct: 0 },
+    { key: '15', label: '15%', pct: 15 },
+    { key: '18', label: '18%', pct: 18 },
+    { key: '20', label: '20%', pct: 20 },
+    { key: 'custom', label: 'custom', pct: null },
+  ];
+
+  state = {
+    tipKey: 'none',
+    customTip: '',
+    paidBy: 'you',
+    mode: 'equally',
+    included: { you: true, marco: true, ava: true, theo: true, sofia: false },
+    custom: {},                       // id -> string (only edited rows)
+    assign: { i0: 'you', i1: 'marco', i2: 'ava', i3: 'theo', i4: 'you', i5: 'marco' },
+    hasReceipt: true,
+  };
+
+  setTip = (key) => () => this.setState({ tipKey: key });
+  setCustomTip = (e) => {
+    let v = (e.target.value || '').replace(/[^0-9.]/g, '');
+    const parts = v.split('.'); if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+    this.setState({ customTip: v, tipKey: 'custom' });
+  };
+  tipPct() {
+    const st = this.state;
+    if (st.tipKey === 'custom') return parseFloat(st.customTip) || 0;
+    const t = this.TIPS.find(x => x.key === st.tipKey);
+    return t ? t.pct : 0;
+  }
+  setPaidBy = (id) => () => this.setState({ paidBy: id });
+  setMode = (m) => () => this.setState({ mode: m });
+
+  toggleMember = (id) => () => this.setState(s => {
+    const inc = { ...s.included };
+    const willHave = Object.values({ ...inc, [id]: !inc[id] }).filter(Boolean).length;
+    if (willHave < 1) return null;            // keep at least one
+    inc[id] = !inc[id];
+    const custom = { ...s.custom };
+    delete custom[id];                        // re-balance on membership change
+    return { included: inc, custom };
+  });
+
+  setCustom = (id) => (e) => {
+    let v = (e.target.value || '').replace(/[^0-9.]/g, '');
+    const parts = v.split('.');
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+    this.setState(s => ({ custom: { ...s.custom, [id]: v } }));
+  };
+
+  assignItem = (itemId) => () => this.setState(s => {
+    const order = this.MEMBERS.filter(m => s.included[m.id]).map(m => m.id);
+    const cur = s.assign[itemId];
+    const idx = order.indexOf(cur);
+    const next = order[(idx + 1) % order.length];
+    return { assign: { ...s.assign, [itemId]: next } };
+  });
+
+  _split(n) {
+    const s = n.toFixed(2); const d = s.indexOf('.');
+    return { whole: s.slice(0, d), cents: s.slice(d), full: s };
+  }
+  _member(id) { return this.MEMBERS.find(m => m.id === id) || this.MEMBERS[0]; }
+
+  renderVals() {
+    const st = this.state;
+    const tipPct = this.tipPct();
+    const grand = this.BASE * (1 + tipPct / 100);
+    const includedList = this.MEMBERS.filter(m => st.included[m.id]);
+    const n = includedList.length;
+    const equalShare = grand / n;
+    const sh = this._split(equalShare);
+    const gr = this._split(grand);
+    const segColors = ['#2775CA', '#3DE8C7'];
+
+    // paid-by chips
+    const paidChips = this.MEMBERS.map(m => {
+      const sel = st.paidBy === m.id;
+      return {
+        id: m.id, emoji: m.emoji, name: m.name, bg: m.bg, set: this.setPaidBy(m.id),
+        opacity: sel ? '1' : '0.5',
+        ring: sel ? '#3DE8C7' : 'transparent',
+        glow: sel ? '0 0 0 3px rgba(61,232,199,0.18)' : 'none',
+        nameColor: sel ? '#F4F7FA' : 'rgba(244,247,250,0.5)',
+      };
+    });
+    const paidByLabel = (st.paidBy === 'you' ? 'you' : this._member(st.paidBy).name) + ' paid';
+
+    // member include chips
+    const memberChips = this.MEMBERS.map(m => {
+      const inc = !!st.included[m.id];
+      return {
+        id: m.id, emoji: m.emoji, name: m.name, bg: m.bg, included: inc, toggle: this.toggleMember(m.id),
+        opacity: inc ? '1' : '0.42',
+        ring: inc ? '#2775CA' : 'rgba(244,247,250,0.12)',
+        filter: inc ? 'none' : 'grayscale(0.4)',
+        nameColor: inc ? '#F4F7FA' : 'rgba(244,247,250,0.45)',
+      };
+    });
+
+    // mode toggle
+    const modeOptions = [
+      { key: 'equally', label: 'equally' },
+      { key: 'custom', label: 'custom' },
+      { key: 'byitem', label: 'by item' },
+    ].map(o => ({
+      label: o.label, set: this.setMode(o.key),
+      bg: st.mode === o.key ? '#2775CA' : 'transparent',
+      fg: st.mode === o.key ? '#fff' : 'rgba(244,247,250,0.55)',
+    }));
+
+    // ----- custom -----
+    const rowVal = (id) => st.custom[id] !== undefined ? st.custom[id] : equalShare.toFixed(2);
+    const customRows = includedList.map(m => ({
+      id: m.id, emoji: m.emoji, name: m.name, bg: m.bg,
+      value: rowVal(m.id), set: this.setCustom(m.id),
+      border: 'rgba(244,247,250,0.12)',
+    }));
+    const sumCustom = includedList.reduce((a, m) => a + (parseFloat(rowVal(m.id)) || 0), 0);
+    const left = grand - sumCustom;
+    let leftLabel, leftColor, leftBg, leftBorder, leftEyebrow;
+    if (Math.abs(left) < 0.005) {
+      leftEyebrow = 'ALL SET'; leftLabel = 'balanced ✨'; leftColor = '#3DE8C7';
+      leftBg = 'rgba(61,232,199,0.08)'; leftBorder = 'rgba(61,232,199,0.3)';
+    } else if (left > 0) {
+      leftEyebrow = 'LEFT TO ASSIGN'; leftLabel = '$' + left.toFixed(2) + ' left'; leftColor = '#FFC65C';
+      leftBg = 'rgba(255,198,92,0.07)'; leftBorder = 'rgba(255,198,92,0.28)';
+    } else {
+      leftEyebrow = 'OVER BY'; leftLabel = '$' + Math.abs(left).toFixed(2) + ' over'; leftColor = '#FF6B5E';
+      leftBg = 'rgba(255,107,94,0.07)'; leftBorder = 'rgba(255,107,94,0.3)';
+    }
+
+    // ----- by item -----
+    const itemRows = this.ITEMS.map(it => {
+      const who = st.assign[it.id];
+      const m = (includedList.find(x => x.id === who) || includedList[0]);
+      return {
+        id: it.id, label: it.label, emoji: it.emoji, price: it.price.toFixed(2),
+        assign: this.assignItem(it.id),
+        bg: m.bg, who: m.emoji,
+      };
+    });
+    const byItemTotals = includedList.map(m => {
+      const sub = this.ITEMS.reduce((a, it) => a + ((st.assign[it.id] === m.id || (!includedList.find(x => x.id === st.assign[it.id]) && m.id === includedList[0].id)) ? it.price : 0), 0);
+      const withTip = sub * (1 + tipPct / 100);
+      return { id: m.id, emoji: m.emoji, name: m.name, bg: m.bg, total: withTip.toFixed(2) };
+    });
+
+    // ----- bar segments (mode aware) -----
+    let segments;
+    if (st.mode === 'custom') {
+      segments = includedList.map((m, i) => ({ color: segColors[i % 2], grow: Math.max(0.04, (parseFloat(rowVal(m.id)) || 0)) }));
+    } else if (st.mode === 'byitem') {
+      segments = byItemTotals.map((t, i) => ({ color: segColors[i % 2], grow: Math.max(0.04, parseFloat(t.total)) }));
+    } else {
+      segments = includedList.map((m, i) => ({ color: segColors[i % 2], grow: 1 }));
+    }
+
+    return {
+      eyebrow: this.props.inGroup ? 'add expense' : 'new tab',
+      headline: this.props.inGroup ? 'add expense' : 'new tab',
+      inGroup: this.props.inGroup ?? false,
+      groupEmoji: this.props.groupEmoji ?? '🗼',
+      groupName: this.props.groupName ?? 'tokyo trip',
+      sendLabel: this.props.inGroup ? 'add to tab' : 'send the tab',
+
+      tipNote: tipPct > 0 ? ('incl. ' + (Number.isInteger(tipPct) ? tipPct : tipPct.toFixed(1)) + '% tip') : 'no tip added',
+      tipOptions: this.TIPS.map(t => ({
+        label: t.label, set: this.setTip(t.key),
+        bg: st.tipKey === t.key ? '#2775CA' : 'transparent',
+        fg: st.tipKey === t.key ? '#fff' : 'rgba(244,247,250,0.55)',
+      })),
+      isCustomTip: st.tipKey === 'custom',
+      customTip: st.customTip,
+      setCustomTip: this.setCustomTip,
+
+      paidChips, paidByLabel,
+      memberChips, includedCount: n, totalMembers: this.MEMBERS.length,
+      modeOptions,
+      isEqually: st.mode === 'equally', isCustom: st.mode === 'custom', isByItem: st.mode === 'byitem',
+
+      shareWhole: sh.whole, shareCents: sh.cents,
+      grandWhole: gr.whole, grandCents: gr.cents,
+      segments,
+
+      customRows, leftLabel, leftColor, leftBg, leftBorder, leftEyebrow,
+
+      hasReceipt: !!st.hasReceipt, noReceipt: !st.hasReceipt,
+      itemRows, byItemTotals,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #050d15; }
+  @keyframes suFloat { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-7px) rotate(3deg); } }
+  @keyframes suSquish { 0%,100% { border-radius:47% 53% 52% 48% / 55% 48% 52% 45%; } 50% { border-radius:53% 47% 48% 52% / 46% 54% 47% 53%; } }
+  @keyframes suBlink { 0%,90%,100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+  @keyframes suWaveL { 0%,100% { transform: rotate(15deg); } 50% { transform: rotate(0deg); } }
+  @keyframes suWaveR { 0%,100% { transform: rotate(-15deg); } 50% { transform: rotate(0deg); } }
+  @keyframes suBounce { 0%,100% { transform: translateY(0) scale(1); } 30% { transform: translateY(-14px) scale(1.05); } 55% { transform: translateY(0) scale(.98); } 75% { transform: translateY(-5px) scale(1.02); } }
+  @keyframes suSweep { 0% { transform: translateX(-130%) skewX(-18deg); } 100% { transform: translateX(130%) skewX(-18deg); } }
+  @keyframes suGrad { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  @keyframes suPop { 0% { transform: scale(.5); opacity:0; } 60% { transform: scale(1.08); opacity:1; } 100% { transform: scale(1); opacity:1; } }
+  @keyframes suStamp { 0% { transform: rotate(-11deg) scale(1.7); opacity:0; } 55% { opacity:1; } 100% { transform: rotate(-11deg) scale(1); opacity:1; } }
+  @keyframes suSpark { 0%,100% { transform: scale(.7); opacity:.3; } 50% { transform: scale(1.1); opacity:1; } }
+  @keyframes suDots { 0%,80%,100% { opacity:.25; } 40% { opacity:1; } }
+</style>
+</helmet>
+
+<div style="position:relative; width:390px; height:844px; background:#0B1622; overflow:hidden; font-family:'General Sans','Space Grotesk',sans-serif; color:#F4F7FA; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;">
+
+  <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 30%, rgba(244,247,250,0.028) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>
+  <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; left:50%; top:46%; width:460px; height:460px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.22) 0%, rgba(39,117,202,0.14) 40%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>
+  </sc-if>
+
+  <!-- status bar -->
+  <div style="position:relative; z-index:5; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 30px 0 32px; flex:none;">
+    <span style="font-family:'Space Mono',monospace; font-size:14px; font-weight:700; letter-spacing:.5px;">9:41</span>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:rgba(244,247,250,0.6);">5G</span>
+      <div style="width:24px; height:12px; border:1px solid rgba(244,247,250,0.45); border-radius:3px; padding:1.5px; display:flex; align-items:center;">
+        <div style="width:100%; height:100%; background:#F4F7FA; border-radius:1px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- top bar -->
+  <div style="position:relative; z-index:5; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 22px; flex:none;">
+    <span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">settle up</span>
+    <sc-if value="{{ notDone }}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{ reset }}" style="appearance:none; border:none; background:transparent; cursor:pointer; font-family:'General Sans',sans-serif; font-size:14px; color:rgba(244,247,250,0.5);" style-hover="color:#F4F7FA;">cancel</button>
+    </sc-if>
+  </div>
+
+  <div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 24px 30px;">
+
+    <!-- mascot -->
+    <div style="position:relative; margin-bottom:18px; animation:suFloat 5s ease-in-out infinite;">
+      <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+        <span style="position:absolute; top:-6px; left:-16px; font-size:15px; animation:suSpark 1.4s ease-in-out infinite;">✨</span>
+        <span style="position:absolute; top:2px; right:-16px; font-size:12px; animation:suSpark 1.4s ease-in-out .4s infinite;">✨</span>
+      </sc-if>
+      <div style="position:relative; width:62px; height:62px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:suSquish 4.5s ease-in-out infinite; box-shadow:0 10px 26px rgba(39,117,202,0.5), inset 0 2px 5px rgba(255,255,255,0.28); display:flex; align-items:center; justify-content:center;">
+        <!-- legs -->
+        <div style="position:absolute; left:21px; bottom:-7px; width:9px; height:15px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); box-shadow:0 3px 6px rgba(39,117,202,0.4); z-index:-1;"></div>
+        <div style="position:absolute; right:21px; bottom:-7px; width:9px; height:15px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); box-shadow:0 3px 6px rgba(39,117,202,0.4); z-index:-1;"></div>
+        <!-- arms -->
+        <div style="position:absolute; left:-5px; top:23px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform-origin:7px 2px; animation:suWaveL 4.2s ease-in-out infinite; box-shadow:0 3px 7px rgba(39,117,202,0.4); z-index:-1;"></div>
+        <div style="position:absolute; right:-5px; top:23px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform-origin:3px 2px; animation:suWaveR 4.2s ease-in-out infinite; box-shadow:0 3px 7px rgba(39,117,202,0.4); z-index:-1;"></div>
+        <div style="display:flex; gap:8px; margin-top:-4px;">
+          <div style="width:7px; height:9px; border-radius:50%; background:#0B1622; animation:suBlink 5s infinite;"></div>
+          <div style="width:7px; height:9px; border-radius:50%; background:#0B1622; animation:suBlink 5s infinite;"></div>
+        </div>
+        <div style="position:absolute; bottom:18px; width:13px; height:7px; border:2.5px solid #0B1622; border-top:none; border-radius:0 0 9px 9px;"></div>
+      </div>
+    </div>
+
+    <!-- ============ FOCUSED CARD (idle + settling) ============ -->
+    <sc-if value="{{ notDone }}" hint-placeholder-val="{{ true }}">
+    <div style="position:relative; width:100%; max-width:330px; background:#13212E; border-radius:24px; border:1px solid rgba(244,247,250,0.07); box-shadow:0 18px 44px rgba(0,0,0,0.36); padding:22px 22px 24px; overflow:hidden;">
+      <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 4%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>
+
+      <!-- kinetic sweep on confirm -->
+      <sc-if value="{{ isSettling }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:4;">
+          <div style="position:absolute; top:0; bottom:0; width:60%; background:linear-gradient(90deg, transparent, rgba(61,232,199,0.35), rgba(39,117,202,0.4), transparent); animation:suSweep 1.1s ease-in-out infinite;"></div>
+        </div>
+      </sc-if>
+
+      <div style="position:relative; z-index:2;">
+        <!-- you -> ava -->
+        <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+            <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(150deg,#FFC65C,#FF6B5E); display:flex; align-items:center; justify-content:center; font-size:19px;">🦊</div>
+            <span style="font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.5px; color:rgba(244,247,250,0.45);">you</span>
+          </div>
+          <svg width="26" height="14" viewBox="0 0 26 14" fill="none" stroke="rgba(244,247,250,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+            <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(150deg,#3DE8C7,#2775CA); display:flex; align-items:center; justify-content:center; font-size:19px;">🌸</div>
+            <span style="font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.5px; color:rgba(244,247,250,0.45);">ava</span>
+          </div>
+        </div>
+
+        <!-- amount -->
+        <div style="text-align:center; margin-top:18px;">
+          <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:52px; line-height:1; letter-spacing:-2px; color:#FF6B5E;"><span style="font-size:28px; opacity:.5;">−$</span><span ref="{{ amtRef }}">31.00</span></div>
+          <div style="font-family:'General Sans',sans-serif; font-size:13px; color:rgba(244,247,250,0.5); margin-top:9px;">you owe ava</div>
+        </div>
+
+        <!-- QR (idle) -->
+        <sc-if value="{{ isIdle }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; flex-direction:column; align-items:center; margin-top:20px;">
+          <div style="width:160px; height:160px; background:#EEF1F4; border-radius:18px; padding:13px; box-shadow:0 8px 20px rgba(0,0,0,0.3);">
+            <svg width="100%" height="100%" viewBox="0 0 100 100">
+              <defs>
+                <pattern id="suqr" width="8.6" height="8.6" patternUnits="userSpaceOnUse"><rect x="1.5" y="1.5" width="5.6" height="5.6" rx="1.5" fill="#0B1622"/></pattern>
+                <linearGradient id="sufind" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2775CA"/><stop offset="1" stop-color="#3DE8C7"/></linearGradient>
+              </defs>
+              <rect x="2" y="2" width="96" height="96" fill="url(#suqr)"/>
+              <!-- clear scatter for irregularity -->
+              <rect x="36" y="11" width="7" height="7" rx="1.6" fill="#EEF1F4"/>
+              <rect x="62" y="28" width="7" height="7" rx="1.6" fill="#EEF1F4"/>
+              <rect x="19" y="46" width="7" height="7" rx="1.6" fill="#EEF1F4"/>
+              <rect x="45" y="62" width="7" height="7" rx="1.6" fill="#EEF1F4"/>
+              <rect x="71" y="71" width="7" height="7" rx="1.6" fill="#EEF1F4"/>
+              <rect x="28" y="80" width="7" height="7" rx="1.6" fill="#EEF1F4"/>
+              <!-- finder patterns -->
+              <g><rect x="4" y="4" width="26" height="26" rx="7" fill="#EEF1F4"/><rect x="6" y="6" width="22" height="22" rx="6" fill="url(#sufind)"/><rect x="11" y="11" width="12" height="12" rx="3.5" fill="#EEF1F4"/><rect x="14" y="14" width="6" height="6" rx="2" fill="#0B1622"/></g>
+              <g><rect x="70" y="4" width="26" height="26" rx="7" fill="#EEF1F4"/><rect x="72" y="6" width="22" height="22" rx="6" fill="url(#sufind)"/><rect x="77" y="11" width="12" height="12" rx="3.5" fill="#EEF1F4"/><rect x="80" y="14" width="6" height="6" rx="2" fill="#0B1622"/></g>
+              <g><rect x="4" y="70" width="26" height="26" rx="7" fill="#EEF1F4"/><rect x="6" y="72" width="22" height="22" rx="6" fill="url(#sufind)"/><rect x="11" y="77" width="12" height="12" rx="3.5" fill="#EEF1F4"/><rect x="14" y="80" width="6" height="6" rx="2" fill="#0B1622"/></g>
+              <!-- center mark -->
+              <rect x="40" y="40" width="20" height="20" rx="6" fill="#EEF1F4"/><rect x="43" y="43" width="14" height="14" rx="4.5" fill="url(#sufind)"/><text x="50" y="54.5" text-anchor="middle" font-family="'Clash Display',sans-serif" font-weight="700" font-size="12" fill="#fff">/</text>
+            </svg>
+          </div>
+          <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.42); margin-top:11px;">scan with any solana wallet</span>
+        </div>
+        </sc-if>
+
+        <!-- settling status -->
+        <sc-if value="{{ isSettling }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:24px; height:160px;">
+          <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.5px; color:#3DE8C7;">chipping in on solana</span>
+          <span style="display:flex; gap:3px;">
+            <span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7; animation:suDots 1.1s infinite;"></span>
+            <span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7; animation:suDots 1.1s .15s infinite;"></span>
+            <span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7; animation:suDots 1.1s .3s infinite;"></span>
+          </span>
+        </div>
+        </sc-if>
+
+        <!-- primary -->
+        <sc-if value="{{ isIdle }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ chipIn }}" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 10px 28px rgba(39,117,202,0.45);" style-hover="filter:brightness(1.07);" style-active="transform:translateY(1px);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/></svg>
+          <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:16px; color:#fff;">open in wallet</span>
+        </button>
+        </sc-if>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ SQUARE CARD (done) ============ -->
+    <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+    <div style="position:relative; width:100%; max-width:330px; border-radius:24px; padding:30px 24px 26px; overflow:hidden; background:linear-gradient(125deg,#2775CA 0%,#2aa5cf 48%,#3DE8C7 100%); background-size:200% 200%; box-shadow:0 20px 50px rgba(39,117,202,0.45); animation:suPop .5s ease-out both, suGrad 6s ease-in-out infinite;">
+      <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 85% 6%, rgba(255,255,255,0.10) 0 1px, transparent 1px 9px); opacity:.6; pointer-events:none;"></div>
+
+      <!-- squared stamp -->
+      <div style="position:absolute; top:20px; right:18px; transform:rotate(-11deg); animation:suStamp .6s ease-out .15s both;">
+        <span style="display:inline-flex; align-items:center; gap:5px; border:2px dashed rgba(255,255,255,0.85); border-radius:999px; padding:5px 11px;">
+          <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:12px; letter-spacing:1px; color:#fff;">SQUARED</span>
+          <span style="font-size:12px;">✨</span>
+        </span>
+      </div>
+
+      <div style="position:relative;">
+        <span style="font-family:'Space Mono',monospace; font-size:10.5px; letter-spacing:1.5px; color:rgba(255,255,255,0.8);">you & ava</span>
+        <h2 style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:27px; line-height:1.12; letter-spacing:-0.5px; margin:8px 0 0; color:#fff; max-width:230px;">you're square with ava ✨</h2>
+
+        <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:50px; line-height:1; letter-spacing:-2px; color:#fff; margin-top:20px; text-shadow:0 2px 20px rgba(0,0,0,0.2);"><span style="font-size:27px; opacity:.6;">$</span>0<span style="font-size:27px; opacity:.6;">.00</span></div>
+
+        <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.3px; color:rgba(255,255,255,0.92); margin-top:16px;">settled. &lt;1 second. &lt;1 cent.</div>
+        <a href="#" style="display:inline-flex; align-items:center; gap:5px; margin-top:10px; text-decoration:none;">
+          <span style="font-family:'Space Mono',monospace; font-size:10.5px; letter-spacing:.5px; color:rgba(255,255,255,0.7);">view on solscan</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+        </a>
+
+        <button onClick="{{ reset }}" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:52px; margin-top:24px; border-radius:999px; background:#0B1622; font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:16px; color:#F4F7FA; box-shadow:0 8px 22px rgba(0,0,0,0.3);" style-hover="filter:brightness(1.15);" style-active="transform:translateY(1px);">nice. done</button>
+      </div>
+    </div>
+    </sc-if>
+
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 390, &quot;height&quot;: 844 }
+}">
+class Component extends DCLogic {
+  state = { phase: 'idle' };
+  amtRef = React.createRef();
+
+  chipIn = () => {
+    if (this.state.phase !== 'idle') return;
+    try { if (navigator.vibrate) navigator.vibrate([8, 36, 14]); } catch (e) {}
+    this.setState({ phase: 'settling' });
+    const start = Date.now();
+    const dur = 1150;
+    const from = 31;
+    if (this._timer) clearInterval(this._timer);
+    this._timer = setInterval(() => {
+      const t = Math.min(1, (Date.now() - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const val = from * (1 - eased);
+      if (this.amtRef.current) this.amtRef.current.textContent = val.toFixed(2);
+      if (t >= 1) {
+        clearInterval(this._timer);
+        this._timer = null;
+        try { if (navigator.vibrate) navigator.vibrate(28); } catch (e) {}
+        this.setState({ phase: 'done' });
+      }
+    }, 30);
+  };
+
+  componentWillUnmount() { if (this._timer) clearInterval(this._timer); }
+
+  reset = () => { if (this._timer) { clearInterval(this._timer); this._timer = null; } this.setState({ phase: 'idle' }); };
+
+  renderVals() {
+    const phase = this.state.phase;
+    return {
+      isIdle: phase === 'idle',
+      isSettling: phase === 'settling',
+      isDone: phase === 'done',
+      notDone: phase !== 'done',
+      chipIn: this.chipIn,
+      reset: this.reset,
+      amtRef: this.amtRef,
+    };
+  }
+}
+</script>
+</body>
+</html>

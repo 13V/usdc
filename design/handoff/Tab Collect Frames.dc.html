@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  @keyframes tcFloat { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(3deg); } }
+  @keyframes tcSquish { 0%,100% { border-radius:47% 53% 52% 48% / 55% 48% 52% 45%; } 50% { border-radius:53% 47% 48% 52% / 46% 54% 47% 53%; } }
+  @keyframes tcBlink { 0%,90%,100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+  @keyframes tcWaveL { 0%,100% { transform: rotate(15deg); } 50% { transform: rotate(0deg); } }
+  @keyframes tcWaveR { 0%,100% { transform: rotate(-15deg); } 50% { transform: rotate(0deg); } }
+  @keyframes tcWatch { 0%,100% { transform: translate(-2px,1px); } 33% { transform: translate(2px,-1px); } 66% { transform: translate(2px,2px); } }
+  @keyframes tcGrad { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  @keyframes tcStamp { 0% { transform: rotate(-11deg) scale(1.7); opacity:0; } 55% { opacity:1; } 100% { transform: rotate(-11deg) scale(1); opacity:1; } }
+  @keyframes tcSpark { 0%,100% { transform: scale(.7); opacity:.3; } 50% { transform: scale(1.1); opacity:1; } }
+  @keyframes tcParty { 0%,100% { transform: translateY(0) rotate(-6deg); } 25% { transform: translateY(-10px) rotate(6deg); } 50% { transform: translateY(0) rotate(-6deg); } 75% { transform: translateY(-5px) rotate(4deg); } }
+  @keyframes tcConfetti { 0% { transform: translateY(-12px) rotate(0deg); opacity:0; } 15% { opacity:1; } 100% { transform: translateY(80px) rotate(220deg); opacity:0; } }
+  @keyframes tcNudge { 0%,100% { transform: rotate(0deg); } 20% { transform: rotate(-9deg); } 40% { transform: rotate(9deg); } 60% { transform: rotate(-5deg); } 80% { transform: rotate(5deg); } }
+</style>
+</helmet>
+
+<!-- ====================== FRAME 1 · tab sent ====================== -->
+<div style="position:absolute; left:40px; top:40px; width:390px;">
+  <div data-drags-parent="1" style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:1.5px; color:#5b6b78; margin-bottom:14px;">frame 1 · tab sent</div>
+  <div style="position:relative; width:390px; height:844px; background:#0B1622; overflow:hidden; border-radius:34px; box-shadow:0 30px 70px rgba(0,0,0,0.5); font-family:'General Sans',sans-serif; color:#F4F7FA; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;">
+    <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 20%, rgba(244,247,250,0.024) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>
+    <div style="position:absolute; left:50%; top:-30px; width:360px; height:280px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.16) 0%, rgba(39,117,202,0) 68%); pointer-events:none;"></div>
+
+    <div style="position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 30px 0 32px; flex:none;">
+      <span style="font-family:'Space Mono',monospace; font-size:14px; font-weight:700;">9:41</span>
+      <div style="display:flex; align-items:center; gap:6px;"><span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:rgba(244,247,250,0.6);">5G</span><div style="width:24px; height:12px; border:1px solid rgba(244,247,250,0.45); border-radius:3px; padding:1.5px; display:flex; align-items:center;"><div style="width:100%; height:100%; background:#F4F7FA; border-radius:1px;"></div></div></div>
+    </div>
+    <div style="position:relative; z-index:2; display:flex; align-items:center; justify-content:center; height:44px; flex:none;"><span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">tab sent</span></div>
+
+    <div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; padding:4px 22px 18px; overflow:hidden;">
+      <!-- mascot holding receipt -->
+      <div style="position:relative; margin-bottom:14px; animation:tcFloat 5s ease-in-out infinite;">
+        <div style="position:absolute; left:-20px; bottom:6px; width:26px; height:32px; background:#F4F7FA; border-radius:3px; transform:rotate(-12deg); box-shadow:0 4px 10px rgba(0,0,0,0.3);">
+          <div style="height:4px;"></div>
+          <div style="margin:0 4px; height:2px; background:rgba(11,22,34,0.25);"></div>
+          <div style="margin:4px 4px 0; height:2px; background:rgba(11,22,34,0.18);"></div>
+          <div style="margin:3px 4px 0; height:2px; background:rgba(11,22,34,0.18); width:14px;"></div>
+        </div>
+        <div style="position:relative; width:62px; height:62px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:tcSquish 4.5s ease-in-out infinite; box-shadow:0 10px 26px rgba(39,117,202,0.5), inset 0 2px 5px rgba(255,255,255,0.28); display:flex; align-items:center; justify-content:center;">
+          <div style="position:absolute; left:22px; bottom:-7px; width:9px; height:15px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>
+          <div style="position:absolute; right:22px; bottom:-7px; width:9px; height:15px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>
+          <div style="position:absolute; left:-6px; top:24px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform:rotate(28deg); z-index:-1;"></div>
+          <div style="position:absolute; right:-5px; top:23px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform-origin:3px 2px; animation:tcWaveR 4.2s ease-in-out infinite; z-index:-1;"></div>
+          <div style="display:flex; gap:8px; margin-top:-4px;">
+            <div style="width:7px; height:9px; border-radius:50%; background:#0B1622; animation:tcBlink 5s infinite;"></div>
+            <div style="width:7px; height:9px; border-radius:50%; background:#0B1622; animation:tcBlink 5s infinite;"></div>
+          </div>
+          <div style="position:absolute; bottom:18px; width:13px; height:7px; border:2.5px solid #0B1622; border-top:none; border-radius:0 0 9px 9px;"></div>
+        </div>
+      </div>
+
+      <!-- receipt card -->
+      <div style="position:relative; width:100%; background:#13212E; border-radius:22px; border:1px solid rgba(244,247,250,0.08); box-shadow:0 16px 40px rgba(0,0,0,0.34); overflow:hidden;">
+        <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 5%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>
+        <div style="position:relative; padding:18px 18px 6px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:24px;">🍜</span>
+              <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:19px; color:#F4F7FA;">dinner</span>
+            </div>
+            <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:24px; letter-spacing:-1px; color:#F4F7FA;"><span style="font-size:15px; opacity:.5;">$</span>96<span style="font-size:15px; opacity:.5;">.00</span></span>
+          </div>
+          <div style="font-family:'Space Mono',monospace; font-size:10.5px; letter-spacing:.5px; color:rgba(244,247,250,0.45); margin-top:5px;">split 4 · $24.00 each</div>
+        </div>
+
+        <!-- perforation -->
+        <div style="position:relative; height:1px; margin:12px 0; border-top:1.5px dashed rgba(244,247,250,0.14);">
+          <div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#0B1622;"></div>
+          <div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#0B1622;"></div>
+        </div>
+
+        <div style="position:relative; padding:2px 14px 14px; display:flex; flex-direction:column;">
+          <!-- you squared -->
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 4px;">
+            <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(150deg,#FFC65C,#FF6B5E); display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">🦊</div>
+            <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">you</span>
+            <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:14px; color:#2775CA;">$24.00</span>
+            <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:'Space Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#7fc0ff;">SQUARED</span></span>
+          </div>
+          <!-- waiting rows -->
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 4px; opacity:.5;">
+            <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(150deg,#3DE8C7,#2775CA); display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">🌸</div>
+            <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">ava</span>
+            <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:14px; color:rgba(244,247,250,0.6);">$24.00</span>
+            <span style="display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(244,247,250,0.16); border-radius:999px; padding:3px 9px;"><span style="font-size:10px;">👀</span><span style="font-family:'Space Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(244,247,250,0.6);">WAITING</span></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 4px; opacity:.5;">
+            <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(150deg,#7fc0ff,#2775CA); display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">🐢</div>
+            <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">marco</span>
+            <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:14px; color:rgba(244,247,250,0.6);">$24.00</span>
+            <span style="display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(244,247,250,0.16); border-radius:999px; padding:3px 9px;"><span style="font-size:10px;">👀</span><span style="font-family:'Space Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(244,247,250,0.6);">WAITING</span></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 4px; opacity:.5;">
+            <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(150deg,#FFC65C,#FFB23E); display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">🦝</div>
+            <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">theo</span>
+            <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:14px; color:rgba(244,247,250,0.6);">$24.00</span>
+            <span style="display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(244,247,250,0.16); border-radius:999px; padding:3px 9px;"><span style="font-size:10px;">👀</span><span style="font-family:'Space Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(244,247,250,0.6);">WAITING</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- progress -->
+      <div style="width:100%; margin-top:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1px; color:rgba(244,247,250,0.5);">1 OF 4 SQUARED</span>
+          <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.5px; color:#7fc0ff;">$24.00 / $96.00</span>
+        </div>
+        <div style="height:8px; border-radius:6px; background:#13212E; overflow:hidden;"><div style="width:25%; height:100%; background:linear-gradient(90deg,#2775CA,#3a93e4); border-radius:6px;"></div></div>
+      </div>
+
+      <div style="flex:1;"></div>
+
+      <!-- actions -->
+      <div style="width:100%; display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+        <button style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 10px 26px rgba(39,117,202,0.45);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>
+          <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:16px; color:#fff;">share tab</span>
+        </button>
+        <button style="appearance:none; cursor:pointer; width:100%; min-height:48px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.16); display:flex; align-items:center; justify-content:center; gap:8px; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>
+          copy link
+        </button>
+        <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.36); text-align:center; margin-top:2px;">they'll each get a link — no app needed. dollars, just faster.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== FRAME 2 · collecting ====================== -->
+<div style="position:absolute; left:550px; top:40px; width:390px;">
+  <div data-drags-parent="1" style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:1.5px; color:#5b6b78; margin-bottom:14px;">frame 2 · collecting</div>
+  <div style="position:relative; width:390px; height:844px; background:#0B1622; overflow:hidden; border-radius:34px; box-shadow:0 30px 70px rgba(0,0,0,0.5); font-family:'General Sans',sans-serif; color:#F4F7FA; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;">
+    <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 20%, rgba(244,247,250,0.024) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>
+    <div style="position:absolute; left:50%; top:-30px; width:360px; height:280px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.18) 0%, rgba(39,117,202,0) 68%); pointer-events:none;"></div>
+
+    <div style="position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 30px 0 32px; flex:none;">
+      <span style="font-family:'Space Mono',monospace; font-size:14px; font-weight:700;">9:41</span>
+      <div style="display:flex; align-items:center; gap:6px;"><span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:rgba(244,247,250,0.6);">5G</span><div style="width:24px; height:12px; border:1px solid rgba(244,247,250,0.45); border-radius:3px; padding:1.5px; display:flex; align-items:center;"><div style="width:100%; height:100%; background:#F4F7FA; border-radius:1px;"></div></div></div>
+    </div>
+    <div style="position:relative; z-index:2; display:flex; align-items:center; justify-content:center; height:44px; flex:none;"><span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">collecting</span></div>
+
+    <div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; padding:4px 22px 18px; overflow:hidden;">
+      <!-- mascot watching -->
+      <div style="position:relative; margin-bottom:14px; animation:tcFloat 5s ease-in-out infinite;">
+        <div style="position:relative; width:62px; height:62px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:tcSquish 4.5s ease-in-out infinite; box-shadow:0 10px 26px rgba(39,117,202,0.5), inset 0 2px 5px rgba(255,255,255,0.28); display:flex; align-items:center; justify-content:center;">
+          <div style="position:absolute; left:22px; bottom:-7px; width:9px; height:15px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>
+          <div style="position:absolute; right:22px; bottom:-7px; width:9px; height:15px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>
+          <div style="position:absolute; left:-5px; top:24px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform-origin:7px 2px; animation:tcWaveL 4.2s ease-in-out infinite; z-index:-1;"></div>
+          <div style="position:absolute; right:-5px; top:24px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform-origin:3px 2px; animation:tcWaveR 4.2s ease-in-out infinite; z-index:-1;"></div>
+          <div style="display:flex; gap:7px; margin-top:-2px;">
+            <div style="width:13px; height:14px; border-radius:50%; background:#eef6ff; display:flex; align-items:center; justify-content:center;"><div style="width:6px; height:6px; border-radius:50%; background:#0B1622; animation:tcWatch 3s ease-in-out infinite;"></div></div>
+            <div style="width:13px; height:14px; border-radius:50%; background:#eef6ff; display:flex; align-items:center; justify-content:center;"><div style="width:6px; height:6px; border-radius:50%; background:#0B1622; animation:tcWatch 3s ease-in-out infinite;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- receipt card -->
+      <div style="position:relative; width:100%; background:#13212E; border-radius:22px; border:1px solid rgba(244,247,250,0.08); box-shadow:0 16px 40px rgba(0,0,0,0.34); overflow:hidden;">
+        <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 5%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>
+        <div style="position:relative; padding:18px 18px 6px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:10px;"><span style="font-size:24px;">🍜</span><span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:19px; color:#F4F7FA;">dinner</span></div>
+            <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:24px; letter-spacing:-1px; color:#F4F7FA;"><span style="font-size:15px; opacity:.5;">$</span>96<span style="font-size:15px; opacity:.5;">.00</span></span>
+          </div>
+          <div style="font-family:'Space Mono',monospace; font-size:10.5px; letter-spacing:.5px; color:rgba(244,247,250,0.45); margin-top:5px;">split 4 · $24.00 each</div>
+        </div>
+        <div style="position:relative; height:1px; margin:12px 0; border-top:1.5px dashed rgba(244,247,250,0.14);"><div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#0B1622;"></div><div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#0B1622;"></div></div>
+
+        <div style="position:relative; padding:2px 14px 14px; display:flex; flex-direction:column;">
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 4px;">
+            <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(150deg,#FFC65C,#FF6B5E); display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">🦊</div>
+            <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">you</span>
+            <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:14px; color:#2775CA;">$24.00</span>
+            <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:'Space Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#7fc0ff;">SQUARED</span></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 4px;">
+            <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(150deg,#7fc0ff,#2775CA); display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">🐢</div>
+            <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">marco</span>
+            <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:14px; color:#2775CA;">$24.00</span>
+            <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:'Space Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#7fc0ff;">SQUARED</span></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:11px; padding:9px 4px;">
+            <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(150deg,#FFC65C,#FFB23E); display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">🦝</div>
+            <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">theo</span>
+            <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:14px; color:#2775CA;">$24.00</span>
+            <span style="display:inline-flex; align-items:center; gap:4px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:'Space Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#7fc0ff;">SQUARED</span></span>
+          </div>
+          <!-- ava highlighted -->
+          <div style="display:flex; align-items:center; gap:11px; padding:11px 10px; margin:4px -6px 0; border-radius:14px; background:rgba(255,198,92,0.08); border:1px solid rgba(255,198,92,0.28);">
+            <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(150deg,#3DE8C7,#2775CA); display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">🌸</div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">ava</div>
+              <div style="font-family:'Space Mono',monospace; font-size:9px; letter-spacing:.3px; color:rgba(255,198,92,0.85); margin-top:1px;">$24.00 · still waiting</div>
+            </div>
+            <button style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; background:#FFC65C; border:none; border-radius:999px; padding:8px 13px;">
+              <span style="font-size:11px; animation:tcNudge 2.2s ease-in-out infinite;">👀</span>
+              <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:13px; color:#0B1622;">nudge ava</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:100%; margin-top:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1px; color:rgba(244,247,250,0.5);">3 OF 4 SQUARED</span>
+          <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.5px; color:#7fc0ff;">$72.00 / $96.00</span>
+        </div>
+        <div style="height:8px; border-radius:6px; background:#13212E; overflow:hidden;"><div style="width:75%; height:100%; background:linear-gradient(90deg,#2775CA,#3a93e4); border-radius:6px;"></div></div>
+      </div>
+
+      <div style="flex:1;"></div>
+
+      <div style="width:100%; display:flex; flex-direction:column; gap:10px; margin-top:16px;">
+        <button style="appearance:none; cursor:pointer; width:100%; min-height:52px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.16); display:flex; align-items:center; justify-content:center; gap:8px; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>
+          re-share tab
+        </button>
+        <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.36); text-align:center;">almost there — just ava left 🌸</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====================== FRAME 3 · everyone's square ====================== -->
+<div style="position:absolute; left:1060px; top:40px; width:390px;">
+  <div data-drags-parent="1" style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:1.5px; color:#5b6b78; margin-bottom:14px;">frame 3 · everyone's square ✨</div>
+  <div style="position:relative; width:390px; height:844px; background:#0B1622; overflow:hidden; border-radius:34px; box-shadow:0 30px 70px rgba(0,0,0,0.5); font-family:'General Sans',sans-serif; color:#F4F7FA; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;">
+    <div style="position:absolute; left:50%; top:42%; width:480px; height:480px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.20) 0%, rgba(39,117,202,0.13) 40%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>
+
+    <!-- confetti -->
+    <div style="position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1;">
+      <div style="position:absolute; left:14%; top:24%; width:8px; height:12px; border-radius:2px; background:#3DE8C7; animation:tcConfetti 2.6s ease-in .0s infinite;"></div>
+      <div style="position:absolute; left:30%; top:18%; width:7px; height:7px; border-radius:50%; background:#FFC65C; animation:tcConfetti 2.9s ease-in .5s infinite;"></div>
+      <div style="position:absolute; left:48%; top:22%; width:8px; height:12px; border-radius:2px; background:#2775CA; animation:tcConfetti 2.4s ease-in .9s infinite;"></div>
+      <div style="position:absolute; left:64%; top:17%; width:7px; height:7px; border-radius:50%; background:#FF6B5E; animation:tcConfetti 3.0s ease-in .3s infinite;"></div>
+      <div style="position:absolute; left:80%; top:25%; width:8px; height:12px; border-radius:2px; background:#3DE8C7; animation:tcConfetti 2.7s ease-in 1.2s infinite;"></div>
+      <div style="position:absolute; left:22%; top:30%; width:7px; height:7px; border-radius:50%; background:#2775CA; animation:tcConfetti 2.5s ease-in 1.5s infinite;"></div>
+      <div style="position:absolute; left:72%; top:30%; width:7px; height:7px; border-radius:50%; background:#FFC65C; animation:tcConfetti 2.8s ease-in .7s infinite;"></div>
+    </div>
+
+    <div style="position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 30px 0 32px; flex:none;">
+      <span style="font-family:'Space Mono',monospace; font-size:14px; font-weight:700;">9:41</span>
+      <div style="display:flex; align-items:center; gap:6px;"><span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:rgba(244,247,250,0.6);">5G</span><div style="width:24px; height:12px; border:1px solid rgba(244,247,250,0.45); border-radius:3px; padding:1.5px; display:flex; align-items:center;"><div style="width:100%; height:100%; background:#F4F7FA; border-radius:1px;"></div></div></div>
+    </div>
+
+    <div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 24px 24px;">
+      <!-- mascot party -->
+      <div style="position:relative; margin-bottom:18px; animation:tcParty 2s ease-in-out infinite;">
+        <span style="position:absolute; top:-8px; left:-20px; font-size:16px; animation:tcSpark 1.4s ease-in-out infinite;">✨</span>
+        <span style="position:absolute; top:0; right:-20px; font-size:13px; animation:tcSpark 1.4s ease-in-out .5s infinite;">🎉</span>
+        <div style="position:relative; width:66px; height:66px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:tcSquish 4.5s ease-in-out infinite; box-shadow:0 12px 30px rgba(39,117,202,0.55), inset 0 2px 5px rgba(255,255,255,0.28); display:flex; align-items:center; justify-content:center;">
+          <div style="position:absolute; left:23px; bottom:-7px; width:9px; height:15px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>
+          <div style="position:absolute; right:23px; bottom:-7px; width:9px; height:15px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>
+          <div style="position:absolute; left:-7px; top:14px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform:rotate(42deg); z-index:-1;"></div>
+          <div style="position:absolute; right:-7px; top:14px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform:rotate(-42deg); z-index:-1;"></div>
+          <div style="display:flex; gap:8px; margin-top:-3px;">
+            <div style="width:8px; height:4px; border:2px solid #0B1622; border-bottom:none; border-radius:8px 8px 0 0;"></div>
+            <div style="width:8px; height:4px; border:2px solid #0B1622; border-bottom:none; border-radius:8px 8px 0 0;"></div>
+          </div>
+          <div style="position:absolute; bottom:15px; width:16px; height:9px; border:2.6px solid #0B1622; border-top:none; border-radius:0 0 11px 11px;"></div>
+        </div>
+      </div>
+
+      <!-- share card -->
+      <div style="position:relative; width:100%; border-radius:24px; padding:28px 24px 24px; overflow:hidden; background:linear-gradient(125deg,#2775CA 0%,#2aa5cf 48%,#3DE8C7 100%); background-size:200% 200%; animation:tcGrad 6s ease-in-out infinite; box-shadow:0 22px 52px rgba(39,117,202,0.45);">
+        <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 85% 6%, rgba(255,255,255,0.10) 0 1px, transparent 1px 9px); opacity:.55; pointer-events:none;"></div>
+        <div style="position:absolute; top:20px; right:18px; transform:rotate(-11deg); animation:tcStamp .6s ease-out .15s both;">
+          <span style="display:inline-flex; align-items:center; gap:5px; border:2px dashed rgba(255,255,255,0.85); border-radius:999px; padding:5px 11px;"><span style="font-family:'Space Mono',monospace; font-weight:700; font-size:12px; letter-spacing:1px; color:#fff;">ALL IN</span><span style="font-size:12px;">✨</span></span>
+        </div>
+
+        <div style="position:relative;">
+          <span style="font-family:'Space Mono',monospace; font-size:10.5px; letter-spacing:1.5px; color:rgba(255,255,255,0.8);">DINNER 🍜 · 4 PEOPLE</span>
+          <h2 style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:30px; line-height:1.08; letter-spacing:-0.6px; margin:9px 0 0; color:#fff;">everyone's<br>square ✨</h2>
+
+          <div style="display:flex; align-items:baseline; gap:9px; margin-top:18px;">
+            <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:50px; line-height:1; letter-spacing:-2px; color:#fff; text-shadow:0 2px 20px rgba(0,0,0,0.18);"><span style="font-size:27px; opacity:.6;">$</span>96<span style="font-size:27px; opacity:.6;">.00</span></div>
+            <span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.5px; color:rgba(255,255,255,0.82);">collected</span>
+          </div>
+
+          <!-- avatar row all paid -->
+          <div style="display:flex; align-items:center; gap:0; margin-top:18px;">
+            <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(150deg,#FFC65C,#FF6B5E); border:2px solid #2aa0d0; display:flex; align-items:center; justify-content:center; font-size:15px;">🦊</div>
+            <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(150deg,#7fc0ff,#2775CA); border:2px solid #2aa0d0; margin-left:-9px; display:flex; align-items:center; justify-content:center; font-size:15px;">🐢</div>
+            <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(150deg,#FFC65C,#FFB23E); border:2px solid #2aa0d0; margin-left:-9px; display:flex; align-items:center; justify-content:center; font-size:15px;">🦝</div>
+            <div style="width:32px; height:32px; border-radius:50%; background:linear-gradient(150deg,#3DE8C7,#2775CA); border:2px solid #2aa0d0; margin-left:-9px; display:flex; align-items:center; justify-content:center; font-size:15px;">🌸</div>
+            <span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.3px; color:rgba(255,255,255,0.9); margin-left:11px;">all squared · &lt;1 cent fees</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:11px; width:100%; margin-top:14px;">
+        <button style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 8px 22px rgba(61,232,199,0.3);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B1622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5 8.6 10.5"/></svg>
+          <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:16px; color:#0B1622;">share ✨</span>
+        </button>
+        <button style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:#13212E; border:1px solid rgba(244,247,250,0.1); font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:16px; color:#F4F7FA;">done</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

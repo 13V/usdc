@@ -1,7 +1,9 @@
 # Handoff: Divvy — bill-splitting app (mobile)
 
 ## Overview
-Divvy is a mobile app for splitting bills with friends and settling instantly in USDC on Solana — but presented to users as **plain dollars** ("dollars, just faster"). It is **never marketed as "crypto."** This package covers the full first set of screens: group chat, activity feed, transaction receipt, recurring bills (list + detail), friends (list + detail), the "you" profile, and a "customize your profile" identity picker.
+Divvy is a mobile app for splitting bills with friends and settling instantly in USDC on Solana — but presented to users as **plain dollars** ("dollars, just faster"). It is **never marketed as "crypto."** This package covers the full **17-screen** canonical set: onboarding, home, groups (list + detail), new tab, settle-up flow, tab-collect, group chat, activity feed, transaction receipt, recurring bills (list + detail), friends (list + detail), the "you" profile, and a "customize your profile" identity picker.
+
+> **One aesthetic only.** Every screen in this bundle belongs to the **"Playful" dark system** (lowercase voice, General Sans + Clash Display + Space Mono, `#0B1622` canvas, the USDC-blue mascot). An earlier, **superseded** direction also existed in the source project (Title Case, Space Grotesk, cream `#F6F1E7` on `#04121A`) — those files are **intentionally excluded.** Build only what's in this folder.
 
 Audience: young, crypto-native Gen-Z / millennials. Vibe: Phantom-meets-Cash-App — dark, vibrant, emoji-native, dry/irreverent, screenshot-worthy. The product goal is **killing money-awkwardness between friends.**
 
@@ -166,6 +168,43 @@ Left: `9:41` (Space Mono 700, 14px). Right: `5G` + a battery glyph.
 - **name** + **@handle** mono input fields (handle shows a live caret + a mint "free" tick).
 - Sticky glowing-blue **"save ✨"** button.
 
+### 10. Onboarding (`Onboarding Playful.dc.html`)
+**Purpose:** First-run — get a wallet in seconds, framed as dollars (not crypto).
+**Layout:** Full-bleed welcome with ambient glow + guilloché; the **mascot** featured; the "divvy" wordmark; a mono kicker (e.g. "SPLIT BILLS · SETTLE IN SECONDS"); a short lowercase value headline; primary **"create a wallet"** (mono subline "~10 seconds, no app"), plus secondary social/sign-in options (Apple / Google) and a quiet "i already have one." Reinforce "dollars, just faster" — never "crypto/seed phrase" up front. Use this as the canonical onboarding (ignore the excluded Space-Grotesk `Onboarding.dc.html`).
+
+### 11. Home (`Home Playful.dc.html`)
+**Purpose:** The dashboard — your net position at a glance.
+**Layout:** Status bar → top bar (divvy wordmark + mascot + bell) → scroll → bottom tab bar (**Home active**).
+- **Hero receipt-style card:** "you're owed · across 3 groups" + big mono **$142.50** (blue glow) + "usdc"; "you owe $31.00 elsewhere" (coral); a "settles instantly · ~$0.001 fee" pill; a two-tone owed/owe avatar-stack bar; a tear divider; and **settle up** (blue) + **request** (ghost) buttons; perforated bottom edge.
+- **people:** rows — emoji avatar, name, mono "owes you" / "you owe", mono amount (+blue / −coral).
+- **groups:** cards — gradient emoji tile (🗼 tokyo trip, 🏠 apartment 4b, 🏝️ bali crew), title, mono meta, amount or a mint **square ✨** chip when settled.
+
+### 12. Groups (`Groups Playful.dc.html`)
+**Purpose:** All your shared groups.
+**Layout:** Status bar → header ("your groups" 33px Clash + "N active") → scroll → bottom tab bar (**Groups active**).
+- **Hero net-balance** summary card.
+- **Group cards:** gradient emoji tile, name, mono member/expense meta, net amount (+blue / −coral) or settled chip, avatar stacks.
+- **Empty state:** mascot + "no tabs yet — start one 🎉" + a "start a tab" button.
+
+### 13. Group detail (`Group Detail Frames.dc.html`) — *canvas: 2 frames*
+**Purpose:** One group's ledger + a single expense (tab) detail. (Authored in canvas mode — two 390×844 frames side by side.)
+- **Frame 1 — the ledger:** blue cover header (avatar stack + mono "GROUP TOTAL $1,240.00" + "4 PEOPLE · 8 TABS · SINCE JUN 18"); "YOUR BALANCE" big mono **+$84.00**; an owed/owe split bar; quick pills (💬 chat · ✨ recap · ↗ share); **who owes who** rows (person → person with mono amount); **tabs** feed (🍜 dinner, 🚕 taxi, 🏨 hotel — payer · split N · time, mono total + your delta); sticky **settle up** + **add a tab** actions.
+- **Frame 2 — tab detail:** a receipt sheet (blue→mint top edge, icon, title, izakaya/Shibuya meta, big mono **$96.00**, "maya paid · jun 22"), a perforation, per-person split rows ($24.00 each with PAID / SQUARED / **you owe 👀** tags), reaction chips, and a coral **"settle your $24.00"** action + edit/delete.
+
+### 14. New tab (`New Split Playful.dc.html`)
+**Purpose:** Create a shared expense (a "tab").
+**Layout:** Sheet with a big mono **amount** entry (hero), a title/emoji field, **who's in** member chips (avatars + add), a **split method** control (evenly / by share), per-person preview, and a primary **"start the tab"**-style CTA. Lowercase, mono numerals, chunky pills.
+
+### 15. Settle-up flow (`Settle Up Frames.dc.html`) — *canvas: multiple state frames*
+**Purpose:** The pay-and-confirm moment + its on-chain status states. (Canvas mode — several 390×844 state frames.)
+States include: **choose** ("settle up" / cancel; big coral **−$24.00** "you owe ava"; **pay with phantom** primary + "open in another wallet — solflare · backpack · any solana pay"); **success / squared** (the kinetic blue→mint success card with a **SQUARED ✨** stamp, **FINALIZED** pill, a waiting→confirmed→finalized progress, "settled. <1 second. <1 cent.", "view on solscan ›", and **share ✨**); **waiting for payment** (blue pulsing status); **not seen yet** (sunshine status); **balance too low** (coral status, "add money — debit card · apple pay · instant", "dollars, just faster."). The **mascot** changes expression per state (happy/sparkles when squared, watching while pending, worried on low balance).
+
+### 16. Settle-up (alt) (`Settle Up Playful.dc.html`)
+**Purpose:** A single-screen settle variant (earlier take on the same moment). Use `Settle Up Frames` as the primary spec; this is supporting reference for the same flow.
+
+### 17. Tab collect (`Tab Collect Frames.dc.html`) — *canvas frames*
+**Purpose:** The "collect" view of a tab — who has chipped in vs who's still pending, for the person who fronted the money. Member ticks (squared) vs pending (👀), running mono "$X in" progress, a progress bar, and a quiet **"remind the group 👀"** / nudge action. Mirrors the "this run" pattern used in Recurring detail.
+
 ---
 
 ## Interactions & Behavior
@@ -235,8 +274,8 @@ Left: `9:41` (Space Mono 700, 14px). Right: `5G` + a battery glyph.
 **Fonts:** Clash Display (600/700) + General Sans (400/500/600) via Fontshare; Space Mono (400/700) via Google Fonts. Map to the codebase's font-loading system (e.g. `expo-font`).
 
 ## Screenshots
-Reference renders of each screen's default state live in `screenshots/` (1080×2336-class PNGs):
-`1-group-chat.png` · `2-activity.png` · `3-receipt-detail.png` · `4-recurring-list.png` · `5-recurring-detail.png` · `6-friends-list.png` · `7-friend-detail.png` · `8-you-profile.png` · `9-customize-profile.png`. These show the intended look; the HTML files + this README remain the source of truth for exact values and state variants.
+Reference renders of each screen live in `screenshots/` (high-res PNGs). The numbers below match the screen sections above:
+`1-group-chat.png` · `2-activity.png` · `3-receipt-detail.png` · `4-recurring-list.png` · `5-recurring-detail.png` · `6-friends-list.png` · `7-friend-detail.png` · `8-you-profile.png` · `9-customize-profile.png` · `10-home.png` · `11-groups.png` · `12-group-detail.png` (canvas, 2 frames) · `13-new-tab.png` · `14-tab-collect.png` (canvas) · `15-settle-up.png` (canvas, multiple states) · `16-settle-up-alt.png` · `17-onboarding.png`. These show the intended look; the HTML files + this README remain the source of truth for exact values and state variants.
 
 ## Assets
 - **No raster image assets** are required — all visuals are CSS/SVG. Receipt photos are intentional **striped placeholders** to be replaced by real user images.
@@ -245,7 +284,15 @@ Reference renders of each screen's default state live in `screenshots/` (1080×2
 - The **mascot** is built from CSS shapes (no asset) — reimplement as a small component (SVG or views) per the spec above; keep it the same character across screens.
 
 ## Files
-HTML design references in this bundle (each is a self-contained 390×844 frame):
+HTML design references in this bundle (each is a self-contained 390×844 frame unless marked *canvas*, which holds multiple frames side by side):
+- `Onboarding Playful.dc.html` — first-run / create wallet
+- `Home Playful.dc.html` — dashboard (net position, people, groups)
+- `Groups Playful.dc.html` — groups list (+ empty)
+- `Group Detail Frames.dc.html` — *canvas* group ledger + tab detail
+- `New Split Playful.dc.html` — create a tab
+- `Settle Up Frames.dc.html` — *canvas* settle flow states (choose / squared / waiting / not-seen / low-balance)
+- `Settle Up Playful.dc.html` — settle single-screen (alt reference)
+- `Tab Collect Frames.dc.html` — *canvas* collect/who's-paid view
 - `Group Chat Frames.dc.html` — group chat feed + composer (+ empty)
 - `Activity Frames.dc.html` — activity feed (feed / loading / empty)
 - `Receipt Detail Frames.dc.html` — transaction receipt (received / sent)
@@ -256,6 +303,6 @@ HTML design references in this bundle (each is a self-contained 390×844 frame):
 - `You Profile Frames.dc.html` — wallet + settings
 - `Customize Profile Frames.dc.html` — interactive emoji/color identity picker
 
-**How to open:** these are Design Component HTML files. They render in a browser but rely on a runtime helper (`support.js`) that is included alongside them in this bundle — keep it next to the HTML files. Read the inline styles directly for exact values; this README is the source of truth for intent.
+**How to open:** these are Design Component HTML files. They render in a browser but rely on a runtime helper (`support.js`) included in this bundle — keep it next to the HTML files. Files marked *canvas* open zoomed-out with several frames on a gray board (pan/zoom). Read the inline styles directly for exact values; this README is the source of truth for intent.
 
-> Note: also-present sibling files in the project (e.g. `Home Playful.dc.html`, `Settle Up Frames.dc.html`, `Onboarding*.dc.html`) are earlier explorations of the same system and can be used as additional reference for the home/settle/onboarding flows if needed, but are not part of this core handoff set.
+> **Excluded on purpose:** the earlier Space-Grotesk / cream direction (`Home.dc.html`, `Onboarding.dc.html`) is **not** in this bundle — build the Playful versions above instead.
