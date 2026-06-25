@@ -134,19 +134,102 @@
       '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(244,247,250,0.4);">' + count + '</span></div>';
   }
 
+  // Onboarding (signed-out): EXACT markup lifted from
+  // design/handoff/Onboarding Playful.dc.html — full-bleed welcome with ambient
+  // glow + guilloché, the featured mascot, the "divvy" wordmark, a mono kicker,
+  // a lowercase value headline, then the action stack. This screen has no
+  // bottom tab bar (router hides it for non-toplevel; home stays toplevel so we
+  // build a self-contained full-bleed welcome and skip the topbar/tabbar here).
   function signedOut(view) {
-    view.innerHTML = topbar() +
-      '<div class="appscroll" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:24px;">' +
-        app.mascot({ size: 132, mood: "happy", glow: true }) +
-        '<h1 style="font-family:\'Clash Display\',sans-serif;font-weight:600;font-size:26px;line-height:1.2;max-width:300px;margin-top:6px;">split the bill. get your money back — before you leave the table.</h1>' +
-        '<div class="eyebrow" style="margin:16px 0 22px;">split bills · settle in usdc</div>' +
-        '<button class="btn" id="hCreate" style="max-width:320px;">create a wallet</button>' +
-        '<button class="btn ghost" id="hConnect" style="max-width:320px;margin-top:11px;">connect a wallet</button>' +
-        '<div class="eyebrow" style="margin-top:22px;color:var(--faint);">non-custodial · your keys · usdc on solana</div>' +
+    view.innerHTML = '' +
+      // ambient glow + guilloché texture over the canvas
+      '<div style="position:relative; min-height:100%; display:flex; flex-direction:column; padding:0 26px; overflow:hidden;">' +
+        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 22%, rgba(244,247,250,0.03) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
+        '<div style="position:absolute; left:50%; top:24%; width:340px; height:340px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.22), transparent 70%); filter:blur(8px); pointer-events:none;"></div>' +
+
+        // ── HERO ──
+        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; padding-top:48px;">' +
+          // featured mascot (big, glow) — canonical asset
+          app.mascot({ size: 132, mood: "happy", glow: true }) +
+
+          // wordmark: div [slash] vy
+          '<div style="display:flex; align-items:center; gap:1px; margin-top:18px;">' +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:40px; line-height:1; letter-spacing:-1.5px; color:#F4F7FA;">div</span>' +
+            '<span style="display:inline-block; width:11px; height:38px; background:#2775CA; border-radius:2px; transform:skewX(-13deg); margin:0 6px; box-shadow:0 0 16px rgba(39,117,202,0.5);"></span>' +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:40px; line-height:1; letter-spacing:-1.5px; color:#F4F7FA;">vy</span>' +
+          '</div>' +
+
+          // mono kicker
+          '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(244,247,250,0.45); margin-top:20px;">split bills · settle in seconds</span>' +
+
+          // lowercase value headline
+          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:27px; line-height:1.22; letter-spacing:-0.6px; text-align:center; text-wrap:pretty; max-width:320px; margin:12px 0 0; color:#F4F7FA;">split the bill. get your money back — before you leave the table.</h1>' +
+
+          // 3-step strip
+          '<div style="display:flex; align-items:center; gap:9px; margin-top:26px;">' +
+            '<span style="width:7px; height:7px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 8px rgba(61,232,199,0.7);"></span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(244,247,250,0.62);">scan</span>' +
+            '<span style="width:24px; height:1.5px; background:rgba(244,247,250,0.16);"></span>' +
+            '<span style="width:7px; height:7px; border-radius:50%; background:rgba(244,247,250,0.4);"></span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(244,247,250,0.62);">split</span>' +
+            '<span style="width:24px; height:1.5px; background:rgba(244,247,250,0.16);"></span>' +
+            '<span style="width:7px; height:7px; border-radius:50%; background:rgba(244,247,250,0.4);"></span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(244,247,250,0.62);">settle</span>' +
+          '</div>' +
+        '</div>' +
+
+        '<div style="flex:1; min-height:34px;"></div>' +
+
+        // ── ACTIONS ──
+        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:11px; padding-bottom:26px;">' +
+          // primary: create a wallet (with mono subline)
+          '<button id="hCreate" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:62px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 10px 30px rgba(39,117,202,0.45);">' +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">create a wallet</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:0.8px; color:rgba(255,255,255,0.78);">~10 seconds, no app</span>' +
+          '</button>' +
+
+          // divider
+          '<div style="display:flex; align-items:center; gap:12px; padding:3px 0;">' +
+            '<span style="flex:1; height:1px; background:rgba(244,247,250,0.10);"></span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:1px; color:rgba(244,247,250,0.4);">or continue with</span>' +
+            '<span style="flex:1; height:1px; background:rgba(244,247,250,0.10);"></span>' +
+          '</div>' +
+
+          // secondary: apple / google
+          '<div style="display:flex; gap:11px;">' +
+            '<button id="hApple" style="appearance:none; cursor:pointer; flex:1; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.18); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' +
+              '<svg width="17" height="17" viewBox="0 0 24 24" fill="#F4F7FA" aria-hidden="true"><path d="M17.05 12.54c-.02-2.13 1.74-3.15 1.82-3.2-1-1.45-2.54-1.65-3.09-1.67-1.31-.13-2.57.77-3.24.77-.67 0-1.7-.75-2.8-.73-1.44.02-2.77.84-3.51 2.12-1.5 2.6-.38 6.44 1.07 8.55.71 1.03 1.55 2.19 2.66 2.15 1.07-.04 1.47-.69 2.76-.69s1.65.69 2.78.67c1.15-.02 1.87-1.05 2.57-2.09.81-1.2 1.14-2.36 1.16-2.42-.03-.01-2.22-.85-2.24-3.38zM14.94 5.69c.59-.72.99-1.71.88-2.69-.85.03-1.88.57-2.49 1.28-.55.63-1.03 1.64-.9 2.6.95.07 1.92-.48 2.51-1.19z"/></svg>' +
+              'apple' +
+            '</button>' +
+            '<button id="hGoogle" style="appearance:none; cursor:pointer; flex:1; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.18); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.52 12.27c0-.82-.07-1.6-.21-2.36H12v4.46h6.46a5.52 5.52 0 0 1-2.4 3.62v3h3.88c2.27-2.09 3.58-5.17 3.58-8.72z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.08 7.94-2.91l-3.88-3c-1.08.72-2.45 1.16-4.06 1.16-3.12 0-5.77-2.11-6.71-4.95H1.28v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.29 14.3a7.21 7.21 0 0 1 0-4.6V6.62H1.28a12 12 0 0 0 0 10.77l4.01-3.09z"/><path fill="#EA4335" d="M12 4.75c1.76 0 3.34.61 4.59 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.28 6.62l4.01 3.09C6.23 6.86 8.88 4.75 12 4.75z"/></svg>' +
+              'google' +
+            '</button>' +
+          '</div>' +
+
+          // quiet: i already have one
+          '<button id="hConnect" style="appearance:none; border:none; background:transparent; cursor:pointer; width:100%; padding:7px 0 2px; font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; color:rgba(244,247,250,0.55);">i already have one</button>' +
+
+          // reassurance — dollars, just faster (never crypto / seed phrase)
+          '<div style="text-align:center; margin-top:4px;">' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:1px; color:rgba(244,247,250,0.38);">dollars, just faster · settles in seconds</span>' +
+          '</div>' +
+        '</div>' +
       '</div>';
-    var c = document.getElementById("hCreate"), n = document.getElementById("hConnect");
+
+    var c = document.getElementById("hCreate"), n = document.getElementById("hConnect"),
+        ap = document.getElementById("hApple"), gg = document.getElementById("hGoogle");
     if (c) c.onclick = function () { Auth.createWallet().catch(function (e) { app.toast(e.message); }); };
     if (n) n.onclick = function () { Auth.signInWithWallet().catch(function (e) { app.toast(e.message); }); };
+    // social sign-in is best-effort (Privy); surface a friendly toast if not wired.
+    function social() {
+      try {
+        if (window.Auth && Auth.signInWithPrivy) Auth.signInWithPrivy().catch(function (e) { app.toast(e.message); });
+        else app.toast("email sign-in isn't ready yet — create a wallet instead");
+      } catch (e) { app.toast("couldn't start sign-in — create a wallet instead"); }
+    }
+    if (ap) ap.onclick = social;
+    if (gg) gg.onclick = social;
   }
 
   async function signedIn(view) {
