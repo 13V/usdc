@@ -8,6 +8,71 @@
   "use strict";
   var app = window.app;
 
+  // server-backed reactions for this trip's money cards: target -> [{emoji,count,mine}]
+  var reactionsMap = {};
+  // live spendable USDC balance (cents) from /api/me/wallet, or null if unknown
+  var walletCents = null;
+
+  // a "you have $X ready" chip shown when you owe in this group — mint if your
+  // wallet covers it, coral if you need to top up. Reuses the live balance.
+  function walletReadyChip(oweCents) {
+    if (walletCents == null) return "";
+    var covers = walletCents >= oweCents;
+    var col = covers ? "#3DE8C7" : "#FF6B5E";
+    var dollars = "$" + (walletCents / 100).toFixed(2);
+    var label = covers ? "in your wallet · ready to settle" : "in your wallet · top up to settle";
+    return '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid ' + col + '55; background:' + col + '1f; border-radius:999px; padding:5px 12px;">' +
+      '<span style="width:6px; height:6px; border-radius:50%; background:' + col + '; box-shadow:0 0 7px ' + col + 'cc;"></span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; color:' + col + ';">' + dollars + '</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.55);">' + label + '</span>' +
+    '</div>';
+  }
+  var REACTS = ["😋", "🔥", "🫡"]; // the receipt-sheet chip set (frame style)
+
+  function elFrom(html) {
+    var t = document.createElement("template");
+    t.innerHTML = String(html).trim();
+    return t.content.firstElementChild;
+  }
+
+  // persisted reaction row for a money card (target "exp:<id>"). Renders the
+  // standard chip set (plus any extra emoji already on the target), toggles via
+  // POST /api/trips/:id/reactions, and repaints from the server's fresh array.
+  function reactionRowEl(tripId, target) {
+    var row = elFrom('<div style="display:flex; align-items:center; gap:8px; margin:14px 20px 0;"></div>');
+    var state = {};
+    function ingest(list) { state = {}; (list || []).forEach(function (r) { state[r.emoji] = { count: r.count || 0, mine: !!r.mine }; }); }
+    ingest(reactionsMap[target] || []);
+    var keys = REACTS.slice();
+    Object.keys(state).forEach(function (e) { if (keys.indexOf(e) < 0) keys.push(e); });
+    var chips = {};
+    keys.forEach(function (emoji) {
+      var chip = elFrom('<div style="display:inline-flex; align-items:center; gap:5px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:5px 11px; cursor:pointer;"></div>');
+      chips[emoji] = chip;
+      function paint() {
+        var st = state[emoji] || { count: 0, mine: false };
+        chip.innerHTML = '<span style="font-size:13px;">' + emoji + '</span>' +
+          (st.count > 0 ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(244,247,250,0.7);">' + st.count + '</span>' : '');
+        var on = st.count > 0;
+        chip.style.borderColor = st.mine ? "rgba(39,117,202,0.8)" : (on ? "rgba(39,117,202,0.45)" : "rgba(244,247,250,0.1)");
+        chip.style.background = st.mine ? "rgba(39,117,202,0.22)" : (on ? "rgba(39,117,202,0.12)" : "#13212E");
+      }
+      chip.onclick = function () {
+        app.api.post("/api/trips/" + encodeURIComponent(tripId) + "/reactions", { target: target, emoji: emoji })
+          .then(function (fresh) {
+            reactionsMap[target] = (fresh && fresh.reactions) || [];
+            ingest(reactionsMap[target]);
+            keys.forEach(function (k) { if (chips[k]) chips[k]._paint(); });
+          })
+          .catch(function (err) { app.toast((err && err.status === 401) ? "sign in to react" : "couldn't react"); });
+      };
+      chip._paint = paint;
+      paint();
+      row.appendChild(chip);
+    });
+    return row;
+  }
+
   // ---------- deterministic identity (api members carry no emoji/color) ----------
   function hash(seed) {
     var h = 0, s = String(seed || "");
@@ -204,6 +269,7 @@
         '<span style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.55);">' + label + '</span>' +
       '</div>' +
       bar +
+      ((haveNet && net < 0) ? walletReadyChip(Math.abs(net)) : "") +
       pillRow() +
       whoOwesWho(trip, me) +
       tabsFeed(trip, me) +
@@ -460,12 +526,8 @@
           rowsHtml +
         '</div>' +
       '</div>' +
-      // reactions
-      '<div style="display:flex; align-items:center; gap:8px; margin:14px 20px 0;">' +
-        '<div style="display:inline-flex; align-items:center; gap:5px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:5px 11px;"><span style="font-size:13px;">😋</span><span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(244,247,250,0.7);">3</span></div>' +
-        '<div style="display:inline-flex; align-items:center; gap:5px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:5px 11px;"><span style="font-size:13px;">🔥</span><span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(244,247,250,0.7);">2</span></div>' +
-        '<div style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:50%; cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.6)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14a3.5 3.5 0 0 0 7 0"/><path d="M9 9h.01M15 9h.01"/></svg></div>' +
-      '</div>' +
+      // reactions (server-backed; injected as a live node after app.sheet)
+      '<div id="gTabReacts"></div>' +
       // actions
       '<div style="margin:0 20px;">' + settleBtn + '</div>' +
       '<div style="display:flex; align-items:center; justify-content:center; gap:22px; margin-top:14px;">' +
@@ -476,6 +538,9 @@
     '</div>';
 
     app.sheet(html);
+
+    var reactsHost = document.getElementById("gTabReacts");
+    if (reactsHost && e && e.id) reactsHost.appendChild(reactionRowEl(trip.id, "exp:" + e.id));
 
     var s = document.getElementById("gTabSettle");
     if (s) s.onclick = function () { app.closeSheet(); location.hash = "#/settle/" + encodeURIComponent(trip.id); };
@@ -576,6 +641,16 @@
       return;
     }
     if (!trip || !trip.id) { errorState(view, "group", "can't find this group", "it might be gone."); return; }
+    // money-card reactions + live wallet balance (best-effort; the ledger still
+    // renders without either).
+    try {
+      var rx = await app.api.get("/api/trips/" + encodeURIComponent(trip.id) + "/reactions");
+      reactionsMap = (rx && rx.reactions) || {};
+    } catch (_) { reactionsMap = {}; }
+    try {
+      var w = await app.api.get("/api/me/wallet");
+      walletCents = (w && typeof w.usdcCents === "number") ? w.usdcCents : null;
+    } catch (_) { walletCents = null; }
     paint(view, trip);
   }
 

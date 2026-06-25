@@ -38,7 +38,7 @@
   var lastSeenISO = null;     // newest message createdAt rendered
   var seenMsgIds = null;      // Set of message ids already rendered (dedupe)
   var sending = false;
-  var reactions = {};         // local-only reaction counts keyed by item id
+  var reactionsMap = {};      // server-backed money-card reactions: target -> [{emoji,count,mine}]
   var token = 0;              // render token: stale polls/loads bail out
 
   // ── helpers ────────────────────────────────────────────────────────────────
@@ -151,57 +151,25 @@
     catch (_) { feedEl.scrollTop = feedEl.scrollHeight; }
   }
 
-  // ── reactions row (local-only, the design's 🫡 👀 💀 chips) ─────────────────
-  // exact chip styling lifted from the frame's reaction pills.
+  // the standard chip set (the design's 🫡 👀 💀 reaction pills). Persisted
+  // reaction rows (messages + money cards) are built by reactionChipRow below.
   var REACTS = ["🫡", "👀", "💀"];
-  function reactionRow(itemId, seeds) {
-    var row = el('<div style="display:flex; align-items:center; gap:6px; padding-left:2px;"></div>');
-    REACTS.forEach(function (emoji) {
-      var key = itemId + ":" + emoji;
-      if (reactions[key] == null && seeds && seeds[emoji] != null) reactions[key] = seeds[emoji];
-      var chip = el('<button type="button" style="appearance:none; display:inline-flex; align-items:center; gap:4px; cursor:pointer; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:3px 9px;"></button>');
-      function paint() {
-        var count = reactions[key] || 0;
-        chip.innerHTML = "";
-        var e = document.createElement("span");
-        e.style.cssText = "font-size:12px; line-height:1;";
-        e.textContent = emoji;
-        chip.appendChild(e);
-        if (count > 0) {
-          var n = document.createElement("span");
-          n.style.cssText = "font-family:" + MONO + "; font-size:10px; color:rgba(244,247,250,0.6);";
-          n.textContent = String(count);
-          chip.appendChild(n);
-        }
-        chip.style.borderColor = count > 0 ? "rgba(39,117,202,0.45)" : "rgba(244,247,250,0.1)";
-        chip.style.background = count > 0 ? "rgba(39,117,202,0.12)" : "#13212E";
-      }
-      chip.addEventListener("click", function () {
-        var cur = reactions[key] || 0;
-        reactions[key] = cur > 0 ? 0 : 1; // toggle local
-        paint();
-      });
-      paint();
-      row.appendChild(chip);
-    });
-    return row;
-  }
 
   // ── persisted reactions row (server-backed; the design's 🫡 👀 💀 chips) ─────
-  // Renders chips for a real message from msg.reactions ([{emoji,count,mine}])
-  // and POSTs toggles to /api/trips/<id>/messages/<mid>/react. The returned
-  // message (with fresh reactions) repaints the row. Same chip styling as the
-  // local reactionRow, but state lives on the server.
-  function messageReactionRow(msg) {
+  // Shared chip-row builder. `initial` is [{emoji,count,mine}]; `submit(emoji)`
+  // POSTs the toggle and resolves to the fresh array. Used by message bubbles
+  // (the /messages/:id/react endpoint) AND money cards (the generic /reactions
+  // target endpoint), so reactions persist everywhere the design shows chips.
+  function reactionChipRow(initial, submit) {
     var row = el('<div style="display:flex; align-items:center; gap:6px; padding-left:2px;"></div>');
     var state = {}; // emoji -> { count, mine }
     function ingest(list) {
       state = {};
       (list || []).forEach(function (r) { state[r.emoji] = { count: r.count || 0, mine: !!r.mine }; });
     }
-    ingest(msg.reactions);
+    ingest(initial);
 
-    // chips: the standard set plus any extra emoji already present on the msg.
+    // chips: the standard set plus any extra emoji already present.
     var keys = REACTS.slice();
     Object.keys(state).forEach(function (e) { if (keys.indexOf(e) < 0) keys.push(e); });
 
@@ -227,24 +195,50 @@
         chip.style.background = st.mine ? "rgba(39,117,202,0.22)" : (on ? "rgba(39,117,202,0.12)" : "#13212E");
       }
       chip.addEventListener("click", function () {
-        if (!msg.id) return;
         chip.disabled = true;
-        request("/api/trips/" + encodeURIComponent(tripId) + "/messages/" + encodeURIComponent(msg.id) + "/react", {
-          method: "POST",
-          body: JSON.stringify({ emoji: emoji }),
-        }).then(function (fresh) {
-          ingest(fresh && fresh.reactions);
-          msg.reactions = (fresh && fresh.reactions) || [];
-          keys.forEach(function (k) { if (chips[k]) chips[k]._paint(); });
-        }).catch(function (err) {
-          app.toast((err && err.status === 401) ? "sign in to react" : "couldn't react");
-        }).then(function () { chip.disabled = false; });
+        Promise.resolve()
+          .then(function () { return submit(emoji); })
+          .then(function (fresh) {
+            ingest(fresh || []);
+            keys.forEach(function (k) { if (chips[k]) chips[k]._paint(); });
+          })
+          .catch(function (err) {
+            app.toast((err && err.status === 401) ? "sign in to react" : "couldn't react");
+          })
+          .then(function () { chip.disabled = false; });
       });
       chip._paint = paint;
       paint();
       row.appendChild(chip);
     });
     return row;
+  }
+
+  // message bubble reactions → /messages/:id/react
+  function messageReactionRow(msg) {
+    return reactionChipRow(msg.reactions, function (emoji) {
+      return request("/api/trips/" + encodeURIComponent(tripId) + "/messages/" + encodeURIComponent(msg.id) + "/react", {
+        method: "POST",
+        body: JSON.stringify({ emoji: emoji }),
+      }).then(function (fresh) {
+        msg.reactions = (fresh && fresh.reactions) || [];
+        return msg.reactions;
+      });
+    });
+  }
+
+  // money-card reactions (expense / payment) → generic /reactions target store.
+  // `target` is a stable key ("exp:<id>" / "pay:<key>") shared with the server.
+  function targetReactionRow(target) {
+    return reactionChipRow(reactionsMap[target] || [], function (emoji) {
+      return request("/api/trips/" + encodeURIComponent(tripId) + "/reactions", {
+        method: "POST",
+        body: JSON.stringify({ target: target, emoji: emoji }),
+      }).then(function (fresh) {
+        reactionsMap[target] = (fresh && fresh.reactions) || [];
+        return reactionsMap[target];
+      });
+    });
   }
 
   // ── timeline item builders (markup LIFTED verbatim from the frame) ──────────
@@ -387,7 +381,7 @@
 
     card.appendChild(inner);
     wrap.appendChild(card);
-    wrap.appendChild(reactionRow("exp:" + (e.id || title), { "🫡": 2, "👀": 1 }));
+    wrap.appendChild(targetReactionRow("exp:" + (e.id || title)));
     return wrap;
   }
 
@@ -436,7 +430,7 @@
     card.appendChild(rowInner);
     border.appendChild(card);
     wrap.appendChild(border);
-    wrap.appendChild(reactionRow("pay:" + (p.from || "") + ":" + (p.to || "") + ":" + (p.amountCents || 0), { "🫡": 3, "💀": 1 }));
+    wrap.appendChild(targetReactionRow("pay:" + (p.from || "") + ":" + (p.to || "") + ":" + (p.amountCents || 0)));
     return wrap;
   }
 
@@ -748,6 +742,12 @@
 
       var msgData = await request(tripPath + "/messages");
       if (myToken !== token) return;
+      // money-card reactions (best-effort; cards still render if this fails)
+      try {
+        var rx = await request(tripPath + "/reactions");
+        if (myToken !== token) return;
+        reactionsMap = (rx && rx.reactions) || {};
+      } catch (_) { reactionsMap = {}; }
       var messages = (msgData && msgData.messages) || [];
       var expenses = (trip && trip.expenses) || [];
       var settle = (trip && trip.settle) || null;
@@ -856,7 +856,7 @@
       lastSeenISO = null;
       seenMsgIds = new Set();
       sending = false;
-      reactions = {};
+      reactionsMap = {};
 
       try { injectStyles(); } catch (_) {}
       buildShell(view);
