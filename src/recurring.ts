@@ -69,6 +69,10 @@ export function advanceDue(iso: string, interval: string): string {
     d.setUTCMonth(d.getUTCMonth() + 1);
     return d.toISOString();
   }
+  if (interval === "yearly") {
+    d.setUTCFullYear(d.getUTCFullYear() + 1);
+    return d.toISOString();
+  }
   const m = /^(\d+)d$/.exec(interval);
   if (m) {
     const n = Number(m[1]);
@@ -82,7 +86,7 @@ export function advanceDue(iso: string, interval: string): string {
 /** True iff `interval` is one of the allowed forms. */
 function isValidInterval(interval: unknown): interval is string {
   if (typeof interval !== "string") return false;
-  if (interval === "weekly" || interval === "monthly") return true;
+  if (interval === "weekly" || interval === "monthly" || interval === "yearly") return true;
   return /^\d+d$/.test(interval) && Number(interval.slice(0, -1)) > 0;
 }
 
@@ -324,18 +328,20 @@ recurringRouter.delete("/api/recurring/:id", requireAuth, (req: Request, res: Re
 });
 
 /**
- * PATCH /api/recurring/:id { paused: boolean } — pause or resume a rule.
- * Paused rules stay in the list but are skipped by the materializer. On resume,
- * we roll next_due forward past now so a long pause doesn't dump a backlog of
- * catch-up expenses the moment it wakes.
+ * PATCH /api/recurring/:id — pause/resume AND/OR edit fields in place.
+ *   { paused: boolean }                              → pause/resume
+ *   { title?, amountCents?, paidBy?, participants?, interval?, startDate? } → edit
+ * Editing in place (a single UPDATE) is ATOMIC, replacing the old delete-then-
+ * create dance the client used to do (which could duplicate a rule on failure).
+ * Paused rules stay listed but are skipped by the materializer; on resume we roll
+ * next_due past now so a long pause doesn't dump a backlog.
  */
 recurringRouter.patch("/api/recurring/:id", requireAuth, (req: Request, res: Response) => {
   const userId = req.userId as string;
-  const body = (req.body || {}) as { paused?: unknown };
-  if (typeof body.paused !== "boolean") {
-    res.status(400).json({ error: "paused must be a boolean" });
-    return;
-  }
+  const body = (req.body || {}) as {
+    paused?: unknown; title?: unknown; amountCents?: unknown;
+    paidBy?: unknown; participants?: unknown; interval?: unknown; startDate?: unknown;
+  };
   const row = db
     .prepare("SELECT * FROM recurring WHERE id = ? AND owner_user_id = ? AND active = 1")
     .get(req.params.id, userId) as RecurringRow | undefined;
@@ -344,22 +350,89 @@ recurringRouter.patch("/api/recurring/:id", requireAuth, (req: Request, res: Res
     return;
   }
 
-  let nextDue = row.next_due;
-  if (!body.paused && row.paused) {
-    // Resuming: advance next_due past now so we don't materialize a backlog.
-    try {
-      const now = Date.now();
-      let guard = 0;
-      while (new Date(nextDue).getTime() <= now && guard++ < 1000) {
-        nextDue = advanceDue(nextDue, row.interval);
+  const sets: string[] = [];
+  const vals: unknown[] = [];
+
+  // pause / resume
+  if (body.paused !== undefined) {
+    if (typeof body.paused !== "boolean") {
+      res.status(400).json({ error: "paused must be a boolean" });
+      return;
+    }
+    let nextDue = row.next_due;
+    if (!body.paused && row.paused) {
+      try {
+        const now = Date.now();
+        let guard = 0;
+        while (new Date(nextDue).getTime() <= now && guard++ < 1000) {
+          nextDue = advanceDue(nextDue, row.interval);
+        }
+      } catch { /* leave as-is */ }
+    }
+    sets.push("paused = ?"); vals.push(body.paused ? 1 : 0);
+    sets.push("next_due = ?"); vals.push(nextDue);
+  }
+
+  // field edits
+  const editing =
+    body.title !== undefined || body.amountCents !== undefined || body.paidBy !== undefined ||
+    body.participants !== undefined || body.interval !== undefined || body.startDate !== undefined;
+  if (editing) {
+    const trip = getTrip(row.trip_id);
+    const memberIds = new Set(trip ? trip.members.map((m) => m.id) : []);
+
+    if (body.title !== undefined) {
+      const t = String(body.title).trim();
+      if (!t) { res.status(400).json({ error: "title required" }); return; }
+      sets.push("title = ?"); vals.push(t);
+    }
+    if (body.amountCents !== undefined) {
+      const a = Number(body.amountCents);
+      if (!Number.isInteger(a) || a < 1 || a > 100000000) {
+        res.status(400).json({ error: "amountCents must be an integer between 1 and 100000000" });
+        return;
       }
-    } catch {
-      /* leave next_due as-is if the interval is somehow unparseable */
+      sets.push("amount_cents = ?"); vals.push(a);
+    }
+    if (body.interval !== undefined) {
+      if (!isValidInterval(body.interval)) {
+        res.status(400).json({ error: 'interval must be "weekly", "monthly", "yearly", or "<n>d"' });
+        return;
+      }
+      sets.push("interval = ?"); vals.push(body.interval);
+    }
+    if (body.participants !== undefined) {
+      if (!Array.isArray(body.participants) || body.participants.length === 0) {
+        res.status(400).json({ error: "participants must be a non-empty array" });
+        return;
+      }
+      const ps = Array.from(new Set(body.participants.map((p: unknown) => String(p))));
+      if (trip) {
+        for (const p of ps) {
+          if (!memberIds.has(p)) { res.status(400).json({ error: `participant ${p} is not a trip member` }); return; }
+        }
+      }
+      sets.push("participants = ?"); vals.push(JSON.stringify(ps));
+    }
+    if (body.paidBy !== undefined) {
+      const pb = String(body.paidBy);
+      if (trip && !memberIds.has(pb)) { res.status(400).json({ error: "paidBy must be a trip member" }); return; }
+      sets.push("paid_by = ?"); vals.push(pb);
+    }
+    if (body.startDate !== undefined) {
+      const dt = new Date(String(body.startDate));
+      if (Number.isNaN(dt.getTime())) { res.status(400).json({ error: "startDate is not a valid date" }); return; }
+      sets.push("next_due = ?"); vals.push(dt.toISOString());
     }
   }
 
-  db.prepare("UPDATE recurring SET paused = ?, next_due = ? WHERE id = ?")
-    .run(body.paused ? 1 : 0, nextDue, row.id);
+  if (!sets.length) {
+    res.status(400).json({ error: "nothing to update" });
+    return;
+  }
+
+  vals.push(row.id);
+  db.prepare(`UPDATE recurring SET ${sets.join(", ")} WHERE id = ?`).run(...(vals as any[]));
   const updated = db.prepare("SELECT * FROM recurring WHERE id = ?").get(row.id) as RecurringRow;
   res.json(serialize(updated));
 });

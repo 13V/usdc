@@ -48,7 +48,8 @@
   // exact 42px from→to avatar (lifted), tinted from the person identity.
   function avatarTile(p, fallbackGrad) {
     var bg = p && p.color ? app.esc(p.color) : fallbackGrad;
-    var emoji = (p && p.emoji) || (p && p.name ? String(p.name).trim()[0].toUpperCase() : "🙂");
+    var nm = (p && p.name != null) ? String(p.name).trim() : "";
+    var emoji = (p && p.emoji) || (nm ? nm[0].toUpperCase() : "🙂");
     return '<div style="width:42px; height:42px; border-radius:50%; background:' + bg +
       '; border:2px solid #13212E; display:flex; align-items:center; justify-content:center; font-size:20px;">' +
       app.esc(emoji) + '</div>';

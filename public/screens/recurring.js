@@ -597,10 +597,16 @@
 
       sv.disabled = true; sv.innerHTML = '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (editing ? "saving…" : "setting…") + '</span>';
       try {
-        // No field-level PATCH for rules: an edit replaces the old rule with the
-        // edited one (create first, then drop the original so we never lose it).
-        await app.api.post("/api/recurring", body);
-        if (editing) { try { await app.api.del("/api/recurring/" + encodeURIComponent(prefill.id)); } catch (_) {} }
+        if (editing) {
+          // Atomic in-place edit (single PATCH) — no duplicate-on-failure window.
+          await app.api.patch("/api/recurring/" + encodeURIComponent(prefill.id), {
+            title: title, amountCents: amountCents, paidBy: paidBy,
+            participants: participants, interval: chosenInt,
+            startDate: dateStr || undefined,
+          });
+        } else {
+          await app.api.post("/api/recurring", body);
+        }
         app.closeSheet();
         app.toast(editing ? "updated ✨" : "set & forget ✨");
         var view = document.getElementById("view");

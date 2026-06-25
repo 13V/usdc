@@ -253,13 +253,15 @@
   }
 
   window.Screens = window.Screens || {};
+  var authUnsub = null; // single auth listener; released each render so it can't leak
   window.Screens.home = {
     title: "home",
     render: function (view) {
+      if (authUnsub) { authUnsub(); authUnsub = null; }
       var user = window.Auth && window.Auth.user;
       if (user) return signedIn(view);
       signedOut(view);
-      if (window.Auth && window.Auth.onChange) window.Auth.onChange(function (u) {
+      if (window.Auth && window.Auth.onChange) authUnsub = window.Auth.onChange(function (u) {
         if ((location.hash || "").indexOf("home") >= 0) { if (u) signedIn(view); else signedOut(view); }
       });
     },

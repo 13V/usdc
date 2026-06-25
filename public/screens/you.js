@@ -282,15 +282,17 @@
     };
   }
 
+  var authUnsub = null; // single auth listener; released each render so it can't leak
   window.Screens = window.Screens || {};
   window.Screens.you = {
     title: "you",
     render: function (view) {
+      if (authUnsub) { authUnsub(); authUnsub = null; }
       var user = window.Auth && window.Auth.user;
       if (user) signedIn(view, user);
       else signedOut(view);
-      // re-render when auth resolves / changes
-      if (window.Auth && window.Auth.onChange) window.Auth.onChange(function (u) {
+      // re-render when auth resolves / changes (single listener; released next render)
+      if (window.Auth && window.Auth.onChange) authUnsub = window.Auth.onChange(function (u) {
         if ((location.hash || "").indexOf("you") >= 0) {
           if (u) signedIn(view, u); else signedOut(view);
         }

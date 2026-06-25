@@ -406,14 +406,16 @@
   }
 
   // ---- entry ------------------------------------------------------------
+  var authUnsub = null; // single auth listener; released each render so it can't leak
   window.Screens = window.Screens || {};
   window.Screens.groups = {
     title: "groups",
     render: function (view) {
+      if (authUnsub) { authUnsub(); authUnsub = null; }
       var user = window.Auth && window.Auth.user;
       if (user) signedIn(view);
       else signedOut(view);
-      if (window.Auth && window.Auth.onChange) window.Auth.onChange(function (u) {
+      if (window.Auth && window.Auth.onChange) authUnsub = window.Auth.onChange(function (u) {
         if ((location.hash || "").indexOf("groups") >= 0) {
           if (u) signedIn(view); else signedOut(view);
         }

@@ -126,6 +126,11 @@ function rpcUrl(cluster: Cluster): string {
 }
 
 const app = express();
+// Behind Railway's (single) reverse proxy, trust exactly one hop so req.ip is the
+// real client X-Forwarded-For address — NOT the shared proxy IP (which would make
+// the per-IP rate limiter throttle all users as one bucket). A specific hop count
+// (not `true`) keeps X-Forwarded-For unspoofable by clients.
+app.set("trust proxy", 1);
 // Receipt images arrive as base64 in the JSON body, so allow a larger payload.
 app.use(express.json({ limit: "12mb" }));
 // Optional auth: populates req.userId from a Bearer session token when present.
@@ -380,7 +385,7 @@ app.delete("/api/groups/:id", (req: Request, res: Response) => {
 
 // Scan a receipt photo -> detected total (so the host can skip typing it).
 // Body: { image: "data:image/jpeg;base64,..." | "<base64>" }
-app.post("/api/scan", scanRateLimit, requireAuth, async (req: Request, res: Response) => {
+app.post("/api/scan", requireAuth, scanRateLimit, async (req: Request, res: Response) => {
   const image = (req.body as { image?: string }).image;
   if (!image || typeof image !== "string") {
     return res.status(400).json({ error: "need an image" });
@@ -981,7 +986,10 @@ app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => 
         splToken: USDC_MINT[trip.cluster],
         amountCents: t.amountCents,
       });
-      if (valid.ok) t.paid = true;
+      if (valid.ok) {
+        t.paid = true;
+        (t as any).signature = valid.signature; // record the on-chain sig for receipts/lookups
+      }
     }
     saveSettlement(trip.id, stored.signature, stored.transfers);
     res.json(serializeTrip(getTrip(trip.id) as Trip));
@@ -995,17 +1003,21 @@ app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => 
 // Look up a single payment by its Solana Pay reference OR confirmed signature,
 // across both settlement transfers and bill participants. Returns the receipt
 // fields, or { found:false } (HTTP 200) when nothing matches.
-app.get("/api/receipts/:ref", (req: Request, res: Response) => {
+app.get("/api/receipts/:ref", requireAuth, (req: Request, res: Response) => {
   const ref = String(req.params.ref || "");
   if (!ref) return res.json({ found: false });
+  const userId = req.userId as string;
 
-  // 1) Settlement transfers (transfer.reference or transfer.signature).
+  // 1) Settlement transfers (transfer.reference or transfer.signature). Only
+  // returned to a caller authorized for that trip — never leak another trip's
+  // wallets/amounts/names. An unauthorized match is skipped (existence hidden).
   for (const stored of listAllSettlements()) {
     const trip = getTrip(stored.tripId);
     if (!trip) continue;
     for (const t of stored.transfers) {
       const sig = (t as any).signature as string | undefined;
       if (t.reference === ref || (sig && sig === ref)) {
+        if (!authorizeTrip(req, trip)) continue;
         return res.json({
           found: true,
           title: trip.name,
@@ -1023,10 +1035,12 @@ app.get("/api/receipts/:ref", (req: Request, res: Response) => {
     }
   }
 
-  // 2) Bill participants (participant.reference or participant.signature).
+  // 2) Bill participants — only the bill's collector (its creator wallet) may
+  // read it back, so one person's split links don't expose another's.
   for (const bill of store.all()) {
     for (const p of bill.participants) {
       if (p.reference === ref || (p.signature && p.signature === ref)) {
+        if (getPrimaryWallet(userId) !== bill.collector) continue;
         return res.json({
           found: true,
           title: bill.title,

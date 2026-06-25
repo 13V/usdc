@@ -527,9 +527,14 @@
 
     var byPayer = settle.transfers.filter(function (t) { return myIds.indexOf(t.from) >= 0; });
     var pick = byPayer[0];
-    // Fallback: if we can't identify the user (signed out / unclaimed), take the
-    // first payable transfer so the screen is still useful.
-    if (!pick) pick = settle.transfers.filter(function (t) { return !t.needsWallet; })[0] || settle.transfers[0];
+    if (!pick) {
+      // Identified but not a payer here → you owe nothing in this settlement; do
+      // NOT surface another member's transfer (it would prompt paying their debt).
+      if (myIds.length) return null;
+      // Unidentified (signed out / unclaimed): show the first payable so the
+      // screen is still useful.
+      pick = settle.transfers.filter(function (t) { return !t.needsWallet; })[0] || settle.transfers[0];
+    }
     if (!pick) return null;
     // decorate with recipient wallet (for the waiting line)
     var rec = members.filter(function (m) { return m.id === pick.to; })[0];
