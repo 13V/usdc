@@ -101,6 +101,10 @@
     catch (e) { view.innerHTML = '<div class="empty"><div class="title lower">something broke</div><div class="hint">' + esc(e.message) + "</div></div>"; }
     renderTabbar(r.name);
   }
+  // Only the five top-level destinations show the bottom tab bar; everything else
+  // (group, new, settle, collect, chat, receipt, friend, recurring, customize,
+  // onboarding) is a back-button sub-screen and hides it.
+  var TOPLEVEL = { home: 1, groups: 1, activity: 1, you: 1, friends: 1 };
   function go(name) { location.hash = "#/" + name; }
 
   function icon(name) {
@@ -116,6 +120,8 @@
   function renderTabbar(active) {
     var bar = document.getElementById("tabbar");
     if (!bar) return;
+    if (!TOPLEVEL[active]) { bar.style.display = "none"; bar.innerHTML = ""; return; }
+    bar.style.display = "";
     bar.innerHTML =
       '<a data-go="home" class="' + (active === "home" ? "active" : "") + '">' + icon("home") + "home</a>" +
       '<a data-go="groups" class="' + (active === "groups" ? "active" : "") + '">' + icon("groups") + "groups</a>" +
