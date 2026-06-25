@@ -33,6 +33,13 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 `);
+// Reactions: a JSON map { "🫡": ["userId", ...], ... }. Additive migration.
+{
+  const cols = db.prepare("PRAGMA table_info(trip_messages)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "reactions")) {
+    db.exec("ALTER TABLE trip_messages ADD COLUMN reactions TEXT");
+  }
+}
 
 // ---- Limits ----------------------------------------------------------------
 
@@ -42,6 +49,11 @@ const PAGE_CAP = 200;
 
 // ---- Types -----------------------------------------------------------------
 
+interface SerializedReaction {
+  emoji: string;
+  count: number;
+  mine: boolean;
+}
 interface SerializedMessage {
   id: string;
   userId: string | null;
@@ -49,9 +61,28 @@ interface SerializedMessage {
   text: string | null;
   image: string | null;
   createdAt: string;
+  reactions: SerializedReaction[];
 }
 
-function hydrateMessage(row: any): SerializedMessage {
+function parseReactions(raw: any): Record<string, string[]> {
+  if (!raw) return {};
+  try {
+    const obj = JSON.parse(raw);
+    return obj && typeof obj === "object" ? obj : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function hydrateMessage(row: any, viewerId?: string | null): SerializedMessage {
+  const map = parseReactions(row.reactions);
+  const reactions: SerializedReaction[] = Object.keys(map)
+    .map((emoji) => ({
+      emoji,
+      count: Array.isArray(map[emoji]) ? map[emoji].length : 0,
+      mine: !!viewerId && Array.isArray(map[emoji]) && map[emoji].indexOf(viewerId) >= 0,
+    }))
+    .filter((r) => r.count > 0);
   return {
     id: row.id,
     userId: row.user_id ?? null,
@@ -59,6 +90,7 @@ function hydrateMessage(row: any): SerializedMessage {
     text: row.text ?? null,
     image: row.image ?? null,
     createdAt: row.created_at,
+    reactions,
   };
 }
 
@@ -224,7 +256,38 @@ chatRouter.get(
         .all(trip.id, PAGE_CAP);
     }
 
-    res.json({ messages: rows.map(hydrateMessage) });
+    res.json({ messages: rows.map((r) => hydrateMessage(r, req.userId || null)) });
+  }
+);
+
+/**
+ * POST /api/trips/:id/messages/:mid/react { emoji } — toggle the signed-in
+ * user's reaction on a message. Requires a session (reactions are per-user).
+ */
+chatRouter.post(
+  "/api/trips/:id/messages/:mid/react",
+  (req: Request, res: Response): void => {
+    const trip = getTrip(req.params.id);
+    if (!trip) { res.status(404).json({ error: "trip not found" }); return; }
+    if (!authorizeTripChat(req, trip)) { res.status(403).json({ error: "not authorized for this trip" }); return; }
+    if (!req.userId) { res.status(401).json({ error: "sign in to react" }); return; }
+    const emoji = String((req.body && req.body.emoji) || "").slice(0, 8);
+    if (!emoji) { res.status(400).json({ error: "emoji required" }); return; }
+
+    const row: any = db
+      .prepare("SELECT * FROM trip_messages WHERE id = ? AND trip_id = ?")
+      .get(req.params.mid, trip.id);
+    if (!row) { res.status(404).json({ error: "message not found" }); return; }
+
+    const map = parseReactions(row.reactions);
+    const list = Array.isArray(map[emoji]) ? map[emoji] : [];
+    const i = list.indexOf(req.userId);
+    if (i >= 0) list.splice(i, 1); else list.push(req.userId);
+    if (list.length) map[emoji] = list; else delete map[emoji];
+    db.prepare("UPDATE trip_messages SET reactions = ? WHERE id = ? AND trip_id = ?")
+      .run(JSON.stringify(map), row.id, trip.id);
+
+    res.json(hydrateMessage({ ...row, reactions: JSON.stringify(map) }, req.userId));
   }
 );
 

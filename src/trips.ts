@@ -21,6 +21,18 @@ export interface TripMember {
   name: string;
   wallet?: string;
   userId?: string;
+  emoji?: string;
+  color?: string;
+}
+
+// Deterministic emoji + color identity for a member who hasn't set their own,
+// seeded from a stable string (member id or name) so it never changes.
+const MEMBER_EMOJI = ["🦊", "🐸", "🐱", "🐼", "🐯", "🐨", "🦜", "🐢", "🌸", "🦁", "🐵", "🦝"];
+const MEMBER_COLOR = ["#2775CA", "#3DE8C7", "#FF6B5E", "#FFC65C", "#8B5CF6", "#3a8fe0"];
+function seededIdentity(seed: string): { emoji: string; color: string } {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return { emoji: MEMBER_EMOJI[h % MEMBER_EMOJI.length], color: MEMBER_COLOR[h % MEMBER_COLOR.length] };
 }
 
 export interface TripExpense {
@@ -114,15 +126,21 @@ if (!hasColumn("trips", "owner_user_id")) {
 if (!hasColumn("expenses", "voided")) {
   db.exec("ALTER TABLE expenses ADD COLUMN voided INTEGER NOT NULL DEFAULT 0");
 }
+// Emoji + color avatar identity per member (additive; NULL → deterministic).
+if (!hasColumn("trip_members", "emoji")) db.exec("ALTER TABLE trip_members ADD COLUMN emoji TEXT");
+if (!hasColumn("trip_members", "color")) db.exec("ALTER TABLE trip_members ADD COLUMN color TEXT");
 
 // ---- Row hydration ---------------------------------------------------------
 
 function hydrateMember(row: any): TripMember {
+  const seeded = seededIdentity(row.id || row.name || "");
   return {
     id: row.id,
     name: row.name,
     wallet: row.wallet ?? undefined,
     userId: row.user_id ?? undefined,
+    emoji: row.emoji ?? seeded.emoji,
+    color: row.color ?? seeded.color,
   };
 }
 

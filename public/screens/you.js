@@ -182,14 +182,11 @@
 
   // ── signed-in ────────────────────────────────────────────────────────────────
   async function signedIn(view, user) {
-    // best-effort balance; spec says fall back gracefully if unavailable.
+    // Live on-chain USDC balance of the user's wallet; falls back to "—".
     var balance = null;
     try {
-      var b = await app.api.get("/api/me/balances");
-      var t = (b && b.totals) || {};
-      if (typeof t.walletCents === "number") balance = t.walletCents;
-      else if (typeof t.balanceCents === "number") balance = t.balanceCents;
-      else if (typeof t.netCents === "number") balance = t.netCents;
+      var w = await app.api.get("/api/me/wallet");
+      if (w && typeof w.usdcCents === "number") balance = w.usdcCents;
     } catch (_) { /* show — */ }
 
     var id = identity(user);

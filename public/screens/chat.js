@@ -187,6 +187,66 @@
     return row;
   }
 
+  // ── persisted reactions row (server-backed; the design's 🫡 👀 💀 chips) ─────
+  // Renders chips for a real message from msg.reactions ([{emoji,count,mine}])
+  // and POSTs toggles to /api/trips/<id>/messages/<mid>/react. The returned
+  // message (with fresh reactions) repaints the row. Same chip styling as the
+  // local reactionRow, but state lives on the server.
+  function messageReactionRow(msg) {
+    var row = el('<div style="display:flex; align-items:center; gap:6px; padding-left:2px;"></div>');
+    var state = {}; // emoji -> { count, mine }
+    function ingest(list) {
+      state = {};
+      (list || []).forEach(function (r) { state[r.emoji] = { count: r.count || 0, mine: !!r.mine }; });
+    }
+    ingest(msg.reactions);
+
+    // chips: the standard set plus any extra emoji already present on the msg.
+    var keys = REACTS.slice();
+    Object.keys(state).forEach(function (e) { if (keys.indexOf(e) < 0) keys.push(e); });
+
+    var chips = {};
+    keys.forEach(function (emoji) {
+      var chip = el('<button type="button" style="appearance:none; display:inline-flex; align-items:center; gap:4px; cursor:pointer; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:3px 9px;"></button>');
+      chips[emoji] = chip;
+      function paint() {
+        var st = state[emoji] || { count: 0, mine: false };
+        chip.innerHTML = "";
+        var e = document.createElement("span");
+        e.style.cssText = "font-size:12px; line-height:1;";
+        e.textContent = emoji;
+        chip.appendChild(e);
+        if (st.count > 0) {
+          var n = document.createElement("span");
+          n.style.cssText = "font-family:" + MONO + "; font-size:10px; color:rgba(244,247,250,0.6);";
+          n.textContent = String(st.count);
+          chip.appendChild(n);
+        }
+        var on = st.count > 0;
+        chip.style.borderColor = st.mine ? "rgba(39,117,202,0.8)" : (on ? "rgba(39,117,202,0.45)" : "rgba(244,247,250,0.1)");
+        chip.style.background = st.mine ? "rgba(39,117,202,0.22)" : (on ? "rgba(39,117,202,0.12)" : "#13212E");
+      }
+      chip.addEventListener("click", function () {
+        if (!msg.id) return;
+        chip.disabled = true;
+        request("/api/trips/" + encodeURIComponent(tripId) + "/messages/" + encodeURIComponent(msg.id) + "/react", {
+          method: "POST",
+          body: JSON.stringify({ emoji: emoji }),
+        }).then(function (fresh) {
+          ingest(fresh && fresh.reactions);
+          msg.reactions = (fresh && fresh.reactions) || [];
+          keys.forEach(function (k) { if (chips[k]) chips[k]._paint(); });
+        }).catch(function (err) {
+          app.toast((err && err.status === 401) ? "sign in to react" : "couldn't react");
+        }).then(function () { chip.disabled = false; });
+      });
+      chip._paint = paint;
+      paint();
+      row.appendChild(chip);
+    });
+    return row;
+  }
+
   // ── timeline item builders (markup LIFTED verbatim from the frame) ──────────
 
   // text + photo bubble. Left = other (emoji avatar + #13212E bubble, radius
@@ -211,6 +271,7 @@
       var bubble = el('<div style="background:rgba(39,117,202,0.18); border:1px solid rgba(39,117,202,0.4); border-radius:20px 20px 6px 20px; padding:11px 15px; font-family:' + SANS + '; font-size:15px; line-height:1.35; color:#F4F7FA; word-break:break-word;"></div>');
       fillBubble(bubble, msg);
       wrap.appendChild(bubble);
+      if (msg.id) wrap.appendChild(messageReactionRow(msg));
       return wrap;
     }
 
@@ -233,6 +294,11 @@
     fillBubble(bub, msg);
     line.appendChild(bub);
     lwrap.appendChild(line);
+    if (msg.id) {
+      var rrow = messageReactionRow(msg);
+      rrow.style.paddingLeft = "42px"; // align under the bubble, past the avatar
+      lwrap.appendChild(rrow);
+    }
     return lwrap;
   }
 

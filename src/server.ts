@@ -174,6 +174,29 @@ app.patch("/api/me", requireAuth, (req: Request, res: Response) => {
   }
 });
 
+// On-chain USDC balance of the signed-in user's primary wallet (read-only).
+app.get("/api/me/wallet", requireAuth, async (req: Request, res: Response) => {
+  const userId = req.userId as string;
+  const wallet = getPrimaryWallet(userId);
+  if (!wallet) return res.json({ wallet: null, usdcCents: null, usdcFmt: null });
+  try {
+    const connection = new Connection(rpcUrl(CLUSTER), "confirmed");
+    const accounts = await connection.getParsedTokenAccountsByOwner(new PublicKey(wallet), {
+      mint: new PublicKey(USDC_MINT[CLUSTER]),
+    });
+    let ui = 0;
+    for (const a of accounts.value) {
+      const amt = (a.account.data as any).parsed?.info?.tokenAmount?.uiAmount;
+      if (typeof amt === "number") ui += amt;
+    }
+    const usdcCents = Math.round(ui * 100);
+    res.json({ wallet, usdcCents, usdcFmt: fmt(usdcCents), cluster: CLUSTER });
+  } catch (err) {
+    // Network hiccup / no token account → report null rather than failing the screen.
+    res.json({ wallet, usdcCents: null, usdcFmt: null, error: (err as Error).message });
+  }
+});
+
 // ---- API ------------------------------------------------------------------
 
 interface CreateBillBody {
@@ -493,13 +516,20 @@ function serializeTrip(trip: Trip) {
     cluster: trip.cluster,
     createdAt: trip.createdAt,
     ownerUserId: trip.ownerUserId || null,
-    members: trip.members.map((m) => ({
-      id: m.id,
-      name: m.name,
-      wallet: m.wallet || null,
-      userId: m.userId || null,
-      claimed: !!m.userId,
-    })),
+    members: trip.members.map((m) => {
+      // A linked member shows that account's chosen emoji/color; otherwise the
+      // member's own deterministic identity.
+      const linked = m.userId ? getUser(m.userId) : undefined;
+      return {
+        id: m.id,
+        name: m.name,
+        wallet: m.wallet || null,
+        userId: m.userId || null,
+        claimed: !!m.userId,
+        emoji: (linked && linked.emoji) || m.emoji || null,
+        color: (linked && linked.color) || m.color || null,
+      };
+    }),
     expenses: trip.expenses.map((e) => ({
       id: e.id,
       title: e.title,

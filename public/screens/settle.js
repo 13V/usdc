@@ -564,6 +564,14 @@
       friendly("can't build a payment yet", "the person you owe hasn't added a wallet — nudge them to claim their spot.", "back to groups");
       return;
     }
+    // Check the live on-chain USDC balance — if you can't cover it, show needs-funds.
+    try {
+      var w = await app.api.get("/api/me/wallet");
+      if (w && typeof w.usdcCents === "number") {
+        S.balanceCents = w.usdcCents;
+        if (S.balanceCents < Math.abs(mine.amountCents || 0)) { go("needs-funds"); return; }
+      }
+    } catch (_) { /* balance unknown — proceed to ready, don't block paying */ }
     go("ready");
   }
 
