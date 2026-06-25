@@ -1,8 +1,8 @@
 /* divvy.css — Divvy design system, lifted from the design frames.
    Dark + vibrant, USDC-blue anchor, mono money, Gen-Z. Loaded app-wide. */
 
-@import url("https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap");
+/* Self-hosted brand fonts (Clash Display + General Sans + Space Mono) — no CDN. */
+@import url("/fonts.css");
 
 :root {
   /* surfaces */
