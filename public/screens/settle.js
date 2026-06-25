@@ -126,6 +126,13 @@
     try { saved = JSON.parse(localStorage.getItem("divvy.profile") || "{}") || {}; } catch (_) {}
     return { emoji: u.emoji || saved.emoji || "🦊", color: u.color || saved.color || "linear-gradient(150deg,#FFC65C,#FF6B5E)" };
   }
+  // the recipient's real identity (emoji/color) from the trip members, not a
+  // hardcoded avatar — falls back to a neutral blue→mint tile.
+  function themIdentity() {
+    var to = S && S.transfer && S.transfer.to;
+    var m = ((S && S.trip && S.trip.members) || []).filter(function (x) { return x.id === to; })[0] || {};
+    return { emoji: m.emoji || "🙂", color: m.color || "linear-gradient(150deg,#3DE8C7,#2775CA)" };
+  }
   function avatarTile(emoji, bg, label, labelColor) {
     return '<div style="display:flex; flex-direction:column; align-items:center; gap:4px;">' +
       '<div style="width:38px; height:38px; border-radius:50%; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:18px;">' + esc(emoji) + '</div>' +
@@ -147,7 +154,8 @@
     var t = S.transfer;
     var solUrl = t.url;
     var me = meEmoji();
-    var themBg = "linear-gradient(150deg,#3DE8C7,#2775CA)";
+    var them = themIdentity();
+    var themBg = them.color;
     var themLabel = S.toName + (t.toWallet ? " · " + trunc(t.toWallet) : "");
 
     var card =
@@ -159,7 +167,7 @@
           '<div style="display:flex; align-items:center; justify-content:center; gap:11px;">' +
             avatarTile(me.emoji, me.color, "you", "rgba(244,247,250,0.45)") +
             ARROW_SVG +
-            avatarTile("🌸", themBg, themLabel, "rgba(244,247,250,0.55)") +
+            avatarTile(them.emoji, themBg, themLabel, "rgba(244,247,250,0.55)") +
           '</div>' +
           // amount
           '<div style="text-align:center; margin-top:15px;">' +
@@ -323,14 +331,18 @@
   // re-check the live wallet balance — if it now covers the amount, advance to
   // ready so the user isn't stranded on needs-funds after topping up.
   function watchDepositClose() {
+    // tear down any prior watcher so repeated "add money" taps can't stack loops
+    if (S && S.depositWatch) { clearTimeout(S.depositWatch.t); clearInterval(S.depositWatch.iv); }
+    var w = { t: null, iv: null };
+    if (S) S.depositWatch = w;
     // wait a tick so the just-opened sheet is registered before we poll for close
-    setTimeout(function () {
-      var iv = setInterval(function () {
+    w.t = setTimeout(function () {
+      w.iv = setInterval(function () {
         if (!S || location.hash.indexOf("settle") < 0 || S.state !== "needs-funds") {
-          clearInterval(iv); return;          // navigated away / state changed
+          clearInterval(w.iv); return;        // navigated away / state changed
         }
         if (app._sheet) return;               // sheet still open — keep waiting
-        clearInterval(iv);
+        clearInterval(w.iv);
         recheckBalance();
       }, 400);
     }, 300);
@@ -536,7 +548,8 @@
       pick = settle.transfers.filter(function (t) { return !t.needsWallet; })[0] || settle.transfers[0];
     }
     if (!pick) return null;
-    // decorate with recipient wallet (for the waiting line)
+    // copy before decorating so we never mutate the shared trip.settle transfer
+    pick = Object.assign({}, pick);
     var rec = members.filter(function (m) { return m.id === pick.to; })[0];
     pick.toWallet = rec && rec.wallet;
     return pick;

@@ -33,6 +33,12 @@ declare global {
 function resolveSessionSecret(): string {
   const fromEnv = process.env.SESSION_SECRET;
   if (fromEnv) return fromEnv;
+  // In production a random per-process secret would silently log everyone out on
+  // each restart and break multi-instance — fail fast instead so it's caught at
+  // deploy time, not by confused users.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET is required in production — set it in the environment.");
+  }
   // eslint-disable-next-line no-console
   console.warn(
     "⚠  SESSION_SECRET not set — using a random per-process secret. Sessions will " +

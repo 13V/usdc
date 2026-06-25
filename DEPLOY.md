@@ -25,7 +25,8 @@ Service → **Variables** tab. Add:
 | Variable          | Value                                   | Why |
 |-------------------|-----------------------------------------|-----|
 | `DB_PATH`         | `/data/divvy.db`                        | puts SQLite on the persistent volume |
-| `SESSION_SECRET`  | *(generate — see below)*                | signs auth sessions |
+| `SESSION_SECRET`  | *(generate — see below)*                | signs auth sessions (required; app refuses to boot in production without it) |
+| `NODE_ENV`        | `production`                            | enables the SESSION_SECRET guard + prod behavior |
 | `CLUSTER`         | `devnet`                                | Solana cluster (never mainnet without review) |
 | `COLLECTOR_WALLET`| *(your Phantom **devnet** address)*     | the Solana Pay recipient for settles |
 | `ANTHROPIC_API_KEY` | *(optional)*                          | enables receipt-photo scanning |
