@@ -1,6 +1,6 @@
 // Divvy service worker — minimal app-shell cache.
-const CACHE = "divvy-v1";
-const SHELL = ["/", "/trips.js", "/manifest.webmanifest", "/icon.svg"];
+const CACHE = "divvy-v2";
+const SHELL = ["/", "/divvy.css", "/mascot.js", "/app.js", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

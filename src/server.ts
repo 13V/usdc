@@ -64,6 +64,7 @@ import {
   getPrimaryWallet,
   setHandle,
   setDisplayName,
+  setIdentity,
   serializeUser,
 } from "./users";
 import { scanReceipt, parseDataUrl, NoScanProvider } from "./scan";
@@ -156,12 +157,15 @@ app.get("/api/me", (req: Request, res: Response) => {
 
 app.patch("/api/me", requireAuth, (req: Request, res: Response) => {
   const userId = req.userId as string;
-  const body = req.body as { handle?: string; displayName?: string };
+  const body = req.body as { handle?: string; displayName?: string; emoji?: string; color?: string };
   try {
     let user = getUser(userId);
     if (!user) return res.status(404).json({ error: "not found" });
     if (body.handle !== undefined) user = setHandle(userId, body.handle);
     if (body.displayName !== undefined) user = setDisplayName(userId, body.displayName);
+    if (body.emoji !== undefined || body.color !== undefined) {
+      user = setIdentity(userId, { emoji: body.emoji, color: body.color });
+    }
     res.json({ user: serializeUser(user) });
   } catch (err) {
     const msg = (err as Error).message;
@@ -546,7 +550,17 @@ app.post("/api/trips", (req: Request, res: Response) => {
       if (m.wallet) assertValidWallet(String(m.wallet));
     }
     const cluster = (body.cluster || (process.env.CLUSTER as Cluster) || "devnet") as Cluster;
-    // If signed in, record ownership so this trip shows up in "my trips".
+    // If signed in, link the creator to their own member slot (the first member,
+    // typically "you") so cross-trip balances see them in this trip — unless the
+    // caller already pinned that slot to a specific account.
+    if (req.userId && members[0] && !members[0].userId) {
+      members[0].userId = req.userId;
+      if (!members[0].wallet) {
+        const w = getPrimaryWallet(req.userId);
+        if (w) members[0].wallet = w;
+      }
+    }
+    // Record ownership so this trip shows up in "my trips".
     const trip = createTrip(name, cluster, members, req.userId);
     res.json(serializeTrip(trip));
   } catch (err) {

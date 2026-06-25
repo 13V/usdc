@@ -19,6 +19,8 @@ export interface User {
   id: string;
   handle?: string;
   displayName?: string;
+  emoji?: string;
+  color?: string;
   createdAt: string;
 }
 
@@ -26,6 +28,8 @@ export interface SerializedUser {
   id: string;
   handle: string | null;
   displayName: string | null;
+  emoji: string | null;
+  color: string | null;
   wallets: string[];
   primaryWallet: string | null;
 }
@@ -55,6 +59,15 @@ db.exec(`
   );
 `);
 
+// Idempotent identity columns (emoji + color avatar). Additive: existing rows
+// simply have NULL here.
+function hasUserColumn(column: string): boolean {
+  const cols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
+  return cols.some((c) => c.name === column);
+}
+if (!hasUserColumn("emoji")) db.exec("ALTER TABLE users ADD COLUMN emoji TEXT");
+if (!hasUserColumn("color")) db.exec("ALTER TABLE users ADD COLUMN color TEXT");
+
 // ---- Hydration -------------------------------------------------------------
 
 function hydrateUser(row: any): User {
@@ -62,6 +75,8 @@ function hydrateUser(row: any): User {
     id: row.id,
     handle: row.handle ?? undefined,
     displayName: row.display_name ?? undefined,
+    emoji: row.emoji ?? undefined,
+    color: row.color ?? undefined,
     createdAt: row.created_at,
   };
 }
@@ -192,7 +207,27 @@ export function serializeUser(user: User): SerializedUser {
     id: user.id,
     handle: user.handle || null,
     displayName: user.displayName || null,
+    emoji: user.emoji || null,
+    color: user.color || null,
     wallets: getWallets(user.id),
     primaryWallet: getPrimaryWallet(user.id),
   };
+}
+
+/** Set the emoji + color avatar identity. Either field optional. */
+export function setIdentity(
+  userId: string,
+  patch: { emoji?: string; color?: string }
+): User {
+  if (patch.emoji !== undefined) {
+    const e = String(patch.emoji).slice(0, 8) || null;
+    db.prepare("UPDATE users SET emoji = ? WHERE id = ?").run(e, userId);
+  }
+  if (patch.color !== undefined) {
+    const c = /^#[0-9a-fA-F]{3,8}$/.test(String(patch.color)) ? String(patch.color) : null;
+    db.prepare("UPDATE users SET color = ? WHERE id = ?").run(c, userId);
+  }
+  const u = getUser(userId);
+  if (!u) throw new Error("setIdentity: user not found");
+  return u;
 }

@@ -220,7 +220,7 @@
       var btn = document.getElementById("cpSave");
       if (btn) { btn.disabled = true; btn.textContent = "saving…"; }
 
-      var patch = {};
+      var patch = { emoji: state.emoji, color: color };
       if (handle) patch.handle = handle;
       if (name) patch.displayName = name;
 
@@ -231,7 +231,7 @@
         app.toast("looking good 😎");
       };
 
-      if (window.Auth && Auth.updateProfile && (handle || name)) {
+      if (window.Auth && Auth.updateProfile && Auth.user) {
         Auth.updateProfile(patch).then(done).catch(function (e) {
           if (btn) { btn.disabled = false; btn.textContent = "save ✨"; }
           app.toast(e && e.message ? e.message : "couldn't save handle");

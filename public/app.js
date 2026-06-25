@@ -133,8 +133,23 @@
   };
   window.app = app;
 
+  // Bridge the server-persisted emoji/color identity into localStorage so every
+  // screen (which reads "divvy.profile") reflects it, even on a fresh device.
+  function syncIdentity() {
+    var u = window.Auth && window.Auth.user;
+    if (!u || (!u.emoji && !u.color)) return;
+    try {
+      var p = JSON.parse(localStorage.getItem("divvy.profile") || "{}") || {};
+      if (u.emoji) p.emoji = u.emoji;
+      if (u.color) p.color = u.color;
+      localStorage.setItem("divvy.profile", JSON.stringify(p));
+    } catch (_) {}
+  }
+  if (window.Auth && window.Auth.onChange) window.Auth.onChange(function () { syncIdentity(); });
+
   window.addEventListener("hashchange", render);
   window.addEventListener("DOMContentLoaded", function () {
+    syncIdentity();
     if (!location.hash) location.hash = "#/home";
     render();
   });
