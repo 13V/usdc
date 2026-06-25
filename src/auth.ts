@@ -88,6 +88,7 @@ export function verifySession(token: string): string | null {
 // ---- SIWS: nonce store + verify --------------------------------------------
 
 const nonces = new Map<string, number>(); // nonce -> expiry epoch ms
+const MAX_NONCES = 5000; // hard cap so the Map can't grow unbounded
 
 function pruneNonces(): void {
   const now = Date.now();
@@ -98,6 +99,13 @@ function pruneNonces(): void {
 
 export function issueNonce(): { nonce: string; message: string } {
   pruneNonces();
+  // Beyond TTL pruning, evict the oldest entries (Map preserves insertion order)
+  // if we're still over the cap — an attacker can't balloon memory by spamming.
+  while (nonces.size >= MAX_NONCES) {
+    const oldest = nonces.keys().next().value;
+    if (oldest === undefined) break;
+    nonces.delete(oldest);
+  }
   const nonce = crypto.randomBytes(16).toString("hex");
   nonces.set(nonce, Date.now() + NONCE_TTL_MS);
   const issuedAt = new Date().toISOString();

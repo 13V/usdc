@@ -354,9 +354,13 @@
   }
 
   // ---- "+ new" sheet (the "well") — lifted hero amount + segmented + rows ----
-  async function openNewSheet() {
+  // `prefill` (optional) = an existing rule to EDIT: we seed every field from it
+  // and, on save, replace the old rule (the recurring API has no field-level
+  // PATCH, so an edit = delete-old + create-new with the edited values).
+  async function openNewSheet(prefill) {
+    var editing = !!(prefill && prefill.id);
     var el = app.sheet(
-      '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:1px; color:rgba(244,247,250,0.5); margin:2px 2px 16px;">new recurring · fill the well</div>' +
+      '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:1px; color:rgba(244,247,250,0.5); margin:2px 2px 16px;">' + (editing ? "edit recurring · tweak the well" : "new recurring · fill the well") + '</div>' +
 
       // amount hero input
       '<div style="background:#13212E; border:1px solid rgba(39,117,202,0.3); border-radius:22px; padding:20px; text-align:center; box-shadow:0 12px 30px rgba(0,0,0,0.3);">' +
@@ -413,14 +417,16 @@
 
       // set & forget
       '<button id="rfSave" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 12px 30px rgba(39,117,202,0.5), inset 0 1px 0 rgba(255,255,255,0.25); margin-top:18px;">' +
-        '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">set &amp; forget</span><span style="font-size:15px;">✨</span>' +
+        '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (editing ? "save changes" : "set &amp; forget") + '</span><span style="font-size:15px;">✨</span>' +
       '</button>'
     );
 
     // interval segmented control
-    var chosenInt = "monthly";
+    var chosenInt = (prefill && prefill.interval) || "monthly";
     var intWrap = el.querySelector("#rfInterval");
     Array.prototype.forEach.call(intWrap.querySelectorAll("[data-int]"), function (c) {
+      // reflect the editing rule's interval as the pre-selected chip
+      applySeg(c, c.getAttribute("data-int") === chosenInt);
       c.onclick = function () {
         chosenInt = c.getAttribute("data-int");
         Array.prototype.forEach.call(intWrap.querySelectorAll("[data-int]"), function (x) { applySeg(x, false); });
@@ -428,9 +434,20 @@
       };
     });
 
-    // prefill next-due with today
+    // prefill amount + title from the rule being edited
+    if (prefill) {
+      var amtEl = el.querySelector("#rfAmount");
+      if (amtEl && typeof prefill.amountCents === "number") amtEl.value = (prefill.amountCents / 100).toFixed(2);
+      var titEl = el.querySelector("#rfTitle");
+      if (titEl && prefill.title) titEl.value = prefill.title;
+    }
+
+    // prefill next-due — the rule's nextDue when editing, else today
     var dEl = el.querySelector("#rfDate");
-    if (dEl) dEl.value = new Date().toISOString().slice(0, 10);
+    if (dEl) {
+      var seedDate = (prefill && prefill.nextDue) ? new Date(prefill.nextDue) : new Date();
+      dEl.value = isNaN(seedDate.getTime()) ? new Date().toISOString().slice(0, 10) : seedDate.toISOString().slice(0, 10);
+    }
 
     // load groups for the picker
     var trips = _trips;
@@ -495,8 +512,37 @@
         try { t = await app.api.get("/api/trips/" + encodeURIComponent(id)); }
         catch (_) { t = trips.filter(function (x) { return x.id === id; })[0]; }
         pickTrip(t || { id: id, members: [] }, chip);
+        markEditPrefs(t);
       };
     });
+
+    // when editing, pre-select the rule's payer + participants on the member chips
+    function markEditPrefs(t) {
+      if (!editing || !t) return;
+      var memChips = memWrap.querySelectorAll("#rfMemChips [data-mem]");
+      var parts = prefill.participants || [];
+      Array.prototype.forEach.call(memChips, function (c) {
+        var mid = c.getAttribute("data-mem");
+        var isPayer = mid === prefill.paidBy;
+        c.removeAttribute("data-payer"); c.style.borderColor = "";
+        if (isPayer) { c.setAttribute("data-payer", "1"); c.style.borderColor = "var(--blue)"; }
+      });
+      // participants that aren't in the trip's member chips are ignored (membership
+      // changed); the create call below dedupes + validates like a fresh create.
+      void parts;
+    }
+
+    // auto-open the rule's group when editing so members/payer are pre-filled
+    if (editing && prefill.tripId) {
+      var editChip = el.querySelector('[data-trip="' + (window.CSS && CSS.escape ? CSS.escape(prefill.tripId) : prefill.tripId) + '"]');
+      if (editChip) {
+        var t0;
+        try { t0 = await app.api.get("/api/trips/" + encodeURIComponent(prefill.tripId)); }
+        catch (_) { t0 = trips.filter(function (x) { return x.id === prefill.tripId; })[0]; }
+        pickTrip(t0 || { id: prefill.tripId, members: [] }, editChip);
+        markEditPrefs(t0);
+      }
+    }
 
     // tapping a member chip sets the payer
     memWrap.onclick = function (ev) {
@@ -515,9 +561,14 @@
       if (!chosenTrip) { app.toast("pick a group first"); return; }
       var title = (el.querySelector("#rfTitle").value || "").trim();
       if (!title) { app.toast("give it a title"); return; }
-      var amt = parseFloat(el.querySelector("#rfAmount").value);
-      if (!(amt > 0)) { app.toast("enter an amount"); return; }
+      // Validate the dollar amount: reject NaN/empty/non-positive and anything
+      // finer than whole cents (e.g. "12.345" would round to fractional cents).
+      var raw = (el.querySelector("#rfAmount").value || "").trim();
+      if (!/^\d*(\.\d{1,2})?$/.test(raw)) { app.toast("enter a plain dollar amount"); return; }
+      var amt = parseFloat(raw);
+      if (!isFinite(amt) || !(amt > 0)) { app.toast("enter an amount"); return; }
       var amountCents = Math.round(amt * 100);
+      if (!(amountCents > 0)) { app.toast("enter an amount"); return; }
       var dateStr = (el.querySelector("#rfDate").value || "").trim();
 
       var memChips = el.querySelectorAll("#rfMemChips [data-mem]");
@@ -544,15 +595,18 @@
       };
       if (dateStr) body.startDate = dateStr;
 
-      sv.disabled = true; sv.innerHTML = '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">setting…</span>';
+      sv.disabled = true; sv.innerHTML = '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (editing ? "saving…" : "setting…") + '</span>';
       try {
+        // No field-level PATCH for rules: an edit replaces the old rule with the
+        // edited one (create first, then drop the original so we never lose it).
         await app.api.post("/api/recurring", body);
+        if (editing) { try { await app.api.del("/api/recurring/" + encodeURIComponent(prefill.id)); } catch (_) {} }
         app.closeSheet();
-        app.toast("set & forget ✨");
+        app.toast(editing ? "updated ✨" : "set & forget ✨");
         var view = document.getElementById("view");
         if (view) signedIn(view);
       } catch (e) {
-        sv.disabled = false; sv.innerHTML = '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">set &amp; forget</span><span style="font-size:15px;">✨</span>';
+        sv.disabled = false; sv.innerHTML = '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (editing ? "save changes" : "set &amp; forget") + '</span><span style="font-size:15px;">✨</span>';
         app.toast(e.message || "couldn't save");
       }
     };
@@ -648,8 +702,8 @@
         '</div>' +
         '<div id="rdMembers" style="background:#13212E; border:1px solid rgba(244,247,250,0.07); border-radius:18px; overflow:hidden;"><div style="font-family:' + MONO + '; font-size:12px; color:rgba(244,247,250,0.6); padding:14px 15px;">loading members…</div></div>' +
 
-        // ===== THIS RUN =====
-        '<div style="margin:24px 2px 12px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45);">THIS RUN · ' + fmtDate(rule.nextDue).toUpperCase() + '</span></div>' +
+        // ===== THIS RUN (preview — no live run state is persisted yet) =====
+        '<div style="margin:24px 2px 12px; display:flex; align-items:center; gap:7px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45);">THIS RUN · ' + fmtDate(rule.nextDue).toUpperCase() + '</span><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:rgba(244,247,250,0.4); background:rgba(244,247,250,0.06); border:1px solid rgba(244,247,250,0.12); border-radius:999px; padding:2px 7px;">PREVIEW</span></div>' +
         '<div style="background:#13212E; border:1px solid rgba(244,247,250,0.07); border-radius:18px; padding:16px;">' +
           '<div style="display:flex; align-items:center; justify-content:space-between;">' +
             '<span style="font-family:' + DISPLAY + '; font-weight:500; font-size:16px; color:#F4F7FA;" class="lower">0 of ' + n + ' squared</span>' +
@@ -662,8 +716,8 @@
           '</div>' +
         '</div>' +
 
-        // ===== PAST RUNS =====
-        '<div style="margin:24px 2px 12px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45);">PAST RUNS</span></div>' +
+        // ===== PAST RUNS (preview — inferred from the cadence, not stored runs) =====
+        '<div style="margin:24px 2px 12px; display:flex; align-items:center; gap:7px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45);">PAST RUNS</span><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:rgba(244,247,250,0.4); background:rgba(244,247,250,0.06); border:1px solid rgba(244,247,250,0.12); border-radius:999px; padding:2px 7px;">PREVIEW</span></div>' +
         '<div>' + pastRuns(rule) + '</div>' +
 
         // ===== CONTROLS =====
@@ -691,7 +745,7 @@
       }
     };
     var editB = el.querySelector("#rdEdit");
-    if (editB) editB.onclick = function () { app.closeSheet(); openNewSheet(); };
+    if (editB) editB.onclick = function () { app.closeSheet(); openNewSheet(rule); };
     var delB = el.querySelector("#rdDelete");
     if (delB) delB.onclick = async function () {
       delB.disabled = true;

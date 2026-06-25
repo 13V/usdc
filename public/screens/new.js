@@ -199,7 +199,7 @@
           '<label style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5); display:block; margin:0;">WHAT\'S IT FOR?</label>' +
           '<div style="display:flex; align-items:center; gap:11px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:15px; padding:14px 16px; margin-top:9px;">' +
             '<button id="nEmoji" style="appearance:none; border:none; background:transparent; font-size:22px; cursor:pointer; padding:0; line-height:1;">' + app.esc(st.titleEmoji) + '</button>' +
-            '<input id="nTitle" value="' + app.esc(st.title) + '" placeholder="dinner" style="all:unset; flex:1; font-family:' + F_DISPLAY + '; font-weight:500; font-size:18px; color:#F4F7FA;">' +
+            '<input id="nTitle" enterkeyhint="next" value="' + app.esc(st.title) + '" placeholder="dinner" style="all:unset; flex:1; font-family:' + F_DISPLAY + '; font-weight:500; font-size:18px; color:#F4F7FA;">' +
             '<span style="width:1.5px; height:20px; background:#3DE8C7; margin-left:1px; border-radius:2px;"></span>' +
           '</div>' +
         '</div>';
@@ -211,7 +211,7 @@
           '<label style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5); display:block; margin:0;">TOTAL</label>' +
           '<div style="display:flex; align-items:center; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:15px; padding:13px 16px; margin-top:9px;">' +
             '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:18px; opacity:.5;">$</span>' +
-            '<input id="nTotal" inputmode="decimal" value="' + (st.totalCents ? dollars(st.totalCents) : '') + '" placeholder="0.00" ' +
+            '<input id="nTotal" inputmode="decimal" enterkeyhint="done" value="' + (st.totalCents ? dollars(st.totalCents) : '') + '" placeholder="0.00" ' +
               'style="all:unset; flex:1; font-family:' + F_MONO + '; font-weight:700; font-size:30px; letter-spacing:-1px; color:#F4F7FA;">' +
           '</div>' +
         '</div>';
@@ -313,7 +313,7 @@
                 '<span style="flex:1; font-family:' + F_DISPLAY + '; font-weight:500; font-size:16px; color:#F4F7FA;">' + app.esc(m.you ? "you" : m.name) + '</span>' +
                 '<div style="display:flex; align-items:center; gap:2px; background:#0B1622; border:1px solid rgba(244,247,250,0.12); border-radius:11px; padding:8px 12px; min-width:96px; justify-content:flex-end;">' +
                   '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:16px; color:rgba(244,247,250,0.4);">$</span>' +
-                  '<input data-custom="' + app.esc(m.id) + '" inputmode="decimal" value="' + dollars(rowVal(m.id)) + '" ' +
+                  '<input data-custom="' + app.esc(m.id) + '" inputmode="decimal" enterkeyhint="done" value="' + dollars(rowVal(m.id)) + '" ' +
                     'style="all:unset; font-family:' + F_MONO + '; font-weight:700; font-size:16px; color:#F4F7FA; width:58px; text-align:right;">' +
                 '</div>' +
               '</div>';
@@ -404,12 +404,30 @@
       if (emoji) emoji.onclick = function () { pickEmoji(); };
 
       var title = document.getElementById("nTitle");
-      if (title) title.oninput = function () { st.title = title.value; };
+      if (title) {
+        title.oninput = function () { st.title = title.value; };
+        // Enter on the title hops to the total field rather than reloading.
+        title.onkeydown = function (ev) {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            var t = document.getElementById("nTotal"); if (t) t.focus();
+          }
+        };
+      }
 
       var total = document.getElementById("nTotal");
       if (total) {
         total.oninput = function () { st.totalCents = toCents(total.value); };
         total.onblur = function () { st.totalCents = toCents(total.value); render(); };
+        // Enter commits the amount and sends the tab (the common one-input flow).
+        total.onkeydown = function (ev) {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            st.totalCents = toCents(total.value);
+            total.blur();
+            doSend();
+          }
+        };
       }
 
       [].forEach.call(document.querySelectorAll("[data-tip]"), function (b) {
@@ -435,6 +453,14 @@
       [].forEach.call(document.querySelectorAll("[data-custom]"), function (inp) {
         inp.oninput = function () { st.custom[inp.getAttribute("data-custom")] = toCents(inp.value); };
         inp.onblur = function () { render(); };
+        // Enter commits the share and re-balances the receipt (same as blur).
+        inp.onkeydown = function (ev) {
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            st.custom[inp.getAttribute("data-custom")] = toCents(inp.value);
+            inp.blur();
+          }
+        };
       });
 
       var minus = document.getElementById("nMinus");

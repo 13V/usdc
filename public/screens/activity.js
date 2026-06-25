@@ -182,10 +182,13 @@
     return '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; ' +
       'color:rgba(244,247,250,0.42); margin-top:3px;">' + text + '</div>';
   }
-  // "view ↗" link → receipt when a signature exists, else inert.
-  function viewLink(sig) {
+  // "view ↗" link → the receipt route when the backend gives us a real
+  // signature/reference; otherwise fall back to the relevant settle/group
+  // screen rather than pointing at a dead #/receipt/ route.
+  function viewLink(sig, fallbackHref) {
     var style = 'font-family:\'Space Mono\',monospace; font-size:10px; color:#7fc0ff; cursor:pointer;';
-    if (sig) return '<a href="#/receipt/' + encodeURIComponent(sig) + '" style="' + style + ' text-decoration:none;">view ↗</a>';
+    var href = sig ? ("#/receipt/" + encodeURIComponent(sig)) : (fallbackHref || "");
+    if (href) return '<a href="' + href + '" style="' + style + ' text-decoration:none;">view ↗</a>';
     return '<span style="' + style + '">view ↗</span>';
   }
   // blue "chip in" pill (open requests show this instead of an amount).
@@ -329,7 +332,7 @@
         settledTag(d.settleLabel) +
         '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(244,247,250,0.42);">' +
         bits.join(" · ") + '</span>' +
-        (d.settleLabel === "ALL SETTLED" ? "" : viewLink(sig)) +
+        (d.settleLabel === "ALL SETTLED" ? "" : viewLink(sig, ev.tripId ? "#/settle/" + encodeURIComponent(ev.tripId) : "")) +
         '</div>';
     } else {
       var detail = d.detail ? d.detail + " · " : "";

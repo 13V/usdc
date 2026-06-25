@@ -32,6 +32,9 @@ interface ActivityEvent {
   text: string;
   amountFmt?: string;
   at: string;
+  // Present on settle/paid events when known (lets the client link to a receipt).
+  signature?: string;
+  reference?: string;
 }
 
 const MAX_EVENTS = 100;
@@ -116,6 +119,8 @@ function eventsForTrip(trip: Trip): ActivityEvent[] {
           amountFmt = undefined;
         }
       }
+      const reference = (t as any).reference || undefined;
+      const signature = (t as any).signature || undefined;
       out.push({
         type: "paid",
         tripId,
@@ -123,6 +128,8 @@ function eventsForTrip(trip: Trip): ActivityEvent[] {
         text: `${fromName} paid ${toName}`,
         amountFmt,
         at: settlement.createdAt,
+        ...(signature ? { signature } : {}),
+        ...(reference ? { reference } : {}),
       });
     }
   }

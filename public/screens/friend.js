@@ -260,8 +260,8 @@
       (oweSeg > 0 ? '<div style="flex:' + oweSeg + '; background:#FF6B5E;"></div>' : '');
 
     var netSign = net > 0 ? "+" : net < 0 ? "−" : "";
-    var breakdown = 'she owes you <span style="color:#7fc0ff;">$' + dollars(d.owed) + '</span>' +
-      ' · you owe her <span style="color:#FF6B5E;">$' + dollars(d.owe) + '</span>' +
+    var breakdown = 'they owe you <span style="color:#7fc0ff;">$' + dollars(d.owed) + '</span>' +
+      ' · you owe them <span style="color:#FF6B5E;">$' + dollars(d.owe) + '</span>' +
       ' · net <span style="color:#F4F7FA; font-weight:700;">' + netSign + '$' + dollars(net) + '</span>';
 
     return '<div style="text-align:center; margin-top:22px;">' +
@@ -343,7 +343,7 @@
       '</div>';
     } else {
       metaTile = '#13212E';
-      var label = (youOwe ? "you owe · " : (e.dir === "owed" ? "she owes you · " : "")) + relTime(e.createdAt);
+      var label = (youOwe ? "you owe · " : (e.dir === "owed" ? "they owe you · " : "")) + relTime(e.createdAt);
       sub = '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:' + color + '; margin-top:3px;">' + label + '</div>';
     }
     var sign = youOwe ? "−$" : "+$";
@@ -424,8 +424,8 @@
     if (copy) copy.onclick = function () {
       var f = d.friend || {};
       var w = f.primaryWallet || (f.wallets && f.wallets[0]) || "";
-      if (w && navigator.clipboard) navigator.clipboard.writeText(w).then(function () { app.toast("wallet copied"); }, function () { app.toast(w); });
-      else app.toast(w || "no wallet");
+      if (w) app.copy(w).then(function () { app.toast("wallet copied"); }, function () { app.toast(w); });
+      else app.toast("no wallet");
     };
     var more = document.getElementById("fdMore");
     if (more) more.onclick = function () { confirmRemove(view, d, friendId); };
@@ -437,7 +437,8 @@
         if (sharedTripId) location.hash = "#/settle/" + encodeURIComponent(sharedTripId);
         else app.toast("no shared tab to settle — start one first");
       } else if (d.net > 0) {
-        app.toast("request sent 👀"); // owed → request
+        // no request backend yet — be honest rather than faking a send.
+        app.toast("we'll nudge them — coming soon 👀");
       } else {
         app.toast("you're all square ✨");
       }
@@ -447,8 +448,9 @@
       if (sharedTripId) location.hash = "#/new/" + encodeURIComponent(sharedTripId);
       else app.go("new");
     };
+    // remind/nudge has no backend yet — say so honestly instead of faking it.
     var rm = document.getElementById("fdRemind");
-    if (rm) rm.onclick = function () { app.toast(d.net < 0 ? "you got the nudge 👀" : "remind sent 👀"); };
+    if (rm) rm.onclick = function () { app.toast("we'll nudge them — coming soon 👀"); };
     var del = document.getElementById("fdRemove");
     if (del) del.onclick = function () { confirmRemove(view, d, friendId); };
   }

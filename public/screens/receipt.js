@@ -66,8 +66,40 @@
     return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer; flex:none;"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
   }
 
-  function render(view, params) {
-    var r = resolve(params);
+  // map the GET /api/receipts/:ref payload (found:true) into the shape the card
+  // renderer expects. The route param is the tx signature OR reference.
+  function fromApi(data, params) {
+    var sig = decodeURIComponent((params && params[0]) || "");
+    return {
+      placeholder: false,
+      signature: data.signature || sig || "",
+      // settlement receipts are someone paying someone; default to "received".
+      direction: data.direction === "sent" ? "sent" : "received",
+      amountCents: typeof data.amountCents === "number" ? data.amountCents : null,
+      from: { name: data.fromName || "" },
+      to: { name: data.toName || "", wallet: data.wallet || null },
+      network: data.cluster ? "solana · " + data.cluster : "solana",
+      feeUsd: "~$0.0001",
+      reference: data.reference || "",
+      date: data.paidAt ? fmtPaidAt(data.paidAt) : "",
+      context: data.title || "",
+    };
+  }
+
+  // friendly date string from an ISO/epoch paidAt (best-effort, never throws).
+  function fmtPaidAt(at) {
+    try {
+      var d = new Date(at);
+      if (isNaN(d.getTime())) return "";
+      var MON = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+      var h = d.getHours(), m = d.getMinutes();
+      var ap = h >= 12 ? "pm" : "am";
+      var h12 = h % 12; if (h12 === 0) h12 = 12;
+      return MON[d.getMonth()] + " " + d.getDate() + ", " + h12 + ":" + (m < 10 ? "0" : "") + m + ap;
+    } catch (_) { return ""; }
+  }
+
+  function renderCard(view, r) {
 
     // ---- direction state variant ----
     var sent = r.direction === "sent";
@@ -279,6 +311,20 @@
       } catch (_) {}
       app.toast("link copied");
     };
+  }
+
+  // Entry: fetch real receipt data from GET /api/receipts/:ref (ref = the route's
+  // signature/reference), and only fall back to the local placeholder card when
+  // the server reports { found:false } (or the request fails).
+  async function render(view, params) {
+    var ref = decodeURIComponent((params && params[0]) || "");
+    if (ref) {
+      try {
+        var data = await app.api.get("/api/receipts/" + encodeURIComponent(ref));
+        if (data && data.found) { renderCard(view, fromApi(data, params)); return; }
+      } catch (_) { /* fall through to placeholder */ }
+    }
+    renderCard(view, resolve(params));
   }
 
   window.Screens = window.Screens || {};

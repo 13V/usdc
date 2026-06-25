@@ -369,6 +369,67 @@ export function addExpense(
   return getTrip(tripId) as Trip;
 }
 
+/**
+ * Edit an existing (non-voided) expense. Only the provided fields change.
+ * Validates + dedupes participants exactly like addExpense. Throws on a missing
+ * trip/expense or invalid field.
+ */
+export function editExpense(
+  tripId: string,
+  expenseId: string,
+  patch: {
+    title?: string;
+    amountCents?: number;
+    paidBy?: string;
+    participants?: string[];
+  }
+): Trip {
+  const trip = getTrip(tripId);
+  if (!trip) throw new Error("editExpense: trip not found");
+  const existing = trip.expenses.find((e) => e.id === expenseId);
+  if (!existing) throw new Error("editExpense: expense not found");
+
+  const memberIds = new Set(trip.members.map((m) => m.id));
+
+  const title =
+    patch.title !== undefined
+      ? String(patch.title || "").trim() || "Expense"
+      : existing.title;
+
+  let amountCents = existing.amountCents;
+  if (patch.amountCents !== undefined) {
+    amountCents = patch.amountCents;
+    if (!Number.isInteger(amountCents) || amountCents <= 0) {
+      throw new Error("editExpense: amountCents must be a positive integer");
+    }
+  }
+
+  let paidBy = existing.paidBy;
+  if (patch.paidBy !== undefined) {
+    paidBy = String(patch.paidBy || "");
+    if (!memberIds.has(paidBy)) {
+      throw new Error("editExpense: paidBy must be a trip member");
+    }
+  }
+
+  let participants = existing.participants;
+  if (patch.participants !== undefined) {
+    // Dedupe — a repeated id would double-charge that member (balances wrong).
+    participants = Array.from(new Set(patch.participants || []));
+    if (participants.length === 0) {
+      throw new Error("editExpense: need at least one participant");
+    }
+    for (const p of participants) {
+      if (!memberIds.has(p)) throw new Error(`editExpense: participant ${p} is not a trip member`);
+    }
+  }
+
+  db.prepare(
+    "UPDATE expenses SET title = ?, amount_cents = ?, paid_by = ?, participants = ? WHERE id = ? AND trip_id = ? AND COALESCE(voided, 0) = 0"
+  ).run(title, amountCents, paidBy, JSON.stringify(participants), expenseId, tripId);
+  return getTrip(tripId) as Trip;
+}
+
 export function deleteExpense(tripId: string, expenseId: string): Trip {
   const trip = getTrip(tripId);
   if (!trip) throw new Error("deleteExpense: trip not found");
@@ -416,6 +477,17 @@ export function isTripAuthorized(input: {
     if (memberUserIds.includes(userId)) return true;
   }
   return false;
+}
+
+/** Every stored settlement (used by receipt lookup). */
+export function listAllSettlements(): StoredSettlement[] {
+  const rows = db.prepare("SELECT * FROM settlements").all() as any[];
+  return rows.map((row) => ({
+    tripId: row.trip_id,
+    signature: row.signature,
+    transfers: JSON.parse(row.transfers),
+    createdAt: row.created_at,
+  }));
 }
 
 export function getSettlement(tripId: string): StoredSettlement | undefined {

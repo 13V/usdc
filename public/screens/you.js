@@ -134,12 +134,17 @@
   // ── settings list (emoji-icon tile + lowercase label + chevron) ──────────────
   var CHEV = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
 
-  function row(id, icon, tint, label, right) {
+  // a "coming soon" pill, for rows that aren't wired yet — so they read as
+  // not-yet-available instead of looking like a live, tappable row.
+  var SOON_TAG = '<span style="display:inline-flex; align-items:center; font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(244,247,250,0.4); background:rgba(244,247,250,0.06); border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:3px 9px; margin-right:2px;">soon</span>';
+
+  function row(id, icon, tint, label, right, soon) {
+    // soon rows: dimmed, no pointer/chevron, a "soon" pill instead.
     return '' +
-      '<div id="' + id + '" style="display:flex; align-items:center; gap:13px; padding:14px 15px; cursor:pointer;">' +
+      '<div id="' + id + '" style="display:flex; align-items:center; gap:13px; padding:14px 15px;' + (soon ? ' opacity:.55; cursor:default;' : ' cursor:pointer;') + '">' +
         '<div style="width:34px; height:34px; border-radius:11px; background:' + tint + '; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;">' + icon + '</div>' +
         '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' + label + '</span>' +
-        (right || '') + CHEV +
+        (soon ? SOON_TAG : ((right || '') + CHEV)) +
       '</div>';
   }
   function divider() {
@@ -147,7 +152,6 @@
   }
 
   function settingsList() {
-    var notifTag = '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(244,247,250,0.4); margin-right:2px;">on</span>';
     var netTag = '<span style="display:inline-flex; align-items:center; gap:6px; background:rgba(61,232,199,0.1); border:1px solid rgba(61,232,199,0.35); border-radius:999px; padding:3px 9px; margin-right:2px;"><span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 6px rgba(61,232,199,0.8);"></span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#3DE8C7;">devnet</span></span>';
 
     return '' +
@@ -156,9 +160,11 @@
         row("yFriends", "🫂", "rgba(39,117,202,0.16)", "friends") + divider() +
         row("yRecurring", "🔁", "rgba(61,232,199,0.14)", "recurring") + divider() +
         row("ySaved", "🧾", "rgba(255,198,92,0.16)", "saved tabs") + divider() +
-        row("yNotif", "🔔", "rgba(255,107,94,0.14)", "notifications", notifTag) + divider() +
+        // notifications + help aren't wired yet — render them as "soon" so they
+        // read as not-yet-available rather than tappable rows that silently no-op.
+        row("yNotif", "🔔", "rgba(255,107,94,0.14)", "notifications", null, true) + divider() +
         row("yNet", "🌐", "rgba(39,117,202,0.16)", "network", netTag) + divider() +
-        row("yHelp", "💁", "rgba(244,247,250,0.07)", "help") +
+        row("yHelp", "💁", "rgba(244,247,250,0.07)", "help", null, true) +
       '</div>';
   }
 
@@ -265,12 +271,9 @@
     if (r) r.onclick = function () { location.hash = "#/recurring"; };
     var saved = document.getElementById("ySaved");
     if (saved) saved.onclick = function () { app.go("groups"); };
-    var notif = document.getElementById("yNotif");
-    if (notif) notif.onclick = function () { app.toast("notifications — coming soon 🔔"); };
+    // notifications + help are "soon" rows — intentionally not wired (no no-op tap).
     var net = document.getElementById("yNet");
-    if (net) net.onclick = function () { app.toast("on mainnet · usdc on solana 🌐"); };
-    var help = document.getElementById("yHelp");
-    if (help) help.onclick = function () { app.toast("need a hand? we got you 💁"); };
+    if (net) net.onclick = function () { app.toast("devnet · usdc on solana 🌐"); };
     var so = document.getElementById("ySignOut");
     if (so) so.onclick = function () {
       if (window.Auth && Auth.signOut) Auth.signOut();

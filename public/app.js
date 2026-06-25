@@ -52,21 +52,60 @@
   }
   function avatar(person, size) {
     person = person || {};
-    var emoji = person.emoji || (person.name ? person.name.trim()[0].toUpperCase() : "🙂");
-    var bg = person.color || colorFor(person.id || person.name);
+    var nm = (person.name == null ? "" : String(person.name)).trim();
+    var emoji = person.emoji || (nm ? nm[0].toUpperCase() : "🙂");
+    var bg = person.color || colorFor(person.id || nm || "?");
     var cls = "avatar" + (size === "sm" ? " sm" : "");
     return '<span class="' + cls + '" style="background:' + bg + '">' + esc(emoji) + "</span>";
   }
   function mascot(opts) { return window.Mascot ? window.Mascot.html(opts) : ""; }
 
+  // copy(text) -> Promise. Uses the async Clipboard API when available (secure
+  // contexts), and falls back to a hidden textarea + execCommand('copy') so it
+  // still works on http/devnet where navigator.clipboard is undefined.
+  function copy(text) {
+    text = String(text == null ? "" : text);
+    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;pointer-events:none;";
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        var ok = document.execCommand("copy");
+        ta.remove();
+        ok ? resolve() : reject(new Error("copy failed"));
+      } catch (err) { reject(err); }
+    });
+  }
+
   // ---- toast ----
+  // Toasts render inside a persistent aria-live="polite" region so screen
+  // readers announce them as they appear.
+  function toastRegion() {
+    var r = document.getElementById("toast-region");
+    if (!r) {
+      r = document.createElement("div");
+      r.id = "toast-region";
+      r.setAttribute("aria-live", "polite");
+      r.setAttribute("aria-atomic", "true");
+      r.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:200;pointer-events:none;";
+      document.body.appendChild(r);
+    }
+    return r;
+  }
   function toast(msg) {
     var t = document.createElement("div");
     t.textContent = msg;
     t.style.cssText = "position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:200;" +
       "background:var(--card);border:1px solid var(--line);color:var(--text);font-family:var(--mono);" +
       "font-size:13px;padding:11px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .2s;";
-    document.body.appendChild(t);
+    toastRegion().appendChild(t);
     requestAnimationFrame(function () { t.style.opacity = "1"; });
     setTimeout(function () { t.style.opacity = "0"; setTimeout(function () { t.remove(); }, 250); }, 2200);
   }
@@ -76,13 +115,26 @@
     closeSheet();
     var scrim = document.createElement("div"); scrim.className = "sheet-scrim";
     var el = document.createElement("div"); el.className = "sheet";
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.setAttribute("tabindex", "-1");
     el.innerHTML = '<div class="grab"></div>' + innerHtml;
     scrim.onclick = function (e) { if (e.target === scrim) closeSheet(); };
+    function onKey(e) { if (e.key === "Escape") { e.preventDefault(); closeSheet(); } }
+    document.addEventListener("keydown", onKey);
     document.body.appendChild(scrim); document.body.appendChild(el);
     app._sheet = [scrim, el];
+    app._sheetKey = onKey;
+    // Move focus into the sheet (first focusable element, else the sheet itself).
+    var focusTarget = el.querySelector(
+      'input,select,textarea,button,a[href],[tabindex]:not([tabindex="-1"])') || el;
+    try { focusTarget.focus(); } catch (_) {}
     return el;
   }
-  function closeSheet() { if (app._sheet) { app._sheet.forEach(function (n) { n.remove(); }); app._sheet = null; } }
+  function closeSheet() {
+    if (app._sheetKey) { document.removeEventListener("keydown", app._sheetKey); app._sheetKey = null; }
+    if (app._sheet) { app._sheet.forEach(function (n) { n.remove(); }); app._sheet = null; }
+  }
 
   // ---- router (hash-based: #/home, #/group/:id, ...) ----
   var TABS = ["home", "groups", "activity", "you"];
@@ -123,14 +175,30 @@
     if (!bar) return;
     if (!TOPLEVEL[active]) { bar.style.display = "none"; bar.innerHTML = ""; return; }
     bar.style.display = "";
+    // "friends" is a top-level destination but not one of the five tabs; map it
+    // onto "groups" so the bar always has a sensible highlighted item.
+    var act = active === "friends" ? "groups" : active;
+    function tab(name, label) {
+      var on = act === name;
+      return '<a data-go="' + name + '" role="link" tabindex="0" class="' + (on ? "active" : "") + '"' +
+        (on ? ' aria-current="page" style="background:rgba(39,117,202,0.18)"' : "") +
+        '>' + icon(name) + label + "</a>";
+    }
     bar.innerHTML =
-      '<a data-go="home" class="' + (active === "home" ? "active" : "") + '">' + icon("home") + "home</a>" +
-      '<a data-go="groups" class="' + (active === "groups" ? "active" : "") + '">' + icon("groups") + "groups</a>" +
-      '<a data-go="new" class="fab">' + icon("plus") + "</a>" +
-      '<a data-go="activity" class="' + (active === "activity" ? "active" : "") + '">' + icon("activity") + "activity</a>" +
-      '<a data-go="you" class="' + (active === "you" ? "active" : "") + '">' + icon("you") + "you</a>";
+      tab("home", "home") +
+      tab("groups", "groups") +
+      '<a data-go="new" role="link" tabindex="0" class="fab" aria-label="new">' + icon("plus") + "</a>" +
+      tab("activity", "activity") +
+      tab("you", "you");
     Array.prototype.forEach.call(bar.querySelectorAll("a"), function (a) {
-      a.onclick = function () { go(a.getAttribute("data-go")); };
+      function activate() { go(a.getAttribute("data-go")); }
+      a.onclick = activate;
+      a.onkeydown = function (e) {
+        if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+          e.preventDefault();
+          activate();
+        }
+      };
     });
   }
 
@@ -161,8 +229,8 @@
           '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#F4F7FA;">add money</div>' +
           '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.5); margin-top:5px;">receive usdc · ' + esc(cluster) + '</div>' +
         '</div>' +
-        '<div style="width:206px; margin:18px auto 0; background:#fff; border-radius:16px; padding:8px;">' +
-          '<img alt="your wallet qr" width="190" height="190" style="display:block; border-radius:8px;" src="' + esc(qrImg(solUrl)) + '">' +
+        '<div id="depQrWrap" style="width:206px; margin:18px auto 0; background:#fff; border-radius:16px; padding:8px;">' +
+          '<img id="depQr" alt="your wallet qr" width="190" height="190" style="display:block; border-radius:8px;" src="' + esc(qrImg(solUrl)) + '">' +
         '</div>' +
         '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:18px auto 0; max-width:300px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:13px; padding:12px 14px; cursor:pointer;">' +
           '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(244,247,250,0.85);">' + esc(short) + '</span>' +
@@ -175,17 +243,29 @@
     );
     var addr = document.getElementById("depAddr");
     if (addr) addr.onclick = function () {
-      try {
-        navigator.clipboard.writeText(wallet);
+      copy(wallet).then(function () {
         toast("address copied 📋");
-      } catch (_) { toast(wallet); }
+      }).catch(function () { toast(wallet); });
+    };
+    // If the QR image fails to load, show the full address prominently instead.
+    var qr = document.getElementById("depQr");
+    if (qr) qr.onerror = function () {
+      var wrap = document.getElementById("depQrWrap");
+      if (!wrap) return;
+      wrap.style.background = "#13212E";
+      wrap.style.border = "1px solid rgba(244,247,250,0.1)";
+      wrap.style.width = "auto";
+      wrap.style.padding = "16px";
+      wrap.innerHTML =
+        '<div style="font-family:\'Space Mono\',monospace; font-size:11px; line-height:1.5; ' +
+        'word-break:break-all; text-align:center; color:rgba(244,247,250,0.9);">' + esc(wallet) + '</div>';
     };
   }
 
   var app = {
     api: api, esc: esc, money: money, avatar: avatar, colorFor: colorFor, mascot: mascot,
     toast: toast, sheet: sheet, closeSheet: closeSheet, go: go, render: render,
-    depositSheet: depositSheet, _sheet: null,
+    depositSheet: depositSheet, copy: copy, _sheet: null, _sheetKey: null,
   };
   window.app = app;
 

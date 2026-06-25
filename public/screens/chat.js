@@ -155,6 +155,12 @@
   // reaction rows (messages + money cards) are built by reactionChipRow below.
   var REACTS = ["🫡", "👀", "💀"];
 
+  // cap an emoji by CODEPOINTS (not UTF-16 code units) so we never split a
+  // multi-codepoint emoji (e.g. flags / ZWJ sequences) mid-glyph.
+  function capEmoji(s) {
+    return Array.from(String(s == null ? "" : s)).slice(0, 8).join("");
+  }
+
   // ── persisted reactions row (server-backed; the design's 🫡 👀 💀 chips) ─────
   // Shared chip-row builder. `initial` is [{emoji,count,mine}]; `submit(emoji)`
   // POSTs the toggle and resolves to the fresh array. Used by message bubbles
@@ -173,8 +179,13 @@
     var keys = REACTS.slice();
     Object.keys(state).forEach(function (e) { if (keys.indexOf(e) < 0) keys.push(e); });
 
+    function repaintAll() {
+      keys.forEach(function (k) { if (chips[k]) chips[k]._paint(); });
+    }
+
     var chips = {};
     keys.forEach(function (emoji) {
+      var capped = capEmoji(emoji);
       var chip = el('<button type="button" style="appearance:none; display:inline-flex; align-items:center; gap:4px; cursor:pointer; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:3px 9px;"></button>');
       chips[emoji] = chip;
       function paint() {
@@ -182,7 +193,7 @@
         chip.innerHTML = "";
         var e = document.createElement("span");
         e.style.cssText = "font-size:12px; line-height:1;";
-        e.textContent = emoji;
+        e.textContent = capped; // textContent + codepoint-capped: never split/inject
         chip.appendChild(e);
         if (st.count > 0) {
           var n = document.createElement("span");
@@ -195,14 +206,22 @@
         chip.style.background = st.mine ? "rgba(39,117,202,0.22)" : (on ? "rgba(39,117,202,0.12)" : "#13212E");
       }
       chip.addEventListener("click", function () {
+        // OPTIMISTIC: paint the toggled chip state immediately, then reconcile
+        // with the server (or revert on failure).
+        var prev = state[emoji] ? { count: state[emoji].count, mine: state[emoji].mine } : { count: 0, mine: false };
+        var willAdd = !prev.mine;
+        state[emoji] = { count: Math.max(0, prev.count + (willAdd ? 1 : -1)), mine: willAdd };
+        paint();
         chip.disabled = true;
         Promise.resolve()
           .then(function () { return submit(emoji); })
           .then(function (fresh) {
-            ingest(fresh || []);
-            keys.forEach(function (k) { if (chips[k]) chips[k]._paint(); });
+            ingest(fresh || []); // reconcile with the authoritative server state
+            repaintAll();
           })
           .catch(function (err) {
+            state[emoji] = prev; // revert the optimistic paint
+            paint();
             app.toast((err && err.status === 401) ? "sign in to react" : "couldn't react");
           })
           .then(function () { chip.disabled = false; });
@@ -513,16 +532,19 @@
     return paymentNode(it.data);
   }
 
-  // a readable "TODAY · JUN 24"-style divider from the newest item, or "today".
-  function dayLabel(items) {
-    var ts = 0;
-    for (var i = items.length - 1; i >= 0; i--) { if (items[i].ts) { ts = items[i].ts; break; } }
-    var d = ts ? new Date(ts) : new Date();
-    if (isNaN(d.getTime())) return "today";
+  // a readable "TODAY · JUN 24"-style label for a given date (default: now).
+  function labelForDate(d) {
+    if (!d || isNaN(d.getTime())) d = new Date();
     var today = new Date();
     var same = d.toDateString() === today.toDateString();
     var mon = d.toLocaleString([], { month: "short" }).toUpperCase();
     return (same ? "TODAY" : d.toLocaleString([], { weekday: "short" }).toUpperCase()) + " · " + mon + " " + d.getDate();
+  }
+  // a readable "TODAY · JUN 24"-style divider from the newest item, or today.
+  function dayLabel(items) {
+    var ts = 0;
+    for (var i = items.length - 1; i >= 0; i--) { if (items[i].ts) { ts = items[i].ts; break; } }
+    return labelForDate(ts ? new Date(ts) : new Date());
   }
 
   // ── empty state — LIFTED verbatim (mascot blob + dry copy) ──────────────────
@@ -548,17 +570,37 @@
     seenMsgIds = new Set();
     lastSeenISO = null;
     if (!items.length) { renderEmpty(); return; }
-    feedEl.appendChild(dividerNode(dayLabel(items)));
+    var div = dividerNode(dayLabel(items));
+    div.setAttribute("data-feed-divider", "1");
+    feedEl.appendChild(div);
     items.forEach(function (it) {
-      feedEl.appendChild(nodeFor(it));
+      var node = nodeFor(it);
       if (it.kind === "msg") {
+        // tag message bubbles with their timestamp so polled messages can be
+        // inserted in time order (see insertBubbleSorted).
+        node.setAttribute("data-msg-ts", String(it.ts || 0));
         if (it.data.id != null) seenMsgIds.add(String(it.data.id));
         trackSeen(it.data.createdAt);
       }
+      feedEl.appendChild(node);
     });
   }
 
+  // insert a message bubble keeping the feed time-sorted: place it before the
+  // first existing bubble whose timestamp is strictly newer, else append.
+  function insertBubbleSorted(node, ts) {
+    node.setAttribute("data-msg-ts", String(ts || 0));
+    var bubbles = feedEl.querySelectorAll("[data-msg-ts]");
+    for (var i = 0; i < bubbles.length; i++) {
+      var bts = Number(bubbles[i].getAttribute("data-msg-ts")) || 0;
+      if (bts > (ts || 0)) { feedEl.insertBefore(node, bubbles[i]); return; }
+    }
+    feedEl.appendChild(node);
+  }
+
   // append newly-polled messages (dedup by id), pinning scroll if at bottom.
+  // Newly-arrived messages are inserted in timestamp order so an out-of-order
+  // poll never leaves the timeline scrambled.
   function appendMessages(messages) {
     if (!feedEl || !messages || !messages.length) return;
     var wasNear = nearBottom();
@@ -567,15 +609,17 @@
       var key = m.id != null ? String(m.id) : null;
       if (key && seenMsgIds && seenMsgIds.has(key)) return;
       if (!added) {
-        // first new message clears any empty state and re-seeds the divider.
+        // first new message clears any empty state and re-seeds the divider
+        // using the real current date (not a hardcoded "today").
         if (!feedEl.querySelector("[data-feed-divider]")) {
           feedEl.innerHTML = "";
-          var div = dividerNode("today");
+          var div = dividerNode(labelForDate(new Date()));
           div.setAttribute("data-feed-divider", "1");
           feedEl.appendChild(div);
         }
       }
-      feedEl.appendChild(bubbleNode(m));
+      var node = bubbleNode(m);
+      insertBubbleSorted(node, Date.parse(m.createdAt) || 0);
       if (key && seenMsgIds) seenMsgIds.add(key);
       trackSeen(m.createdAt);
       added = true;

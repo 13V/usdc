@@ -41,12 +41,14 @@ import {
   addMember,
   updateMember,
   addExpense,
+  editExpense,
   deleteExpense,
   saveSettlement,
   getSettlement,
   claimMember,
   listTripsForUser,
   isTripAuthorized,
+  listAllSettlements,
 } from "./trips";
 import {
   authOptional,
@@ -84,6 +86,37 @@ import { reactionsRouter } from "./reactions";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
+
+/**
+ * Tiny in-memory IP rate limiter — fixed window, no external dependency.
+ * Tracks recent request timestamps per IP in a Map and rejects with 429 once a
+ * client exceeds `max` requests within `windowMs`. Intended for the handful of
+ * abuse-prone endpoints (auth nonce/verify, external scan provider).
+ */
+function rateLimit(max: number, windowMs: number) {
+  const hits = new Map<string, number[]>();
+  return (req: Request, res: Response, next: () => void): void => {
+    const now = Date.now();
+    const ip = req.ip || "unknown";
+    const recent = (hits.get(ip) || []).filter((t) => now - t < windowMs);
+    if (recent.length >= max) {
+      // Opportunistically prune stale IPs so the Map can't grow unbounded.
+      if (hits.size > 10000) {
+        for (const [k, v] of hits) {
+          if (v.every((t) => now - t >= windowMs)) hits.delete(k);
+        }
+      }
+      res.status(429).json({ error: "too many requests, slow down" });
+      return;
+    }
+    recent.push(now);
+    hits.set(ip, recent);
+    next();
+  };
+}
+
+const authRateLimit = rateLimit(60, 60_000); // ~60 req/min
+const scanRateLimit = rateLimit(10, 60_000); // ~10 req/min
 const COLLECTOR =
   process.env.COLLECTOR_WALLET || "11111111111111111111111111111111"; // system program as a harmless default
 
@@ -116,11 +149,11 @@ app.get("/api/auth/config", (_req: Request, res: Response) => {
   res.json({ siws: true, privy: privyConfigured() });
 });
 
-app.get("/api/auth/nonce", (_req: Request, res: Response) => {
+app.get("/api/auth/nonce", authRateLimit, (_req: Request, res: Response) => {
   res.json(issueNonce());
 });
 
-app.post("/api/auth/siws/verify", (req: Request, res: Response) => {
+app.post("/api/auth/siws/verify", authRateLimit, (req: Request, res: Response) => {
   try {
     const body = req.body as { pubkey?: string; signature?: string; message?: string };
     const pubkey = String(body.pubkey || "");
@@ -136,7 +169,7 @@ app.post("/api/auth/siws/verify", (req: Request, res: Response) => {
   }
 });
 
-app.post("/api/auth/privy/verify", async (req: Request, res: Response) => {
+app.post("/api/auth/privy/verify", authRateLimit, async (req: Request, res: Response) => {
   if (!privyConfigured()) {
     return res.status(501).json({ error: "privy not configured" });
   }
@@ -249,6 +282,9 @@ app.post("/api/bills", (req: Request, res: Response) => {
 
     let totalCents = toCents(body.total);
     if (body.tipPercent) totalCents = withTip(totalCents, body.tipPercent);
+    if (totalCents > MAX_AMOUNT_CENTS) {
+      return res.status(400).json({ error: `amount exceeds cap ($${MAX_AMOUNT_CENTS / 100})` });
+    }
 
     // The collector is WHO GETS PAID. Bind it to the signed-in creator's own
     // wallet so a standalone tab pays them — never the system-program placeholder
@@ -316,7 +352,8 @@ app.post("/api/bills/:id/verify", async (req: Request, res: Response) => {
     store.put(bill);
     res.json({ ...serializeBill(bill), updated });
   } catch (err) {
-    res.status(502).json({ error: `verify failed: ${(err as Error).message}` });
+    const status = isRpcFailure(err) ? 502 : 400;
+    res.status(status).json({ error: `verify failed: ${(err as Error).message}` });
   }
 });
 
@@ -343,7 +380,7 @@ app.delete("/api/groups/:id", (req: Request, res: Response) => {
 
 // Scan a receipt photo -> detected total (so the host can skip typing it).
 // Body: { image: "data:image/jpeg;base64,..." | "<base64>" }
-app.post("/api/scan", async (req: Request, res: Response) => {
+app.post("/api/scan", scanRateLimit, requireAuth, async (req: Request, res: Response) => {
   const image = (req.body as { image?: string }).image;
   if (!image || typeof image !== "string") {
     return res.status(400).json({ error: "need an image" });
@@ -482,6 +519,19 @@ function assertValidWallet(wallet: string): void {
 }
 
 class ValidationError extends Error {}
+
+/**
+ * Heuristic: is this error a genuine RPC/network failure (→ 502) rather than a
+ * bad-input/validation problem (→ 400)? Network errors from web3.js / fetch
+ * surface as connection/timeout/fetch/DNS-style messages; everything else
+ * (e.g. a malformed PublicKey thrown synchronously) is treated as bad input.
+ */
+function isRpcFailure(err: unknown): boolean {
+  const msg = (err as Error)?.message || "";
+  return /network|fetch|timeout|ECONN|ENOTFOUND|EAI_AGAIN|socket|rpc|503|502|429|failed to|getaddrinfo/i.test(
+    msg
+  );
+}
 
 function assertLen(value: string, label: string, min: number, max: number): string {
   const v = String(value || "").trim();
@@ -778,6 +828,51 @@ app.post("/api/trips/:id/expenses", (req: Request, res: Response) => {
   }
 });
 
+app.patch("/api/trips/:id/expenses/:eid", (req: Request, res: Response) => {
+  try {
+    const trip = getTrip(req.params.id);
+    if (!trip) return res.status(404).json({ error: "not found" });
+    if (!authorizeTrip(req, trip)) {
+      return res.status(403).json({ error: "not authorized for this trip" });
+    }
+    const body = req.body as {
+      title?: string;
+      amountCents?: number;
+      paidBy?: string;
+      participants?: string[];
+    };
+    const patch: {
+      title?: string;
+      amountCents?: number;
+      paidBy?: string;
+      participants?: string[];
+    } = {};
+    if (body.title !== undefined) {
+      if (String(body.title).trim()) {
+        assertLen(String(body.title), "expense title", 1, MAX_EXPENSE_TITLE);
+      }
+      patch.title = String(body.title);
+    }
+    if (body.amountCents !== undefined) {
+      const amountCents = body.amountCents;
+      if (!Number.isInteger(amountCents) || amountCents <= 0) {
+        return res.status(400).json({ error: "need a positive amountCents" });
+      }
+      if (amountCents > MAX_AMOUNT_CENTS) {
+        return res.status(400).json({ error: `amount exceeds cap ($${MAX_AMOUNT_CENTS / 100})` });
+      }
+      patch.amountCents = amountCents;
+    }
+    if (body.paidBy !== undefined) patch.paidBy = String(body.paidBy);
+    if (body.participants !== undefined) patch.participants = body.participants;
+
+    const updated = editExpense(req.params.id, req.params.eid, patch);
+    res.json(serializeTrip(updated));
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
 app.delete("/api/trips/:id/expenses/:eid", (req: Request, res: Response) => {
   try {
     const existing = getTrip(req.params.id);
@@ -891,8 +986,65 @@ app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => 
     saveSettlement(trip.id, stored.signature, stored.transfers);
     res.json(serializeTrip(getTrip(trip.id) as Trip));
   } catch (err) {
-    res.status(502).json({ error: `verify failed: ${(err as Error).message}` });
+    const status = isRpcFailure(err) ? 502 : 400;
+    res.status(status).json({ error: `verify failed: ${(err as Error).message}` });
   }
+});
+
+// ---- Receipts -------------------------------------------------------------
+// Look up a single payment by its Solana Pay reference OR confirmed signature,
+// across both settlement transfers and bill participants. Returns the receipt
+// fields, or { found:false } (HTTP 200) when nothing matches.
+app.get("/api/receipts/:ref", (req: Request, res: Response) => {
+  const ref = String(req.params.ref || "");
+  if (!ref) return res.json({ found: false });
+
+  // 1) Settlement transfers (transfer.reference or transfer.signature).
+  for (const stored of listAllSettlements()) {
+    const trip = getTrip(stored.tripId);
+    if (!trip) continue;
+    for (const t of stored.transfers) {
+      const sig = (t as any).signature as string | undefined;
+      if (t.reference === ref || (sig && sig === ref)) {
+        return res.json({
+          found: true,
+          title: trip.name,
+          fromName: memberName(trip, t.from),
+          toName: memberName(trip, t.to),
+          amountCents: t.amountCents,
+          amountFmt: fmt(t.amountCents),
+          wallet: trip.members.find((m) => m.id === t.to)?.wallet || null,
+          signature: sig || null,
+          reference: t.reference || null,
+          cluster: trip.cluster,
+          paidAt: stored.createdAt,
+        });
+      }
+    }
+  }
+
+  // 2) Bill participants (participant.reference or participant.signature).
+  for (const bill of store.all()) {
+    for (const p of bill.participants) {
+      if (p.reference === ref || (p.signature && p.signature === ref)) {
+        return res.json({
+          found: true,
+          title: bill.title,
+          fromName: p.name,
+          toName: "Collector",
+          amountCents: p.amountCents,
+          amountFmt: fmt(p.amountCents),
+          wallet: bill.collector,
+          signature: p.signature || null,
+          reference: p.reference || null,
+          cluster: bill.cluster,
+          paidAt: bill.createdAt,
+        });
+      }
+    }
+  }
+
+  res.json({ found: false });
 });
 
 // Shareable SPA link: the frontend reads the token from the path. Declared

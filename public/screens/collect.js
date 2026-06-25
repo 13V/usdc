@@ -104,7 +104,9 @@
     '</div>';
   }
 
-  // the highlighted unpaid row with a nudge button (frame 2 · "ava") — verbatim
+  // the highlighted unpaid row with a nudge button (frame 2 · "ava") — verbatim.
+  // The nudge targets this specific person by INDEX (data-nudge-idx), so two
+  // people sharing a display name don't get conflated (dup-name bug).
   function nudgeRow(p, i) {
     return '<div style="display:flex; align-items:center; gap:11px; padding:11px 10px; margin:4px -6px 0; border-radius:14px; background:rgba(255,198,92,0.08); border:1px solid rgba(255,198,92,0.28);">' +
       '<div style="width:34px; height:34px; border-radius:50%; background:' + avGrad(i) + '; display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">' + app.esc(avFace(p, i)) + '</div>' +
@@ -112,7 +114,7 @@
         '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' + app.esc(p.name) + '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(255,198,92,0.85); margin-top:1px;">' + app.esc(p.amountFmt || "") + ' · still waiting</div>' +
       '</div>' +
-      '<button class="tcNudge" data-nudge="' + app.esc(p.name) + '" style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; background:#FFC65C; border:none; border-radius:999px; padding:8px 13px;">' +
+      '<button class="tcNudge" data-nudge-idx="' + i + '" style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; background:#FFC65C; border:none; border-radius:999px; padding:8px 13px;">' +
         '<span style="font-size:11px; animation:tcNudge 2.2s ease-in-out infinite;">👀</span>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:#0B1622;">nudge ' + app.esc(p.name) + '</span>' +
       '</button>' +
@@ -177,16 +179,19 @@
     var eachFmt = ps.length ? (ps[0].amountFmt || "") : (bill.totalFmt || "");
 
     // pick one person to nudge: first unpaid (the highlighted row in frame 2),
-    // only once some have already paid
+    // only once some have already paid. Track by INDEX so a duplicate display
+    // name doesn't make us highlight (or nudge) the wrong person.
+    var nudgeIdx = -1;
     var nudgeName = null;
     if (some) {
-      var u = ps.find(function (p) { return !p.paid; });
-      if (u) nudgeName = u.name;
+      for (var k = 0; k < ps.length; k++) {
+        if (!ps[k].paid) { nudgeIdx = k; nudgeName = ps[k].name; break; }
+      }
     }
 
     var rows = ps.map(function (p, i) {
       var isYou = i === 0;
-      if (some && nudgeName !== null && p.name === nudgeName && !p.paid) return nudgeRow(p, i);
+      if (some && i === nudgeIdx) return nudgeRow(p, i);
       return personRow(p, i, isYou, !some); // frame 1 dims waiting rows; frame 2 doesn't
     }).join("");
 
@@ -233,7 +238,16 @@
     var nb = view.querySelector(".tcNudge");
     if (nb) nb.onclick = function (e) {
       e.stopPropagation();
-      app.toast("nudge sent 👀");
+      // target the specific unpaid person by index (dup-name safe), and copy
+      // their pay link so the nudge is actually actionable.
+      var idx = parseInt(nb.getAttribute("data-nudge-idx"), 10);
+      var person = (!isNaN(idx) && ps[idx]) ? ps[idx] : null;
+      var who = person ? person.name : "them";
+      app.copy(shareUrl(bill)).then(function () {
+        app.toast("link copied — nudge " + who + " 👀");
+      }, function () {
+        app.toast("nudge " + who + " 👀");
+      });
     };
   }
 
@@ -308,18 +322,8 @@
   }
 
   function copyLink(url) {
-    var done = function () { app.toast("link copied 📋"); };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(done, function () { fallbackCopy(url); done(); });
-    } else { fallbackCopy(url); done(); }
-  }
-  function fallbackCopy(url) {
-    try {
-      var ta = document.createElement("textarea");
-      ta.value = url; ta.style.position = "fixed"; ta.style.opacity = "0";
-      document.body.appendChild(ta); ta.select();
-      document.execCommand("copy"); ta.remove();
-    } catch (_) {}
+    app.copy(url).then(function () { app.toast("link copied 📋"); },
+      function () { app.toast("link copied 📋"); });
   }
 
   function wireShare(view, bill) {

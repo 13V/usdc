@@ -314,9 +314,39 @@
       '</div>';
     wireCancel();
     var add = document.getElementById("stAdd");
-    if (add) add.onclick = function () { app.depositSheet(); };
+    if (add) add.onclick = function () { app.depositSheet(); watchDepositClose(); };
     var oth = document.getElementById("stOther");
     if (oth) oth.onclick = function () { go("ready"); };
+  }
+
+  // After "add money" opens the deposit sheet, watch for it to close, then
+  // re-check the live wallet balance — if it now covers the amount, advance to
+  // ready so the user isn't stranded on needs-funds after topping up.
+  function watchDepositClose() {
+    // wait a tick so the just-opened sheet is registered before we poll for close
+    setTimeout(function () {
+      var iv = setInterval(function () {
+        if (!S || location.hash.indexOf("settle") < 0 || S.state !== "needs-funds") {
+          clearInterval(iv); return;          // navigated away / state changed
+        }
+        if (app._sheet) return;               // sheet still open — keep waiting
+        clearInterval(iv);
+        recheckBalance();
+      }, 400);
+    }, 300);
+  }
+
+  function recheckBalance() {
+    if (!S || !S.transfer || S.state !== "needs-funds") return;
+    var need = Math.abs(S.transfer.amountCents || 0);
+    app.api.get("/api/me/wallet").then(function (w) {
+      if (!S || S.state !== "needs-funds") return;
+      if (w && typeof w.usdcCents === "number") {
+        S.balanceCents = w.usdcCents;
+        if (w.usdcCents >= need) { go("ready"); return; }
+        renderNeedsFunds();                   // refresh the shortfall breakdown
+      }
+    }).catch(function () { /* balance unknown — leave the user on needs-funds */ });
   }
 
   // ---- STATE: settled / squared (lifted FRAME 2) ------------------------------
