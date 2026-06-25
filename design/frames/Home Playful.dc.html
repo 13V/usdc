@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #050d15; }
+  .ph-scroll::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes phFloat { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-5px) rotate(3deg); } }
+  @keyframes phSquish { 0%,100% { border-radius:47% 53% 52% 48% / 55% 48% 52% 45%; } 50% { border-radius:53% 47% 48% 52% / 46% 54% 47% 53%; } }
+  @keyframes phBlink { 0%,92%,100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+</style>
+</helmet>
+
+<div style="position:relative; width:390px; height:844px; background:#0B1622; overflow:hidden; font-family:'General Sans','Space Grotesk',sans-serif; color:#F4F7FA; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;">
+
+  <sc-if value="{{ glow }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; left:-40px; top:60px; width:380px; height:340px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.30) 0%, rgba(39,117,202,0.07) 46%, rgba(39,117,202,0) 72%); pointer-events:none;"></div>
+  </sc-if>
+  <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 80% 4%, rgba(244,247,250,0.03) 0 1px, transparent 1px 7px); opacity:.6; pointer-events:none;"></div>
+
+  <!-- status bar -->
+  <div style="position:relative; z-index:3; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 30px 0 32px; flex:none;">
+    <span style="font-family:'Space Mono',monospace; font-size:14px; font-weight:700; letter-spacing:.5px;">9:41</span>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:rgba(244,247,250,0.6);">5G</span>
+      <div style="width:24px; height:12px; border:1px solid rgba(244,247,250,0.45); border-radius:3px; padding:1.5px; display:flex; align-items:center;">
+        <div style="width:100%; height:100%; background:#F4F7FA; border-radius:1px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- top bar -->
+  <div style="position:relative; z-index:3; display:flex; align-items:center; justify-content:space-between; height:56px; padding:0 20px; flex:none;">
+    <div style="display:flex; align-items:center; gap:9px;">
+      <div style="width:32px; height:32px; border-radius:10px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px rgba(39,117,202,0.4), inset 0 1px 0 rgba(255,255,255,0.25);">
+        <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:700; font-size:21px; line-height:1; color:#fff; transform:translateY(-1px);">/</span>
+      </div>
+      <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.5px; color:#F4F7FA;">divvy</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.6)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <div style="position:relative;">
+        <div style="position:absolute; left:-9px; top:-7px; z-index:0; animation:phFloat 5s ease-in-out infinite;">
+          <div style="position:relative; width:20px; height:20px; background:linear-gradient(155deg,#4a9ff0,#2775CA); animation:phSquish 4s ease-in-out infinite; box-shadow:0 3px 8px rgba(39,117,202,0.5);">
+            <div style="position:absolute; top:6px; left:4px; width:3px; height:4px; border-radius:50%; background:#0B1622; animation:phBlink 4.5s infinite;"></div>
+            <div style="position:absolute; top:6px; right:4px; width:3px; height:4px; border-radius:50%; background:#0B1622; animation:phBlink 4.5s infinite;"></div>
+          </div>
+        </div>
+        <div style="position:relative; z-index:1; width:34px; height:34px; border-radius:50%; background:linear-gradient(150deg,#FFC65C,#FF6B5E); display:flex; align-items:center; justify-content:center; font-size:17px; border:2px solid #0B1622;">🦊</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- scroll area -->
+  <div class="ph-scroll" style="position:relative; z-index:2; flex:1; overflow-y:auto; scrollbar-width:none; padding:14px 18px 26px;">
+
+    <!-- HERO receipt card -->
+    <div style="position:relative; background:#13212E; border-radius:23px 23px 0 0; box-shadow:0 14px 36px rgba(0,0,0,0.32); padding:20px 20px 30px; overflow:hidden;">
+      <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 0%, rgba(255,255,255,0.045) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>
+      <div style="position:absolute; top:18px; bottom:18px; right:14px; width:3px; background:repeating-linear-gradient(180deg, rgba(39,117,202,0.65) 0 5px, transparent 5px 11px); opacity:.5; pointer-events:none;"></div>
+
+      <div style="position:relative;">
+        <div style="font-family:'General Sans',sans-serif; font-weight:500; font-size:12.5px; color:rgba(244,247,250,0.5);">you're owed · across 3 groups</div>
+
+        <div style="display:flex; align-items:baseline; gap:9px; margin-top:10px;">
+          <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:64px; line-height:.9; letter-spacing:-2.5px; color:#3B92E8; text-shadow:0 0 36px rgba(59,146,232,0.5);"><span style="font-size:34px; opacity:.5;">$</span>142<span style="font-size:34px; opacity:.5;">.50</span></div>
+          <span style="font-family:'Space Mono',monospace; font-weight:400; font-size:12px; letter-spacing:1px; color:rgba(244,247,250,0.4);">usdc</span>
+        </div>
+
+        <div style="font-family:'General Sans',sans-serif; font-weight:400; font-size:14px; color:rgba(244,247,250,0.55); margin-top:12px;">you owe <span style="font-family:'Space Mono',monospace; font-weight:700; color:#FF6B5E;">$31.00</span> elsewhere</div>
+
+        <div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid rgba(39,117,202,0.4); background:rgba(39,117,202,0.10); border-radius:999px; padding:4px 11px;">
+          <span style="width:6px; height:6px; border-radius:50%; background:#3B92E8; box-shadow:0 0 7px rgba(59,146,232,0.8);"></span>
+          <span style="font-family:'Space Mono',monospace; font-size:10px; font-weight:400; letter-spacing:0.5px; color:rgba(244,247,250,0.62);">settles instantly · ~$0.001 fee</span>
+        </div>
+
+        <!-- two-tone bar -->
+        <div style="display:flex; height:30px; border-radius:999px; overflow:hidden; gap:3px; margin-top:18px;">
+          <div style="flex:173; background:linear-gradient(90deg,#2775CA,#3f97ee); display:flex; align-items:center; padding-left:9px;">
+            <div style="width:23px; height:23px; border-radius:50%; background:rgba(11,22,34,0.5); border:2px solid rgba(255,255,255,0.85); display:flex; align-items:center; justify-content:center; font-size:12px;">🐼</div>
+            <div style="width:23px; height:23px; border-radius:50%; background:rgba(11,22,34,0.5); border:2px solid rgba(255,255,255,0.85); margin-left:-8px; display:flex; align-items:center; justify-content:center; font-size:12px;">🦊</div>
+            <div style="width:23px; height:23px; border-radius:50%; background:rgba(11,22,34,0.5); border:2px solid rgba(255,255,255,0.85); margin-left:-8px; display:flex; align-items:center; justify-content:center; font-size:12px;">🐯</div>
+          </div>
+          <div style="flex:31; background:linear-gradient(90deg,#FF6B5E,#ff8073); display:flex; align-items:center; justify-content:flex-end; padding-right:7px;">
+            <div style="width:23px; height:23px; border-radius:50%; background:rgba(11,22,34,0.5); border:2px solid rgba(255,255,255,0.85); display:flex; align-items:center; justify-content:center; font-size:12px;">🐻</div>
+          </div>
+        </div>
+
+        <!-- tear divider -->
+        <div style="position:relative; height:1px; margin:20px -20px 16px; border-top:1.5px dashed rgba(244,247,250,0.16);">
+          <div style="position:absolute; left:-7px; top:-8px; width:15px; height:15px; border-radius:50%; background:#0B1622;"></div>
+          <div style="position:absolute; right:-7px; top:-8px; width:15px; height:15px; border-radius:50%; background:#0B1622;"></div>
+        </div>
+
+        <div style="display:flex; gap:11px;">
+          <button style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 8px 24px rgba(39,117,202,0.42);" style-hover="filter:brightness(1.07);" style-active="transform:translateY(1px);">settle up</button>
+          <button style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.2); font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:16px; color:#F4F7FA;" style-hover="background:rgba(244,247,250,0.05); border-color:rgba(244,247,250,0.32);" style-active="transform:translateY(1px);">request</button>
+        </div>
+      </div>
+
+      <div style="position:absolute; bottom:-1px; left:0; right:0; height:13px; background:radial-gradient(circle at 9px 13px, #0B1622 0 6px, transparent 6.5px); background-size:18px 13px; background-repeat:repeat-x;"></div>
+    </div>
+
+    <!-- PEOPLE -->
+    <div style="display:flex; align-items:baseline; gap:10px; margin:30px 2px 14px;">
+      <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#F4F7FA;">people</span>
+      <span style="font-family:'Space Mono',monospace; font-size:11px; color:rgba(244,247,250,0.4);">4</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:3px;">
+
+      <div style="display:flex; align-items:center; gap:13px; padding:11px 4px;">
+        <div style="width:40px; height:40px; border-radius:50%; background:rgba(39,117,202,0.20); display:flex; align-items:center; justify-content:center; font-size:19px; flex:none;">🐼</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-family:'General Sans',sans-serif; font-weight:600; font-size:15.5px; color:#F4F7FA;">maya rao</div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(244,247,250,0.4); margin-top:2px;">owes you</div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:18px; letter-spacing:-0.4px; color:#3B92E8;"><span style="opacity:.5;">+$</span>62<span style="opacity:.5;">.00</span></div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:13px; padding:11px 4px;">
+        <div style="width:40px; height:40px; border-radius:50%; background:rgba(61,232,199,0.18); display:flex; align-items:center; justify-content:center; font-size:19px; flex:none;">🦊</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-family:'General Sans',sans-serif; font-weight:600; font-size:15.5px; color:#F4F7FA;">jonah tan</div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(244,247,250,0.4); margin-top:2px;">owes you</div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:18px; letter-spacing:-0.4px; color:#3B92E8;"><span style="opacity:.5;">+$</span>49<span style="opacity:.5;">.50</span></div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:13px; padding:11px 4px;">
+        <div style="width:40px; height:40px; border-radius:50%; background:rgba(255,198,92,0.18); display:flex; align-items:center; justify-content:center; font-size:19px; flex:none;">🐯</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-family:'General Sans',sans-serif; font-weight:600; font-size:15.5px; color:#F4F7FA;">sofia lund</div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(244,247,250,0.4); margin-top:2px;">owes you</div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:18px; letter-spacing:-0.4px; color:#3B92E8;"><span style="opacity:.5;">+$</span>31<span style="opacity:.5;">.00</span></div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:13px; padding:11px 4px;">
+        <div style="width:40px; height:40px; border-radius:50%; background:rgba(255,107,94,0.18); display:flex; align-items:center; justify-content:center; font-size:19px; flex:none;">🐻</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-family:'General Sans',sans-serif; font-weight:600; font-size:15.5px; color:#F4F7FA;">theo park</div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(255,107,94,0.8); margin-top:2px;">you owe</div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:18px; letter-spacing:-0.4px; color:#FF6B5E;"><span style="opacity:.5;">−$</span>31<span style="opacity:.5;">.00</span></div>
+      </div>
+
+    </div>
+
+    <!-- GROUPS -->
+    <div style="display:flex; align-items:baseline; gap:10px; margin:26px 2px 14px;">
+      <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#F4F7FA;">groups</span>
+      <span style="font-family:'Space Mono',monospace; font-size:11px; color:rgba(244,247,250,0.4);">3</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:11px;">
+
+      <div style="display:flex; align-items:center; gap:13px; background:#13212E; border:1px solid rgba(244,247,250,0.06); border-radius:18px; padding:11px 14px 11px 11px;" style-hover="border-color:rgba(255,255,255,0.16);">
+        <div style="position:relative; width:48px; height:48px; border-radius:13px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; overflow:hidden;">
+          <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>
+          <span style="position:relative;">🗼</span>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#F4F7FA;">tokyo trip</div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(244,247,250,0.42); margin-top:3px;">owed to you</div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:#3B92E8;"><span style="opacity:.5;">+$</span>84<span style="opacity:.5;">.00</span></div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:13px; background:#13212E; border:1px solid rgba(244,247,250,0.06); border-radius:18px; padding:11px 14px 11px 11px;" style-hover="border-color:rgba(255,255,255,0.16);">
+        <div style="position:relative; width:48px; height:48px; border-radius:13px; background:linear-gradient(135deg,#ff8073,#FF6B5E 60%,#e0493c); display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; overflow:hidden;">
+          <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.14) 0 1px, transparent 1px 6px); opacity:.5;"></div>
+          <span style="position:relative;">🏠</span>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#F4F7FA;">apartment 4b</div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(255,107,94,0.8); margin-top:3px;">you owe</div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:#FF6B5E;"><span style="opacity:.5;">−$</span>31<span style="opacity:.5;">.00</span></div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:13px; background:#13212E; border:1px solid rgba(244,247,250,0.06); border-radius:18px; padding:11px 14px 11px 11px;" style-hover="border-color:rgba(255,255,255,0.16);">
+        <div style="position:relative; width:48px; height:48px; border-radius:13px; background:linear-gradient(135deg,#5cf0d4,#3DE8C7 55%,#1fbfa3); display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; overflow:hidden;">
+          <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(8,40,34,0.14) 0 1px, transparent 1px 6px); opacity:.5;"></div>
+          <span style="position:relative;">🏝️</span>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#F4F7FA;">bali crew</div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(244,247,250,0.42); margin-top:3px;">6 people · last trip</div>
+        </div>
+        <span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.14); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:5px 11px; flex:none;">
+          <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:12px; color:#3DE8C7;">square</span>
+          <span style="font-size:12px;">✨</span>
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- bottom tab bar -->
+  <div style="position:relative; z-index:3; flex:none; height:84px; padding:9px 14px 0; background:rgba(8,17,26,0.94); border-top:1px solid rgba(244,247,250,0.07); display:flex; align-items:flex-start; justify-content:space-between;">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 14px 4px; border-radius:14px; background:rgba(39,117,202,0.18); transition:all .25s ease;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5BA6F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>
+        <span style="font-family:'Space Mono',monospace; font-size:8.5px; font-weight:700; letter-spacing:.8px; color:#5BA6F0;">home</span>
+      </div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:44px; padding-top:6px; cursor:pointer; transition:all .25s ease;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="9" r="2.6"/><circle cx="15.5" cy="9" r="2.6"/><path d="M3.5 18.5c0-2.6 2.2-4.3 5-4.3s5 1.7 5 4.3"/><path d="M15 14.3c2.4.1 5.5 1.6 5.5 4.2"/></svg>
+      <span style="font-family:'Space Mono',monospace; font-size:8.5px; font-weight:400; letter-spacing:.8px; color:rgba(244,247,250,0.5);">groups</span>
+    </div>
+    <div style="flex:1; display:flex; justify-content:center; cursor:pointer;">
+      <div style="width:52px; height:52px; border-radius:18px; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; margin-top:-4px; box-shadow:0 8px 22px rgba(39,117,202,0.5), inset 0 1px 0 rgba(255,255,255,0.28);">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:44px; padding-top:6px; cursor:pointer; transition:all .25s ease;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-6.5L14 18l2.5-6H21"/></svg>
+      <span style="font-family:'Space Mono',monospace; font-size:8.5px; font-weight:400; letter-spacing:.8px; color:rgba(244,247,250,0.5);">activity</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:44px; padding-top:6px; cursor:pointer; transition:all .25s ease;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+      <span style="font-family:'Space Mono',monospace; font-size:8.5px; font-weight:400; letter-spacing:.8px; color:rgba(244,247,250,0.5);">you</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 390, &quot;height&quot;: 844 },
+  &quot;glow&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; }
+}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      glow: this.props.glow ?? true,
+    };
+  }
+}
+</script>
+</body>
+</html>

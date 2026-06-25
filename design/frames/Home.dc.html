@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #02090d; }
+  .divvy-scroll::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</helmet>
+
+<div style="position:relative; width:390px; height:844px; background:#04121A; overflow:hidden; font-family:'Space Grotesk',sans-serif; color:#F6F1E7; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;">
+
+  <sc-if value="{{ glow }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; left:-70px; top:30px; width:380px; height:340px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.26) 0%, rgba(39,117,202,0.07) 45%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>
+  </sc-if>
+  <sc-if value="{{ receiptTexture }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute; inset:0; background-image:repeating-linear-gradient(0deg, rgba(246,241,231,0.018) 0px, rgba(246,241,231,0.018) 1px, transparent 1px, transparent 6px); pointer-events:none;"></div>
+  </sc-if>
+
+  <!-- status bar -->
+  <div style="position:relative; z-index:3; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 30px 0 32px; flex:none;">
+    <span style="font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; letter-spacing:.5px;">9:41</span>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:1px; color:rgba(246,241,231,0.58);">5G</span>
+      <div style="width:24px; height:12px; border:1px solid rgba(246,241,231,0.45); border-radius:3px; padding:1.5px; display:flex; align-items:center;">
+        <div style="width:100%; height:100%; background:#F6F1E7; border-radius:1px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- sticky top bar -->
+  <div style="position:relative; z-index:3; display:flex; align-items:center; justify-content:space-between; height:54px; padding:0 22px; flex:none; border-bottom:1px solid rgba(246,241,231,0.07);">
+    <div style="display:flex; align-items:center; gap:1px;">
+      <span style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:23px; line-height:1; letter-spacing:-1px; color:#F6F1E7;">div</span>
+      <span style="display:inline-block; width:7px; height:21px; background:#2775CA; border-radius:1.5px; transform:skewX(-13deg); margin:0 4px;"></span>
+      <span style="font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:23px; line-height:1; letter-spacing:-1px; color:#F6F1E7;">vy</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(246,241,231,0.58)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <div style="width:34px; height:34px; border-radius:50%; background:rgba(39,117,202,0.20); border:1px solid rgba(246,241,231,0.10); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:#7FB2E8;">AR</div>
+    </div>
+  </div>
+
+  <!-- scroll area -->
+  <div class="divvy-scroll" style="position:relative; z-index:2; flex:1; overflow-y:auto; scrollbar-width:none; padding:26px 22px 24px;">
+
+    <!-- HERO — on-chain receipt -->
+    <div style="position:relative; background:#0A1F2B; box-shadow:0 16px 38px rgba(0,0,0,0.40); margin-top:5px;">
+      <div style="position:absolute; top:-1px; left:0; right:0; height:11px; background:radial-gradient(circle at 9px 0px, #04121A 0 6px, transparent 6.5px); background-size:18px 11px; background-repeat:repeat-x;"></div>
+      <div style="position:absolute; bottom:-1px; left:0; right:0; height:11px; background:radial-gradient(circle at 9px 11px, #04121A 0 6px, transparent 6.5px); background-size:18px 11px; background-repeat:repeat-x;"></div>
+
+      <div style="padding:22px 22px 20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <span style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500; letter-spacing:2px; color:rgba(246,241,231,0.58);">YOU'RE OWED · ACROSS 3 GROUPS</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:400; letter-spacing:1px; color:rgba(246,241,231,0.38);">JUN 24</span>
+        </div>
+
+        <div style="display:flex; align-items:baseline; gap:10px; margin-top:13px;">
+          <span style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:52px; line-height:1; letter-spacing:-2px; color:#3B8FE0;">$142.50</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-weight:500; font-size:12px; letter-spacing:1px; color:rgba(246,241,231,0.45); transform:translateY(-2px);">USDC</span>
+        </div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:15px; color:rgba(246,241,231,0.58); margin-top:12px;">you owe <span style="font-family:'JetBrains Mono',monospace; font-weight:500; color:#EC6A6A;">$31.00</span> elsewhere</div>
+
+        <div style="display:flex; align-items:center; gap:7px; margin-top:15px;">
+          <span style="width:6px; height:6px; border-radius:50%; background:#2775CA; box-shadow:0 0 7px rgba(39,117,202,0.6);"></span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:1.5px; color:rgba(246,241,231,0.50);">SETTLES INSTANTLY · ~$0.001 FEE</span>
+        </div>
+
+        <div style="position:relative; height:1px; margin:18px -22px; border-top:1.5px dashed rgba(246,241,231,0.16);">
+          <div style="position:absolute; left:-6px; top:-7px; width:13px; height:13px; border-radius:50%; background:#04121A;"></div>
+          <div style="position:absolute; right:-6px; top:-7px; width:13px; height:13px; border-radius:50%; background:#04121A;"></div>
+        </div>
+
+        <div style="display:flex; gap:11px; width:100%;">
+          <button style="appearance:none; border:none; cursor:pointer; flex:1; min-height:50px; border-radius:13px; background:#2775CA; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 6px 18px rgba(39,117,202,0.26);" style-hover="filter:brightness(1.06);" style-active="transform:translateY(1px);">Settle up</button>
+          <button style="appearance:none; cursor:pointer; flex:1; min-height:50px; border-radius:13px; background:#0E2734; border:1px solid rgba(246,241,231,0.12); font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:16px; color:#F6F1E7;" style-hover="border-color:rgba(246,241,231,0.26);" style-active="transform:translateY(1px);">Request</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BY PERSON — receipt line items -->
+    <div style="display:flex; align-items:center; gap:12px; margin:34px 2px 6px;">
+      <span style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500; letter-spacing:2px; color:rgba(246,241,231,0.58);">BY PERSON</span>
+      <span style="flex:1; height:0; border-bottom:1.5px dotted rgba(246,241,231,0.16);"></span>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:400; letter-spacing:1px; color:rgba(246,241,231,0.40);">4 PEOPLE</span>
+    </div>
+    <div style="display:flex; flex-direction:column;">
+
+      <div style="display:flex; align-items:center; gap:12px; padding:13px 2px;">
+        <div style="width:32px; height:32px; border-radius:50%; background:rgba(39,117,202,0.18); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:#7FB2E8; flex:none;">MR</div>
+        <span style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:16px; color:#F6F1E7; flex:none;">Maya Rao</span>
+        <span style="flex:1; height:0; border-bottom:1.5px dotted rgba(246,241,231,0.18); transform:translateY(3px);"></span>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1.5px; color:rgba(246,241,231,0.40); flex:none;">OWES YOU</span>
+        <span style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:16px; color:#3B8FE0; flex:none; min-width:74px; text-align:right;">$62.00</span>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px; padding:13px 2px;">
+        <div style="width:32px; height:32px; border-radius:50%; background:rgba(39,117,202,0.18); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:#7FB2E8; flex:none;">JT</div>
+        <span style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:16px; color:#F6F1E7; flex:none;">Jonah Tan</span>
+        <span style="flex:1; height:0; border-bottom:1.5px dotted rgba(246,241,231,0.18); transform:translateY(3px);"></span>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1.5px; color:rgba(246,241,231,0.40); flex:none;">OWES YOU</span>
+        <span style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:16px; color:#3B8FE0; flex:none; min-width:74px; text-align:right;">$49.50</span>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px; padding:13px 2px;">
+        <div style="width:32px; height:32px; border-radius:50%; background:rgba(39,117,202,0.18); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:#7FB2E8; flex:none;">SL</div>
+        <span style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:16px; color:#F6F1E7; flex:none;">Sofia Lund</span>
+        <span style="flex:1; height:0; border-bottom:1.5px dotted rgba(246,241,231,0.18); transform:translateY(3px);"></span>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1.5px; color:rgba(246,241,231,0.40); flex:none;">OWES YOU</span>
+        <span style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:16px; color:#3B8FE0; flex:none; min-width:74px; text-align:right;">$31.00</span>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px; padding:13px 2px;">
+        <div style="width:32px; height:32px; border-radius:50%; background:rgba(236,106,106,0.16); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; color:#EC6A6A; flex:none;">TP</div>
+        <span style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:16px; color:#F6F1E7; flex:none;">Theo Park</span>
+        <span style="flex:1; height:0; border-bottom:1.5px dotted rgba(246,241,231,0.18); transform:translateY(3px);"></span>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1.5px; color:rgba(236,106,106,0.7); flex:none;">YOU OWE</span>
+        <span style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:16px; color:#EC6A6A; flex:none; min-width:74px; text-align:right;">−$31.00</span>
+      </div>
+
+    </div>
+
+    <!-- BY GROUP -->
+    <sc-if value="{{ showByGroup }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex; align-items:center; gap:12px; margin:30px 2px 13px;">
+      <span style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500; letter-spacing:2px; color:rgba(246,241,231,0.58);">BY GROUP</span>
+      <span style="flex:1; height:0; border-bottom:1.5px dotted rgba(246,241,231,0.16);"></span>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:400; letter-spacing:1px; color:rgba(246,241,231,0.40);">3 GROUPS</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+
+      <!-- Tokyo trip -->
+      <div style="background:#0E2734; border:1px solid rgba(246,241,231,0.10); border-radius:16px; padding:15px 16px;" style-hover="border-color:rgba(246,241,231,0.20);">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+          <div style="min-width:0;">
+            <div style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.3px; color:#F6F1E7;">Tokyo trip</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1px; color:rgba(246,241,231,0.42); margin-top:5px;">8 SHARED EXPENSES</div>
+          </div>
+          <div style="text-align:right; flex:none;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1.5px; color:rgba(246,241,231,0.40);">OWED TO YOU</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:19px; color:#3B8FE0; margin-top:3px;">$84.00</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+          <div style="display:flex; flex:none;">
+            <div style="width:28px; height:28px; border-radius:50%; background:rgba(39,117,202,0.20); border:2px solid #0E2734; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; color:#7FB2E8;">MR</div>
+            <div style="width:28px; height:28px; border-radius:50%; background:rgba(246,241,231,0.12); border:2px solid #0E2734; margin-left:-10px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; color:#F6F1E7;">JT</div>
+            <div style="width:28px; height:28px; border-radius:50%; background:rgba(39,117,202,0.20); border:2px solid #0E2734; margin-left:-10px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:600; color:#7FB2E8;">+2</div>
+          </div>
+          <span style="display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(39,117,202,0.45); border-radius:20px; padding:3px 9px;">
+            <span style="width:6px; height:6px; border-radius:50%; background:#2775CA; box-shadow:0 0 6px rgba(39,117,202,0.7);"></span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; font-weight:500; letter-spacing:1.5px; color:#7FB2E8;">CONFIRMED</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Apartment 4B -->
+      <div style="background:#0E2734; border:1px solid rgba(246,241,231,0.10); border-radius:16px; padding:15px 16px;" style-hover="border-color:rgba(246,241,231,0.20);">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+          <div style="min-width:0;">
+            <div style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.3px; color:#F6F1E7;">Apartment 4B</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1px; color:rgba(246,241,231,0.42); margin-top:5px;">AUTO-SPLITS MONTHLY</div>
+          </div>
+          <div style="text-align:right; flex:none;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1.5px; color:rgba(236,106,106,0.7);">YOU OWE</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:19px; color:#EC6A6A; margin-top:3px;">−$31.00</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+          <div style="display:flex; flex:none;">
+            <div style="width:28px; height:28px; border-radius:50%; background:rgba(246,241,231,0.12); border:2px solid #0E2734; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; color:#F6F1E7;">TP</div>
+            <div style="width:28px; height:28px; border-radius:50%; background:rgba(39,117,202,0.20); border:2px solid #0E2734; margin-left:-10px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; color:#7FB2E8;">AR</div>
+          </div>
+          <span style="display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(39,117,202,0.45); border-radius:20px; padding:3px 9px;">
+            <span style="width:6px; height:6px; border-radius:50%; background:#2775CA;"></span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; font-weight:500; letter-spacing:1.5px; color:#7FB2E8;">FINALIZED</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Bali crew -->
+      <div style="background:#0A1F2B; border:1px solid rgba(246,241,231,0.10); border-radius:16px; padding:15px 16px;" style-hover="border-color:rgba(246,241,231,0.20);">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+          <div style="min-width:0;">
+            <div style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.3px; color:rgba(246,241,231,0.78);">Bali crew</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1px; color:rgba(246,241,231,0.42); margin-top:5px;">SETTLED · JUN 18</div>
+          </div>
+          <div style="text-align:right; flex:none;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1.5px; color:rgba(67,194,138,0.7);">ALL SQUARE</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-weight:600; font-size:19px; color:#43C28A; margin-top:3px;">Settled</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+          <div style="display:flex; flex:none; opacity:.85;">
+            <div style="width:28px; height:28px; border-radius:50%; background:rgba(246,241,231,0.12); border:2px solid #0A1F2B; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; color:#F6F1E7;">SL</div>
+            <div style="width:28px; height:28px; border-radius:50%; background:rgba(39,117,202,0.20); border:2px solid #0A1F2B; margin-left:-10px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:600; color:#7FB2E8;">MR</div>
+            <div style="width:28px; height:28px; border-radius:50%; background:rgba(246,241,231,0.12); border:2px solid #0A1F2B; margin-left:-10px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:600; color:#F6F1E7;">+3</div>
+          </div>
+          <span style="display:inline-flex; align-items:center; gap:6px; border:1px solid rgba(67,194,138,0.45); border-radius:20px; padding:3px 9px;">
+            <span style="width:6px; height:6px; border-radius:50%; background:#34C77B; box-shadow:0 0 6px rgba(52,199,123,0.7);"></span>
+            <span style="font-family:'JetBrains Mono',monospace; font-size:9.5px; font-weight:500; letter-spacing:1.5px; color:#43C28A;">SETTLED</span>
+          </span>
+        </div>
+      </div>
+
+    </div>
+    </sc-if>
+
+  </div>
+
+  <!-- bottom tab bar -->
+  <div style="position:relative; z-index:3; flex:none; height:84px; padding:9px 16px 0; background:rgba(7,24,33,0.92); border-top:1px solid rgba(246,241,231,0.08); display:flex; align-items:flex-start; justify-content:space-between;">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; min-height:44px; padding-top:5px; cursor:pointer;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#F6F1E7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1px; color:#F6F1E7;">HOME</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; min-height:44px; padding-top:5px; cursor:pointer;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="rgba(246,241,231,0.50)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="9" r="2.6"/><circle cx="15.5" cy="9" r="2.6"/><path d="M3.5 18.5c0-2.6 2.2-4.3 5-4.3s5 1.7 5 4.3"/><path d="M15 14.3c2.4.1 5.5 1.6 5.5 4.2"/></svg>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1px; color:rgba(246,241,231,0.50);">GROUPS</span>
+    </div>
+    <div style="flex:1; display:flex; justify-content:center; cursor:pointer;">
+      <div style="width:52px; height:52px; border-radius:17px; background:#2775CA; display:flex; align-items:center; justify-content:center; margin-top:-4px; box-shadow:0 8px 22px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; min-height:44px; padding-top:5px; cursor:pointer;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="rgba(246,241,231,0.50)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-6.5L14 18l2.5-6H21"/></svg>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1px; color:rgba(246,241,231,0.50);">ACTIVITY</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; min-height:44px; padding-top:5px; cursor:pointer;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="rgba(246,241,231,0.50)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+      <span style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:500; letter-spacing:1px; color:rgba(246,241,231,0.50);">YOU</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 390, &quot;height&quot;: 844 },
+  &quot;glow&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; },
+  &quot;receiptTexture&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; },
+  &quot;showByGroup&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; }
+}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      glow: this.props.glow ?? true,
+      receiptTexture: this.props.receiptTexture ?? true,
+      showByGroup: this.props.showByGroup ?? true,
+    };
+  }
+}
+</script>
+</body>
+</html>

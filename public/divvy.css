@@ -1,0 +1,187 @@
+/* divvy.css — Divvy design system, lifted from the design frames.
+   Dark + vibrant, USDC-blue anchor, mono money, Gen-Z. Loaded app-wide. */
+
+@import url("https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap");
+
+:root {
+  /* surfaces */
+  --ink: #0B1622;
+  --ink-deep: #050d15;
+  --card: #13212E;
+  --card-2: #0e2734;
+  --line: rgba(244, 247, 250, 0.10);
+  --line-2: rgba(244, 247, 250, 0.18);
+
+  /* text */
+  --text: #F4F7FA;
+  --muted: rgba(244, 247, 250, 0.60);
+  --faint: rgba(244, 247, 250, 0.40);
+
+  /* brand + accents (money rule: owed-to-you = blue, you-owe = coral, settled = mint) */
+  --blue: #2775CA;
+  --blue-bright: #7fc0ff;
+  --blue-grad: linear-gradient(120deg, #3286db, #2775CA);
+  --mint: #3DE8C7;
+  --coral: #FF6B5E;
+  --sunshine: #FFC65C;
+  --violet: #8B5CF6;
+
+  /* type */
+  --display: "Clash Display", "General Sans", system-ui, sans-serif;
+  --sans: "General Sans", system-ui, sans-serif;
+  --mono: "Space Mono", ui-monospace, monospace;
+
+  --r: 22px;     /* card radius */
+  --r-sm: 14px;  /* input / small */
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.45;
+}
+
+/* ---- typography helpers ---- */
+.display { font-family: var(--display); font-weight: 600; letter-spacing: -0.5px; }
+.mono { font-family: var(--mono); }
+.eyebrow { font-family: var(--mono); font-size: 11px; font-weight: 400; letter-spacing: 1.5px;
+  text-transform: lowercase; color: var(--muted); }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.5px; margin: 0; }
+
+/* the lowercase, dry voice: most headings are lowercase */
+.lower { text-transform: lowercase; }
+
+/* ---- money (always mono, tabular, big digits + lighter $/decimals) ---- */
+.money { font-family: var(--mono); font-weight: 700; font-variant-numeric: tabular-nums;
+  display: inline-flex; align-items: baseline; }
+.money .cur, .money .dec { opacity: 0.55; font-size: 0.62em; font-weight: 700; }
+.money.pos { color: var(--blue-bright); }
+.money.neg { color: var(--coral); }
+.money.settled { color: var(--mint); }
+.hero-amount { font-family: var(--mono); font-weight: 700; font-size: 64px; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+
+/* ---- brand mark + wordmark ---- */
+.brand { display: inline-flex; align-items: center; gap: 9px; }
+.brand .mark { width: 32px; height: 32px; border-radius: 10px;
+  background: linear-gradient(150deg, #3286db, #2775CA 60%, #1f5fa8);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 5px 14px rgba(39,117,202,0.4), inset 0 1px 0 rgba(255,255,255,0.25); }
+.brand .mark span { font-family: var(--display); font-weight: 700; font-size: 21px; color: #fff; transform: translateY(-1px); }
+.brand .word { font-family: var(--display); font-weight: 600; font-size: 21px; letter-spacing: -0.5px; color: var(--text); }
+
+/* ---- cards / surfaces ---- */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; }
+.card-2 { background: var(--card-2); }
+
+/* perforated receipt card */
+.receipt { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 18px; overflow: hidden; }
+.receipt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -8px; height: 16px;
+  background: radial-gradient(circle at 8px -2px, transparent 7px, var(--ink) 8px) repeat-x; background-size: 18px 16px; }
+.receipt hr { border: none; border-top: 1.5px dashed var(--line-2); margin: 14px 0; }
+
+/* ---- buttons ---- */
+.btn { appearance: none; border: none; cursor: pointer; width: 100%; min-height: 56px; border-radius: 999px;
+  background: var(--blue-grad); color: #fff; font-family: var(--display); font-weight: 600; font-size: 17px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: 0 10px 30px rgba(39,117,202,0.42); transition: transform .12s ease, filter .15s ease; }
+.btn:hover { filter: brightness(1.07); }
+.btn:active { transform: translateY(1px) scale(.99); }
+.btn.ghost { background: transparent; border: 1px solid var(--line-2); color: var(--text);
+  box-shadow: none; font-family: var(--sans); font-weight: 500; }
+.btn.ghost:hover { background: rgba(244,247,250,0.05); border-color: rgba(244,247,250,0.3); filter: none; }
+.btn.coral { background: linear-gradient(120deg, #ff7d72, #FF6B5E); box-shadow: 0 10px 30px rgba(255,107,94,0.35); }
+.btn.sm { width: auto; min-height: 0; padding: 9px 16px; font-size: 14px; }
+
+/* small inline pill / chip */
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
+  background: rgba(244,247,250,0.06); border: 1px solid var(--line); color: var(--text);
+  font-family: var(--sans); font-weight: 500; font-size: 13px; cursor: pointer; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px;
+  background: var(--card-2); border: 1px solid var(--line); color: var(--text); font-size: 14px; cursor: pointer; }
+.chip.selected { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+/* on-chain state pill */
+.state { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
+  font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  border: 1px solid currentColor; }
+.state::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.state.reading { color: var(--faint); }
+.state.confirmed, .state.finalized, .state.settled { color: var(--mint); }
+.state.owes { color: var(--coral); }
+
+/* ---- inputs ---- */
+.input { width: 100%; min-height: 52px; padding: 14px 16px; border-radius: var(--r-sm);
+  background: var(--card-2); border: 1px solid var(--line); color: var(--text);
+  font-family: var(--sans); font-size: 16px; outline: none; }
+.input:focus { border-color: var(--blue); }
+.input.mono { font-family: var(--mono); }
+label { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--muted); margin: 0 0 8px; }
+
+/* ---- avatar (emoji on a color) ---- */
+.avatar { width: 44px; height: 44px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 22px; flex: none; background: var(--card-2); }
+.avatar.round { border-radius: 50%; }
+.avatar.sm { width: 34px; height: 34px; font-size: 17px; border-radius: 11px; }
+.avatar-stack { display: inline-flex; }
+.avatar-stack > * { margin-left: -10px; border: 2px solid var(--ink); }
+.avatar-stack > *:first-child { margin-left: 0; }
+
+/* ---- two-tone owe bar ---- */
+.owebar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: var(--card-2); }
+.owebar .pos { background: var(--blue); }
+.owebar .neg { background: var(--coral); }
+
+/* ---- list row ---- */
+.row { display: flex; align-items: center; gap: 12px; padding: 14px 0; }
+.row + .row { border-top: 1px solid var(--line); }
+.row .meta { flex: 1; min-width: 0; }
+.row .meta .name { font-weight: 600; font-size: 16px; }
+.row .meta .sub { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* ---- empty state ---- */
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 36px 20px; gap: 10px; }
+.empty .title { font-family: var(--display); font-weight: 600; font-size: 18px; }
+.empty .hint { color: var(--muted); font-size: 14px; }
+
+/* ---- skeleton shimmer ---- */
+.skeleton { background: linear-gradient(90deg, var(--card) 25%, var(--card-2) 37%, var(--card) 63%);
+  background-size: 400% 100%; animation: dskel 1.4s ease infinite; border-radius: 10px; }
+@keyframes dskel { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+/* ---- app shell: status bar, top bar, bottom tab bar ---- */
+.statusbar { display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 24px;
+  font-family: var(--mono); font-size: 14px; font-weight: 700; }
+.topbar { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 20px; }
+.appscroll { padding: 0 20px 120px; }
+
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: 88px; padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(11,22,34,0.92); backdrop-filter: blur(16px); border-top: 1px solid var(--line);
+  display: flex; align-items: flex-start; justify-content: space-around; padding-top: 12px; z-index: 50; }
+.tabbar a { display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none;
+  color: var(--faint); font-family: var(--mono); font-size: 10px; letter-spacing: 0.5px; flex: 1; cursor: pointer; }
+.tabbar a.active { color: var(--blue-bright); }
+.tabbar a svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.tabbar .fab { margin-top: -22px; width: 56px; height: 56px; border-radius: 18px; background: var(--blue-grad);
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 22px rgba(39,117,202,0.5);
+  color: #fff; flex: none; }
+.tabbar .fab svg { width: 26px; height: 26px; stroke: #fff; stroke-width: 2.4; }
+
+/* ---- bottom sheet ---- */
+.sheet-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 60; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 61; background: var(--card);
+  border-radius: 24px 24px 0 0; border: 1px solid var(--line); padding: 8px 20px 28px; }
+.sheet .grab { width: 38px; height: 4px; border-radius: 999px; background: var(--line-2); margin: 8px auto 14px; }
+
+/* glow helper */
+.glow-blue { box-shadow: 0 0 40px rgba(39,117,202,0.25); }
+
+/* subtle dotted "paper" texture overlay (use on hero areas) */
+.paper { background-image: repeating-radial-gradient(circle at 80% 4%, rgba(244,247,250,0.03) 0 1px, transparent 1px 7px); }
