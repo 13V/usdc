@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #050d15; }
+  .yo-scroll::-webkit-scrollbar { width: 0; height: 0; }
+  @keyframes yoSquish { 0%,100% { border-radius:47% 53% 52% 48% / 55% 48% 52% 45%; } 50% { border-radius:53% 47% 48% 52% / 46% 54% 47% 53%; } }
+  @keyframes yoBlink { 0%,91%,100% { transform: scaleY(1); } 96% { transform: scaleY(0.12); } }
+  @keyframes yoPulse { 0%,100% { opacity:.5; } 50% { opacity:1; } }
+  @keyframes yoFloat { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-5px) rotate(4deg); } }
+  @keyframes yoWaveL { 0%,100% { transform: rotate(16deg); } 50% { transform: rotate(2deg); } }
+  @keyframes yoWaveR { 0%,100% { transform: rotate(-16deg); } 50% { transform: rotate(-2deg); } }
+</style>
+</helmet>
+
+<div style="position:relative; width:390px; height:844px; background:#0B1622; overflow:hidden; font-family:'General Sans',sans-serif; color:#F4F7FA; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;">
+
+  <!-- faint money texture + glow -->
+  <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(244,247,250,0.025) 0 1px, transparent 1px 8px); opacity:.55; pointer-events:none;"></div>
+  <div style="position:absolute; left:50%; top:120px; width:380px; height:280px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.16) 0%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>
+
+  <!-- status bar -->
+  <div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 30px 0 32px; flex:none;">
+    <span style="font-family:'Space Mono',monospace; font-size:14px; font-weight:700; letter-spacing:.5px;">9:41</span>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:1px; color:rgba(244,247,250,0.6);">5G</span>
+      <div style="width:24px; height:12px; border:1px solid rgba(244,247,250,0.45); border-radius:3px; padding:1.5px; display:flex; align-items:center;"><div style="width:100%; height:100%; background:#F4F7FA; border-radius:1px;"></div></div>
+    </div>
+  </div>
+
+  <!-- header -->
+  <div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:88px; padding:0 20px; flex:none;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <h1 style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:28px; letter-spacing:-0.8px; margin:0; color:#F4F7FA;">you</h1>
+      <div style="width:36px; height:36px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.75)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a1.8 1.8 0 0 0 .36 1.98l.07.07a2.2 2.2 0 1 1-3.11 3.11l-.07-.07a1.8 1.8 0 0 0-3.04 1.28V21a2.2 2.2 0 0 1-4.4 0v-.1A1.8 1.8 0 0 0 5.5 19.4l-.07.07a2.2 2.2 0 1 1-3.11-3.11l.07-.07a1.8 1.8 0 0 0-1.28-3.04H1a2.2 2.2 0 0 1 0-4.4h.1A1.8 1.8 0 0 0 2.6 5.5l-.07-.07a2.2 2.2 0 1 1 3.11-3.11l.07.07a1.8 1.8 0 0 0 1.98.36H8a1.8 1.8 0 0 0 1.1-1.65V1a2.2 2.2 0 0 1 4.4 0v.1a1.8 1.8 0 0 0 3.04 1.28l.07-.07a2.2 2.2 0 1 1 3.11 3.11l-.07.07A1.8 1.8 0 0 0 21.9 8H22a2.2 2.2 0 0 1 0 4.4h-.1a1.8 1.8 0 0 0-1.5 1.1z"/></svg></div>
+    </div>
+
+    <!-- full-body mascot companion -->
+    <div style="position:relative; width:78px; height:78px; flex:none; display:flex; align-items:center; justify-content:center; animation:yoFloat 5s ease-in-out infinite;">
+      <div style="position:absolute; inset:-6px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.45) 0%, rgba(39,117,202,0) 70%); animation:yoPulse 3s ease-in-out infinite; z-index:-2;"></div>
+      <div style="position:relative; width:64px; height:64px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:yoSquish 4.5s ease-in-out infinite; box-shadow:0 10px 24px rgba(39,117,202,0.5), inset 0 2px 5px rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center;">
+        <!-- feet -->
+        <div style="position:absolute; left:22px; bottom:-7px; width:10px; height:17px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>
+        <div style="position:absolute; right:22px; bottom:-7px; width:10px; height:17px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>
+        <!-- arms (gesturing/waving) -->
+        <div style="position:absolute; left:-7px; top:24px; width:11px; height:20px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform-origin:7px 3px; animation:yoWaveL 3.2s ease-in-out infinite; z-index:-1;"></div>
+        <div style="position:absolute; right:-9px; top:14px; width:11px; height:21px; border-radius:999px; background:linear-gradient(160deg,#4a9ff0,#2a6fc0); transform-origin:4px 18px; animation:yoWaveR 1.1s ease-in-out infinite; z-index:-1;"></div>
+        <!-- face -->
+        <div style="display:flex; gap:9px; margin-top:-4px;">
+          <div style="width:7px; height:9px; border-radius:50%; background:#0B1622; animation:yoBlink 5s infinite;"></div>
+          <div style="width:7px; height:9px; border-radius:50%; background:#0B1622; animation:yoBlink 5s infinite;"></div>
+        </div>
+        <div style="position:absolute; bottom:19px; width:15px; height:7px; border:2.6px solid #0B1622; border-top:none; border-radius:0 0 9px 9px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- scroll -->
+  <div class="yo-scroll" style="position:relative; z-index:2; flex:1; overflow-y:auto; scrollbar-width:none; padding:8px 18px 24px;">
+
+    <!-- ===== identity ===== -->
+    <div style="display:flex; align-items:center; gap:15px; padding:6px 2px 2px;">
+      <div style="width:72px; height:72px; border-radius:22px; background:linear-gradient(150deg,#FFC65C,#FF6B5E); display:flex; align-items:center; justify-content:center; font-size:36px; box-shadow:0 12px 28px rgba(255,107,94,0.3); flex:none;">🦊</div>
+      <div style="flex:1; min-width:0;">
+        <div style="display:flex; align-items:center; gap:8px;"><span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.4px; color:#F4F7FA;">you</span><span style="font-family:'Space Mono',monospace; font-size:12px; color:rgba(127,192,255,0.75);">@yourname</span></div>
+        <div style="display:inline-flex; align-items:center; gap:8px; margin-top:9px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:999px; padding:5px 11px;">
+          <span style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.5px; color:rgba(244,247,250,0.6);">7xKX…gAsU</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== balance card (receipt style) ===== -->
+    <div style="position:relative; background:#13212E; border-radius:24px; border:1px solid rgba(244,247,250,0.08); box-shadow:0 16px 40px rgba(0,0,0,0.36); overflow:hidden; margin-top:22px;">
+      <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 5%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>
+      <div style="position:absolute; left:0; right:0; top:0; height:4px; background:linear-gradient(90deg,#2775CA,#3DE8C7);"></div>
+      <div style="position:absolute; top:0; bottom:0; right:0; width:130px; background:linear-gradient(102deg, transparent 0%, rgba(127,192,255,0.045) 50%, rgba(255,255,255,0.03) 60%, transparent 100%); pointer-events:none;"></div>
+
+      <div style="position:relative; padding:20px 20px 8px;">
+        <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45);">YOUR BALANCE</div>
+        <div style="display:flex; align-items:baseline; gap:10px; margin-top:11px;">
+          <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:54px; line-height:.9; letter-spacing:-2.4px; color:#3B92E8; text-shadow:0 0 34px rgba(59,146,232,0.45);"><span style="font-size:28px; opacity:.5;">$</span>248<span style="font-size:28px; opacity:.5;">.50</span></div>
+          <span style="font-family:'Space Mono',monospace; font-weight:400; font-size:12px; letter-spacing:1px; color:rgba(244,247,250,0.4);">usdc</span>
+        </div>
+        <div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid rgba(39,117,202,0.4); background:rgba(39,117,202,0.1); border-radius:999px; padding:4px 11px;">
+          <span style="width:6px; height:6px; border-radius:50%; background:#3B92E8; box-shadow:0 0 7px rgba(59,146,232,0.8);"></span>
+          <span style="font-family:'Space Mono',monospace; font-size:10px; font-weight:400; letter-spacing:.5px; color:rgba(244,247,250,0.62);">settles instantly · ~$0.001 fee</span>
+        </div>
+      </div>
+
+      <!-- perforation -->
+      <div style="position:relative; height:1px; margin:18px 0 0; border-top:1.5px dashed rgba(244,247,250,0.14);">
+        <div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#0B1622;"></div>
+        <div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#0B1622;"></div>
+      </div>
+
+      <div style="position:relative; padding:18px 20px 20px;">
+        <div style="display:flex; gap:11px;">
+          <button style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 24px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);" style-hover="filter:brightness(1.07);" style-active="transform:translateY(1px);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            <span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:15.5px; color:#fff;">add money</span>
+          </button>
+          <button style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.2); display:flex; align-items:center; justify-content:center; gap:8px; font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:15.5px; color:#F4F7FA;" style-hover="background:rgba(244,247,250,0.05); border-color:rgba(244,247,250,0.32);" style-active="transform:translateY(1px);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>
+            cash out
+          </button>
+        </div>
+        <div style="display:flex; align-items:center; gap:7px; justify-content:center; margin-top:14px;">
+          <span style="font-size:12px;">💳</span>
+          <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.2px; color:rgba(244,247,250,0.42);">spend it with any card. dollars, just faster.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== settings ===== -->
+    <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.42); padding:24px 2px 11px;">SETTINGS</div>
+    <div style="background:#13212E; border:1px solid rgba(244,247,250,0.07); border-radius:18px; overflow:hidden;">
+
+      <div style="display:flex; align-items:center; gap:13px; padding:14px 15px; cursor:pointer;" style-hover="background:rgba(244,247,250,0.03);">
+        <div style="width:34px; height:34px; border-radius:11px; background:rgba(39,117,202,0.16); display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;">🫂</div>
+        <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">friends</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div style="height:1px; background:rgba(244,247,250,0.05); margin:0 15px;"></div>
+
+      <div style="display:flex; align-items:center; gap:13px; padding:14px 15px; cursor:pointer;" style-hover="background:rgba(244,247,250,0.03);">
+        <div style="width:34px; height:34px; border-radius:11px; background:rgba(61,232,199,0.14); display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;">🔁</div>
+        <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">recurring</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div style="height:1px; background:rgba(244,247,250,0.05); margin:0 15px;"></div>
+
+      <div style="display:flex; align-items:center; gap:13px; padding:14px 15px; cursor:pointer;" style-hover="background:rgba(244,247,250,0.03);">
+        <div style="width:34px; height:34px; border-radius:11px; background:rgba(255,198,92,0.16); display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;">🧾</div>
+        <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">saved tabs</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div style="height:1px; background:rgba(244,247,250,0.05); margin:0 15px;"></div>
+
+      <div style="display:flex; align-items:center; gap:13px; padding:14px 15px; cursor:pointer;" style-hover="background:rgba(244,247,250,0.03);">
+        <div style="width:34px; height:34px; border-radius:11px; background:rgba(255,107,94,0.14); display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;">🔔</div>
+        <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">notifications</span>
+        <span style="font-family:'Space Mono',monospace; font-size:10px; color:rgba(244,247,250,0.4); margin-right:2px;">on</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div style="height:1px; background:rgba(244,247,250,0.05); margin:0 15px;"></div>
+
+      <div style="display:flex; align-items:center; gap:13px; padding:14px 15px; cursor:pointer;" style-hover="background:rgba(244,247,250,0.03);">
+        <div style="width:34px; height:34px; border-radius:11px; background:rgba(39,117,202,0.16); display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;">🌐</div>
+        <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">network</span>
+        <span style="display:inline-flex; align-items:center; gap:6px; background:rgba(61,232,199,0.1); border:1px solid rgba(61,232,199,0.35); border-radius:999px; padding:3px 9px; margin-right:2px;"><span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 6px rgba(61,232,199,0.8);"></span><span style="font-family:'Space Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#3DE8C7;">mainnet</span></span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+      <div style="height:1px; background:rgba(244,247,250,0.05); margin:0 15px;"></div>
+
+      <div style="display:flex; align-items:center; gap:13px; padding:14px 15px; cursor:pointer;" style-hover="background:rgba(244,247,250,0.03);">
+        <div style="width:34px; height:34px; border-radius:11px; background:rgba(244,247,250,0.07); display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;">💁</div>
+        <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">help</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <!-- sign out -->
+    <div style="margin-top:11px; background:rgba(255,107,94,0.06); border:1px solid rgba(255,107,94,0.2); border-radius:18px; overflow:hidden;">
+      <div style="display:flex; align-items:center; gap:13px; padding:14px 15px; cursor:pointer;" style-hover="background:rgba(255,107,94,0.1);">
+        <div style="width:34px; height:34px; border-radius:11px; background:rgba(255,107,94,0.14); display:flex; align-items:center; justify-content:center; flex:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF6B5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>
+        <span style="flex:1; font-family:'General Sans',sans-serif; font-weight:500; font-size:15px; color:#FF6B5E;">sign out</span>
+      </div>
+    </div>
+
+    <div style="text-align:center; font-family:'Space Mono',monospace; font-size:9.5px; letter-spacing:.5px; color:rgba(244,247,250,0.28); margin-top:18px;">divvy v1.4.0 · made for splitting, not stressing</div>
+
+  </div>
+
+  <!-- bottom tab bar -->
+  <div style="position:relative; z-index:6; flex:none; height:84px; padding:9px 14px 0; background:rgba(8,17,26,0.94); border-top:1px solid rgba(244,247,250,0.07); display:flex; align-items:flex-start; justify-content:space-between;">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:44px; padding-top:6px; cursor:pointer;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>
+      <span style="font-family:'Space Mono',monospace; font-size:8.5px; font-weight:400; letter-spacing:.8px; color:rgba(244,247,250,0.5);">home</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:44px; padding-top:6px; cursor:pointer;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="9" r="2.6"/><circle cx="15.5" cy="9" r="2.6"/><path d="M3.5 18.5c0-2.6 2.2-4.3 5-4.3s5 1.7 5 4.3"/><path d="M15 14.3c2.4.1 5.5 1.6 5.5 4.2"/></svg>
+      <span style="font-family:'Space Mono',monospace; font-size:8.5px; font-weight:400; letter-spacing:.8px; color:rgba(244,247,250,0.5);">groups</span>
+    </div>
+    <div style="flex:1; display:flex; justify-content:center; cursor:pointer;">
+      <div style="width:52px; height:52px; border-radius:18px; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; margin-top:-4px; box-shadow:0 8px 22px rgba(39,117,202,0.5), inset 0 1px 0 rgba(255,255,255,0.28);">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:44px; padding-top:6px; cursor:pointer;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-6.5L14 18l2.5-6H21"/></svg>
+      <span style="font-family:'Space Mono',monospace; font-size:8.5px; font-weight:400; letter-spacing:.8px; color:rgba(244,247,250,0.5);">activity</span>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 14px 4px; border-radius:14px; background:rgba(39,117,202,0.18);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5BA6F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
+        <span style="font-family:'Space Mono',monospace; font-size:8.5px; font-weight:700; letter-spacing:.8px; color:#5BA6F0;">you</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 390, &quot;height&quot;: 844 }
+}">
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
