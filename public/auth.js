@@ -51,11 +51,27 @@
     return data;
   }
 
+  // onChange(cb) -> unsubscribe(). Returning an unsubscribe lets screens drop
+  // their listener instead of leaking one per render.
   function onChange(cb) {
-    if (typeof cb === "function") listeners.push(cb);
+    if (typeof cb !== "function") return function () {};
+    listeners.push(cb);
+    return function unsubscribe() {
+      var i = listeners.indexOf(cb);
+      if (i >= 0) listeners.splice(i, 1);
+    };
   }
+
+  // `ready` resolves once init() has determined the initial signed-in/out state,
+  // so deep-links (which render before /api/me returns) can await it instead of
+  // painting a wrong signed-out screen that never recovers.
+  var settled = false;
+  var resolveReady;
+  var ready = new Promise(function (res) { resolveReady = res; });
+
   function fire() {
-    for (const cb of listeners) {
+    if (!settled) { settled = true; resolveReady(Auth.user); }
+    for (const cb of listeners.slice()) {
       try { cb(Auth.user); } catch (_) { /* a bad listener shouldn't break the rest */ }
     }
   }
@@ -323,6 +339,7 @@
     authFetch,
     init,
     onChange,
+    ready,
     signInWithWallet,
     signInWithPrivy,
     updateProfile,

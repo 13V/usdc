@@ -535,6 +535,10 @@
 
   // ---- entry ------------------------------------------------------------------
   async function start() {
+    // Wait for auth to resolve before deciding signed-out — on a deep-link/refresh
+    // Auth.user is briefly null until /api/me returns, and this screen wouldn't
+    // otherwise re-render when it does.
+    if (window.Auth && window.Auth.ready) { try { await window.Auth.ready; } catch (_) {} }
     if (!(window.Auth && window.Auth.user)) {
       friendly("sign in to settle", "connect a wallet to pay your share 👀", "connect a wallet", function () {
         if (window.Auth) window.Auth.createWallet().catch(function (e) { app.toast(e.message); });

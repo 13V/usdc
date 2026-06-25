@@ -125,7 +125,8 @@
         '</span>' +
       '</div>';
 
-    var solscan = r.signature ? "https://solscan.io/tx/" + encodeURIComponent(r.signature) : "";
+    // devnet-only app: without ?cluster=devnet the link resolves to mainnet and 404s.
+    var solscan = r.signature ? "https://solscan.io/tx/" + encodeURIComponent(r.signature) + "?cluster=devnet" : "";
     var solscanLink = '<a ' + (solscan ? 'href="' + app.esc(solscan) + '" target="_blank" rel="noopener"' : 'style="pointer-events:none; opacity:.4;"') +
       ' style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:18px; padding-top:16px; border-top:1px solid rgba(244,247,250,0.07); cursor:pointer; text-decoration:none;">' +
       '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#7fc0ff;">view on solscan</span>' +

@@ -547,12 +547,24 @@
     var edit = document.getElementById("gTabEdit");
     if (edit) edit.onclick = function () { app.closeSheet(); location.hash = "#/new/" + encodeURIComponent(trip.id); };
     var del = document.getElementById("gTabDelete");
-    if (del) del.onclick = function () {
-      del.textContent = "deleting…";
-      app.api.del("/api/trips/" + encodeURIComponent(trip.id) + "/expenses/" + encodeURIComponent(e.id))
-        .then(function () { app.closeSheet(); app.toast("tab deleted"); load(view_, trip.id); })
-        .catch(function (err) { app.toast(err.message); del.textContent = "delete"; });
-    };
+    if (del) {
+      var armed = false, armTimer = null;
+      del.onclick = function () {
+        if (!armed) {
+          // first tap: arm + give a way back, so a single tap can't nuke a tab.
+          armed = true;
+          del.textContent = "tap again to delete";
+          del.style.color = "#FF6B5E";
+          armTimer = setTimeout(function () { armed = false; del.textContent = "delete"; del.style.color = "rgba(244,247,250,0.5)"; }, 3000);
+          return;
+        }
+        if (armTimer) clearTimeout(armTimer);
+        del.textContent = "deleting…";
+        app.api.del("/api/trips/" + encodeURIComponent(trip.id) + "/expenses/" + encodeURIComponent(e.id))
+          .then(function () { app.closeSheet(); app.toast("tab deleted"); load(view_, trip.id); })
+          .catch(function (err) { app.toast(err.message); del.textContent = "delete"; del.style.color = "rgba(244,247,250,0.5)"; armed = false; });
+      };
+    }
   }
 
   // ====================== states ======================
@@ -632,6 +644,9 @@
     view_ = view;
     if (!id) { errorState(view, "group", "no group", "open one from your groups."); return; }
     skeleton(view);
+    // Wait for auth so findMe() resolves "you" on a deep-link/refresh instead of
+    // painting a signed-out ledger that never recovers when the session loads.
+    if (window.Auth && window.Auth.ready) { try { await window.Auth.ready; } catch (_) {} }
     var trip;
     try {
       trip = await app.api.get("/api/trips/" + encodeURIComponent(id));

@@ -429,13 +429,24 @@
     };
     var more = document.getElementById("fdMore");
     if (more) more.onclick = function () { confirmRemove(view, d, friendId); };
+    // settle/new need a concrete trip — both screens dead-end without one.
+    var sharedTripId = (d.groups && d.groups.length) ? d.groups[0].id : null;
     var prim = document.getElementById("fdPrimary");
     if (prim) prim.onclick = function () {
-      if (d.net < 0) app.go("settle");          // owe → settle up
-      else if (d.net > 0) app.toast("request sent 👀"); // owed → request
+      if (d.net < 0) {
+        if (sharedTripId) location.hash = "#/settle/" + encodeURIComponent(sharedTripId);
+        else app.toast("no shared tab to settle — start one first");
+      } else if (d.net > 0) {
+        app.toast("request sent 👀"); // owed → request
+      } else {
+        app.toast("you're all square ✨");
+      }
     };
     var nt = document.getElementById("fdNewTab");
-    if (nt) nt.onclick = function () { app.go("new"); };
+    if (nt) nt.onclick = function () {
+      if (sharedTripId) location.hash = "#/new/" + encodeURIComponent(sharedTripId);
+      else app.go("new");
+    };
     var rm = document.getElementById("fdRemind");
     if (rm) rm.onclick = function () { app.toast(d.net < 0 ? "you got the nudge 👀" : "remind sent 👀"); };
     var del = document.getElementById("fdRemove");

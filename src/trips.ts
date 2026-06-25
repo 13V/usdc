@@ -222,6 +222,11 @@ export function createTrip(
 /**
  * Claim an existing member slot for a signed-in user, routing settle-up to their
  * wallet. Sets that member's user_id and wallet. Throws if the member is absent.
+ *
+ * SECURITY: a slot already claimed by a DIFFERENT user may not be re-claimed —
+ * otherwise any share-link holder could overwrite a creditor's wallet and
+ * redirect their payout. Re-claiming your own slot (e.g. to refresh the wallet)
+ * is allowed.
  */
 export function claimMember(
   tripId: string,
@@ -233,6 +238,9 @@ export function claimMember(
   if (!trip) throw new Error("claimMember: trip not found");
   const member = trip.members.find((m) => m.id === memberId);
   if (!member) throw new Error("claimMember: member not found");
+  if (member.userId && member.userId !== userId) {
+    throw new Error("claimMember: this member is already claimed");
+  }
   db.prepare(
     "UPDATE trip_members SET user_id = ?, wallet = ? WHERE id = ? AND trip_id = ?"
   ).run(userId, wallet, memberId, tripId);
@@ -336,7 +344,9 @@ export function addExpense(
   if (!memberIds.has(expense.paidBy)) {
     throw new Error("addExpense: paidBy must be a trip member");
   }
-  const participants = expense.participants || [];
+  // Dedupe participants — a repeated id would split the expense into too many
+  // buckets and double-charge that member (balances silently wrong).
+  const participants = Array.from(new Set(expense.participants || []));
   if (participants.length === 0) {
     throw new Error("addExpense: need at least one participant");
   }

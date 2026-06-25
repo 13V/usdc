@@ -153,6 +153,9 @@
     // ---- render ----
     function render() {
       var inGroup = !!groupId;
+      // The trip expenses endpoint only does even splits, so "by share" can't be
+      // honored in-group — force evenly there rather than silently discarding it.
+      if (inGroup && st.mode === "custom") st.mode = "equally";
       var n = included().length;
       var grand = grandCents();
       var shares = equalShares(grand, n);
@@ -258,7 +261,7 @@
           '<button id="nPlus" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:10px; background:#0e2734; color:#F4F7FA; font-size:20px; font-family:' + F_MONO + ';">+</button>' +
         '</div>' : '';
 
-      var modeToggle =
+      var modeToggle = inGroup ? '' :
         '<div style="display:flex; background:#0B1622; border:1px solid rgba(244,247,250,0.1); border-radius:13px; padding:4px; margin-top:13px; gap:3px;">' +
           MODES.map(function (o) {
             var sel = st.mode === o.key;
@@ -494,6 +497,22 @@
       var grand = grandCents();
       var title = st.title.trim() || "tab";
       var send = document.getElementById("nSend");
+
+      // Standalone "by share": send the per-person amounts (the /api/bills path
+      // honors customCents) and require they balance to the total first.
+      var customCents = null;
+      if (!groupId && st.mode === "custom") {
+        var evenly = equalShares(grand, inc.length);
+        customCents = inc.map(function (m, i) {
+          return st.custom[m.id] !== undefined ? st.custom[m.id] : evenly[i];
+        });
+        var csum = customCents.reduce(function (a, b) { return a + b; }, 0);
+        if (csum !== grand) {
+          app.toast(csum < grand ? "assign the rest before sending" : "those shares go over the total");
+          return;
+        }
+      }
+
       if (send) { send.disabled = true; send.style.opacity = ".6"; }
 
       try {
@@ -512,6 +531,8 @@
             total: dollars(grand),     // dollars; server re-derives cents
             tipPercent: 0,             // tip already baked into total
             names: inc.map(function (m) { return m.you ? "you" : m.name; }),
+            mode: customCents ? "custom" : "equal",
+            customCents: customCents || undefined,
           });
           var id = bill && (bill.id || bill.billId);
           if (!id) throw new Error("no bill id");

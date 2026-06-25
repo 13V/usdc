@@ -840,6 +840,12 @@
     });
   }
 
+  // Stop the message poll the moment we leave the chat route — otherwise the
+  // setInterval keeps firing network requests forever after navigating away.
+  window.addEventListener("hashchange", function () {
+    if (String(location.hash || "").indexOf("#/chat") !== 0) { token++; stopPolling(); }
+  });
+
   window.Screens = window.Screens || {};
   window.Screens.chat = {
     title: "chat",

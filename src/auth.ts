@@ -25,21 +25,20 @@ declare global {
   }
 }
 
-// SESSION_SECRET must be set in production. In dev we fall back to a known
-// insecure default but warn loudly (once) so it's never shipped silently.
+// SESSION_SECRET signs stateless session tokens, so a KNOWN secret means anyone
+// can forge a session for any user. We therefore never fall back to a hard-coded
+// default. When unset we generate a RANDOM per-process secret: secure in every
+// environment, zero config for local dev — the only cost is that sessions don't
+// survive a restart (or span multiple instances) until SESSION_SECRET is set.
 function resolveSessionSecret(): string {
   const fromEnv = process.env.SESSION_SECRET;
   if (fromEnv) return fromEnv;
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "SESSION_SECRET is required in production — set SESSION_SECRET in the environment."
-    );
-  }
   // eslint-disable-next-line no-console
   console.warn(
-    "⚠  using insecure default SESSION_SECRET — set SESSION_SECRET in production"
+    "⚠  SESSION_SECRET not set — using a random per-process secret. Sessions will " +
+      "reset on restart and won't work across multiple instances. Set SESSION_SECRET to fix."
   );
-  return "divvy-dev-secret-change-me";
+  return crypto.randomBytes(32).toString("hex");
 }
 
 const SESSION_SECRET = resolveSessionSecret();

@@ -31,7 +31,7 @@ import { qrToDataUrl } from "./qr";
 import { cardOptions } from "./onramp";
 import { fmt, toCents, withTip, SplitMode } from "./split";
 import { Cluster, buildSolanaPayUrl, newReference, USDC_MINT } from "./solanaPay";
-import { computeBalances, minimalSettlement } from "./ledger";
+import { computeBalances, minimalSettlement, Transfer } from "./ledger";
 import {
   Trip,
   SettlementTransfer,
@@ -250,10 +250,23 @@ app.post("/api/bills", (req: Request, res: Response) => {
     let totalCents = toCents(body.total);
     if (body.tipPercent) totalCents = withTip(totalCents, body.tipPercent);
 
+    // The collector is WHO GETS PAID. Bind it to the signed-in creator's own
+    // wallet so a standalone tab pays them — never the system-program placeholder
+    // (money sent there is unspendable). Fall back to an explicit body.collector,
+    // then refuse rather than silently collecting to the placeholder.
+    const SYSTEM_PROGRAM = "11111111111111111111111111111111";
+    const creatorWallet = req.userId ? getPrimaryWallet(req.userId) : null;
+    const collector = creatorWallet || body.collector || COLLECTOR;
+    if (!collector || collector === SYSTEM_PROGRAM) {
+      return res
+        .status(400)
+        .json({ error: "create or link a wallet before sending a tab" });
+    }
+
     const bill = createBill({
       title: body.title || "Dinner",
       cluster: body.cluster || CLUSTER,
-      collector: body.collector || COLLECTOR,
+      collector,
       totalCents,
       names,
       mode: body.mode || "equal",
@@ -805,26 +818,45 @@ app.post("/api/trips/:id/settle", (req: Request, res: Response) => {
     );
     const existing = getSettlement(trip.id);
 
+    // Build a payable transfer for a plan edge, or a wallet-less stub if the
+    // recipient has no wallet yet.
+    const buildTransfer = (t: Transfer): SettlementTransfer => {
+      const recipient = trip.members.find((m) => m.id === t.to);
+      if (recipient && recipient.wallet) {
+        const reference = newReference();
+        const url = buildSolanaPayUrl({
+          recipient: recipient.wallet,
+          amountCents: t.amountCents,
+          splToken: USDC_MINT[trip.cluster],
+          reference,
+          label: trip.name,
+          message: `${memberName(trip, t.from)} → ${memberName(trip, t.to)}`,
+        });
+        return { ...t, reference, url, paid: false };
+      }
+      return { ...t, reference: null, url: null, paid: false };
+    };
+
     let transfers: SettlementTransfer[];
     if (existing && existing.signature === signature) {
-      transfers = existing.transfers;
-    } else {
-      transfers = plan.map((t) => {
-        const recipient = trip.members.find((m) => m.id === t.to);
-        if (recipient && recipient.wallet) {
-          const reference = newReference();
-          const url = buildSolanaPayUrl({
-            recipient: recipient.wallet,
-            amountCents: t.amountCents,
-            splToken: USDC_MINT[trip.cluster],
-            reference,
-            label: trip.name,
-            message: `${memberName(trip, t.from)} → ${memberName(trip, t.to)}`,
-          });
-          return { ...t, reference, url, paid: false };
+      // Reuse the cached plan, but FILL IN any transfer whose recipient has
+      // gained a wallet since it was built (url still null). The balance-only
+      // signature doesn't change when a member adds a wallet, so without this a
+      // newly-claimed creditor would never get a payable link.
+      let changed = false;
+      transfers = existing.transfers.map((t) => {
+        if (!t.url && !t.paid) {
+          const recipient = trip.members.find((m) => m.id === t.to);
+          if (recipient && recipient.wallet) {
+            changed = true;
+            return buildTransfer(t);
+          }
         }
-        return { ...t, reference: null, url: null, paid: false };
+        return t;
       });
+      if (changed) saveSettlement(trip.id, signature, transfers);
+    } else {
+      transfers = plan.map(buildTransfer);
       saveSettlement(trip.id, signature, transfers);
     }
 
