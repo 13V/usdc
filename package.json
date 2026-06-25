@@ -19,6 +19,7 @@
     "qr": "ts-node src/index.ts qr",
     "verify": "ts-node src/index.ts verify",
     "web": "ts-node src/server.ts",
+    "start": "node dist/src/server.js",
     "live-devnet": "ts-node src/liveDevnet.ts"
   },
   "dependencies": {
