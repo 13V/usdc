@@ -81,9 +81,7 @@
     return '<div class="row">' +
       app.avatar({ name: p.name }, "sm") +
       '<span class="lower" style="flex:1;font-weight:500;">' + app.esc(p.name) + (isYou ? " (you)" : "") + '</span>' +
-      '<span class="money ' + (p.paid ? "pos" : "") + '" style="font-size:14px;' +
-        (p.paid ? "" : "color:var(--muted);") + '">' +
-        '<span class="cur">$</span>' + (p.amountFmt || "").replace(/^\$/, "") + '</span>' +
+      '<span style="' + (p.paid ? "" : "opacity:.6;") + 'font-size:14px;">' + app.money(p.amountCents, p.paid ? "pos" : "") + '</span>' +
       pill(p, isYou) +
     '</div>';
   }
@@ -131,8 +129,7 @@
             '<span style="font-size:24px;">' + titleEmoji(bill.title) + '</span>' +
             '<span class="lower" style="font-family:var(--mono);font-weight:700;font-size:19px;">' + app.esc(bill.title || "tab") + '</span>' +
           '</div>' +
-          '<span class="money" style="font-size:24px;">' +
-            '<span class="cur">$</span>' + (bill.totalFmt || "").replace(/^\$/, "") + '</span>' +
+          '<span style="font-size:24px;">' + app.money(bill.totalCents, "") + '</span>' +
         '</div>' +
         '<div class="mono" style="font-size:10.5px;letter-spacing:.5px;color:var(--faint);margin-top:5px;">' +
           'split ' + total + ' · ' + app.esc(eachFmt) + ' each</div>' +

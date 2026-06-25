@@ -18,11 +18,11 @@
   // back/close header (lowercase, dry). left = back, right = close — both go back.
   function header() {
     return '<div style="position:relative;z-index:6;display:flex;align-items:center;justify-content:space-between;height:50px;padding:0 4px;margin:2px 0 0;flex:none;">' +
-      '<button id="rcBack" class="circ" aria-label="back">' +
+      '<button id="rcBack" aria-label="back" style="appearance:none;width:38px;height:38px;border-radius:50%;background:var(--card);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
       '</button>' +
       '<span class="display" style="font-size:17px;letter-spacing:-0.2px;">receipt</span>' +
-      '<button id="rcClose" class="circ" aria-label="close">' +
+      '<button id="rcClose" aria-label="close" style="appearance:none;width:38px;height:38px;border-radius:50%;background:var(--card);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;">' +
         '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>' +
       '</button>' +
     '</div>';
