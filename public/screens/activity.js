@@ -1,26 +1,61 @@
-/* screens/activity.js — Activity feed. Matches design/frames/Activity Frames.dc.html.
-   Reverse-chron timeline grouped by day. The real GET /api/activity returns an
-   array of { type, tripId, tripName, text, amountFmt?, at } (see src/activity.ts),
-   but we adapt gracefully to richer shapes (emoji/color/signature/reactions/people)
-   if the API ever grows them. Dry lowercase voice; money via app.money. Never crash. */
+/* screens/activity.js — Activity feed.
+   Built by LIFTING the EXACT inline-styled markup from
+   design/handoff/Activity Frames.dc.html and wiring live data into it, so it
+   pixel-matches the approved design (same lift-and-wire pattern as home.js).
+
+   The real GET /api/activity returns an array of
+     { type: 'trip_created'|'expense'|'settlement'|'paid', tripId, tripName,
+       text, amountFmt?, at }  (see src/activity.ts)
+   but we adapt gracefully to richer shapes (emoji/color/signature/reactions/
+   people/to) if the API ever grows them. Dry lowercase voice; plain dollars;
+   mascot companion only on your own settle / empty state. Never crash.
+
+   The shell (index.html) provides the status bar and the #tabbar (runtime sets
+   Activity active), so this screen renders only the header + the state body
+   into #view. Three states: feed (default) / loading (shimmer ~1.3s) / empty. */
 (function () {
   "use strict";
   var app = window.app;
 
-  // ---- header (matches the frame: big "activity" + search/menu chips) ----
+  // Inject the frame's keyframes once (shimmer sweep + the mascot blob squish/
+  // blink/pulse used by the own-settle avatar).
+  if (!document.getElementById("divvy-activity-css")) {
+    var st = document.createElement("style");
+    st.id = "divvy-activity-css";
+    st.textContent = [
+      "@keyframes acSquish{0%,100%{border-radius:47% 53% 52% 48% / 55% 48% 52% 45%}50%{border-radius:53% 47% 48% 52% / 46% 54% 47% 53%}}",
+      "@keyframes acBlink{0%,91%,100%{transform:scaleY(1)}96%{transform:scaleY(0.12)}}",
+      "@keyframes acPulse{0%,100%{opacity:.55}50%{opacity:1}}",
+      "@keyframes acShimmer{0%{background-position:-260px 0}100%{background-position:260px 0}}",
+      "@media (prefers-reduced-motion: reduce){.ac-anim{animation:none!important}}",
+    ].join("");
+    document.head.appendChild(st);
+  }
+
+  // ---- header (lifted: big "activity" 30px Clash + search/filter circles) ----
   function header() {
     var chip = function (path) {
-      return '<div style="width:38px;height:38px;border-radius:50%;background:var(--card);' +
-        'border:1px solid var(--line);display:flex;align-items:center;justify-content:center;">' +
-        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" ' +
+      return '<div style="width:38px; height:38px; border-radius:50%; background:#13212E; ' +
+        'border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.75)" ' +
         'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg></div>';
     };
-    return '<div class="topbar" style="align-items:flex-end;height:auto;padding:6px 20px 14px;">' +
-      '<h1 class="display" style="font-size:30px;letter-spacing:-0.8px;">activity</h1>' +
-      '<div style="display:flex;gap:9px;">' +
+    return '<div style="position:relative; z-index:6; display:flex; align-items:flex-end; ' +
+      'justify-content:space-between; padding:6px 20px 14px; flex:none;">' +
+      '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; ' +
+      'font-size:30px; letter-spacing:-0.8px; margin:0; color:#F4F7FA;">activity</h1>' +
+      '<div style="display:flex; align-items:center; gap:9px;">' +
         chip('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/>') +
         chip('<path d="M4 6h16M7 12h10M10 18h4"/>') +
       '</div></div>';
+  }
+
+  // faint money texture + the single soft blue glow from the frame.
+  function ambient() {
+    return '<div style="position:absolute; inset:0; z-index:0; pointer-events:none; ' +
+      'background-image:repeating-radial-gradient(circle at 84% 2%, rgba(244,247,250,0.028) 0 1px, transparent 1px 8px); opacity:.6;"></div>' +
+      '<div style="position:absolute; left:-40px; top:90px; width:340px; height:300px; border-radius:50%; z-index:0; pointer-events:none; ' +
+      'background:radial-gradient(circle, rgba(39,117,202,0.16) 0%, rgba(39,117,202,0) 70%);"></div>';
   }
 
   // ---- time / day helpers ----
@@ -49,13 +84,13 @@
   }
   function dayLabel(at) {
     var t = ms(at);
-    if (!isFinite(t)) return "earlier";
+    if (!isFinite(t)) return "EARLIER";
     var d = new Date(t), today = new Date(), yest = new Date();
     yest.setDate(today.getDate() - 1);
-    if (dayKey(d) === dayKey(today)) return "today";
-    if (dayKey(d) === dayKey(yest)) return "yesterday";
-    try { return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toLowerCase(); }
-    catch (_) { return "earlier"; }
+    if (dayKey(d) === dayKey(today)) return "TODAY";
+    if (dayKey(d) === dayKey(yest)) return "YESTERDAY";
+    try { return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toUpperCase(); }
+    catch (_) { return "EARLIER"; }
   }
 
   // ---- amount: prefer structured cents; fall back to parsing amountFmt ----
@@ -70,202 +105,394 @@
     return null;
   }
 
+  // ---- emoji avatars: deterministic per identity (frame uses 🍜🦊🏝️🐢🐯…) --
+  var AV_GRADS = [
+    "linear-gradient(150deg,#3DE8C7,#2775CA)",
+    "linear-gradient(150deg,#7fc0ff,#2775CA)",
+    "linear-gradient(150deg,#FFC65C,#FF6B5E)",
+    "linear-gradient(150deg,#8B5CF6,#2775CA)",
+    "linear-gradient(150deg,#5cf0d4,#3DE8C7 55%,#1fbfa3)",
+  ];
+  function pickGrad(seed) {
+    var h = 0, s = String(seed || "");
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return AV_GRADS[h % AV_GRADS.length];
+  }
+  function tripEmoji(name) {
+    var n = (name || "").toLowerCase();
+    if (/tokyo|japan|trip|travel|flight/.test(n)) return "🗼";
+    if (/apart|rent|house|home|flat/.test(n)) return "🏠";
+    if (/bali|beach|island|vacation/.test(n)) return "🏝️";
+    if (/groc|market|food|dinner|lunch|eat/.test(n)) return "🍜";
+    if (/hotel|stay/.test(n)) return "🏨";
+    return "🧾";
+  }
+
+  // round emoji-on-gradient avatar (people), matching the frame's 42px circles.
+  function personAvatar(seed, emoji, color) {
+    var bg = color || pickGrad(seed);
+    return '<div style="width:42px; height:42px; border-radius:50%; background:' + bg + '; ' +
+      'display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">' +
+      app.esc(emoji || "🦊") + '</div>';
+  }
+  // rounded-square emoji tile (a tab/trip), 42px / radius 14, frame-style.
+  function tripTile(seed, emoji, tint) {
+    var bg = tint || "rgba(255,198,92,0.16)";
+    return '<div style="width:42px; height:42px; border-radius:14px; background:' + bg + '; ' +
+      'display:flex; align-items:center; justify-content:center; font-size:21px; flex:none;">' +
+      app.esc(emoji || tripEmoji(seed)) + '</div>';
+  }
+  // the mascot blob, shrunk for your-own-settle rows (lifted exactly).
+  function mascotMini() {
+    return '<div style="position:relative; width:42px; height:42px; flex:none; display:flex; align-items:center; justify-content:center;">' +
+      '<div class="ac-anim" style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.34) 0%, rgba(61,232,199,0) 68%); animation:acPulse 3s ease-in-out infinite;"></div>' +
+      '<div class="ac-anim" style="position:relative; width:28px; height:28px; background:linear-gradient(155deg,#5cf0d4,#2775CA); animation:acSquish 4s ease-in-out infinite; box-shadow:0 4px 11px rgba(39,117,202,0.5);">' +
+        '<div class="ac-anim" style="position:absolute; top:8px; left:6px; width:4px; height:5px; border-radius:50%; background:#0B1622; animation:acBlink 4.6s infinite;"></div>' +
+        '<div class="ac-anim" style="position:absolute; top:8px; right:6px; width:4px; height:5px; border-radius:50%; background:#0B1622; animation:acBlink 4.6s infinite;"></div>' +
+      '</div></div>';
+  }
+
+  // ---- right-aligned mono amount: lighter $/decimals, +blue / −coral / grey-settled ----
+  function amountHtml(cents, settled) {
+    if (cents == null) return "";
+    var pos = cents > 0, zero = cents === 0;
+    var col = zero ? "rgba(244,247,250,0.5)" : pos ? "#3B92E8" : "#FF6B5E";
+    var sign = zero ? "$" : pos ? "+$" : "−$";
+    var size = zero ? "15px" : "17px";
+    var n = Math.abs(cents) / 100;
+    var whole = Math.floor(n).toLocaleString();
+    var dec = (n % 1).toFixed(2).slice(1);
+    var sopac = zero ? ".6" : ".5";
+    return '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:' + size + '; ' +
+      'letter-spacing:-0.4px; color:' + col + '; flex:none;">' +
+      '<span style="font-size:11px; opacity:' + sopac + ';">' + sign + '</span>' + whole +
+      '<span style="font-size:11px; opacity:' + sopac + ';">' + dec + '</span></div>';
+  }
+
+  // ---- the mint settled / all-settled tag (pulsing dot), lifted ----
+  function settledTag(label) {
+    return '<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(61,232,199,0.12); ' +
+      'border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:2px 8px;">' +
+      '<span class="ac-anim" style="width:4px; height:4px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 5px rgba(61,232,199,0.9);"></span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:8.5px; letter-spacing:.5px; color:#3DE8C7;">' +
+      app.esc(label) + '</span></span>';
+  }
+  // mono meta line (sep with grey dots) used under one-liners.
+  function metaMono(text) {
+    return '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; ' +
+      'color:rgba(244,247,250,0.42); margin-top:3px;">' + text + '</div>';
+  }
+  // "view ↗" link → receipt when a signature exists, else inert.
+  function viewLink(sig) {
+    var style = 'font-family:\'Space Mono\',monospace; font-size:10px; color:#7fc0ff; cursor:pointer;';
+    if (sig) return '<a href="#/receipt/' + encodeURIComponent(sig) + '" style="' + style + ' text-decoration:none;">view ↗</a>';
+    return '<span style="' + style + '">view ↗</span>';
+  }
+  // blue "chip in" pill (open requests show this instead of an amount).
+  function chipInPill(href) {
+    var inner = '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; color:#7fc0ff;">chip in</span>';
+    var css = 'display:inline-flex; align-items:center; gap:6px; background:rgba(39,117,202,0.14); ' +
+      'border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:6px 13px; cursor:pointer; flex:none;';
+    if (href) return '<a href="' + href + '" style="' + css + ' text-decoration:none;">' + inner + '</a>';
+    return '<span style="' + css + '">' + inner + '</span>';
+  }
+  // reaction chips strip (frame-style), from ev.reactions if present.
+  function reactionStrip(rs) {
+    if (!rs || typeof rs !== "object") return "";
+    var chips = [];
+    var push = function (emoji, count) {
+      chips.push('<div style="display:inline-flex; align-items:center; gap:4px; background:#13212E; ' +
+        'border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:2px 8px;">' +
+        '<span style="font-size:11px;">' + app.esc(emoji) + '</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:9px; color:rgba(244,247,250,0.6);">' +
+        app.esc(String(count)) + '</span></div>');
+    };
+    if (Array.isArray(rs)) rs.forEach(function (r) { if (r && r.emoji) push(r.emoji, r.count != null ? r.count : 1); });
+    else Object.keys(rs).forEach(function (k) { push(k, rs[k]); });
+    if (!chips.length) return "";
+    return '<div style="display:flex; align-items:center; gap:6px; margin-top:8px;">' + chips.join("") + '</div>';
+  }
+
   // ---- turn a raw event into a dry lowercase one-liner + visual hints ----
-  // The real API ships English text like: Ava added "dinner" / Trip "x" created /
+  // Real API ships English text: Ava added "dinner" / Trip "x" created /
   // Settle-up created / Alex paid Sam. We rewrite to divvy's dry voice.
   function describe(ev) {
     var type = String(ev.type || "").toLowerCase();
     var trip = ev.tripName || "";
     var lc = function (s) { return String(s == null ? "" : s).toLowerCase(); };
+    var bold = function (s) { return '<span style="font-weight:600;">' + app.esc(lc(s)) + '</span>'; };
+    var isYou = function (s) { return /^(you|me)$/.test(lc(s)); };
 
-    // pull a quoted "title" out of the server text when present
+    // pull a quoted "title" out of the server text when present.
     var title = ev.title || ev.expenseTitle;
     if (!title && typeof ev.text === "string") {
-      var m = ev.text.match(/"([^"]+)"/);
-      if (m) title = m[1];
+      var qm = ev.text.match(/"([^"]+)"/);
+      if (qm) title = qm[1];
     }
-    // pull a leading actor name out of the server text ("Ava added ...")
+    // pull a leading actor name out of the server text ("Ava added ...").
     var actor = ev.actor || ev.person || ev.from;
     if (!actor && typeof ev.text === "string") {
-      var am = ev.text.match(/^([A-Za-z][\w' ]*?) (added|paid|created|joined|chipped)/);
+      var am = ev.text.match(/^([A-Za-z][\w' ]*?) (added|paid|created|joined|chipped|reacted|requested)/);
       if (am) actor = am[1];
     }
+    // pull a "paid <to>" target when present.
+    var to = ev.to;
+    if (!to && typeof ev.text === "string") {
+      var tm = ev.text.match(/ paid ([A-Za-z][\w' ]*)$/);
+      if (tm) to = tm[1];
+    }
 
-    var settled = false, line, detail = "";
-    var isYou = function (s) { return /^(you|me)$/.test(lc(s)); };
-    var bold = function (s) { return '<span style="font-weight:600;">' + app.esc(lc(s)) + '</span>'; };
+    var settled = false, settleLabel = "SETTLED", line, detail, request = false, ownSettle = false;
 
     if (/expense|bill|add|charge/.test(type)) {
       var who = actor ? lc(actor) : "someone";
       line = (isYou(who) ? "you" : app.esc(who)) + " started " + bold(title || "a tab") + " 🍜";
-      detail = [trip, "split"].filter(Boolean).join(" · ");
+      detail = trip ? app.esc(lc(trip)) + " · split" : "split";
     } else if (/settl|paid|payment|pay/.test(type)) {
       settled = true;
-      var f = actor ? lc(actor) : null, t = ev.to ? lc(ev.to) : null;
-      if (f && t) {
-        line = (isYou(f) ? "you squared with " + bold(t) : app.esc(f) + " chipped in") + " 🫡";
-        detail = trip;
-      } else if (f) {
-        line = (isYou(f) ? "you squared up ✨" : app.esc(f) + " chipped in 🫡");
-        detail = trip;
-      } else {
-        line = bold(trip || "the crew") + " squared ✨"; // settle-up created at trip level
+      var f = actor ? lc(actor) : null, t = to ? lc(to) : null;
+      if (f && t && isYou(f)) {
+        line = "you squared with " + bold(t) + " ✨";
+        ownSettle = true;
         detail = "";
+      } else if (f && t && isYou(t)) {
+        line = app.esc(lc(f)) + " chipped in 🫡";
+        detail = trip ? app.esc(lc(trip)) : "";
+      } else if (f) {
+        if (isYou(f)) { line = "you squared up ✨"; ownSettle = true; }
+        else line = app.esc(lc(f)) + " chipped in 🫡";
+        detail = trip ? app.esc(lc(trip)) : "";
+      } else {
+        // settle-up created at the trip level → the whole crew squared.
+        line = bold(trip || "the crew") + " squared ✨";
+        settleLabel = "ALL SETTLED";
+        detail = ev.memberCount ? ev.memberCount + " people" : "";
       }
-    } else if (/trip|create|new/.test(type)) {
-      line = (actor && isYou(actor) ? "you" : "someone") + " started " + bold(trip || "a group") + " 🎉";
+    } else if (/request|waiting|owe/.test(type)) {
+      request = true;
+      line = (actor ? app.esc(lc(actor)) : "someone") + " is waiting on you 👀";
+      detail = trip ? app.esc(lc(trip)) : "";
+    } else if (/trip|create|new|group/.test(type)) {
+      var c = actor && isYou(actor) ? "you" : "someone";
+      line = c + " started " + bold(trip || "a group") + " 🎉";
       detail = "new group";
     } else if (/join|member|invite/.test(type)) {
       line = (actor ? bold(actor) : "someone") + " hopped in 👋";
-      detail = trip;
+      detail = trip ? app.esc(lc(trip)) : "";
     } else if (/react/.test(type)) {
       line = (actor ? app.esc(lc(actor)) : "someone") + " reacted " +
         app.esc(ev.emoji || "💀") + (title ? " to " + bold(title) : "");
-      detail = trip;
+      detail = trip ? app.esc(lc(trip)) : "";
     } else {
       var raw = typeof ev.text === "string" && ev.text.trim() ? ev.text : "something happened";
       line = app.esc(lc(raw)) + " ✨";
-      detail = trip;
+      detail = trip ? app.esc(lc(trip)) : "";
     }
-    return { line: line, detail: detail, settled: settled, title: title, isYou: isYou(actor) };
-  }
-
-  // ---- one feed row ----
-  function row(ev) {
-    var d = describe(ev);
-    var cents = centsOf(ev);
-
-    // avatar: emoji-on-color when we have identity; mascot for your own settle.
-    var actorRaw = ev.actor || ev.person || ev.from || "";
-    var ownSettle = d.settled && (d.isYou || /squared with|squared up/.test(d.line));
-    var avatarHtml;
-    if (ownSettle) {
-      avatarHtml = '<div style="transform:scale(.5);transform-origin:center;width:42px;height:42px;' +
-        'display:flex;align-items:center;justify-content:center;flex:none;overflow:visible;">' +
-        app.mascot({ size: 80, mood: "sparkle", glow: true }) + '</div>';
-    } else {
-      avatarHtml = app.avatar({
-        name: actorRaw || ev.tripName || "?",
-        emoji: ev.emoji || ev.actorEmoji,
-        color: ev.color || ev.actorColor,
-        id: ev.actorId || ev.tripId,
-      });
-    }
-
-    // amount on the right: pos blue / neg coral / zero settled-muted
-    var amountHtml = "";
-    if (cents != null) {
-      var kind = cents > 0 ? "pos" : cents < 0 ? "neg" : "settled";
-      amountHtml = app.money(cents, kind, cents !== 0);
-    }
-
-    // settled tag + view link (→ receipt when a signature exists)
-    var tag = d.settled ? '<span class="state settled" style="font-size:9px;padding:3px 8px;">settled</span>' : "";
-    var sig = ev.signature || ev.sig || (ev.receipt && ev.receipt.signature) || ev.reference;
-    var viewLink = (d.settled && sig)
-      ? '<a href="#/receipt/' + encodeURIComponent(sig) + '" ' +
-        'style="font-family:var(--mono);font-size:10px;color:var(--blue-bright);text-decoration:none;">view ↗</a>'
-      : "";
-
-    // emoji reactions, if the API carries them
-    var reacts = "";
-    var rs = ev.reactions;
-    if (rs && typeof rs === "object") {
-      var chips = [];
-      var pushChip = function (emoji, count) {
-        chips.push('<span style="display:inline-flex;align-items:center;gap:4px;background:var(--card);' +
-          'border:1px solid var(--line);border-radius:999px;padding:2px 8px;font-size:11px;">' +
-          app.esc(emoji) + '<span style="font-family:var(--mono);font-size:9px;color:var(--muted);">' +
-          app.esc(String(count)) + '</span></span>');
-      };
-      if (Array.isArray(rs)) {
-        rs.forEach(function (r) { if (r && r.emoji) pushChip(r.emoji, r.count != null ? r.count : 1); });
-      } else {
-        Object.keys(rs).forEach(function (k) { pushChip(k, rs[k]); });
-      }
-      if (chips.length) reacts = '<div style="display:flex;gap:6px;margin-top:8px;">' + chips.join("") + '</div>';
-    }
-
-    var bits = [];
-    if (d.detail) bits.push('<span>' + app.esc(d.detail) + '</span>');
-    bits.push('<span>' + app.esc(relTime(ev.at)) + '</span>');
-    var subRow = '<div class="sub" style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">' +
-      tag + bits.join('<span style="opacity:.4;">·</span>') +
-      (viewLink ? '<span style="opacity:.4;">·</span>' + viewLink : "") + '</div>';
-
-    return '<div class="row" style="align-items:flex-start;">' +
-      avatarHtml +
-      '<div class="meta"><div class="name lower" style="font-weight:500;font-size:15px;">' + d.line + '</div>' +
-      subRow + reacts + '</div>' +
-      (amountHtml ? '<div style="flex:none;align-self:center;">' + amountHtml + '</div>' : "") +
-      '</div>';
-  }
-
-  // ---- loading skeleton ----
-  function skeleton(view) {
-    var rows = '<div class="skeleton" style="height:11px;width:54px;margin:14px 2px;"></div>';
-    for (var i = 0; i < 4; i++) {
-      rows += '<div class="row" style="border:none;">' +
-        '<div class="skeleton" style="width:44px;height:44px;border-radius:14px;flex:none;"></div>' +
-        '<div class="meta"><div class="skeleton" style="height:13px;width:60%;"></div>' +
-        '<div class="skeleton" style="height:10px;width:38%;margin-top:8px;"></div></div>' +
-        '<div class="skeleton" style="height:16px;width:48px;flex:none;"></div></div>';
-    }
-    view.innerHTML = header() + '<div class="appscroll">' + rows + '</div>';
-  }
-
-  // ---- empty / signed-out states ----
-  function emptyState(view) {
-    view.innerHTML = header() +
-      '<div class="empty" style="padding-top:60px;">' +
-      app.mascot({ size: 112, mood: "sleepy", glow: true }) +
-      '<div class="title lower">nothing\'s happened yet 🫥</div>' +
-      '<div class="hint">start a tab and the feed wakes up</div>' +
-      '<button class="btn" style="max-width:240px;margin-top:10px;" onclick="location.hash=\'#/new\'">new tab</button>' +
-      '</div>';
-  }
-  function signedOut(view) {
-    view.innerHTML = header() +
-      '<div class="empty" style="padding-top:54px;">' +
-      app.mascot({ size: 120, mood: "happy", glow: true }) +
-      '<div class="title lower">your feed lives here</div>' +
-      '<div class="hint">connect a wallet to see who chipped in 💸</div>' +
-      '<button class="btn" id="aConnect" style="max-width:260px;margin-top:10px;">connect a wallet</button>' +
-      '</div>';
-    var b = document.getElementById("aConnect");
-    if (b) b.onclick = function () {
-      if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); });
+    return {
+      line: line, detail: detail, settled: settled, settleLabel: settleLabel,
+      title: title, actor: actor, to: to, request: request, ownSettle: ownSettle,
     };
   }
 
-  // ---- signed-in render ----
-  async function signedIn(view) {
-    skeleton(view);
-    var items;
-    try { items = await app.api.get("/api/activity"); }
-    catch (e) {
-      if (e && e.status === 401) { signedOut(view); return; }
-      view.innerHTML = header() +
-        '<div class="empty"><div class="title lower">couldn\'t load activity</div>' +
-        '<div class="hint">' + app.esc(e.message || "try again") + '</div></div>';
-      return;
-    }
-    if (!Array.isArray(items)) items = (items && Array.isArray(items.events)) ? items.events : [];
-    if (!items.length) { emptyState(view); return; }
+  // ---- one feed row (the exact frame row, wired) ----
+  function row(ev) {
+    var d = describe(ev);
+    var cents = centsOf(ev);
+    var sig = ev.signature || ev.sig || (ev.receipt && ev.receipt.signature) || ev.reference;
 
-    // group by day (already reverse-chron from the server; preserve order)
+    // avatar: mascot for your own settle, emoji-tile for tab/trip events,
+    // emoji-on-gradient circle for a person.
+    var avatarHtml;
+    if (d.ownSettle) {
+      avatarHtml = mascotMini();
+    } else if (d.request) {
+      avatarHtml = personAvatar(d.actor || ev.tripId, ev.emoji || ev.actorEmoji, ev.color || ev.actorColor);
+    } else if (/expense|bill|add|charge|trip|create|new|group|settl|paid/.test(String(ev.type || "").toLowerCase()) && !d.actor) {
+      // trip-flavored event with no person → rounded emoji tile.
+      var crew = /settl|paid/.test(String(ev.type || "").toLowerCase());
+      avatarHtml = tripTile(ev.tripName, ev.emoji || tripEmoji(ev.tripName),
+        crew ? "linear-gradient(135deg,#5cf0d4,#3DE8C7 55%,#1fbfa3)" : "rgba(255,198,92,0.16)");
+    } else if (d.actor && !d.ownSettle && /expense|bill|add|charge/.test(String(ev.type || "").toLowerCase())) {
+      // "you started dinner" → the tab tile, like the frame.
+      avatarHtml = tripTile(ev.tripName, ev.emoji || tripEmoji(ev.tripName), "rgba(255,198,92,0.16)");
+    } else {
+      avatarHtml = personAvatar(d.actor || ev.tripId, ev.emoji || ev.actorEmoji, ev.color || ev.actorColor);
+    }
+
+    // sub-row: settled tag + meta + view link (settle) OR plain mono meta.
+    var subRow;
+    if (d.settled) {
+      var bits = [];
+      if (d.detail) bits.push(app.esc(d.detail));
+      bits.push(app.esc(relTime(ev.at)));
+      subRow = '<div style="display:flex; align-items:center; gap:7px; margin-top:3px; flex-wrap:wrap;">' +
+        settledTag(d.settleLabel) +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(244,247,250,0.42);">' +
+        bits.join(" · ") + '</span>' +
+        (d.settleLabel === "ALL SETTLED" ? "" : viewLink(sig)) +
+        '</div>';
+    } else {
+      var detail = d.detail ? d.detail + " · " : "";
+      subRow = metaMono(detail + app.esc(relTime(ev.at)));
+    }
+
+    // right side: chip-in pill for requests, reaction emoji for reactions,
+    // otherwise the mono amount.
+    var right = "";
+    if (d.request) {
+      right = chipInPill("#/group/" + encodeURIComponent(ev.tripId || ""));
+    } else if (/react/.test(String(ev.type || "").toLowerCase())) {
+      right = '<div style="font-size:18px; flex:none;">' + app.esc(ev.emoji || "💀") + '</div>';
+    } else {
+      right = amountHtml(cents, d.settled);
+    }
+
+    var reacts = reactionStrip(ev.reactions);
+    // settle rows align center; rows with reactions align top (like the frame).
+    var align = reacts ? "flex-start" : "center";
+
+    return '<div style="display:flex; align-items:' + align + '; gap:13px; padding:11px 4px;">' +
+      avatarHtml +
+      '<div style="flex:1; min-width:0;">' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' + d.line + '</div>' +
+        subRow + reacts +
+      '</div>' +
+      right +
+    '</div>';
+  }
+
+  // ---- FEED render ----
+  function feed(view, items) {
     var html = "", lastDay = null;
     items.forEach(function (ev) {
       if (!ev || typeof ev !== "object") return;
       var k = dayKey(ev.at);
       if (k !== lastDay) {
+        if (lastDay !== null) html += '</div>';
         lastDay = k;
-        html += '<div class="eyebrow" style="margin:18px 2px 6px;">' + app.esc(dayLabel(ev.at)) + '</div>';
+        html += '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; ' +
+          'color:rgba(244,247,250,0.4); padding:' + (html ? "20px" : "8px") + ' 2px 10px;">' +
+          app.esc(dayLabel(ev.at)) + '</div>' +
+          '<div style="display:flex; flex-direction:column; gap:3px;">';
       }
       try { html += row(ev); } catch (_) { /* one bad event never sinks the feed */ }
     });
+    if (lastDay !== null) html += '</div>';
 
-    view.innerHTML = header() + '<div class="appscroll">' + html + '</div>';
+    view.innerHTML =
+      '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
+        ambient() +
+        '<div style="position:relative; z-index:2;">' + header() + '</div>' +
+        '<div class="ac-scroll" style="position:relative; z-index:2; padding:2px 18px 22px;">' + html + '</div>' +
+      '</div>';
+  }
+
+  // ---- LOADING (shimmer skeleton rows, ~1.3s sweep) — lifted from the frame ----
+  function skeletonBlock(extra) {
+    return 'background:#13212E; background-image:linear-gradient(90deg, transparent 0, rgba(244,247,250,0.10) 50%, transparent 100%); ' +
+      'background-size:260px 100%; background-repeat:no-repeat; animation:acShimmer 1.3s ease-in-out infinite; ' + (extra || "");
+  }
+  function skeletonRow(round, w1, w2) {
+    var avStyle = round
+      ? 'width:42px; height:42px; border-radius:50%; flex:none; ' + skeletonBlock()
+      : 'width:42px; height:42px; border-radius:14px; flex:none; ' + skeletonBlock();
+    return '<div style="display:flex; align-items:center; gap:13px;">' +
+      '<div class="ac-anim" style="' + avStyle + '"></div>' +
+      '<div style="flex:1;">' +
+        '<div class="ac-anim" style="height:13px; width:' + w1 + '; border-radius:5px; ' + skeletonBlock() + '"></div>' +
+        '<div class="ac-anim" style="height:10px; width:' + w2 + '; border-radius:5px; margin-top:8px; ' + skeletonBlock('') + '"></div>' +
+      '</div>' +
+      '<div class="ac-anim" style="width:48px; height:16px; border-radius:5px; flex:none; ' + skeletonBlock() + '"></div>' +
+    '</div>';
+  }
+  function loading(view) {
+    var body =
+      '<div class="ac-anim" style="height:11px; width:54px; border-radius:4px; margin:8px 2px 16px; ' + skeletonBlock() + '"></div>' +
+      '<div style="display:flex; flex-direction:column; gap:18px;">' +
+        skeletonRow(false, "62%", "40%") +
+        skeletonRow(true, "54%", "46%") +
+        skeletonRow(false, "58%", "38%") +
+        skeletonRow(true, "50%", "44%") +
+      '</div>';
+    view.innerHTML =
+      '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
+        ambient() +
+        '<div style="position:relative; z-index:2;">' + header() + '</div>' +
+        '<div style="position:relative; z-index:2; padding:2px 18px 22px;">' + body + '</div>' +
+      '</div>';
+  }
+
+  // ---- EMPTY (mascot + frame copy) ----
+  function emptyState(view) {
+    view.innerHTML =
+      '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
+        ambient() +
+        '<div style="position:relative; z-index:2;">' + header() + '</div>' +
+        '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
+          'justify-content:center; gap:18px; padding:40px 44px; text-align:center;">' +
+          app.mascot({ size: 96, mood: "sleepy", glow: true }) +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(244,247,250,0.65);">' +
+            'nothing\'s happened yet 🫥<br>start a tab and the feed wakes up</div>' +
+          '<button id="acNew" style="appearance:none; border:none; cursor:pointer; min-height:50px; padding:0 26px; ' +
+            'border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); ' +
+            'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff; ' +
+            'box-shadow:0 8px 24px rgba(39,117,202,0.42);">start a tab</button>' +
+        '</div>' +
+      '</div>';
+    var b = document.getElementById("acNew");
+    if (b) b.onclick = function () { location.hash = "#/new"; };
+  }
+
+  // ---- signed-out (connect wallet) ----
+  function signedOut(view) {
+    view.innerHTML =
+      '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
+        ambient() +
+        '<div style="position:relative; z-index:2;">' + header() + '</div>' +
+        '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
+          'justify-content:center; gap:16px; padding:40px 44px; text-align:center;">' +
+          app.mascot({ size: 104, mood: "happy", glow: true }) +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(244,247,250,0.65);">' +
+            'your feed lives here<br>connect a wallet to see who chipped in 💸</div>' +
+          '<button id="acConnect" style="appearance:none; border:none; cursor:pointer; min-height:50px; padding:0 26px; ' +
+            'border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); ' +
+            'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff; ' +
+            'box-shadow:0 8px 24px rgba(39,117,202,0.42);">connect a wallet</button>' +
+        '</div>' +
+      '</div>';
+    var b = document.getElementById("acConnect");
+    if (b) b.onclick = function () {
+      if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); });
+    };
+  }
+
+  function errorState(view, msg) {
+    view.innerHTML =
+      '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
+        ambient() +
+        '<div style="position:relative; z-index:2;">' + header() + '</div>' +
+        '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
+          'justify-content:center; gap:10px; padding:40px 44px; text-align:center;">' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; color:rgba(244,247,250,0.65);">couldn\'t load activity</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(244,247,250,0.42);">' +
+            app.esc(msg || "try again") + '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // ---- signed-in render ----
+  async function signedIn(view) {
+    loading(view); // shimmer skeleton while we fetch
+    var items;
+    try { items = await app.api.get("/api/activity"); }
+    catch (e) {
+      if (e && e.status === 401) { signedOut(view); return; }
+      errorState(view, e && e.message);
+      return;
+    }
+    if (!Array.isArray(items)) items = (items && Array.isArray(items.events)) ? items.events : [];
+    if (!items.length) { emptyState(view); return; }
+    feed(view, items);
   }
 
   window.Screens = window.Screens || {};

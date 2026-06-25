@@ -1,9 +1,10 @@
-/* screens/friends.js — Friends / your people. Matches
-   design/frames/Friends Frames.dc.html. Add by @handle or wallet, see the net
-   tab with each person, jump into a friend. See design/BUILD.md for contract.
+/* screens/friends.js — Friends / your people.
+   Built by lifting the EXACT inline-styled markup from
+   design/handoff/Friends Frames.dc.html and wiring live data into it, so it
+   pixel-matches the approved design. Keeps the existing data wiring:
 
    API:
-     GET  /api/friends            -> { friends: [{ id, handle, displayName, primaryWallet, wallets[] }] }
+     GET  /api/friends            -> { friends: [{ id, handle, displayName, primaryWallet, wallets[], emoji, color }] }
      POST /api/friends {handle?,wallet?} -> { friend: {...} } (404 if not on divvy)
      GET  /api/me/balances        -> { totals, trips[], counterparties[] } (per-person net, best-effort)
      GET  /api/trips?mine=1       -> [{ id, name, memberCount, ... }]  (saved tabs chips)
@@ -12,20 +13,43 @@
   "use strict";
   var app = window.app;
 
-  // ---- chrome -------------------------------------------------------------
-  function topbar() {
-    return '<div class="topbar">' +
-      '<div class="brand"><span class="mark"><span>/</span></span><span class="word">divvy</span></div>' +
-      '<div style="transform:scale(.42);transform-origin:right center;width:74px;height:46px;overflow:visible;display:flex;justify-content:flex-end;">' +
-        app.mascot({ size: 86, mood: "watching", glow: false }) +
-      '</div></div>';
+  // ---- header (lifted: "your people" Clash + mono subhead + search circle) --
+  function header(sub) {
+    return '<div style="display:flex; align-items:flex-end; justify-content:space-between; padding:6px 20px 12px; flex:none;">' +
+      '<div>' +
+        '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:30px; letter-spacing:-0.8px; margin:0; color:#F4F7FA;">your people</h1>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.45); margin-top:3px;">' + app.esc(sub) + '</div>' +
+      '</div>' +
+      '<div id="frSearch" style="width:38px; height:38px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.75)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+      '</div>' +
+    '</div>';
   }
 
-  function header(sub) {
-    return '<div style="display:flex;align-items:flex-end;justify-content:space-between;margin:2px 0 6px;">' +
-      '<div><h1 style="font-size:30px;letter-spacing:-.8px;margin:0;" class="lower">your people</h1>' +
-      '<div class="eyebrow" style="letter-spacing:.3px;margin-top:4px;color:var(--faint);">' + sub + '</div></div>' +
-      '</div>';
+  // ---- add well (lifted: recessed #0e1a25, mono input, QR tile, glowing + add)
+  function addWell() {
+    return '<div style="position:relative; z-index:5; flex:none; margin:0 16px 4px;">' +
+      '<div style="position:relative; background:#0e1a25; border:1px solid rgba(39,117,202,0.28); border-radius:20px; padding:10px; display:flex; align-items:center; gap:9px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 26px rgba(0,0,0,0.3);">' +
+        '<div style="flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding-left:8px;">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><circle cx="11" cy="8" r="4"/><path d="M4 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5"/></svg>' +
+          '<input id="frInput" placeholder="@handle or wallet…" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
+            'style="flex:1; min-width:0; background:transparent; border:none; outline:none; font-family:\'Space Mono\',monospace; font-size:13px; color:#F4F7FA; padding:2px 0;" />' +
+        '</div>' +
+        // QR scan tile
+        '<div id="frQr" role="button" aria-label="scan a qr" style="width:40px; height:40px; border-radius:12px; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;">' +
+          '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3M21 14v.01M21 21v-4M17 21h-3"/></svg>' +
+        '</div>' +
+        // glowing blue + add
+        '<div id="frAdd" role="button" aria-label="add" style="width:46px; height:40px; border-radius:12px; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:0 6px 18px rgba(39,117,202,0.5), inset 0 1px 0 rgba(255,255,255,0.28);">' +
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex; align-items:center; gap:6px; padding:8px 6px 2px;">' +
+        '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(127,192,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z"/></svg>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(244,247,250,0.4);">scan their qr — never hand-type a wallet</span>' +
+      '</div>' +
+      '<div id="frStatus" style="font-family:\'Space Mono\',monospace; font-size:11.5px; color:rgba(244,247,250,0.6); min-height:0; padding:0 6px;"></div>' +
+    '</div>';
   }
 
   // ---- small bits ---------------------------------------------------------
@@ -36,106 +60,161 @@
   function nameOf(f) {
     return f.displayName || (f.handle ? f.handle : (f.primaryWallet ? shortWallet(f.primaryWallet) : "friend"));
   }
-  // QR svg (matches the frame's scan glyph)
-  function qrSvg() {
-    return '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--blue-bright)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
-      '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3M21 14v.01M21 21v-4M17 21h-3"/></svg>';
-  }
-  function copySvg() {
-    return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
-  }
 
-  // ---- add well -----------------------------------------------------------
-  function addWell() {
-    return '<div class="card card-2" style="border-color:rgba(39,117,202,0.28);padding:10px;display:flex;align-items:center;gap:9px;">' +
-      '<input id="frInput" class="input mono" placeholder="@handle or wallet…" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
-        'style="flex:1;min-width:0;min-height:40px;padding:10px 12px;background:transparent;border:none;font-size:13px;" />' +
-      '<button id="frQr" type="button" aria-label="scan a qr" style="width:40px;height:40px;flex:none;border-radius:12px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;">' + qrSvg() + '</button>' +
-      '<button id="frAdd" type="button" aria-label="add" style="width:46px;height:40px;flex:none;border-radius:12px;border:none;cursor:pointer;background:var(--blue-grad);box-shadow:0 6px 18px rgba(39,117,202,0.5),inset 0 1px 0 rgba(255,255,255,0.28);display:flex;align-items:center;justify-content:center;">' +
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>' +
-      '</div>' +
-      '<div style="display:flex;align-items:center;gap:6px;padding:8px 6px 2px;">' +
-        '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(127,192,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z"/></svg>' +
-        '<span class="mono" style="font-size:9.5px;letter-spacing:.3px;color:var(--faint);">scan their qr — never hand-type a wallet</span>' +
-      '</div>' +
-      '<div id="frStatus" class="mono" style="font-size:12px;color:var(--muted);min-height:0;margin:2px 4px 0;"></div>';
+  // avatar tile (lifted: 46px rounded-square, emoji OR initial chip)
+  var AV_GRADS = [
+    "linear-gradient(150deg,#3DE8C7,#2775CA)",
+    "linear-gradient(150deg,#7fc0ff,#2775CA)",
+    "linear-gradient(150deg,#FFC65C,#FF6B5E)",
+    "linear-gradient(150deg,#FF8A7E,#FF6B5E)",
+    "linear-gradient(150deg,#a78bfa,#2775CA)",
+    "linear-gradient(150deg,#5cf0d4,#3DE8C7 60%,#1fbfa3)",
+  ];
+  function gradFor(seed) {
+    var h = 0, s = String(seed || "");
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return AV_GRADS[h % AV_GRADS.length];
   }
-
-  // ---- saved tabs chip strip ---------------------------------------------
-  var TAB_EMOJI = ["🗼", "🏠", "🏝️", "🎟️", "🍜", "🛶"];
-  function tabChip(t, i) {
-    var em = TAB_EMOJI[i % TAB_EMOJI.length];
-    var faces = "", n = Math.min(t.memberCount || 0, 3);
-    for (var k = 0; k < n; k++) {
-      faces += '<span style="width:15px;height:15px;border-radius:50%;background:' + app.colorFor(t.id + ":" + k) +
-        ';border:1.5px solid var(--card);' + (k ? "margin-left:-5px;" : "") + 'display:inline-flex;"></span>';
+  function avatarTile(f, nm) {
+    var bg = f.color || gradFor(f.id || nm);
+    if (f.emoji) {
+      return '<div style="width:46px; height:46px; border-radius:14px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none;">' + app.esc(f.emoji) + '</div>';
     }
-    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="flex:none;text-decoration:none;color:inherit;display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:9px 13px 9px 11px;">' +
-      '<span style="width:30px;height:30px;border-radius:10px;background:var(--blue-grad);display:flex;align-items:center;justify-content:center;font-size:15px;">' + em + '</span>' +
-      '<div><div class="lower" style="font-weight:500;font-size:13px;">' + app.esc((t.name || "tab").toLowerCase()) + '</div>' +
-      '<div style="display:flex;align-items:center;margin-top:3px;">' + faces + '</div></div></a>';
+    var initial = (nm || "?").trim()[0] || "?";
+    return '<div style="width:46px; height:46px; border-radius:14px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:19px; color:#fff; flex:none;">' + app.esc(initial.toUpperCase()) + '</div>';
+  }
+
+  // right-side money (lifted: big mono, lighter $/decimals; grey $0.00 when even)
+  function moneyCell(net) {
+    var n = Math.abs(net) / 100;
+    var whole = Math.floor(n).toLocaleString();
+    var dec = (n % 1).toFixed(2).slice(1); // ".00"
+    if (net === 0) {
+      return '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:15px; letter-spacing:-0.4px; color:rgba(244,247,250,0.5);">' +
+        '<span style="font-size:10px; opacity:.6;">$</span>0<span style="font-size:10px; opacity:.6;">.00</span></div>';
+    }
+    var col = net > 0 ? "#3B92E8" : "#FF6B5E";
+    var sign = net > 0 ? "+$" : "−$";
+    return '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:' + col + ';">' +
+      '<span style="font-size:11px; opacity:.5;">' + sign + '</span>' + whole + '<span style="font-size:11px; opacity:.5;">' + dec + '</span></div>';
+  }
+
+  // right-side pill (lifted: blue "tab" or mint "square ✨")
+  function pillCell(net) {
+    if (net === 0) {
+      return '<span style="display:inline-flex; align-items:center; gap:5px; margin-top:6px; background:rgba(61,232,199,0.1); border:1px solid rgba(61,232,199,0.35); border-radius:999px; padding:3px 9px;">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; color:#3DE8C7;">square ✨</span></span>';
+    }
+    return '<span style="display:inline-flex; align-items:center; gap:5px; margin-top:6px; background:rgba(39,117,202,0.14); border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:3px 10px; cursor:pointer;">' +
+      '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9.5px; color:#7fc0ff;">tab</span></span>';
+  }
+
+  // ---- saved tabs chip strip (lifted) -------------------------------------
+  var TAB_EMOJI = ["🗼", "🏠", "🏝️", "🎟️", "🍜", "🛶"];
+  var TAB_COVERS = [
+    "linear-gradient(135deg,#3a93ec,#2775CA)",
+    "linear-gradient(135deg,#ff8073,#FF6B5E)",
+    "linear-gradient(135deg,#5cf0d4,#3DE8C7 60%,#1fbfa3)",
+    "linear-gradient(135deg,#ffd98a,#FFC65C 60%,#e0a83c)",
+    "linear-gradient(135deg,#a78bfa,#8B5CF6 60%,#6d28d9)",
+    "linear-gradient(135deg,#7fc0ff,#2775CA)",
+  ];
+  var STACK_EMOJI = ["🦊", "🐢", "🌸", "🦜", "🐯", "🐼"];
+  var STACK_GRADS = [
+    "linear-gradient(150deg,#FFC65C,#FF6B5E)",
+    "linear-gradient(150deg,#7fc0ff,#2775CA)",
+    "linear-gradient(150deg,#3DE8C7,#2775CA)",
+    "linear-gradient(150deg,#FF8A7E,#FF6B5E)",
+    "linear-gradient(150deg,#FFC65C,#FF6B5E)",
+    "linear-gradient(150deg,#a78bfa,#2775CA)",
+  ];
+  function tabChip(t, i) {
+    var em = t.emoji || TAB_EMOJI[i % TAB_EMOJI.length];
+    var cover = TAB_COVERS[i % TAB_COVERS.length];
+    var total = t.memberCount || 0;
+    var shown = Math.min(total, 3);
+    var stack = "";
+    for (var k = 0; k < shown; k++) {
+      var isOverflow = (k === 2 && total > 3);
+      if (isOverflow) {
+        stack += '<div style="width:15px; height:15px; border-radius:50%; background:#0B1622; border:1.5px solid #13212E; margin-left:-5px; display:flex; align-items:center; justify-content:center; font-family:\'Space Mono\',monospace; font-size:7px; font-weight:700; color:rgba(244,247,250,0.6);">+' + (total - 2) + '</div>';
+      } else {
+        stack += '<div style="width:15px; height:15px; border-radius:50%; background:' + STACK_GRADS[(i + k) % STACK_GRADS.length] + '; border:1.5px solid #13212E;' + (k ? " margin-left:-5px;" : "") + ' display:flex; align-items:center; justify-content:center; font-size:8px;">' + STACK_EMOJI[(i + k) % STACK_EMOJI.length] + '</div>';
+      }
+    }
+    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="text-decoration:none; flex:none; display:flex; align-items:center; gap:9px; background:#13212E; border:1px solid rgba(244,247,250,0.08); border-radius:15px; padding:9px 13px 9px 11px; cursor:pointer;">' +
+      '<div style="width:30px; height:30px; border-radius:10px; background:' + cover + '; display:flex; align-items:center; justify-content:center; font-size:15px;">' + app.esc(em) + '</div>' +
+      '<div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; color:#F4F7FA;">' + app.esc((t.name || "tab").toLowerCase()) + '</div>' +
+        '<div style="display:flex; align-items:center; margin-top:3px;">' + stack + '</div>' +
+      '</div></a>';
   }
   function savedTabs(trips) {
     if (!trips || !trips.length) return "";
-    return '<div class="eyebrow" style="margin:4px 2px 11px;">saved tabs</div>' +
-      '<div style="display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;margin:0 -20px 4px;padding:0 20px 4px;">' +
-        trips.slice(0, 8).map(tabChip).join("") + '</div>';
+    return '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.42); padding:2px 2px 11px;">SAVED TABS</div>' +
+      '<div class="fr-chips" style="display:flex; gap:9px; overflow-x:auto; scrollbar-width:none; margin:0 -16px 4px; padding:0 16px 4px;">' +
+        trips.slice(0, 8).map(tabChip).join("") +
+      '</div>';
   }
 
-  // ---- friend row ---------------------------------------------------------
+  // ---- friend row (lifted) ------------------------------------------------
   function friendRow(f) {
     var nm = nameOf(f);
-    var handle = f.handle ? '<span class="mono" style="font-size:10.5px;color:rgba(127,192,255,0.75);">@' + app.esc(f.handle) + '</span>' : "";
+    var net = (typeof f.netCents === "number") ? f.netCents : 0;
+    var handle = f.handle ? '<span style="font-family:\'Space Mono\',monospace; font-size:10.5px; color:rgba(127,192,255,0.75);">@' + app.esc(f.handle) + '</span>' : "";
     var wallet = f.primaryWallet || "";
     var walletBit = wallet
-      ? '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;"><span class="mono" style="font-size:11px;color:var(--faint);">' + app.esc(shortWallet(wallet)) + '</span>' +
-        '<button class="frCopy" type="button" data-w="' + app.esc(wallet) + '" aria-label="copy wallet" style="background:none;border:none;padding:2px;cursor:pointer;display:inline-flex;line-height:0;">' + copySvg() + '</button></div>'
-      : '<div class="mono" style="font-size:11px;color:var(--faint);margin-top:5px;">no wallet yet</div>';
+      ? '<div style="display:flex; align-items:center; gap:6px; margin-top:5px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(244,247,250,0.45);">' + app.esc(shortWallet(wallet)) + '</span>' +
+          '<span class="frCopy" data-w="' + app.esc(wallet) + '" style="cursor:pointer; line-height:0; display:inline-flex;">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
+          '</span>' +
+        '</div>'
+      : '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(244,247,250,0.45); margin-top:5px;">no wallet yet</div>';
 
-    var net = (typeof f.netCents === "number") ? f.netCents : 0;
-    var kind = net > 0 ? "pos" : net < 0 ? "neg" : "settled";
-    var moneyOrSquare = net === 0
-      ? '<span class="state settled">square ✨</span>'
-      : app.money(net, kind, true);
-    var pill = net === 0 ? ""
-      : '<div style="margin-top:6px;"><span class="pill" style="padding:3px 10px;background:rgba(39,117,202,0.14);border-color:rgba(39,117,202,0.45);"><span class="mono" style="font-weight:700;font-size:9.5px;color:var(--blue-bright);">tab</span></span></div>';
-
-    return '<a class="row" href="#/friend/' + encodeURIComponent(f.id) + '" ' +
-      'style="text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:13px 14px;margin-bottom:9px;">' +
-      app.avatar({ name: nm, emoji: f.emoji, color: f.color, id: f.id }) +
-      '<div class="meta">' +
-        '<div style="display:flex;align-items:center;gap:7px;"><span class="name lower">' + app.esc(nm.toLowerCase()) + '</span>' + handle + '</div>' +
+    return '<a href="#/friend/' + encodeURIComponent(f.id) + '" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:13px; background:#13212E; border:1px solid rgba(244,247,250,0.07); border-radius:18px; padding:13px 14px;">' +
+      avatarTile(f, nm) +
+      '<div style="flex:1; min-width:0;">' +
+        '<div style="display:flex; align-items:center; gap:7px;">' +
+          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#F4F7FA;">' + app.esc(nm.toLowerCase()) + '</span>' + handle +
+        '</div>' +
         walletBit +
       '</div>' +
-      '<div style="text-align:right;flex:none;">' + moneyOrSquare + pill + '</div>' +
+      '<div style="text-align:right; flex:none;">' + moneyCell(net) + pillCell(net) + '</div>' +
     '</a>';
   }
 
-  // ---- empty + skeleton ---------------------------------------------------
+  // ---- empty variant (lifted mascot + copy) -------------------------------
   function emptyState() {
-    return '<div class="empty" style="padding-top:48px;">' +
-      app.mascot({ size: 120, mood: "happy", glow: true }) +
-      '<div class="title lower" style="margin-top:14px;">no one here yet</div>' +
-      '<div class="hint">add your first person to split in one tap 🫡</div>' +
-      '<button class="btn" id="frEmptyAdd" type="button" style="max-width:240px;margin-top:14px;">add someone</button>' +
+    return '<div style="position:relative; z-index:2; min-height:420px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:40px 44px 120px; text-align:center;">' +
+      app.mascot({ size: 86, mood: "wave", glow: true }) +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.5; color:rgba(244,247,250,0.65);">add your first person to split<br>in one tap 🫡</div>' +
     '</div>';
   }
   function skeletonRows() {
     var r = "";
-    for (var i = 0; i < 4; i++) r += '<div class="skeleton" style="height:74px;border-radius:18px;margin:0 0 9px;"></div>';
+    for (var i = 0; i < 4; i++) r += '<div class="skeleton" style="height:74px; border-radius:18px; margin:0 0 9px;"></div>';
     return r;
+  }
+
+  // canvas wrapper: faint money texture + soft blue glow (lifted)
+  function canvas(inner) {
+    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(244,247,250,0.025) 0 1px, transparent 1px 8px); opacity:.55; pointer-events:none;"></div>' +
+      '<div style="position:absolute; left:-40px; top:120px; width:340px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.15) 0%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>' +
+      inner;
   }
 
   // ---- signed out ---------------------------------------------------------
   function signedOut(view) {
-    view.innerHTML = topbar() +
-      '<div class="appscroll" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:34px;">' +
+    view.innerHTML = canvas(
+      header("your people, in one place") +
+      '<div class="appscroll" style="display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:34px;">' +
         '<div style="margin:8px 0 6px;">' + app.mascot({ size: 128, mood: "wave", glow: true }) + '</div>' +
-        '<h1 style="font-size:24px;max-width:280px;" class="lower">your people, in one place.</h1>' +
-        '<div class="eyebrow" style="margin:14px 0 22px;color:var(--muted);">connect a wallet to add friends and split</div>' +
+        '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; max-width:280px; margin:0;">your people, in one place.</h1>' +
+        '<div class="eyebrow" style="margin:14px 0 22px; color:var(--muted);">connect a wallet to add friends and split</div>' +
         '<button class="btn" id="frConnect" style="max-width:320px;">connect a wallet</button>' +
-        '<div class="eyebrow" style="margin-top:18px;color:var(--faint);">non-custodial · your keys</div>' +
-      '</div>';
+        '<div class="eyebrow" style="margin-top:18px; color:var(--faint);">non-custodial · your keys</div>' +
+      '</div>');
     var b = document.getElementById("frConnect");
     if (b) b.onclick = function () {
       if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); });
@@ -199,11 +278,11 @@
     var qrBtn = view.querySelector("#frQr");
     if (qrBtn) qrBtn.onclick = function () { app.toast("qr scan coming soon — paste a handle for now"); if (input) input.focus(); };
 
-    function setStatus(msg, color) { if (status) { status.textContent = msg || ""; status.style.color = color || "var(--muted)"; } }
+    function setStatus(msg, color) { if (status) { status.textContent = msg || ""; status.style.color = color || "rgba(244,247,250,0.6)"; } }
 
     async function submit() {
       var raw = (input && input.value || "").trim();
-      if (!raw) { setStatus("drop a @handle or wallet.", "var(--coral)"); if (input) input.focus(); return; }
+      if (!raw) { setStatus("drop a @handle or wallet.", "#FF6B5E"); if (input) input.focus(); return; }
       // looks-like-a-wallet heuristic: long base58-ish & no leading @
       var isHandle = raw[0] === "@" || !/^[1-9A-HJ-NP-Za-km-z]{30,}$/.test(raw);
       var body = isHandle ? { handle: raw.replace(/^@+/, "") } : { wallet: raw };
@@ -211,16 +290,16 @@
       try {
         var d = await app.api.post("/api/friends", body);
         if (input) input.value = "";
-        setStatus("added " + nameOf((d && d.friend) || {}).toLowerCase() + " ✓", "var(--mint)");
+        setStatus("added " + nameOf((d && d.friend) || {}).toLowerCase() + " ✓", "#3DE8C7");
         await refresh();
       } catch (e) {
         if (e && e.status === 401) { signedOut(view); return; }
         if (e && e.status === 404) {
           var who = isHandle ? "@" + raw.replace(/^@+/, "") : shortWallet(raw);
-          setStatus(who + " isn't on divvy yet — invite them, then add.", "var(--muted)");
+          setStatus(who + " isn't on divvy yet — invite them, then add.", "rgba(244,247,250,0.6)");
           return;
         }
-        setStatus((e && e.message) || "couldn't add that one.", "var(--coral)");
+        setStatus((e && e.message) || "couldn't add that one.", "#FF6B5E");
       }
     }
     if (addBtn) addBtn.onclick = submit;
@@ -228,10 +307,10 @@
   }
 
   function skeleton(view) {
-    view.innerHTML = topbar() + '<div class="appscroll">' +
+    view.innerHTML = canvas(
       header("counting your people…") +
       addWell() +
-      '<div style="margin-top:16px;">' + skeletonRows() + '</div></div>';
+      '<div class="appscroll" style="padding-top:16px;">' + skeletonRows() + '</div>');
   }
 
   async function signedIn(view) {
@@ -243,8 +322,8 @@
       friends = (fd && Array.isArray(fd.friends)) ? fd.friends : [];
     } catch (e) {
       if (e && e.status === 401) { signedOut(view); return; }
-      view.innerHTML = topbar() + '<div class="appscroll">' + header("") +
-        '<div class="empty"><div class="title lower">couldn\'t load your people</div><div class="hint">' + app.esc(e.message) + '</div></div></div>';
+      view.innerHTML = canvas(header("") + addWell() +
+        '<div class="empty"><div class="title lower">couldn\'t load your people</div><div class="hint">' + app.esc(e.message) + '</div></div>');
       return;
     }
     // best-effort extras — never block the screen on these
@@ -253,23 +332,27 @@
 
     attachNets(friends, balances && balances.counterparties);
 
-    var body = header(friends.length ? counts(friends) : "no one here yet") + addWell();
+    var sub = friends.length ? counts(friends) : "no one here yet";
+    var body;
     if (friends.length) {
-      body += savedTabs(trips) +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin:22px 2px 8px;">' +
-          '<span class="eyebrow">people</span><span class="eyebrow" style="letter-spacing:.5px;color:var(--faint);">a–z</span>' +
-        '</div>' + friends.map(friendRow).join("");
+      body =
+        '<div class="appscroll" style="padding:10px 16px 120px;">' +
+          savedTabs(trips) +
+          '<div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 8px;">' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.42);">PEOPLE</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.38);">A–Z</span>' +
+          '</div>' +
+          '<div style="display:flex; flex-direction:column; gap:9px;">' + friends.map(friendRow).join("") + '</div>' +
+        '</div>';
     } else {
-      body += emptyState();
+      body = emptyState();
     }
 
-    view.innerHTML = topbar() + '<div class="appscroll">' + body + '</div>';
+    view.innerHTML = canvas(header(sub) + addWell() + body);
 
     var refresh = function () { return signedIn(view); };
     wireAdd(view, refresh);
     wireRows(view);
-    var ea = view.querySelector("#frEmptyAdd");
-    if (ea) ea.onclick = function () { var i = view.querySelector("#frInput"); if (i) { i.focus(); i.scrollIntoView({ behavior: "smooth", block: "center" }); } };
   }
 
   // ---- register -----------------------------------------------------------
