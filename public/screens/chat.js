@@ -757,6 +757,16 @@
       ? "no access to this chat — ask someone to share the link 🔒"
       : "couldn't load this chat — " + ((err && err.message) || "try again");
     box.appendChild(p);
+    // A transient load failure shouldn't be a dead end — offer a retry. (403 is a
+    // real access problem, not transient, so no retry there.)
+    if (!(err && err.status === 403)) {
+      var retry = document.createElement("button");
+      retry.textContent = "tap to retry";
+      retry.style.cssText = "font-family:" + SANS + "; font-size:15px; font-weight:600; color:#fff; " +
+        "background:#2775CA; border:none; border-radius:999px; padding:11px 22px; cursor:pointer;";
+      retry.onclick = function () { loadInitial(token); };
+      box.appendChild(retry);
+    }
     feedEl.appendChild(box);
   }
 

@@ -120,14 +120,23 @@
     el.setAttribute("tabindex", "-1");
     el.innerHTML = '<div class="grab"></div>' + innerHtml;
     scrim.onclick = function (e) { if (e.target === scrim) closeSheet(); };
-    function onKey(e) { if (e.key === "Escape") { e.preventDefault(); closeSheet(); } }
+    var FOCUSABLE = 'input,select,textarea,button,a[href],[tabindex]:not([tabindex="-1"])';
+    function onKey(e) {
+      if (e.key === "Escape") { e.preventDefault(); closeSheet(); return; }
+      if (e.key !== "Tab") return;
+      // Trap Tab focus inside the open sheet so it can't escape to the page behind.
+      var f = el.querySelectorAll(FOCUSABLE);
+      if (!f.length) { e.preventDefault(); try { el.focus(); } catch (_) {} return; }
+      var first = f[0], last = f[f.length - 1], active = document.activeElement;
+      if (e.shiftKey && (active === first || !el.contains(active))) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (active === last || !el.contains(active))) { e.preventDefault(); first.focus(); }
+    }
     document.addEventListener("keydown", onKey);
     document.body.appendChild(scrim); document.body.appendChild(el);
     app._sheet = [scrim, el];
     app._sheetKey = onKey;
     // Move focus into the sheet (first focusable element, else the sheet itself).
-    var focusTarget = el.querySelector(
-      'input,select,textarea,button,a[href],[tabindex]:not([tabindex="-1"])') || el;
+    var focusTarget = el.querySelector(FOCUSABLE) || el;
     try { focusTarget.focus(); } catch (_) {}
     return el;
   }
