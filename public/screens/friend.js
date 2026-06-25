@@ -1,22 +1,28 @@
-/* screens/friend.js — Friend detail. Net with one friend, shared groups, and a
-   "between you" feed. Matches design/frames/Friend Detail Frames.dc.html.
-   Route #/friend/<id> (params[0] = friend user id). Wires to GET /api/friends
-   to identify the friend, GET /api/me/balances for the net, and (best-effort)
-   GET /api/trips + /api/trips/:id to derive shared groups + shared expenses.
-   Degrades gracefully when data is thin; never crashes. */
+/* screens/friend.js — Friend detail (1:1 ledger).
+   Built by lifting the EXACT inline-styled markup from
+   design/handoff/Friend Detail Frames.dc.html and wiring live data into it, so
+   it pixel-matches the approved design. NO mascot on this screen — a friend's
+   identity stands alone.
+   Route #/friend/<id> (params[0] = friend user id). Keeps the existing data
+   derivation: GET /api/friends (identity), GET /api/me/balances (net), and
+   (best-effort) GET /api/trips + /api/trips/:id (shared groups + between-you
+   feed). Implements the `direction` state variant (owed / owe). Never crashes. */
 (function () {
   "use strict";
   var app = window.app;
 
   // ---- small shared bits --------------------------------------------------
-  function topbar(friendId) {
-    return '<div class="topbar">' +
-      '<a class="pill" id="fdBack" style="cursor:pointer;padding:8px 12px;" aria-label="back">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
-      '</a>' +
-      '<div class="brand"><span class="mark"><span>/</span></span><span class="word">divvy</span></div>' +
-      '<span style="width:38px;"></span>' +
-      '</div>';
+  function topbar() {
+    // lifted top bar: back circle + ⋯ circle (no mascot here)
+    return '<div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 16px; flex:none;">' +
+      '<div id="fdBack" style="width:38px; height:38px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4F7FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<div id="fdMore" style="width:38px; height:38px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4F7FA" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
+    '</div>';
+  }
+  function texture(glowColor) {
+    // faint money texture + per-direction radial glow (lifted)
+    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(244,247,250,0.025) 0 1px, transparent 1px 8px); opacity:.55; pointer-events:none;"></div>' +
+      '<div style="position:absolute; left:50%; top:70px; width:380px; height:300px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, ' + glowColor + ' 0%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>';
   }
   function wireBack() {
     var b = document.getElementById("fdBack");
@@ -35,18 +41,27 @@
              "august","september","october","november","december"][d.getMonth()];
     return m || null;
   }
-  function moneyPlain(cents) { // mono money inline, no kind color
-    return app.money(cents, "");
+  function dollars(cents) {
+    return (Math.abs(cents) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  // big mono money split into whole + lighter .dec (caller supplies colored prefix)
+  function moneyWhole(cents) {
+    var n = Math.abs(cents) / 100;
+    return Math.floor(n).toLocaleString() + '<span style="font-size:11px; opacity:.5;">' + (n % 1).toFixed(2).slice(1) + '</span>';
   }
 
-  function skeleton(view, friendId) {
+  function skeleton(view) {
     var rows = "";
     for (var i = 0; i < 4; i++) rows += '<div class="skeleton" style="height:54px;margin:9px 0;"></div>';
-    view.innerHTML = topbar(friendId) +
-      '<div class="appscroll">' +
+    view.innerHTML =
+      '<div style="position:relative; min-height:100%;">' +
+      texture("rgba(39,117,202,0.20)") +
+      topbar() +
+      '<div style="position:relative; z-index:2; padding:4px 16px 24px;">' +
         '<div class="skeleton" style="height:84px;width:84px;border-radius:26px;margin:8px auto 16px;"></div>' +
-        '<div class="skeleton" style="height:160px;margin:8px 0 18px;"></div>' +
+        '<div class="skeleton" style="height:170px;margin:8px 0 18px;"></div>' +
         rows +
+      '</div>' +
       '</div>';
     wireBack();
   }
@@ -127,6 +142,7 @@
             sig: e.id,
             createdAt: e.createdAt,
             dir: dir,
+            settled: !!e.settled,
           });
         });
 
@@ -183,141 +199,178 @@
     return map[cluster] || "🍜";
   }
 
-  // ---- render -------------------------------------------------------------
+  // ---- render (lifted markup) ---------------------------------------------
+
+  // direction variant resolver — mirrors the frame's renderVals()
+  function variant(net) {
+    var youOwe = net < 0;
+    var square = net === 0;
+    return {
+      youOwe: youOwe,
+      square: square,
+      heroLabel: null, // filled in by header() (needs the friend's name)
+      sign: youOwe ? "−" : "+",
+      accent: youOwe ? "#FF6B5E" : "#3B92E8",
+      glowColor: youOwe ? "rgba(255,107,94,0.22)" : "rgba(39,117,202,0.20)",
+      primaryBg: youOwe ? "linear-gradient(120deg,#FF8A7E,#FF6B5E)" : "linear-gradient(120deg,#3286db,#2775CA)",
+      primaryShadow: youOwe ? "0 12px 30px rgba(255,107,94,0.45)" : "0 12px 30px rgba(39,117,202,0.5)",
+      primaryEmoji: youOwe ? "✨" : "👀",
+      secondaryLabel: youOwe ? "nudge" : "remind",
+      pillText: youOwe ? "settles instantly · ~$0.0001 fee" : "they'll get a link · pays in seconds",
+    };
+  }
+
   function header(d, friendId) {
     var f = d.friend || {};
     var name = f.displayName || f.handle || "friend";
     var handle = f.handle ? "@" + f.handle : "";
     var wallet = f.primaryWallet || (f.wallets && f.wallets[0]) || null;
+    var emoji = f.emoji || "🌸";
     var tabs = d.feed.length;
     var since = d.month ? " · since " + d.month + " 🍜" : "";
-    var av = app.avatar({ name: name, id: friendId }, "");
-    // bump the avatar to the frame's big 84px tile by extending its inline style
-    av = av.replace('style="background:',
-      'style="width:84px;height:84px;border-radius:26px;font-size:42px;box-shadow:0 14px 34px rgba(39,117,202,0.4);background:');
+    var bg = f.color || "linear-gradient(150deg,#3DE8C7,#2775CA)";
 
-    return '<div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 0 2px;">' +
-      av +
-      '<div style="display:flex;align-items:center;gap:8px;margin-top:14px;">' +
-        '<span class="display lower" style="font-size:24px;">' + app.esc(name) + '</span>' +
-        (handle ? '<span class="mono" style="font-size:12px;color:var(--blue-bright);opacity:.85;">' + app.esc(handle) + '</span>' : '') +
+    // lifted centered header — big standalone 84px avatar (no mascot)
+    return '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:8px 0 4px;">' +
+      '<div style="position:relative; width:84px; height:84px; border-radius:26px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:42px; box-shadow:0 14px 34px rgba(39,117,202,0.4);">' + app.esc(emoji) + '</div>' +
+      '<div style="display:flex; align-items:center; gap:8px; margin-top:14px;">' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.4px; color:#F4F7FA;">' + app.esc(name) + '</span>' +
+        (handle ? '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(127,192,255,0.75);">' + app.esc(handle) + '</span>' : '') +
       '</div>' +
-      '<div class="mono" style="font-size:10.5px;letter-spacing:.3px;color:var(--faint);margin-top:7px;">' +
-        tabs + ' tab' + (tabs === 1 ? '' : 's') + ' together' + since +
-      '</div>' +
-      (wallet ? '<button class="pill" id="fdCopy" style="margin-top:10px;padding:6px 12px;cursor:pointer;">' +
-        '<span class="mono" style="font-size:11px;letter-spacing:.5px;color:var(--muted);">' + app.esc(truncWallet(wallet)) + '</span>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(244,247,250,0.42); margin-top:7px;">' + tabs + ' tab' + (tabs === 1 ? '' : 's') + ' together' + since + '</div>' +
+      (wallet ? '<div id="fdCopy" style="display:inline-flex; align-items:center; gap:8px; margin-top:10px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:999px; padding:6px 12px; cursor:pointer;">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:rgba(244,247,250,0.6);">' + app.esc(truncWallet(wallet)) + '</span>' +
         '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
-      '</button>' : '') +
+      '</div>' : '') +
     '</div>';
   }
 
-  function hero(d) {
+  function hero(d, v) {
     var net = d.net;
-    var youOwe = net < 0;
-    var square = net === 0;
     var name = (d.friend && (d.friend.displayName || d.friend.handle)) || "they";
     var first = String(name).trim().split(/\s+/)[0].toLowerCase();
-    var label = square ? "you're square" : youOwe ? "you owe " + app.esc(first) : app.esc(first) + " owes you";
-    var heroColor = square ? "var(--mint)" : youOwe ? "var(--coral)" : "var(--blue-bright)";
-    var heroKind = square ? "settled" : youOwe ? "neg" : "pos";
+    var heroLabel = v.square ? "you're square with " + app.esc(first)
+      : v.youOwe ? "you owe " + app.esc(first)
+      : app.esc(first) + " owes you";
 
-    var tot = (d.owed + d.owe) || 1;
-    var owedPct = d.owed / tot * 100, owePct = d.owe / tot * 100;
+    // two-tone owe-bar — proportional to the derived legs (frame: 30 / 6)
+    var owedSeg = Math.max(d.owed, 0), oweSeg = Math.max(d.owe, 0);
+    if (owedSeg === 0 && oweSeg === 0) owedSeg = 1; // keep a sliver so the bar isn't empty
+    var barInner = (owedSeg > 0 ? '<div style="flex:' + owedSeg + '; background:#2775CA;"></div>' : '') +
+      (oweSeg > 0 ? '<div style="flex:' + oweSeg + '; background:#FF6B5E;"></div>' : '');
 
     var netSign = net > 0 ? "+" : net < 0 ? "−" : "";
-    var netStr = '<span style="color:var(--text);font-weight:700;">' + netSign + '$' +
-      Math.abs(net / 100).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span>';
-    var breakdown =
-      'she owes you <span style="color:var(--blue-bright);">$' + (d.owed / 100).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span>' +
-      ' · you owe her <span style="color:var(--coral);">$' + (d.owe / 100).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</span>' +
-      ' · net ' + netStr;
+    var breakdown = 'she owes you <span style="color:#7fc0ff;">$' + dollars(d.owed) + '</span>' +
+      ' · you owe her <span style="color:#FF6B5E;">$' + dollars(d.owe) + '</span>' +
+      ' · net <span style="color:#F4F7FA; font-weight:700;">' + netSign + '$' + dollars(net) + '</span>';
 
-    return '<div class="receipt glow-blue" style="text-align:center;margin:18px 0 2px;">' +
-      '<div class="eyebrow">' + label + '</div>' +
-      '<div class="hero-amount ' + heroKind + '" style="margin:8px 0 0;color:' + heroColor + ';">' +
-        '<span style="font-size:30px;opacity:.5;">' + (square ? '' : (youOwe ? '−' : '+')) + '$</span>' +
+    return '<div style="text-align:center; margin-top:22px;">' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.55);">' + heroLabel + '</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:62px; line-height:.92; letter-spacing:-2.5px; color:' + v.accent + '; text-shadow:0 0 40px ' + v.glowColor + '; margin-top:8px;">' +
+        '<span style="font-size:30px; opacity:.5;">' + (v.square ? '$' : v.sign + '$') + '</span>' +
         Math.floor(Math.abs(net) / 100).toLocaleString() +
-        '<span style="font-size:30px;opacity:.5;">' + (Math.abs(net) % 100 / 100).toFixed(2).slice(1) + '</span>' +
+        '<span style="font-size:30px; opacity:.5;">' + (Math.abs(net) % 100 / 100).toFixed(2).slice(1) + '</span>' +
       '</div>' +
-      '<div class="owebar" style="max-width:264px;margin:16px auto 0;height:8px;">' +
-        '<div class="pos" style="width:' + owedPct + '%"></div>' +
-        '<div class="neg" style="width:' + owePct + '%"></div>' +
+      '<div style="max-width:264px; margin:18px auto 0;">' +
+        '<div style="display:flex; gap:3px; height:8px; border-radius:5px; overflow:hidden;">' + barInner + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.2px; color:rgba(244,247,250,0.5); margin-top:10px; line-height:1.55;">' + breakdown + '</div>' +
       '</div>' +
-      '<div class="mono" style="font-size:10px;letter-spacing:.2px;color:var(--muted);margin-top:10px;line-height:1.55;">' +
-        breakdown +
+      '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; background:rgba(39,117,202,0.1); border:1px solid rgba(39,117,202,0.35); border-radius:999px; padding:4px 12px;">' +
+        '<span style="width:6px; height:6px; border-radius:50%; background:#3B92E8; box-shadow:0 0 7px rgba(59,146,232,0.8);"></span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.6);">' + v.pillText + '</span>' +
       '</div>' +
     '</div>';
   }
 
-  function actions(d) {
-    var youOwe = d.net < 0;
-    var square = d.net === 0;
-    var amtStr = '$' + Math.abs(d.net / 100).toLocaleString(undefined, { minimumFractionDigits: 2 });
-    var primaryLabel, primaryEmoji, primaryCoral = false;
-    if (youOwe) { primaryLabel = "settle up " + amtStr; primaryEmoji = "✨"; primaryCoral = true; }
-    else if (square) { primaryLabel = "all square"; primaryEmoji = "✨"; }
-    else { primaryLabel = "request " + amtStr; primaryEmoji = "👀"; }
+  function actions(d, v) {
+    var amt = '$' + Math.round(Math.abs(d.net) / 100).toLocaleString();
+    var primaryLabel = v.square ? "all square"
+      : v.youOwe ? "settle up " + amt
+      : "request " + amt;
+    var primaryEmoji = v.square ? "✨" : v.primaryEmoji;
 
-    return '<div style="margin-top:18px;">' +
-      '<button class="btn' + (primaryCoral ? ' coral' : '') + '" id="fdPrimary"' + (square ? ' disabled style="opacity:.55;"' : '') + '>' +
-        app.esc(primaryLabel) + ' <span>' + primaryEmoji + '</span>' +
+    return '<div style="margin-top:24px;">' +
+      '<button id="fdPrimary" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:' + v.primaryBg + '; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:' + v.primaryShadow + ';"' + (v.square ? ' disabled' : '') + '>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">' + primaryLabel + '</span>' +
+        '<span style="font-size:16px;">' + primaryEmoji + '</span>' +
       '</button>' +
-      '<div style="display:flex;gap:11px;margin-top:11px;">' +
-        '<button class="btn ghost" id="fdNewTab" style="flex:1;min-height:50px;font-size:15px;">＋ new tab</button>' +
-        '<button class="btn ghost" id="fdRemind" style="flex:1;min-height:50px;font-size:15px;">👀 ' + (youOwe ? 'nudge' : 'remind') + '</button>' +
+      '<div style="display:flex; gap:11px; margin-top:11px;">' +
+        '<button id="fdNewTab" style="appearance:none; cursor:pointer; flex:1; min-height:50px; border-radius:999px; background:#13212E; border:1px solid rgba(244,247,250,0.12); display:flex; align-items:center; justify-content:center; gap:7px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
+          'new tab' +
+        '</button>' +
+        '<button id="fdRemind" style="appearance:none; cursor:pointer; flex:1; min-height:50px; border-radius:999px; background:#13212E; border:1px solid rgba(244,247,250,0.12); display:flex; align-items:center; justify-content:center; gap:7px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' +
+          '<span style="font-size:14px;">👀</span>' +
+          v.secondaryLabel +
+        '</button>' +
       '</div>' +
     '</div>';
   }
 
+  // chip cover colors, cycling like the frame (blue / dark / coral …)
+  var CHIP_COVERS = [
+    "linear-gradient(135deg,#3a93ec,#2775CA)",
+    "#0B1622",
+    "linear-gradient(135deg,#ff8073,#FF6B5E)",
+    "linear-gradient(135deg,#5cf0d4,#3DE8C7)",
+    "linear-gradient(135deg,#ffd98a,#FFC65C)",
+  ];
   function chipStrip(d) {
     if (!d.groups.length) return "";
-    var chips = d.groups.map(function (g) {
-      return '<a class="chip" style="flex:none;padding:10px 14px 10px 11px;border-radius:15px;gap:9px;text-decoration:none;color:inherit;" href="#/group/' + encodeURIComponent(g.id) + '">' +
-        '<span class="avatar sm" style="width:30px;height:30px;border-radius:10px;font-size:15px;">' + app.esc(g.emoji) + '</span>' +
-        '<span style="display:flex;flex-direction:column;align-items:flex-start;">' +
-          '<span style="font-weight:500;font-size:13px;">' + app.esc(g.name) + '</span>' +
-          '<span class="mono" style="font-size:9px;color:var(--faint);margin-top:2px;">' + g.count + ' tab' + (g.count === 1 ? '' : 's') + '</span>' +
-        '</span>' +
+    var chips = d.groups.map(function (g, i) {
+      return '<a href="#/group/' + encodeURIComponent(g.id) + '" style="flex:none; display:flex; align-items:center; gap:9px; background:#13212E; border:1px solid rgba(244,247,250,0.08); border-radius:15px; padding:10px 14px 10px 11px; cursor:pointer; text-decoration:none;">' +
+        '<div style="width:30px; height:30px; border-radius:10px; background:' + CHIP_COVERS[i % CHIP_COVERS.length] + '; display:flex; align-items:center; justify-content:center; font-size:15px;">' + app.esc(g.emoji) + '</div>' +
+        '<div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; color:#F4F7FA;">' + app.esc(g.name) + '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; color:rgba(244,247,250,0.42); margin-top:2px;">' + g.count + ' tab' + (g.count === 1 ? '' : 's') + '</div>' +
+        '</div>' +
       '</a>';
     }).join("");
-    return '<div class="eyebrow" style="letter-spacing:1.5px;padding:26px 2px 11px;">tabs together</div>' +
-      '<div style="display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;margin:0 -20px;padding:0 20px 4px;">' + chips + '</div>';
+    return '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.42); padding:26px 2px 11px;">TABS TOGETHER</div>' +
+      '<div class="fd-chips" style="display:flex; gap:9px; overflow-x:auto; scrollbar-width:none; margin:0 -16px; padding:0 16px 4px;">' + chips + '</div>';
   }
 
   function feedRow(e) {
     var youOwe = e.dir === "owe";
-    var color = youOwe ? "var(--coral)" : "var(--blue-bright)";
-    var sub = youOwe ? "you owe · " : (e.dir === "owed" ? "she owes you · " : "");
-    var when = relTime(e.createdAt);
-    return '<a style="display:flex;align-items:center;gap:13px;padding:12px 6px;cursor:pointer;text-decoration:none;color:inherit;" href="#/receipt/' + encodeURIComponent(e.sig) + '">' +
-      '<span class="avatar" style="width:42px;height:42px;border-radius:13px;font-size:20px;background:var(--card);">' + emojiFor(e.title) + '</span>' +
-      '<span style="flex:1;min-width:0;">' +
-        '<span style="display:flex;align-items:center;gap:6px;">' +
-          '<span class="display" style="font-weight:500;font-size:15.5px;">' + app.esc(e.title) + '</span>' +
-          '<span class="mono" style="font-size:9.5px;color:var(--faint);">· ' + app.esc(e.group) + '</span>' +
-        '</span>' +
-        '<span class="mono" style="display:block;font-size:10px;letter-spacing:.3px;color:' + color + ';margin-top:3px;">' + sub + when + '</span>' +
-      '</span>' +
-      '<span style="flex:none;">' + app.money(youOwe ? -e.amountCents : e.amountCents, youOwe ? "neg" : "pos", true) + '</span>' +
+    var color = youOwe ? "#FF6B5E" : "#3B92E8";
+    var sub, subColor, metaTile;
+    if (e.settled) {
+      // settled row — mint "SETTLED" tag + view ↗ (lifted)
+      metaTile = 'rgba(61,232,199,0.1)';
+      sub = '<div style="display:flex; align-items:center; gap:7px; margin-top:3px;">' +
+        '<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(61,232,199,0.12); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:1px 8px;"><span style="width:4px; height:4px; border-radius:50%; background:#3DE8C7;"></span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:8px; letter-spacing:.5px; color:#3DE8C7;">SETTLED</span></span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:#7fc0ff;">view ↗</span>' +
+      '</div>';
+    } else {
+      metaTile = '#13212E';
+      var label = (youOwe ? "you owe · " : (e.dir === "owed" ? "she owes you · " : "")) + relTime(e.createdAt);
+      sub = '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:' + color + '; margin-top:3px;">' + label + '</div>';
+    }
+    var sign = youOwe ? "−$" : "+$";
+    return '<a href="#/receipt/' + encodeURIComponent(e.sig) + '" style="display:flex; align-items:center; gap:13px; padding:12px 6px; cursor:pointer; text-decoration:none; color:inherit;">' +
+      '<div style="width:42px; height:42px; border-radius:13px; background:' + metaTile + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">' + (e.settled ? '🫡' : emojiFor(e.title)) + '</div>' +
+      '<div style="flex:1; min-width:0;">' +
+        '<div style="display:flex; align-items:center; gap:6px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:15.5px; color:#F4F7FA;">' + app.esc(e.title) + '</span><span style="font-family:\'Space Mono\',monospace; font-size:9.5px; color:rgba(244,247,250,0.4);">· ' + app.esc(e.group) + '</span></div>' +
+        sub +
+      '</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; letter-spacing:-0.4px; color:' + color + '; flex:none;"><span style="font-size:11px; opacity:.5;">' + sign + '</span>' + moneyWhole(e.amountCents) + '</div>' +
     '</a>';
   }
 
   function feed(d) {
+    var label = '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.42); padding:24px 2px 11px;">BETWEEN YOU</div>';
     if (!d.feed.length) {
-      return '<div class="eyebrow" style="letter-spacing:1.5px;padding:24px 2px 11px;">between you</div>' +
-        '<div class="empty" style="padding:20px 12px;">' +
-          (window.app ? app.mascot({ size: 84, mood: "sleepy" }) : '') +
-          '<div class="title lower">no shared tabs yet</div>' +
-          '<div class="hint">start a tab and split something 🍜</div>' +
+      return label +
+        '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:20px 12px; color:rgba(244,247,250,0.5);">' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#F4F7FA;">no shared tabs yet</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; margin-top:5px;">start a tab and split something 🍜</div>' +
         '</div>';
     }
     var rows = d.feed.map(function (e, i) {
-      var sep = i ? '<div style="height:1px;background:var(--line);margin:0 6px;"></div>' : '';
+      var sep = i ? '<div style="height:1px; background:rgba(244,247,250,0.05); margin:0 6px;"></div>' : '';
       return sep + feedRow(e);
     }).join("");
-    return '<div class="eyebrow" style="letter-spacing:1.5px;padding:24px 2px 11px;">between you</div>' +
-      '<div style="display:flex;flex-direction:column;">' + rows + '</div>';
+    return label + '<div style="display:flex; flex-direction:column; gap:3px;">' + rows + '</div>';
   }
 
   function emojiFor(title) {
@@ -344,20 +397,27 @@
   }
 
   function removeRow() {
-    return '<div style="display:flex;justify-content:center;margin-top:26px;">' +
-      '<span id="fdRemove" style="font-size:13.5px;color:rgba(255,107,94,0.6);cursor:pointer;padding:8px 16px;">remove friend</span>' +
+    // quiet coral "remove friend" at the very bottom (lifted)
+    return '<div style="display:flex; justify-content:center; margin-top:26px;">' +
+      '<span id="fdRemove" style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(255,107,94,0.6); cursor:pointer; padding:8px 16px;">remove friend</span>' +
     '</div>';
   }
 
   function paint(view, d, friendId) {
-    view.innerHTML = topbar(friendId) + '<div class="appscroll">' +
-      header(d, friendId) +
-      hero(d) +
-      actions(d) +
-      chipStrip(d) +
-      feed(d) +
-      removeRow() +
-    '</div>';
+    var v = variant(d.net);
+    view.innerHTML =
+      '<div style="position:relative; min-height:100%; font-family:\'General Sans\',sans-serif; color:#F4F7FA;">' +
+      texture(v.glowColor) +
+      topbar() +
+      '<div class="fd-scroll" style="position:relative; z-index:2; padding:4px 16px 24px;">' +
+        header(d, friendId) +
+        hero(d, v) +
+        actions(d, v) +
+        chipStrip(d) +
+        feed(d) +
+        removeRow() +
+      '</div>' +
+      '</div>';
     wireBack();
 
     var copy = document.getElementById("fdCopy");
@@ -367,10 +427,12 @@
       if (w && navigator.clipboard) navigator.clipboard.writeText(w).then(function () { app.toast("wallet copied"); }, function () { app.toast(w); });
       else app.toast(w || "no wallet");
     };
+    var more = document.getElementById("fdMore");
+    if (more) more.onclick = function () { confirmRemove(view, d, friendId); };
     var prim = document.getElementById("fdPrimary");
     if (prim) prim.onclick = function () {
-      if (d.net < 0) app.go("settle"); // you owe → settle up
-      else if (d.net > 0) app.toast("request sent 👀");
+      if (d.net < 0) app.go("settle");          // owe → settle up
+      else if (d.net > 0) app.toast("request sent 👀"); // owed → request
     };
     var nt = document.getElementById("fdNewTab");
     if (nt) nt.onclick = function () { app.go("new"); };
@@ -384,7 +446,6 @@
     var name = (d.friend && (d.friend.displayName || d.friend.handle)) || "this friend";
     app.sheet(
       '<div style="text-align:center;padding:6px 4px 4px;">' +
-        (window.app ? app.mascot({ size: 96, mood: "worried" }) : '') +
         '<h2 class="lower" style="font-size:20px;margin:8px 0 6px;">remove ' + app.esc(name) + '?</h2>' +
         '<div class="hint" style="color:var(--muted);font-size:14px;margin-bottom:18px;">your shared tabs stay — you just won\'t be friends anymore.</div>' +
         '<button class="btn coral" id="fdRemoveYes">remove friend</button>' +
@@ -405,41 +466,47 @@
 
   function signedOut(view) {
     view.innerHTML =
-      '<div class="topbar"><div class="brand"><span class="mark"><span>/</span></span><span class="word">divvy</span></div></div>' +
-      '<div class="empty" style="padding-top:60px;">' +
+      '<div style="position:relative; min-height:100%;">' +
+      texture("rgba(39,117,202,0.20)") +
+      topbar() +
+      '<div class="empty" style="position:relative; z-index:2; padding-top:60px;">' +
         (window.app ? app.mascot({ size: 120, mood: "wave" }) : '') +
         '<div class="title lower">connect to see your friend</div>' +
         '<div class="hint">your tabs together live behind your wallet.</div>' +
         '<button class="btn" id="fdConnect" style="max-width:280px;margin-top:8px;">create a wallet</button>' +
+      '</div>' +
       '</div>';
+    wireBack();
     var c = document.getElementById("fdConnect");
     if (c) c.onclick = function () { if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); }); };
   }
 
+  function notFound(view, title, hint, mood) {
+    view.innerHTML =
+      '<div style="position:relative; min-height:100%;">' +
+      texture("rgba(39,117,202,0.20)") +
+      topbar() +
+      '<div class="empty" style="position:relative; z-index:2; padding-top:60px;">' +
+        (window.app ? app.mascot({ size: 110, mood: mood || "sleepy" }) : '') +
+        '<div class="title lower">' + app.esc(title) + '</div>' +
+        '<div class="hint">' + app.esc(hint) + '</div>' +
+        '<button class="btn ghost" style="max-width:240px;margin-top:8px;" onclick="location.hash=\'#/friends\'">back to friends</button>' +
+      '</div>' +
+      '</div>';
+    wireBack();
+  }
+
   async function signedIn(view, friendId, me) {
-    skeleton(view, friendId);
+    skeleton(view);
     var d;
     try { d = await load(friendId, me); }
     catch (e) {
-      view.innerHTML = topbar(friendId) +
-        '<div class="empty" style="padding-top:60px;">' +
-          (window.app ? app.mascot({ size: 110, mood: "worried" }) : '') +
-          '<div class="title lower">couldn\'t load this friend</div>' +
-          '<div class="hint">' + app.esc((e && e.message) || "try again") + '</div>' +
-        '</div>';
-      wireBack();
+      notFound(view, "couldn't load this friend", (e && e.message) || "try again", "worried");
       return;
     }
     // Still no identity AND nothing shared → soft not-found.
     if (!d.friend && !d.feed.length && !d.groups.length) {
-      view.innerHTML = topbar(friendId) +
-        '<div class="empty" style="padding-top:60px;">' +
-          (window.app ? app.mascot({ size: 110, mood: "sleepy" }) : '') +
-          '<div class="title lower">friend not found</div>' +
-          '<div class="hint">they may have removed you, or the link is stale.</div>' +
-          '<button class="btn ghost" style="max-width:240px;margin-top:8px;" onclick="location.hash=\'#/friends\'">back to friends</button>' +
-        '</div>';
-      wireBack();
+      notFound(view, "friend not found", "they may have removed you, or the link is stale.", "sleepy");
       return;
     }
     paint(view, d, friendId);

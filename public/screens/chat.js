@@ -1,17 +1,19 @@
 /* screens/chat.js — Group chat / receipt feed for a Trip (full-screen route).
    Route: #/chat/<id>  (params[0] = tripId). Registers window.Screens.chat.
 
-   Money is a first-class object in the feed: text bubbles, tappable receipt
-   photos, and "money cards" (expenses = tabs, settlement transfers = payment
-   events) are interleaved chronologically, each with emoji reactions.
+   Built by LIFTING the EXACT inline-styled markup from
+   design/handoff/Group Chat Frames.dc.html and wiring live data into the
+   placeholders, so it pixel-matches the approved design (same lift-and-wire
+   pattern as screens/home.js). Money is a first-class object in the feed:
+   text bubbles, tappable receipt photos, expense "tab" cards, and the kinetic
+   blue→mint settle card are interleaved chronologically.
 
-   Wires:
+   Wires (existing API — kept verbatim from the prior chat.js):
      GET  /api/trips/<id>                       -> members + shareToken + expenses + settle
      GET  /api/trips/<id>/messages?after=<iso>  -> { messages:[…] } ascending
      POST /api/trips/<id>/messages { text?, image? }  -> the new message
    The trip's shareToken is sent as X-Trip-Token on chat requests when known, so
-   link-holders work signed-out. Polls every ~4s. Matches
-   design/frames/Group Chat Frames.dc.html. (Reuses chat.js helper logic.)
+   link-holders work signed-out. Polls every ~4s.
 
    This is a NEW module; it does NOT depend on window.Chat (the old overlay). */
 (function () {
@@ -79,10 +81,34 @@
     return !!(u && msg && msg.userId && msg.userId === u.id);
   }
 
-  // members carry no emoji/color from the server → deterministic avatar fallback
-  function personFor(name) { return { name: name || "someone" }; }
+  // ── exact frame fonts (lifted, used inline so we never lose the brand type) ──
+  var DISPLAY = "'Clash Display','General Sans',sans-serif";
+  var SANS = "'General Sans',sans-serif";
+  var MONO = "'Space Mono',monospace";
 
-  // ── image downscale (canvas) — reused from chat.js logic ───────────────────
+  // a deterministic blue→x gradient for an emoji avatar, matching the frame's
+  // tinted circle avatars (maya 🌸 mint, marco 🐢 light-blue, etc.)
+  var AV_GRADS = [
+    "linear-gradient(150deg,#3DE8C7,#2775CA)",
+    "linear-gradient(150deg,#7fc0ff,#2775CA)",
+    "linear-gradient(150deg,#FF8A7E,#FF6B5E)",
+    "linear-gradient(150deg,#FFC65C,#FF6B5E)",
+    "linear-gradient(150deg,#a78bfa,#2775CA)",
+    "linear-gradient(150deg,#5cf0d4,#2775CA)",
+  ];
+  function gradFor(seed) {
+    var h = 0, s = String(seed || "");
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return AV_GRADS[h % AV_GRADS.length];
+  }
+  // the round emoji avatar that rides beside left bubbles / inside stacks.
+  function avEmoji(name) {
+    var nm = String(name || "?");
+    var u = nm.trim();
+    return (u && /\p{Emoji}/u.test(u[0])) ? u[0] : (u[0] || "?").toUpperCase();
+  }
+
+  // ── image downscale (canvas) — reused logic ─────────────────────────────────
   function downscaleImage(file) {
     return new Promise(function (resolve, reject) {
       var reader = new FileReader();
@@ -126,26 +152,34 @@
   }
 
   // ── reactions row (local-only, the design's 🫡 👀 💀 chips) ─────────────────
+  // exact chip styling lifted from the frame's reaction pills.
   var REACTS = ["🫡", "👀", "💀"];
-  function reactionRow(itemId) {
-    var row = el('<div class="gc-reacts"></div>');
+  function reactionRow(itemId, seeds) {
+    var row = el('<div style="display:flex; align-items:center; gap:6px; padding-left:2px;"></div>');
     REACTS.forEach(function (emoji) {
       var key = itemId + ":" + emoji;
-      var chip = el('<button type="button" class="gc-react"></button>');
-      var count = reactions[key] || 0;
+      if (reactions[key] == null && seeds && seeds[emoji] != null) reactions[key] = seeds[emoji];
+      var chip = el('<button type="button" style="appearance:none; display:inline-flex; align-items:center; gap:4px; cursor:pointer; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:3px 9px;"></button>');
       function paint() {
+        var count = reactions[key] || 0;
         chip.innerHTML = "";
-        var e = document.createElement("span"); e.className = "gc-react-e"; e.textContent = emoji;
+        var e = document.createElement("span");
+        e.style.cssText = "font-size:12px; line-height:1;";
+        e.textContent = emoji;
         chip.appendChild(e);
         if (count > 0) {
-          var n = document.createElement("span"); n.className = "gc-react-n mono"; n.textContent = String(count);
+          var n = document.createElement("span");
+          n.style.cssText = "font-family:" + MONO + "; font-size:10px; color:rgba(244,247,250,0.6);";
+          n.textContent = String(count);
           chip.appendChild(n);
         }
-        chip.classList.toggle("on", count > 0);
+        chip.style.borderColor = count > 0 ? "rgba(39,117,202,0.45)" : "rgba(244,247,250,0.1)";
+        chip.style.background = count > 0 ? "rgba(39,117,202,0.12)" : "#13212E";
       }
       chip.addEventListener("click", function () {
-        count = count > 0 ? 0 : 1; // toggle
-        reactions[key] = count; paint();
+        var cur = reactions[key] || 0;
+        reactions[key] = cur > 0 ? 0 : 1; // toggle local
+        paint();
       });
       paint();
       row.appendChild(chip);
@@ -153,136 +187,210 @@
     return row;
   }
 
-  // ── timeline item builders ──────────────────────────────────────────────────
-  // text + photo bubble
+  // ── timeline item builders (markup LIFTED verbatim from the frame) ──────────
+
+  // text + photo bubble. Left = other (emoji avatar + #13212E bubble, radius
+  // 20 20 20 6). Right = you (blue tint, radius 20 20 6 20).
   function bubbleNode(msg) {
     var mine = isMine(msg);
-    var wrap = el('<div class="gc-msg' + (mine ? " mine" : "") + '"></div>');
+    var who = mine ? "you" : String(msg.author || "someone").toLowerCase();
+    var when = fmtTime(msg.createdAt);
 
-    var head = el('<div class="gc-head"></div>');
-    var who = document.createElement("span"); who.className = "gc-who mono";
-    who.textContent = mine ? "you" : String(msg.author || "someone").toLowerCase();
-    var when = document.createElement("span"); when.className = "gc-when mono";
-    when.textContent = fmtTime(msg.createdAt);
-    if (mine) { head.appendChild(when); head.appendChild(who); }
-    else { head.appendChild(who); head.appendChild(when); }
+    if (mine) {
+      var wrap = el('<div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px; align-self:flex-end; max-width:80%;"></div>');
+      var head = el('<div style="display:flex; align-items:center; gap:7px; padding-right:4px;"></div>');
+      var tEl = document.createElement("span");
+      tEl.style.cssText = "font-family:" + MONO + "; font-size:9px; color:rgba(244,247,250,0.32);";
+      tEl.textContent = when;
+      var yEl = document.createElement("span");
+      yEl.style.cssText = "font-family:" + MONO + "; font-size:10px; color:rgba(127,192,255,0.7);";
+      yEl.textContent = "you";
+      head.appendChild(tEl); head.appendChild(yEl);
+      wrap.appendChild(head);
 
-    var line = el('<div class="gc-line"></div>');
-    if (!mine) {
-      var av = el('<div class="gc-avwrap"></div>');
-      av.innerHTML = app.avatar(personFor(msg.author), "sm");
-      line.appendChild(av);
+      var bubble = el('<div style="background:rgba(39,117,202,0.18); border:1px solid rgba(39,117,202,0.4); border-radius:20px 20px 6px 20px; padding:11px 15px; font-family:' + SANS + '; font-size:15px; line-height:1.35; color:#F4F7FA; word-break:break-word;"></div>');
+      fillBubble(bubble, msg);
+      wrap.appendChild(bubble);
+      return wrap;
     }
-    var bubble = el('<div class="gc-bubble' + (mine ? " mine" : "") + '"></div>');
+
+    var lwrap = el('<div style="display:flex; flex-direction:column; align-items:flex-start; gap:5px; max-width:80%;"></div>');
+    var lhead = el('<div style="display:flex; align-items:center; gap:7px; padding-left:42px;"></div>');
+    var nEl = document.createElement("span");
+    nEl.style.cssText = "font-family:" + MONO + "; font-size:10px; color:rgba(244,247,250,0.55);";
+    nEl.textContent = who;
+    var wEl = document.createElement("span");
+    wEl.style.cssText = "font-family:" + MONO + "; font-size:9px; color:rgba(244,247,250,0.32);";
+    wEl.textContent = when;
+    lhead.appendChild(nEl); lhead.appendChild(wEl);
+    lwrap.appendChild(lhead);
+
+    var line = el('<div style="display:flex; align-items:flex-end; gap:9px;"></div>');
+    var av = el('<div style="width:33px; height:33px; border-radius:50%; background:' + gradFor(msg.author) + '; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;"></div>');
+    av.textContent = avEmoji(msg.author);
+    line.appendChild(av);
+    var bub = el('<div style="background:#13212E; border:1px solid rgba(244,247,250,0.07); border-radius:20px 20px 20px 6px; padding:11px 15px; font-family:' + SANS + '; font-size:15px; line-height:1.35; color:#F4F7FA; word-break:break-word;"></div>');
+    fillBubble(bub, msg);
+    line.appendChild(bub);
+    lwrap.appendChild(line);
+    return lwrap;
+  }
+
+  // put text and/or a tappable receipt photo into a bubble shell.
+  function fillBubble(bubble, msg) {
     if (msg.image) {
-      var im = el('<img class="gc-img" alt="receipt photo" />');
-      im.src = msg.image; // data: URL from the server; set via property, not raw HTML
+      var im = el('<img alt="receipt photo" style="display:block; width:200px; max-width:60vw; border-radius:14px; margin:1px 0; cursor:pointer; border:1px solid rgba(244,247,250,0.1);" />');
+      im.src = msg.image; // data: URL from server — set via property, not raw HTML
       im.addEventListener("click", function () { enlarge(msg.image); });
       bubble.appendChild(im);
     }
     if (msg.text) {
       var txt = document.createElement("div");
-      txt.className = "gc-text";
+      txt.style.cssText = "white-space:pre-wrap;";
       txt.textContent = msg.text; // textContent — never inject raw message HTML
       bubble.appendChild(txt);
     }
-    line.appendChild(bubble);
-
-    wrap.appendChild(head);
-    wrap.appendChild(line);
-    return wrap;
   }
 
-  // expense "money card" (a tab)
+  // expense "money card" (a tab) — lifted from the EXPENSE block of the frame:
+  // raised card, left blue accent rail, guilloché overlay, 46px emoji tile,
+  // Clash title, mono meta, big mono amount + coral "you owe", avatar stack,
+  // blue "chip in ＋" pill, reaction chips below.
   function expenseNode(e) {
     var title = String(e.title || "an expense");
     var emoji = expenseEmoji(title);
     var names = Array.isArray(e.participantNames) ? e.participantNames : [];
-    var splitN = names.length || (Array.isArray(e.participants) ? e.participants.length : 0);
+    var splitN = names.length || (Array.isArray(e.participants) ? e.participants.length : 0) || 1;
     var paidBy = e.paidByName ? String(e.paidByName).toLowerCase() : "someone";
-
-    // your share (you owe) — only meaningful when signed in & a participant.
     var owe = yourShareCents(e);
 
-    var card = el('<div class="gc-card gc-tab"></div>');
-    card.appendChild(el('<div class="gc-rail"></div>'));
-    var inner = el('<div class="gc-card-in"></div>');
+    var wrap = el('<div style="display:flex; flex-direction:column; align-items:flex-start; gap:6px; width:100%;"></div>');
 
-    var top = el('<div class="gc-card-top"></div>');
-    var ico = document.createElement("div"); ico.className = "gc-card-ico"; ico.textContent = emoji;
+    var card = el('<div style="position:relative; width:100%; background:#13212E; border:1px solid rgba(39,117,202,0.28); border-radius:20px; overflow:hidden; box-shadow:0 12px 30px rgba(0,0,0,0.32); cursor:pointer;"></div>');
+    card.appendChild(el('<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 6%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>'));
+    card.appendChild(el('<div style="position:absolute; left:0; top:0; bottom:0; width:4px; background:linear-gradient(180deg,#2775CA,#3f97ee);"></div>'));
+
+    var inner = el('<div style="position:relative; padding:15px 16px 13px;"></div>');
+
+    var top = el('<div style="display:flex; align-items:center; gap:12px;"></div>');
+    var ico = el('<div style="width:46px; height:46px; border-radius:14px; background:#0B1622; display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;"></div>');
+    ico.textContent = emoji;
     top.appendChild(ico);
 
-    var mid = el('<div class="gc-card-mid"></div>');
-    var t = document.createElement("div"); t.className = "gc-card-title display"; t.textContent = title.toLowerCase();
-    var sub = document.createElement("div"); sub.className = "gc-card-sub mono";
-    sub.textContent = "tab · " + paidBy + " paid · split " + (splitN || 1);
-    mid.appendChild(t); mid.appendChild(sub);
+    var mid = el('<div style="flex:1; min-width:0;"></div>');
+    var titleRow = el('<div style="display:flex; align-items:center; gap:6px;"></div>');
+    var tSpan = document.createElement("span");
+    tSpan.style.cssText = "font-family:" + DISPLAY + "; font-weight:500; font-size:16.5px; letter-spacing:-0.2px; color:#F4F7FA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;";
+    tSpan.textContent = title.toLowerCase();
+    titleRow.appendChild(tSpan);
+    var sub = document.createElement("div");
+    sub.style.cssText = "font-family:" + MONO + "; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.48); margin-top:3px;";
+    sub.textContent = "new tab · " + paidBy + " paid · split " + splitN;
+    mid.appendChild(titleRow); mid.appendChild(sub);
     top.appendChild(mid);
 
-    var amt = el('<div class="gc-card-amt"></div>');
-    amt.innerHTML = app.money(e.amountCents || 0, "");
+    var amtBox = el('<div style="text-align:right; flex:none;"></div>');
+    var amt = el('<div style="font-family:' + MONO + '; font-weight:700; font-size:21px; letter-spacing:-0.6px; color:#F4F7FA;"></div>');
+    amt.innerHTML = bigMoney(e.amountCents || 0);
+    amtBox.appendChild(amt);
     if (owe != null && owe > 0) {
-      var ow = el('<div class="gc-card-owe mono">you owe </div>');
-      ow.appendChild(el('<span>' + app.money(owe, "neg") + '</span>'));
-      amt.appendChild(ow);
+      var ow = document.createElement("div");
+      ow.style.cssText = "font-family:" + MONO + "; font-size:9px; color:#FF6B5E; margin-top:2px;";
+      ow.textContent = "you owe $" + (owe / 100).toFixed(2);
+      amtBox.appendChild(ow);
     }
-    top.appendChild(amt);
+    top.appendChild(amtBox);
     inner.appendChild(top);
 
-    var foot = el('<div class="gc-card-foot"></div>');
-    var stack = el('<div class="avatar-stack"></div>');
-    names.slice(0, 4).forEach(function (nm) { stack.innerHTML += app.avatar(personFor(nm), "sm"); });
+    var foot = el('<div style="display:flex; align-items:center; justify-content:space-between; margin-top:13px; padding-top:12px; border-top:1px dashed rgba(244,247,250,0.12);"></div>');
+    var stack = el('<div style="display:flex; align-items:center;"></div>');
+    var stackNames = names.length ? names : [paidBy];
+    stackNames.slice(0, 4).forEach(function (nm, i) {
+      var a = el('<div style="width:22px; height:22px; border-radius:50%; background:' + gradFor(nm) + '; border:1.5px solid #13212E; display:flex; align-items:center; justify-content:center; font-size:11px;' + (i ? " margin-left:-7px;" : "") + '"></div>');
+      a.textContent = avEmoji(nm);
+      stack.appendChild(a);
+    });
     foot.appendChild(stack);
-    var chip = el('<button type="button" class="gc-chipin"><span class="mono">chip in</span>' +
-      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>');
+
+    var chip = el('<button type="button" style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:rgba(39,117,202,0.14); border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:5px 12px;">' +
+      '<span style="font-family:' + MONO + '; font-weight:700; font-size:11px; color:#7fc0ff;">chip in</span>' +
+      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>');
     chip.addEventListener("click", function () { location.hash = "#/settle/" + encodeURIComponent(tripId); });
     foot.appendChild(chip);
     inner.appendChild(foot);
-    card.appendChild(inner);
 
-    var wrap = el('<div class="gc-cardwrap"></div>');
+    card.appendChild(inner);
     wrap.appendChild(card);
-    wrap.appendChild(reactionRow("exp:" + (e.id || title)));
+    wrap.appendChild(reactionRow("exp:" + (e.id || title), { "🫡": 2, "👀": 1 }));
     return wrap;
   }
 
-  // payment event "money card" — "<name> chipped in <mono> · settled"
+  // payment/settle event — LIFTED kinetic blue→mint gradient mini-receipt:
+  // 1.5px animated gradient border, inner #0f1d29 with mint guilloché, the
+  // mascot blob, "<name> chipped in <mint $>", "settled · ~$0.001" + pulse dot,
+  // mint "view ↗" pill, reactions below (🫡 3, 💀 1).
   function paymentNode(p) {
     var who = p.fromName ? String(p.fromName).toLowerCase() : "someone";
-    var card = el('<div class="gc-card gc-pay"></div>');
-    var inner = el('<div class="gc-card-in gc-pay-in"></div>');
 
-    var blob = el('<div class="gc-blob"><span class="gc-blob-glow"></span>' +
-      app.mascot({ size: 30, mood: "happy", glow: false }) + '</div>');
-    inner.appendChild(blob);
+    var wrap = el('<div style="display:flex; flex-direction:column; align-items:flex-start; gap:6px; width:100%;"></div>');
+    var border = el('<div style="position:relative; width:100%; border-radius:20px; padding:1.5px; background:linear-gradient(90deg,#2775CA,#3DE8C7,#2775CA); background-size:200% 100%; animation:gcKinetic 4s linear infinite; box-shadow:0 12px 32px rgba(39,117,202,0.3);"></div>');
+    var card = el('<div style="position:relative; border-radius:18.5px; background:#0f1d29; overflow:hidden;"></div>');
+    card.appendChild(el('<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 8% 100%, rgba(61,232,199,0.05) 0 1px, transparent 1px 9px); opacity:.7; pointer-events:none;"></div>'));
 
-    var mid = el('<div class="gc-pay-mid"></div>');
-    var line = el('<div class="gc-pay-line"></div>');
+    var rowInner = el('<div style="position:relative; display:flex; align-items:center; gap:13px; padding:14px 16px;"></div>');
+
+    // mascot blob — lifted exactly (mint-tinted squish blob with pulsing glow).
+    var blob = el('<div style="position:relative; width:42px; height:42px; flex:none; display:flex; align-items:center; justify-content:center;">' +
+      '<div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.4) 0%, rgba(61,232,199,0) 68%); animation:gcPulse 3s ease-in-out infinite;"></div>' +
+      '<div style="position:relative; width:30px; height:30px; background:linear-gradient(155deg,#5cf0d4,#2775CA); animation:gcSquish 4s ease-in-out infinite; box-shadow:0 4px 12px rgba(39,117,202,0.5);">' +
+        '<div style="position:absolute; top:9px; left:7px; width:4px; height:5px; border-radius:50%; background:#0B1622; animation:gcBlink 4.6s infinite;"></div>' +
+        '<div style="position:absolute; top:9px; right:7px; width:4px; height:5px; border-radius:50%; background:#0B1622; animation:gcBlink 4.6s infinite;"></div>' +
+      '</div></div>');
+    rowInner.appendChild(blob);
+
+    var mid = el('<div style="flex:1; min-width:0;"></div>');
+    var line = el('<div style="font-family:' + SANS + '; font-size:14px; line-height:1.3; color:#F4F7FA;"></div>');
     line.appendChild(document.createTextNode(who + " chipped in "));
-    line.appendChild(el('<span>' + app.money(p.amountCents || 0, "settled") + '</span>'));
-    var meta = el('<div class="gc-pay-meta"><span class="gc-dot"></span>' +
-      '<span class="mono">settled · ~$0.001</span></div>');
+    var amtSpan = document.createElement("span");
+    amtSpan.style.cssText = "font-family:" + MONO + "; font-weight:700; color:#3DE8C7;";
+    amtSpan.textContent = "$" + ((p.amountCents || 0) / 100).toFixed(2);
+    line.appendChild(amtSpan);
+    var meta = el('<div style="display:flex; align-items:center; gap:7px; margin-top:4px;">' +
+      '<span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 6px rgba(61,232,199,0.9);"></span>' +
+      '<span style="font-family:' + MONO + '; font-size:9.5px; letter-spacing:.5px; color:rgba(61,232,199,0.85);">settled · ~$0.001</span></span></div>');
     mid.appendChild(line); mid.appendChild(meta);
-    inner.appendChild(mid);
+    rowInner.appendChild(mid);
 
-    var view = el('<button type="button" class="gc-view"><span class="mono">view</span>' +
-      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>');
+    var view = el('<button type="button" style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; flex:none; background:rgba(61,232,199,0.12); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:6px 13px;">' +
+      '<span style="font-family:' + MONO + '; font-weight:700; font-size:11px; color:#3DE8C7;">view</span>' +
+      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>');
     view.addEventListener("click", function () { location.hash = "#/settle/" + encodeURIComponent(tripId); });
-    inner.appendChild(view);
+    rowInner.appendChild(view);
 
-    card.appendChild(inner);
-    var wrap = el('<div class="gc-cardwrap"></div>');
-    wrap.appendChild(card);
-    wrap.appendChild(reactionRow("pay:" + (p.from || "") + ":" + (p.to || "") + ":" + (p.amountCents || 0)));
+    card.appendChild(rowInner);
+    border.appendChild(card);
+    wrap.appendChild(border);
+    wrap.appendChild(reactionRow("pay:" + (p.from || "") + ":" + (p.to || "") + ":" + (p.amountCents || 0), { "🫡": 3, "💀": 1 }));
     return wrap;
   }
 
-  // small mono day divider
+  // day divider pill — lifted ("TODAY · JUN 24" mono pill).
   function dividerNode(label) {
-    var d = el('<div class="gc-divider"></div>');
-    var s = document.createElement("span"); s.className = "mono"; s.textContent = label;
+    var d = el('<div style="display:flex; justify-content:center;"></div>');
+    var s = document.createElement("span");
+    s.style.cssText = "font-family:" + MONO + "; font-size:9.5px; letter-spacing:1.5px; color:rgba(244,247,250,0.4); background:rgba(244,247,250,0.05); border-radius:999px; padding:4px 12px;";
+    s.textContent = label;
     d.appendChild(s);
     return d;
+  }
+
+  // big mono amount, $/decimals at half-size & half-opacity (frame style).
+  function bigMoney(cents) {
+    var n = Math.abs(cents) / 100;
+    var whole = Math.floor(n).toLocaleString();
+    var dec = (n % 1).toFixed(2).slice(1); // ".00"
+    return '<span style="font-size:13px; opacity:.5;">$</span>' + whole +
+      '<span style="font-size:13px; opacity:.5;">' + dec + '</span>';
   }
 
   // ── derived bits ────────────────────────────────────────────────────────────
@@ -345,14 +453,32 @@
     return paymentNode(it.data);
   }
 
+  // a readable "TODAY · JUN 24"-style divider from the newest item, or "today".
+  function dayLabel(items) {
+    var ts = 0;
+    for (var i = items.length - 1; i >= 0; i--) { if (items[i].ts) { ts = items[i].ts; break; } }
+    var d = ts ? new Date(ts) : new Date();
+    if (isNaN(d.getTime())) return "today";
+    var today = new Date();
+    var same = d.toDateString() === today.toDateString();
+    var mon = d.toLocaleString([], { month: "short" }).toUpperCase();
+    return (same ? "TODAY" : d.toLocaleString([], { weekday: "short" }).toUpperCase()) + " · " + mon + " " + d.getDate();
+  }
+
+  // ── empty state — LIFTED verbatim (mascot blob + dry copy) ──────────────────
   function renderEmpty() {
     if (!feedEl) return;
     feedEl.innerHTML = "";
-    var box = el('<div class="gc-empty"></div>');
-    box.innerHTML = app.mascot({ size: 80, mood: "happy", glow: true });
-    var p = document.createElement("div"); p.className = "gc-empty-txt lower";
-    p.textContent = "no messages yet — say hi or drop a receipt 📷";
-    box.appendChild(p);
+    var box = el('<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:0 40px; text-align:center; margin:auto 0;">' +
+      '<div style="position:relative; width:80px; height:80px; display:flex; align-items:center; justify-content:center;">' +
+        '<div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.32) 0%, rgba(39,117,202,0) 68%); animation:gcPulse 3s ease-in-out infinite;"></div>' +
+        '<div style="position:relative; width:54px; height:54px; background:linear-gradient(155deg,#4a9ff0,#2775CA); animation:gcSquish 4s ease-in-out infinite; box-shadow:0 8px 22px rgba(39,117,202,0.5);">' +
+          '<div style="position:absolute; top:18px; left:13px; width:7px; height:9px; border-radius:50%; background:#0B1622; animation:gcBlink 4.6s infinite;"></div>' +
+          '<div style="position:absolute; top:18px; right:13px; width:7px; height:9px; border-radius:50%; background:#0B1622; animation:gcBlink 4.6s infinite;"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-family:' + SANS + '; font-size:16px; line-height:1.45; color:rgba(244,247,250,0.65);">no messages yet — say hi<br>or drop a receipt 📷</div>' +
+    '</div>');
     feedEl.appendChild(box);
   }
 
@@ -362,7 +488,7 @@
     seenMsgIds = new Set();
     lastSeenISO = null;
     if (!items.length) { renderEmpty(); return; }
-    feedEl.appendChild(dividerNode("today"));
+    feedEl.appendChild(dividerNode(dayLabel(items)));
     items.forEach(function (it) {
       feedEl.appendChild(nodeFor(it));
       if (it.kind === "msg") {
@@ -381,8 +507,13 @@
       var key = m.id != null ? String(m.id) : null;
       if (key && seenMsgIds && seenMsgIds.has(key)) return;
       if (!added) {
-        var empty = feedEl.querySelector(".gc-empty");
-        if (empty) { feedEl.innerHTML = ""; feedEl.appendChild(dividerNode("today")); }
+        // first new message clears any empty state and re-seeds the divider.
+        if (!feedEl.querySelector("[data-feed-divider]")) {
+          feedEl.innerHTML = "";
+          var div = dividerNode("today");
+          div.setAttribute("data-feed-divider", "1");
+          feedEl.appendChild(div);
+        }
       }
       feedEl.appendChild(bubbleNode(m));
       if (key && seenMsgIds) seenMsgIds.add(key);
@@ -394,168 +525,40 @@
 
   // ── lightbox (tap a receipt photo) ──────────────────────────────────────────
   function enlarge(src) {
-    var ov = el('<div class="gc-lightbox" role="dialog" aria-modal="true" aria-label="receipt photo"></div>');
-    var im = el('<img alt="receipt photo" />'); im.src = src;
+    var ov = el('<div role="dialog" aria-modal="true" aria-label="receipt photo" style="position:fixed; inset:0; z-index:60; background:rgba(0,0,0,0.92); display:flex; align-items:center; justify-content:center; padding:16px; cursor:zoom-out;"></div>');
+    var im = el('<img alt="receipt photo" style="max-width:100%; max-height:100%; border-radius:14px;" />');
+    im.src = src;
     ov.appendChild(im);
     ov.addEventListener("click", function () { if (ov.parentNode) ov.parentNode.removeChild(ov); });
     document.body.appendChild(ov);
   }
 
-  // ── styles (scoped to .gc-*, injected once) ─────────────────────────────────
+  // ── keyframes (lifted exactly from the frame's <style>) ─────────────────────
   function injectStyles() {
     if (document.getElementById("gcStyles")) return;
     var css =
-      ".gc-screen{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;background:var(--ink);}" +
-      ".gc-topbar{flex:none;display:flex;align-items:center;gap:11px;height:58px;padding:0 14px;" +
-        "background:rgba(11,22,34,0.82);border-bottom:1px solid var(--line);backdrop-filter:blur(8px);}" +
-      ".gc-back{width:38px;height:38px;flex:none;border-radius:50%;background:var(--card);" +
-        "border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);}" +
-      ".gc-back svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;}" +
-      ".gc-gavatar{position:relative;width:40px;height:40px;flex:none;}" +
-      ".gc-gavatar .avatar{width:40px;height:40px;border-radius:13px;font-size:20px;}" +
-      ".gc-gdot{position:absolute;right:-2px;bottom:-2px;width:14px;height:14px;border-radius:50%;" +
-        "background:var(--mint);border:2.5px solid var(--ink);box-shadow:0 0 8px rgba(61,232,199,0.7);}" +
-      ".gc-tt{flex:1;min-width:0;}" +
-      ".gc-tt .nm{font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:-0.2px;color:var(--text);" +
-        "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}" +
-      ".gc-tt .on{font-family:var(--mono);font-size:9.5px;letter-spacing:.5px;color:rgba(61,232,199,0.85);margin-top:1px;" +
-        "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}" +
-
-      ".gc-feed{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;" +
-        "padding:16px 16px 14px;display:flex;flex-direction:column;gap:14px;}" +
-      ".gc-feed::-webkit-scrollbar{width:0;height:0;}" +
-
-      ".gc-divider{display:flex;justify-content:center;}" +
-      ".gc-divider span{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);" +
-        "background:rgba(244,247,250,0.05);border-radius:999px;padding:4px 12px;}" +
-
-      ".gc-msg{display:flex;flex-direction:column;gap:5px;max-width:82%;animation:gcRise 150ms ease both;}" +
-      ".gc-msg.mine{align-self:flex-end;align-items:flex-end;}" +
+      "@keyframes gcSquish{0%,100%{border-radius:47% 53% 52% 48% / 55% 48% 52% 45%;}50%{border-radius:53% 47% 48% 52% / 46% 54% 47% 53%;}}" +
+      "@keyframes gcBlink{0%,91%,100%{transform:scaleY(1);}96%{transform:scaleY(0.12);}}" +
+      "@keyframes gcKinetic{0%{background-position:0% 50%;}100%{background-position:200% 50%;}}" +
+      "@keyframes gcPulse{0%,100%{opacity:.55;}50%{opacity:1;}}" +
       "@keyframes gcRise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}" +
-      "@media (prefers-reduced-motion:reduce){.gc-msg,.gc-cardwrap,.gc-pay{animation:none;}}" +
-      ".gc-head{display:flex;align-items:center;gap:7px;padding:0 4px 0 44px;}" +
-      ".gc-msg.mine .gc-head{padding:0 4px 0 0;}" +
-      ".gc-who{font-size:10px;color:var(--muted);}" +
-      ".gc-msg.mine .gc-who{color:rgba(127,192,255,0.75);}" +
-      ".gc-when{font-size:9px;color:rgba(244,247,250,0.32);}" +
-      ".gc-line{display:flex;align-items:flex-end;gap:9px;}" +
-      ".gc-msg.mine .gc-line{justify-content:flex-end;}" +
-      ".gc-avwrap{flex:none;}" +
-      ".gc-avwrap .avatar{width:33px;height:33px;border-radius:50%;font-size:16px;}" +
-      ".gc-bubble{background:var(--card);border:1px solid rgba(244,247,250,0.07);" +
-        "border-radius:20px 20px 20px 6px;padding:11px 15px;font-size:15px;line-height:1.35;color:var(--text);" +
-        "word-break:break-word;}" +
-      ".gc-bubble.mine{background:rgba(39,117,202,0.18);border:1px solid rgba(39,117,202,0.4);" +
-        "border-radius:20px 20px 6px 20px;}" +
-      ".gc-text{white-space:pre-wrap;}" +
-      ".gc-img{display:block;width:200px;max-width:60vw;border-radius:14px;margin:1px 0;cursor:pointer;" +
-        "border:1px solid var(--line);}" +
-
-      ".gc-cardwrap{display:flex;flex-direction:column;gap:6px;width:100%;animation:gcRise 150ms ease both;}" +
-      ".gc-card{position:relative;width:100%;background:var(--card);border:1px solid rgba(39,117,202,0.28);" +
-        "border-radius:20px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.32);}" +
-      ".gc-rail{position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#2775CA,#3f97ee);}" +
-      ".gc-card-in{position:relative;padding:15px 16px 13px;}" +
-      ".gc-card-top{display:flex;align-items:center;gap:12px;}" +
-      ".gc-card-ico{width:46px;height:46px;border-radius:14px;background:var(--ink);display:flex;align-items:center;" +
-        "justify-content:center;font-size:23px;flex:none;}" +
-      ".gc-card-mid{flex:1;min-width:0;}" +
-      ".gc-card-title{font-weight:500;font-size:16.5px;letter-spacing:-0.2px;color:var(--text);" +
-        "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}" +
-      ".gc-card-sub{font-size:10px;letter-spacing:.3px;color:var(--faint);margin-top:3px;}" +
-      ".gc-card-amt{text-align:right;flex:none;}" +
-      ".gc-card-amt .money{font-size:21px;}" +
-      ".gc-card-owe{font-size:9px;margin-top:2px;display:flex;align-items:baseline;justify-content:flex-end;color:var(--coral);}" +
-      ".gc-card-owe .money{font-size:9px;}" +
-      ".gc-card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:13px;padding-top:12px;" +
-        "border-top:1px dashed rgba(244,247,250,0.12);}" +
-      ".gc-card-foot .avatar-stack > *{margin-left:-7px;border:1.5px solid var(--card);width:22px;height:22px;" +
-        "border-radius:50%;font-size:11px;}" +
-      ".gc-card-foot .avatar-stack > *:first-child{margin-left:0;}" +
-      ".gc-chipin{appearance:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;" +
-        "background:rgba(39,117,202,0.14);border:1px solid rgba(39,117,202,0.45);border-radius:999px;padding:5px 12px;" +
-        "color:var(--blue-bright);}" +
-      ".gc-chipin .mono{font-weight:700;font-size:11px;}" +
-      ".gc-chipin svg{display:block;}" +
-
-      ".gc-pay{border:0;padding:1.5px;background:linear-gradient(90deg,#2775CA,#3DE8C7,#2775CA);" +
-        "background-size:200% 100%;animation:gcKin 4s linear infinite;box-shadow:0 12px 32px rgba(39,117,202,0.3);}" +
-      "@keyframes gcKin{0%{background-position:0% 50%;}100%{background-position:200% 50%;}}" +
-      ".gc-pay-in{border-radius:18.5px;background:#0f1d29;display:flex;align-items:center;gap:13px;padding:14px 16px;}" +
-      ".gc-blob{position:relative;width:42px;height:42px;flex:none;display:flex;align-items:center;justify-content:center;}" +
-      ".gc-blob-glow{position:absolute;inset:0;border-radius:50%;" +
-        "background:radial-gradient(circle,rgba(61,232,199,0.4) 0%,rgba(61,232,199,0) 68%);}" +
-      ".gc-pay-mid{flex:1;min-width:0;}" +
-      ".gc-pay-line{font-size:14px;line-height:1.3;color:var(--text);}" +
-      ".gc-pay-line .money{font-size:14px;}" +
-      ".gc-pay-meta{display:flex;align-items:center;gap:6px;margin-top:4px;}" +
-      ".gc-pay-meta .mono{font-size:9.5px;letter-spacing:.5px;color:rgba(61,232,199,0.85);}" +
-      ".gc-dot{width:5px;height:5px;border-radius:50%;background:var(--mint);box-shadow:0 0 6px rgba(61,232,199,0.9);}" +
-      ".gc-view{appearance:none;flex:none;display:inline-flex;align-items:center;gap:5px;cursor:pointer;" +
-        "background:rgba(61,232,199,0.12);border:1px solid rgba(61,232,199,0.4);border-radius:999px;padding:6px 13px;color:var(--mint);}" +
-      ".gc-view .mono{font-weight:700;font-size:11px;}" +
-      ".gc-view svg{display:block;}" +
-
-      ".gc-reacts{display:flex;align-items:center;gap:6px;padding-left:2px;}" +
-      ".gc-react{appearance:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer;" +
-        "background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 9px;color:var(--muted);}" +
-      ".gc-react.on{border-color:rgba(39,117,202,0.45);background:rgba(39,117,202,0.12);}" +
-      ".gc-react-e{font-size:12px;line-height:1;}" +
-      ".gc-react-n{font-size:10px;color:var(--muted);}" +
-
-      ".gc-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;" +
-        "padding:0 40px;text-align:center;margin:auto 0;}" +
-      ".gc-empty-txt{font-size:16px;line-height:1.45;color:var(--muted);}" +
-
-      ".gc-loading{display:flex;flex-direction:column;gap:12px;}" +
-      ".gc-loading .skeleton{height:46px;max-width:78%;border-radius:20px;}" +
-      ".gc-loading .skeleton.mine{align-self:flex-end;}" +
-
-      ".gc-composer{flex:none;display:flex;align-items:center;gap:9px;padding:10px 14px;" +
-        "padding-bottom:calc(14px + env(safe-area-inset-bottom));background:rgba(8,17,26,0.96);" +
-        "border-top:1px solid var(--line);}" +
-      ".gc-attach{width:40px;height:40px;flex:none;border-radius:50%;background:var(--card);border:1px solid var(--line);" +
-        "display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;color:var(--text);}" +
-      ".gc-attach.has{background:var(--blue);border-color:var(--blue);}" +
-      ".gc-inwrap{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:var(--card);" +
-        "border:1px solid var(--line);border-radius:999px;padding:0 6px 0 16px;min-height:44px;}" +
-      ".gc-input{flex:1;min-width:0;border:0;outline:none;background:transparent;color:var(--text);" +
-        "font-family:var(--sans);font-size:15px;padding:11px 0;}" +
-      ".gc-input::placeholder{color:var(--faint);}" +
-      ".gc-tabbtn{flex:none;display:inline-flex;align-items:center;gap:5px;cursor:pointer;" +
-        "background:rgba(39,117,202,0.16);border:1px solid rgba(39,117,202,0.4);border-radius:999px;padding:6px 11px;color:var(--blue-bright);}" +
-      ".gc-tabbtn svg{display:block;}" +
-      ".gc-tabbtn .mono{font-weight:700;font-size:10.5px;}" +
-      ".gc-send{width:46px;height:46px;flex:none;border-radius:50%;border:0;cursor:pointer;" +
-        "background:linear-gradient(135deg,#3286db,#2775CA);display:flex;align-items:center;justify-content:center;" +
-        "box-shadow:0 6px 20px rgba(39,117,202,0.55),inset 0 1px 0 rgba(255,255,255,0.28);}" +
-      ".gc-send:active{transform:scale(.97);}" +
-      ".gc-send:disabled{opacity:.5;}" +
-      ".gc-send svg{display:block;}" +
-
-      ".gc-preview{flex:none;display:flex;align-items:center;gap:8px;padding:8px 16px;" +
-        "background:rgba(8,17,26,0.96);border-top:1px solid var(--line);}" +
-      ".gc-preview img{width:40px;height:40px;object-fit:cover;border-radius:11px;border:1px solid var(--line);}" +
-      ".gc-preview .lbl{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}" +
-      ".gc-preview .x{margin-left:auto;appearance:none;background:none;border:0;color:var(--muted);" +
-        "font-family:var(--mono);font-size:11px;cursor:pointer;padding:4px 8px;}" +
-      ".gc-status{flex:none;font-family:var(--mono);font-size:10px;letter-spacing:.5px;color:var(--muted);" +
-        "padding:0 16px;text-align:center;}" +
-      ".gc-status:empty{display:none;padding:0;}" +
-
-      ".gc-lightbox{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0.92);display:flex;align-items:center;" +
-        "justify-content:center;padding:16px;cursor:zoom-out;}" +
-      ".gc-lightbox img{max-width:100%;max-height:100%;border-radius:14px;}";
+      "@keyframes gcShimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}" +
+      ".gc-scroll::-webkit-scrollbar{width:0;height:0;}" +
+      ".gc-skel{height:46px;border-radius:20px;background:linear-gradient(100deg,#13212E 30%,#1b2c3b 50%,#13212E 70%);" +
+        "background-size:200% 100%;animation:gcShimmer 1.3s linear infinite;}" +
+      "@media (prefers-reduced-motion:reduce){.gc-scroll *{animation:none!important;}}";
     var style = document.createElement("style");
     style.id = "gcStyles";
     style.textContent = css;
     document.head.appendChild(style);
   }
 
-  // ── composer ────────────────────────────────────────────────────────────────
+  // ── composer status / preview ───────────────────────────────────────────────
   function setStatus(t) {
     var s = screenEl && screenEl.querySelector(".gc-status");
-    if (s) s.textContent = t || "";
+    if (!s) return;
+    s.textContent = t || "";
+    s.style.display = t ? "block" : "none";
   }
   function renderPreview() {
     var wrap = screenEl && screenEl.querySelector(".gc-preview");
@@ -563,16 +566,17 @@
     if (!wrap) return;
     if (!pendingImage) {
       wrap.style.display = "none"; wrap.innerHTML = "";
-      if (btn) btn.classList.remove("has");
+      if (btn) { btn.style.background = "#13212E"; btn.style.borderColor = "rgba(244,247,250,0.1)"; }
       return;
     }
     wrap.style.display = "flex"; wrap.innerHTML = "";
-    var im = el('<img alt="selected receipt" />'); im.src = pendingImage;
-    var lbl = el('<span class="lbl">photo attached</span>');
-    var x = el('<button type="button" class="x">✕ remove</button>');
+    var im = el('<img alt="selected receipt" style="width:40px; height:40px; object-fit:cover; border-radius:11px; border:1px solid rgba(244,247,250,0.1);" />');
+    im.src = pendingImage;
+    var lbl = el('<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:rgba(244,247,250,0.6);">photo attached</span>');
+    var x = el('<button type="button" style="margin-left:auto; appearance:none; background:none; border:0; color:rgba(244,247,250,0.6); font-family:' + MONO + '; font-size:11px; cursor:pointer; padding:4px 8px;">✕ remove</button>');
     x.addEventListener("click", function () { pendingImage = null; renderPreview(); });
     wrap.appendChild(im); wrap.appendChild(lbl); wrap.appendChild(x);
-    if (btn) btn.classList.add("has");
+    if (btn) { btn.style.background = "#2775CA"; btn.style.borderColor = "#2775CA"; }
   }
   async function onPhotoPicked(ev) {
     var file = ev.target.files && ev.target.files[0];
@@ -589,7 +593,7 @@
     if (!text && !image) return;
     sending = true;
     var btn = screenEl && screenEl.querySelector(".gc-send");
-    if (btn) btn.disabled = true;
+    if (btn) { btn.style.opacity = ".5"; btn.disabled = true; }
     setStatus("sending…");
     try {
       var body = {};
@@ -605,7 +609,7 @@
       setStatus(err.status === 403 ? "you don't have access to this chat." : (err.message || "couldn't send — try again."));
     } finally {
       sending = false;
-      if (btn) btn.disabled = false;
+      if (btn) { btn.style.opacity = "1"; btn.disabled = false; }
     }
   }
 
@@ -631,19 +635,20 @@
     if (!feedEl) return;
     feedEl.innerHTML = "";
     feedEl.appendChild(el(
-      '<div class="gc-loading" aria-hidden="true">' +
-        '<div class="skeleton" style="width:60%"></div>' +
-        '<div class="skeleton mine" style="width:52%"></div>' +
-        '<div class="skeleton" style="width:70%"></div>' +
+      '<div aria-hidden="true" style="display:flex; flex-direction:column; gap:12px;">' +
+        '<div class="gc-skel" style="width:60%"></div>' +
+        '<div class="gc-skel" style="width:52%; align-self:flex-end;"></div>' +
+        '<div class="gc-skel" style="width:70%"></div>' +
       "</div>"));
   }
 
   function loadError(err) {
     if (!feedEl) return;
     feedEl.innerHTML = "";
-    var box = el('<div class="gc-empty"></div>');
+    var box = el('<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:0 40px; text-align:center; margin:auto 0;"></div>');
     box.innerHTML = app.mascot({ size: 80, mood: "worried", glow: false });
-    var p = document.createElement("div"); p.className = "gc-empty-txt lower";
+    var p = document.createElement("div");
+    p.style.cssText = "font-family:" + SANS + "; font-size:16px; line-height:1.45; color:rgba(244,247,250,0.65);";
     p.textContent = err && err.status === 403
       ? "no access to this chat — ask someone to share the link 🔒"
       : "couldn't load this chat — " + ((err && err.message) || "try again");
@@ -653,12 +658,11 @@
 
   async function loadInitial(myToken) {
     loadingFeed();
-    var tName = screenEl && screenEl.querySelector(".gc-tt .nm");
-    var tOn = screenEl && screenEl.querySelector(".gc-tt .on");
-    var tAv = screenEl && screenEl.querySelector(".gc-gavatar .avatar");
+    var tName = screenEl && screenEl.querySelector(".gc-name");
+    var tOn = screenEl && screenEl.querySelector(".gc-online");
+    var tAv = screenEl && screenEl.querySelector(".gc-gavatar-emoji");
     try {
       var tripPath = "/api/trips/" + encodeURIComponent(tripId);
-      // 1) fetch trip first to learn members + shareToken.
       trip = await request(tripPath);
       if (myToken !== token) return;
       shareToken = (trip && trip.shareToken) || shareToken;
@@ -666,10 +670,7 @@
       (trip && trip.members || []).forEach(function (m) { memberById[m.id] = m; });
 
       if (tName && trip && trip.name) tName.textContent = String(trip.name).toLowerCase();
-      if (tAv) {
-        var av = el(app.avatar({ name: (trip && trip.name) || "group", id: tripId }));
-        if (av) { av.className = "avatar"; tAv.replaceWith(av); }
-      }
+      if (tAv) tAv.textContent = groupEmoji((trip && trip.name) || "");
       if (tOn) {
         var ms = (trip && trip.members) || [];
         var names = ms.slice(0, 2).map(function (m) { return String(m.name || "").toLowerCase(); });
@@ -679,7 +680,6 @@
         tOn.textContent = (who ? who + " · " : "") + online + " online";
       }
 
-      // 2) now fetch messages (with the token we just learned).
       var msgData = await request(tripPath + "/messages");
       if (myToken !== token) return;
       var messages = (msgData && msgData.messages) || [];
@@ -695,34 +695,63 @@
     }
   }
 
-  // ── render (screen contract) ────────────────────────────────────────────────
+  function groupEmoji(name) {
+    var n = (name || "").toLowerCase();
+    if (/tokyo|japan|trip|travel|flight/.test(n)) return "🗼";
+    if (/apart|rent|house|home|flat/.test(n)) return "🏠";
+    if (/bali|beach|island|vacation/.test(n)) return "🏝️";
+    if (/food|dinner|lunch|eat/.test(n)) return "🍜";
+    return "👥";
+  }
+
+  // ── shell (top bar + composer, markup LIFTED verbatim from the frame) ───────
   function buildShell(view) {
     view.innerHTML = "";
     screenEl = el(
-      '<div class="gc-screen">' +
-        '<div class="gc-topbar">' +
-          '<button class="gc-back" type="button" aria-label="back">' +
-            '<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>' +
-          '<div class="gc-gavatar"><span class="avatar">👥</span><span class="gc-gdot"></span></div>' +
-          '<div class="gc-tt"><div class="nm lower">group</div><div class="on mono">loading…</div></div>' +
-        "</div>" +
-        '<div class="gc-feed"></div>' +
-        '<div class="gc-status"></div>' +
-        '<div class="gc-preview" style="display:none"></div>' +
-        '<div class="gc-composer">' +
-          '<button class="gc-attach" type="button" aria-label="attach receipt">📷</button>' +
+      '<div style="position:fixed; inset:0; z-index:40; background:#0B1622; color:#F4F7FA; font-family:' + SANS + '; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column; overflow:hidden;">' +
+
+        // faint money texture + soft blue glow (lifted)
+        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(244,247,250,0.028) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>' +
+        '<div style="position:absolute; left:-60px; top:380px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.13) 0%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>' +
+
+        // top bar
+        '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:11px; height:58px; padding:0 14px; flex:none; background:rgba(11,22,34,0.82); border-bottom:1px solid rgba(244,247,250,0.06); backdrop-filter:blur(8px);">' +
+          '<button class="gc-back" type="button" aria-label="back" style="appearance:none; width:38px; height:38px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;">' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4F7FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+          '<div style="position:relative; width:40px; height:40px; flex:none;">' +
+            '<div class="gc-gavatar-emoji" style="width:40px; height:40px; border-radius:13px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden;">👥</div>' +
+            '<div style="position:absolute; right:-2px; bottom:-2px; width:14px; height:14px; border-radius:50%; background:#3DE8C7; border:2.5px solid #0B1622; box-shadow:0 0 8px rgba(61,232,199,0.7);"></div>' +
+          '</div>' +
+          '<div style="flex:1; min-width:0;">' +
+            '<div class="gc-name" style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#F4F7FA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">group</div>' +
+            '<div class="gc-online" style="font-family:' + MONO + '; font-size:9.5px; letter-spacing:.5px; color:rgba(61,232,199,0.85); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">loading…</div>' +
+          '</div>' +
+          '<div style="width:38px; height:38px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; flex:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4F7FA" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
+        '</div>' +
+
+        // feed (scroll)
+        '<div class="gc-scroll gc-feed" style="position:relative; z-index:2; flex:1; overflow-y:auto; scrollbar-width:none; padding:16px 16px 14px; display:flex; flex-direction:column; gap:14px;"></div>' +
+
+        // status line (sending / errors)
+        '<div class="gc-status" style="position:relative; z-index:6; display:none; flex:none; font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.6); padding:6px 16px 0; text-align:center; background:rgba(8,17,26,0.96);"></div>' +
+
+        // photo preview strip
+        '<div class="gc-preview" style="position:relative; z-index:6; display:none; flex:none; align-items:center; gap:8px; padding:8px 16px; background:rgba(8,17,26,0.96); border-top:1px solid rgba(244,247,250,0.07);"></div>' +
+
+        // composer (lifted: 📷 circle, input pill w/ "＋ tab", glowing send)
+        '<div style="position:relative; z-index:6; flex:none; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); background:rgba(8,17,26,0.96); border-top:1px solid rgba(244,247,250,0.07); display:flex; align-items:center; gap:9px;">' +
+          '<button class="gc-attach" type="button" aria-label="attach receipt" style="appearance:none; width:40px; height:40px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer; flex:none; padding:0;">📷</button>' +
           '<input class="gc-file" type="file" accept="image/*" capture="environment" style="display:none" />' +
-          '<div class="gc-inwrap">' +
-            '<input class="gc-input" type="text" placeholder="message…" aria-label="message" />' +
-            '<button class="gc-tabbtn" type="button" aria-label="new tab">' +
-              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
-              '<span class="mono">tab</span></button>' +
-          "</div>" +
-          '<button class="gc-send" type="button" aria-label="send">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>' +
-          "</button>" +
-        "</div>" +
-      "</div>");
+          '<div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:0 6px 0 16px; min-height:44px;">' +
+            '<input class="gc-input" type="text" placeholder="message…" aria-label="message" style="flex:1; min-width:0; border:0; outline:none; background:transparent; color:#F4F7FA; font-family:' + SANS + '; font-size:15px; padding:11px 0;" />' +
+            '<button class="gc-tabbtn" type="button" aria-label="new tab" style="appearance:none; display:inline-flex; align-items:center; gap:5px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.4); border-radius:999px; padding:6px 11px; cursor:pointer; flex:none;">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
+              '<span style="font-family:' + MONO + '; font-weight:700; font-size:10.5px; color:#7fc0ff;">tab</span></button>' +
+          '</div>' +
+          '<button class="gc-send" type="button" aria-label="send" style="appearance:none; width:46px; height:46px; border-radius:50%; border:0; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:0 6px 20px rgba(39,117,202,0.55), inset 0 1px 0 rgba(255,255,255,0.28);">' +
+            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>' +
+        '</div>' +
+      '</div>');
     view.appendChild(screenEl);
 
     feedEl = screenEl.querySelector(".gc-feed");
@@ -770,9 +799,10 @@
       if (!tripId) {
         if (feedEl) {
           feedEl.innerHTML = "";
-          var box = el('<div class="gc-empty"></div>');
+          var box = el('<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:0 40px; text-align:center; margin:auto 0;"></div>');
           box.innerHTML = app.mascot({ size: 80, mood: "worried", glow: false });
-          var p = document.createElement("div"); p.className = "gc-empty-txt lower";
+          var p = document.createElement("div");
+          p.style.cssText = "font-family:" + SANS + "; font-size:16px; color:rgba(244,247,250,0.65);";
           p.textContent = "no group selected";
           box.appendChild(p);
           feedEl.appendChild(box);
