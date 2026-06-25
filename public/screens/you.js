@@ -254,7 +254,7 @@
 
   function wireBalance() {
     var add = document.getElementById("yAdd"), cash = document.getElementById("yCash");
-    if (add) add.onclick = function () { app.toast("add money — coming soon 💳"); };
+    if (add) add.onclick = function () { app.depositSheet(); };
     if (cash) cash.onclick = function () { app.toast("cash out — coming soon"); };
   }
 

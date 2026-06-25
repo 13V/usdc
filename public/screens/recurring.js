@@ -677,7 +677,19 @@
 
     // controls wiring
     var pauseB = el.querySelector("#rdPause");
-    if (pauseB) pauseB.onclick = function () { app.toast(paused ? "resumed — back on autopilot" : "paused — heads up: pause isn't wired server-side yet"); };
+    if (pauseB) pauseB.onclick = async function () {
+      pauseB.disabled = true;
+      try {
+        var updated = await app.api.patch("/api/recurring/" + encodeURIComponent(rule.id), { paused: !paused });
+        app.closeSheet();
+        app.toast((updated && updated.paused) ? "paused — off autopilot for now" : "resumed — back on autopilot");
+        var view = document.getElementById("view");
+        if (view) signedIn(view);
+      } catch (e) {
+        pauseB.disabled = false;
+        app.toast((e && e.message) || "couldn't update");
+      }
+    };
     var editB = el.querySelector("#rdEdit");
     if (editB) editB.onclick = function () { app.closeSheet(); openNewSheet(); };
     var delB = el.querySelector("#rdDelete");

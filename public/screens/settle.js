@@ -314,7 +314,7 @@
       '</div>';
     wireCancel();
     var add = document.getElementById("stAdd");
-    if (add) add.onclick = function () { app.toast("add money — coming soon"); };
+    if (add) add.onclick = function () { app.depositSheet(); };
     var oth = document.getElementById("stOther");
     if (oth) oth.onclick = function () { go("ready"); };
   }

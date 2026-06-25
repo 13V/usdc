@@ -38,6 +38,15 @@ db.exec(`
     active INTEGER DEFAULT 1
   );
 `);
+// `paused` is distinct from `active`: a paused rule still exists and shows in
+// the list (so it can be resumed), but is skipped by the materializer. `active`
+// stays the delete flag. Additive migration.
+{
+  const cols = db.prepare("PRAGMA table_info(recurring)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "paused")) {
+    db.exec("ALTER TABLE recurring ADD COLUMN paused INTEGER NOT NULL DEFAULT 0");
+  }
+}
 
 // ---- Date math (pure, testable) --------------------------------------------
 
@@ -91,6 +100,7 @@ interface RecurringRow {
   next_due: string;
   created_at: string;
   active: number;
+  paused: number;
 }
 
 function serialize(row: RecurringRow): Record<string, unknown> {
@@ -107,6 +117,7 @@ function serialize(row: RecurringRow): Record<string, unknown> {
     interval: row.interval,
     nextDue: row.next_due,
     createdAt: row.created_at,
+    paused: !!row.paused,
   };
 }
 
@@ -126,9 +137,9 @@ export function materializeDue(ownerUserId?: string): number {
   const rows = (
     ownerUserId
       ? db
-          .prepare("SELECT * FROM recurring WHERE active = 1 AND owner_user_id = ?")
+          .prepare("SELECT * FROM recurring WHERE active = 1 AND paused = 0 AND owner_user_id = ?")
           .all(ownerUserId)
-      : db.prepare("SELECT * FROM recurring WHERE active = 1").all()
+      : db.prepare("SELECT * FROM recurring WHERE active = 1 AND paused = 0").all()
   ) as RecurringRow[];
 
   const setDue = db.prepare("UPDATE recurring SET next_due = ? WHERE id = ?");
@@ -310,6 +321,47 @@ recurringRouter.delete("/api/recurring/:id", requireAuth, (req: Request, res: Re
     return;
   }
   res.json({ ok: true });
+});
+
+/**
+ * PATCH /api/recurring/:id { paused: boolean } — pause or resume a rule.
+ * Paused rules stay in the list but are skipped by the materializer. On resume,
+ * we roll next_due forward past now so a long pause doesn't dump a backlog of
+ * catch-up expenses the moment it wakes.
+ */
+recurringRouter.patch("/api/recurring/:id", requireAuth, (req: Request, res: Response) => {
+  const userId = req.userId as string;
+  const body = (req.body || {}) as { paused?: unknown };
+  if (typeof body.paused !== "boolean") {
+    res.status(400).json({ error: "paused must be a boolean" });
+    return;
+  }
+  const row = db
+    .prepare("SELECT * FROM recurring WHERE id = ? AND owner_user_id = ? AND active = 1")
+    .get(req.params.id, userId) as RecurringRow | undefined;
+  if (!row) {
+    res.status(404).json({ error: "rule not found" });
+    return;
+  }
+
+  let nextDue = row.next_due;
+  if (!body.paused && row.paused) {
+    // Resuming: advance next_due past now so we don't materialize a backlog.
+    try {
+      const now = Date.now();
+      let guard = 0;
+      while (new Date(nextDue).getTime() <= now && guard++ < 1000) {
+        nextDue = advanceDue(nextDue, row.interval);
+      }
+    } catch {
+      /* leave next_due as-is if the interval is somehow unparseable */
+    }
+  }
+
+  db.prepare("UPDATE recurring SET paused = ?, next_due = ? WHERE id = ?")
+    .run(body.paused ? 1 : 0, nextDue, row.id);
+  const updated = db.prepare("SELECT * FROM recurring WHERE id = ?").get(row.id) as RecurringRow;
+  res.json(serialize(updated));
 });
 
 recurringRouter.post("/api/recurring/run", requireAuth, (req: Request, res: Response) => {
