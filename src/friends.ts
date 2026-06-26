@@ -126,29 +126,46 @@ const insertFriendship = db.prepare(
    VALUES (?, ?, ?)`
 );
 
-async function addFriendship(meId: string, themId: string): Promise<void> {
+/**
+ * Add a single directed edge meId → themId. A lone edge is a PENDING request
+ * (me asked them); friendship is ACCEPTED only when both directions exist
+ * (they add/accept me back). Idempotent.
+ */
+async function addDirectedFriendship(meId: string, themId: string): Promise<void> {
   const now = new Date().toISOString();
   if (usingSupabase) {
-    // INSERT OR IGNORE semantics: upsert on the (user_id, friend_user_id) PK so
-    // re-adding an existing friendship is a no-op rather than an error.
     const { error } = await supabase()
       .from("friendships")
-      .upsert(
-        [
-          { user_id: meId, friend_user_id: themId, created_at: now },
-          { user_id: themId, friend_user_id: meId, created_at: now },
-        ],
-        { onConflict: "user_id,friend_user_id", ignoreDuplicates: true }
-      );
-    if (error) throw new Error(`friends.addFriendship: ${error.message}`);
+      .upsert([{ user_id: meId, friend_user_id: themId, created_at: now }],
+        { onConflict: "user_id,friend_user_id", ignoreDuplicates: true });
+    if (error) throw new Error(`friends.addDirected: ${error.message}`);
     return;
   }
+  insertFriendship.run(meId, themId, now);
+}
 
-  const tx = db.transaction(() => {
-    insertFriendship.run(meId, themId, now);
-    insertFriendship.run(themId, meId, now);
-  });
-  tx();
+/** friend_user_ids that meId has added/requested (outgoing edges). */
+async function outgoingIds(meId: string): Promise<string[]> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("friendships").select("friend_user_id").eq("user_id", meId);
+    if (error) throw new Error(`friends.outgoing: ${error.message}`);
+    return (data || []).map((r: any) => r.friend_user_id);
+  }
+  return (db.prepare("SELECT friend_user_id FROM friendships WHERE user_id = ?").all(meId) as any[])
+    .map((r) => r.friend_user_id);
+}
+
+/** user_ids that have added/requested meId (incoming edges). */
+async function incomingIds(meId: string): Promise<string[]> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("friendships").select("user_id").eq("friend_user_id", meId);
+    if (error) throw new Error(`friends.incoming: ${error.message}`);
+    return (data || []).map((r: any) => r.user_id);
+  }
+  return (db.prepare("SELECT user_id FROM friendships WHERE friend_user_id = ?").all(meId) as any[])
+    .map((r) => r.user_id);
 }
 
 async function removeFriendship(meId: string, themId: string): Promise<void> {
@@ -221,47 +238,76 @@ friendsRouter.post(
       return;
     }
 
-    await addFriendship(meId, target.id);
-    res.json({ friend: serializeUser(target) });
+    // Send a friend REQUEST (one-way). If they had already requested me, this
+    // completes the pair → we're now friends (accepted).
+    const incomingBefore = await incomingIds(meId);
+    await addDirectedFriendship(meId, target.id);
+    const accepted = incomingBefore.includes(target.id);
+    res.json({ friend: await serializeUser(target), status: accepted ? "accepted" : "requested" });
   }
 );
 
 /**
  * GET /api/friends
- * List my friends, most recent first.
+ * Accepted friends only (mutual — both directions exist).
  */
 friendsRouter.get(
   "/api/friends",
   requireAuth,
   async (req: Request, res: Response) => {
     const meId = req.userId as string;
-
-    let rows: Array<{ friend_user_id: string }>;
-    if (usingSupabase) {
-      const { data, error } = await supabase()
-        .from("friendships")
-        .select("friend_user_id")
-        .eq("user_id", meId)
-        .order("created_at", { ascending: false });
-      if (error) throw new Error(`friends.list: ${error.message}`);
-      rows = (data || []) as Array<{ friend_user_id: string }>;
-    } else {
-      rows = db
-        .prepare(
-          `SELECT friend_user_id FROM friendships
-           WHERE user_id = ?
-           ORDER BY created_at DESC, rowid DESC`
-        )
-        .all(meId) as Array<{ friend_user_id: string }>;
-    }
-
+    const [out, inc] = await Promise.all([outgoingIds(meId), incomingIds(meId)]);
+    const incSet = new Set(inc);
+    const mutual = out.filter((id) => incSet.has(id));
     const friends = [];
-    for (const row of rows) {
-      const u = await getUser(row.friend_user_id);
+    for (const id of mutual) {
+      const u = await getUser(id);
       if (u) friends.push(await serializeUser(u));
     }
-
     res.json({ friends });
+  }
+);
+
+/**
+ * GET /api/friends/requests
+ * Incoming pending requests (they added me, I haven't accepted back).
+ */
+friendsRouter.get(
+  "/api/friends/requests",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    const meId = req.userId as string;
+    const [out, inc] = await Promise.all([outgoingIds(meId), incomingIds(meId)]);
+    const outSet = new Set(out);
+    const pending = inc.filter((id) => !outSet.has(id));
+    const requests = [];
+    for (const id of pending) {
+      const u = await getUser(id);
+      if (u) requests.push(await serializeUser(u));
+    }
+    res.json({ requests });
+  }
+);
+
+/**
+ * POST /api/friends/accept { userId }
+ * Accept an incoming request — adds the return edge, making it mutual.
+ */
+friendsRouter.post(
+  "/api/friends/accept",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    const meId = req.userId as string;
+    const userId = cleanString((req.body || {}).userId);
+    if (!userId) { res.status(400).json({ error: "userId required" }); return; }
+    const inc = await incomingIds(meId);
+    if (!inc.includes(userId)) {
+      res.status(404).json({ error: "no pending request from that user" });
+      return;
+    }
+    await addDirectedFriendship(meId, userId);
+    const u = await getUser(userId);
+    res.json({ friend: u ? await serializeUser(u) : null, status: "accepted" });
   }
 );
 

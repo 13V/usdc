@@ -290,7 +290,9 @@
       try {
         var d = await app.api.post("/api/friends", body);
         if (input) input.value = "";
-        setStatus("added " + nameOf((d && d.friend) || {}).toLowerCase() + " ✓", "#3DE8C7");
+        var nm = nameOf((d && d.friend) || {}).toLowerCase();
+        if (d && d.status === "accepted") setStatus("you're friends with " + nm + " now ✨", "#3DE8C7");
+        else setStatus("request sent to " + nm + " — they'll accept 👋", "#3DE8C7");
         await refresh();
       } catch (e) {
         if (e && e.status === 401) { signedOut(view); return; }
@@ -326,6 +328,9 @@
         '<div class="empty"><div class="title lower">couldn\'t load your people</div><div class="hint">' + app.esc(e.message) + '</div></div>');
       return;
     }
+    // incoming friend requests (people who added you — you choose to accept)
+    var requests = [];
+    try { var rq = await app.api.get("/api/friends/requests"); requests = (rq && Array.isArray(rq.requests)) ? rq.requests : []; } catch (_) {}
     // best-effort extras — never block the screen on these
     try { balances = await app.api.get("/api/me/balances"); } catch (_) {}
     try { var td = await app.api.get("/api/trips?mine=1"); trips = Array.isArray(td) ? td : []; } catch (_) {}
@@ -334,15 +339,18 @@
 
     var sub = friends.length ? counts(friends) : "no one here yet";
     var body;
-    if (friends.length) {
+    if (friends.length || requests.length) {
       body =
         '<div class="appscroll" style="padding:10px 16px 120px;">' +
+          requestsBlock(requests) +
           savedTabs(trips) +
-          '<div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 8px;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.42);">PEOPLE</span>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.38);">A–Z</span>' +
-          '</div>' +
-          '<div style="display:flex; flex-direction:column; gap:9px;">' + friends.map(friendRow).join("") + '</div>' +
+          (friends.length
+            ? '<div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 8px;">' +
+                '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.42);">PEOPLE</span>' +
+                '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.38);">A–Z</span>' +
+              '</div>' +
+              '<div style="display:flex; flex-direction:column; gap:9px;">' + friends.map(friendRow).join("") + '</div>'
+            : '') +
         '</div>';
     } else {
       body = emptyState();
@@ -353,6 +361,45 @@
     var refresh = function () { return signedIn(view); };
     wireAdd(view, refresh);
     wireRows(view);
+    wireRequests(view, refresh);
+  }
+
+  // ---- friend requests (incoming) -----------------------------------------
+  function requestsBlock(requests) {
+    if (!requests || !requests.length) return "";
+    return '<div style="margin:12px 0 6px;">' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:#3DE8C7; margin:0 2px 9px;">FRIEND REQUESTS · ' + requests.length + '</div>' +
+      '<div style="display:flex; flex-direction:column; gap:9px;">' + requests.map(requestRow).join("") + '</div>' +
+    '</div>';
+  }
+  function requestRow(f) {
+    var name = f.displayName || f.handle || (f.primaryWallet ? shortWallet(f.primaryWallet) : "someone");
+    var emoji = f.emoji || "🙂";
+    var color = f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)";
+    return '<div style="display:flex; align-items:center; gap:11px; background:#13212E; border:1px solid rgba(61,232,199,0.18); border-radius:18px; padding:11px 12px;">' +
+      '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">' + app.esc(emoji) + '</div>' +
+      '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#F4F7FA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div><div style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(244,247,250,0.4);">wants to be friends</div></div>' +
+      '<button data-decline="' + app.esc(f.id) + '" title="dismiss" style="appearance:none; cursor:pointer; flex:none; width:36px; height:36px; border-radius:50%; background:transparent; border:1px solid rgba(244,247,250,0.14); color:rgba(244,247,250,0.55); font-size:15px;">✕</button>' +
+      '<button data-accept="' + app.esc(f.id) + '" style="appearance:none; border:none; cursor:pointer; flex:none; min-height:36px; padding:0 16px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); color:#fff; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px;">accept</button>' +
+    '</div>';
+  }
+  function wireRequests(view, refresh) {
+    [].forEach.call(view.querySelectorAll("[data-accept]"), function (b) {
+      b.onclick = function () {
+        b.disabled = true; b.style.opacity = ".6";
+        app.api.post("/api/friends/accept", { userId: b.getAttribute("data-accept") })
+          .then(function () { app.toast("you're friends now ✨"); refresh(); })
+          .catch(function (e) { b.disabled = false; b.style.opacity = "1"; app.toast(e.message || "couldn't accept"); });
+      };
+    });
+    [].forEach.call(view.querySelectorAll("[data-decline]"), function (b) {
+      b.onclick = function () {
+        b.disabled = true;
+        app.api.del("/api/friends/" + encodeURIComponent(b.getAttribute("data-decline")))
+          .then(function () { app.toast("request dismissed"); refresh(); })
+          .catch(function (e) { b.disabled = false; app.toast(e.message || "couldn't dismiss"); });
+      };
+    });
   }
 
   // ---- register -----------------------------------------------------------

@@ -52,21 +52,23 @@
   }
 
   // ---- shared chrome lifted verbatim from each frame ----
-  function statusbar() {
-    return '<div style="position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 30px 0 32px; flex:none;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:14px; font-weight:700;">9:41</span>' +
-      '<div style="display:flex; align-items:center; gap:6px;"><span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1px; color:rgba(244,247,250,0.6);">5G</span><div style="width:24px; height:12px; border:1px solid rgba(244,247,250,0.45); border-radius:3px; padding:1.5px; display:flex; align-items:center;"><div style="width:100%; height:100%; background:#F4F7FA; border-radius:1px;"></div></div></div>' +
-    '</div>';
-  }
+  // The app shell (index.html) already renders the device status bar, so the
+  // per-screen one is dropped to avoid a duplicate 9:41.
+  function statusbar() { return ""; }
 
+  // Title strip with a close button (top-left) so this screen is never a
+  // dead-end after a tab is sent.
   function titleStrip(label) {
-    return '<div style="position:relative; z-index:2; display:flex; align-items:center; justify-content:center; height:44px; flex:none;"><span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">' + app.esc(label) + '</span></div>';
+    return '<div style="position:relative; z-index:3; display:flex; align-items:center; justify-content:center; height:48px; flex:none; padding:6px 16px 0;">' +
+      '<div onclick="window.app.go(\'home\')" style="position:absolute; left:16px; top:6px; width:34px; height:34px; border-radius:50%; background:rgba(244,247,250,0.05); border:1px solid rgba(244,247,250,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer;" aria-label="close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">' + app.esc(label) + '</span>' +
+    '</div>';
   }
 
   // canvas texture + accent glow lifted from the frame backdrop
   function backdrop(glowOpacity) {
     return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 20%, rgba(244,247,250,0.024) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>' +
-      '<div style="position:absolute; left:50%; top:-30px; width:360px; height:280px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,' + glowOpacity + ') 0%, rgba(39,117,202,0) 68%); pointer-events:none;"></div>';
+      '<div style="position:absolute; left:50%; top:40px; width:440px; height:380px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,' + glowOpacity + ') 0%, rgba(39,117,202,0) 60%); pointer-events:none;"></div>';
   }
 
   // status pill — squared (blue, ✓) vs waiting (faint, 👀) — lifted verbatim
@@ -224,7 +226,7 @@
     }
 
     var inner = statusbar() + titleStrip(some ? "collecting" : "tab sent") +
-      '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; padding:4px 22px 28px; overflow:hidden;">' +
+      '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; padding:4px 22px 28px;">' +
         '<div style="margin-bottom:6px;">' + app.mascot({ size: 92, mood: some ? "watching" : "happy", glow: true }) + '</div>' +
         receiptCard(bill, ps, eachFmt, rows) +
         progressBlock(squared, total, bill.collectedFmt || "$0.00", bill.totalFmt || "$0.00") +

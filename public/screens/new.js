@@ -277,11 +277,16 @@
           st.members.map(function (m) {
             var inc = m.included;
             var badge = inc ? '<span style="position:absolute; right:-3px; bottom:-3px; width:18px; height:18px; border-radius:50%; background:#2775CA; border:2px solid #0B1622; display:flex; align-items:center; justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>' : '';
-            return '<button data-toggle="' + app.esc(m.id) + '" style="appearance:none; cursor:pointer; flex:none; position:relative; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:none; padding:2px; opacity:' + (inc ? '1' : '0.42') + ';">' +
+            return '<button data-edit="' + app.esc(m.id) + '" style="appearance:none; cursor:pointer; flex:none; position:relative; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:none; padding:2px; opacity:' + (inc ? '1' : '0.42') + ';">' +
               '<div style="position:relative; width:46px; height:46px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:22px; border:2.5px solid ' + (inc ? '#2775CA' : 'rgba(244,247,250,0.12)') + '; filter:' + (inc ? 'none' : 'grayscale(0.4)') + ';">' + app.esc(m.emoji) + badge + '</div>' +
               '<span style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:' + (inc ? '#F4F7FA' : 'rgba(244,247,250,0.45)') + ';">' + app.esc(m.you ? "you" : m.name) + '</span>' +
             '</button>';
           }).join("") +
+          // add a friend / named person
+          '<button id="nAddPerson" style="appearance:none; cursor:pointer; flex:none; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:none; padding:2px;">' +
+            '<div style="width:46px; height:46px; border-radius:50%; background:rgba(244,247,250,0.04); border:2px dashed rgba(244,247,250,0.22); display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.55)" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>' +
+            '<span style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:rgba(244,247,250,0.5);">add</span>' +
+          '</button>' +
         '</div>';
 
       // ---- body: EQUALLY (evenly) vs CUSTOM (by share) ----
@@ -439,17 +444,12 @@
       [].forEach.call(document.querySelectorAll("[data-mode]"), function (b) {
         b.onclick = function () { st.mode = b.getAttribute("data-mode"); render(); };
       });
-      [].forEach.call(document.querySelectorAll("[data-toggle]"), function (b) {
-        b.onclick = function () {
-          var id = b.getAttribute("data-toggle");
-          var m = memberById(id);
-          var willHave = st.members.filter(function (x) { return x.included; }).length + (m.included ? -1 : 1);
-          if (willHave < 1) return; // keep at least one
-          m.included = !m.included;
-          delete st.custom[id]; // re-balance on membership change
-          render();
-        };
+      // tap a member to rename / pick a friend / remove them
+      [].forEach.call(document.querySelectorAll("[data-edit]"), function (b) {
+        b.onclick = function () { personSheet(memberById(b.getAttribute("data-edit"))); };
       });
+      var addPerson = document.getElementById("nAddPerson");
+      if (addPerson) addPerson.onclick = function () { personSheet(null); };
       [].forEach.call(document.querySelectorAll("[data-custom]"), function (inp) {
         inp.oninput = function () { st.custom[inp.getAttribute("data-custom")] = toCents(inp.value); };
         inp.onblur = function () { render(); };
@@ -474,14 +474,76 @@
       };
       if (plus) plus.onclick = function () {
         if (st.members.length >= 12) return;
-        var i = st.members.length;
-        st.members.push({ id: "p" + (i + 1) + "_" + Date.now(), name: "person " + (i + 1),
-          emoji: EMOJIS[i % EMOJIS.length], bg: BGS[i % BGS.length], included: true });
-        render();
+        personSheet(null); // pick a friend or name them, instead of a generic "person N"
       };
 
       var send = document.getElementById("nSend");
       if (send) send.onclick = doSend;
+    }
+
+    // Add or edit a person on the split: type a name OR pick one of your
+    // friends. (A standalone tab is a share-link bill, so the name is what the
+    // other person sees on their pay link; picking a friend also links them.)
+    function personSheet(member) {
+      var editing = !!member;
+      var html =
+        '<h3 class="lower" style="font-size:18px;margin-bottom:4px;">' + (editing ? "edit person" : "add someone") + '</h3>' +
+        '<div style="font-family:' + F_MONO + ';font-size:10px;letter-spacing:.5px;color:rgba(244,247,250,0.4);margin-bottom:13px;">name them, or pick a friend</div>' +
+        '<input id="psName" type="text" placeholder="name" value="' + (editing && !member.you ? app.esc(member.name) : "") + '" autocomplete="off" ' +
+          'style="width:100%;box-sizing:border-box;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card-2);color:#F4F7FA;font-family:\'General Sans\',sans-serif;font-size:16px;outline:none;" />' +
+        '<div id="psFriends" style="margin-top:12px;"></div>' +
+        '<div style="display:flex;gap:10px;margin-top:18px;">' +
+          (editing && !member.you ? '<button id="psRemove" style="flex:none;appearance:none;cursor:pointer;padding:0 18px;min-height:50px;border-radius:999px;background:transparent;border:1px solid rgba(255,107,94,0.4);color:#FF6B5E;font-family:\'General Sans\',sans-serif;font-weight:500;font-size:15px;">remove</button>' : '') +
+          '<button id="psSave" style="flex:1;appearance:none;border:none;cursor:pointer;min-height:50px;border-radius:999px;background:linear-gradient(120deg,#3286db,#2775CA);color:#fff;font-family:\'Clash Display\',sans-serif;font-weight:600;font-size:16px;">' + (editing ? "save" : "add") + '</button>' +
+        '</div>';
+      var el = app.sheet(html);
+
+      function commit(name, uid, wallet, emoji) {
+        name = (name || "").trim();
+        if (!name) { app.toast("enter a name"); return; }
+        if (editing) {
+          member.name = name;
+          if (uid) member.userId = uid;
+          if (wallet) member.wallet = wallet;
+          if (emoji) member.emoji = emoji;
+        } else {
+          if (st.members.length >= 12) { app.closeSheet(); return; }
+          var i = st.members.length;
+          st.members.push({ id: (uid ? "u_" + uid : "p" + (i + 1) + "_" + Date.now()), name: name,
+            userId: uid || undefined, wallet: wallet || undefined,
+            emoji: emoji || EMOJIS[i % EMOJIS.length], bg: BGS[i % BGS.length], included: true });
+        }
+        app.closeSheet(); render();
+      }
+
+      el.querySelector("#psSave").onclick = function () { commit(el.querySelector("#psName").value, null, null, null); };
+      var rm = el.querySelector("#psRemove");
+      if (rm) rm.onclick = function () {
+        st.members = st.members.filter(function (x) { return x.id !== member.id; });
+        if (st.paidBy === member.id && st.members[0]) st.paidBy = st.members[0].id;
+        delete st.custom[member.id];
+        app.closeSheet(); render();
+      };
+
+      // friends quick-pick (best-effort; hidden if you have none)
+      app.api.get("/api/friends").then(function (r) {
+        var box = el.querySelector("#psFriends");
+        if (!box) return;
+        var have = {}; st.members.forEach(function (m) { if (m.userId) have[m.userId] = 1; });
+        var fs = ((r && r.friends) || []).filter(function (f) { return !have[f.id]; });
+        if (!fs.length) { box.innerHTML = ""; return; }
+        box.innerHTML = '<div style="font-family:' + F_MONO + ';font-size:9px;letter-spacing:1px;color:rgba(244,247,250,0.4);margin:2px 2px 9px;">YOUR FRIENDS</div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;">' +
+          fs.map(function (f) {
+            var nm = f.displayName || f.handle || "friend"; var em = f.emoji || "🙂";
+            return '<button class="psFriend" data-name="' + app.esc(nm) + '" data-uid="' + app.esc(f.id) + '" data-wallet="' + app.esc(f.primaryWallet || "") + '" data-emoji="' + app.esc(em) + '" ' +
+              'style="appearance:none;cursor:pointer;display:flex;align-items:center;gap:7px;padding:7px 13px 7px 9px;border-radius:999px;background:var(--card-2);border:1px solid var(--line);color:#F4F7FA;font-family:\'General Sans\',sans-serif;font-size:14px;">' +
+              '<span style="font-size:17px;">' + app.esc(em) + '</span>' + app.esc(nm) + '</button>';
+          }).join("") + '</div>';
+        [].forEach.call(el.querySelectorAll(".psFriend"), function (b) {
+          b.onclick = function () { commit(b.getAttribute("data-name"), b.getAttribute("data-uid"), b.getAttribute("data-wallet"), b.getAttribute("data-emoji")); };
+        });
+      }).catch(function () {});
     }
 
     function pickEmoji() {
