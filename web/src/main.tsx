@@ -2,10 +2,19 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { EmbeddedPay } from "./EmbeddedPay";
+import { Login } from "./Login";
 
 // Privy app id is injected at build time via VITE_PRIVY_APP_ID. Without it the
 // page renders a clear "not configured" state instead of half-working.
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID as string | undefined;
+
+// /embedded serves two flows off one bundle:
+//   • ?bill=…&name=…  → pay a single bill share (EmbeddedPay)
+//   • otherwise       → onboarding: create a wallet + sign into the app (Login)
+function ActiveFlow() {
+  const hasBill = new URLSearchParams(window.location.search).has("bill");
+  return hasBill ? <EmbeddedPay /> : <Login />;
+}
 
 function Root() {
   if (!PRIVY_APP_ID) {
@@ -33,11 +42,11 @@ function Root() {
         embeddedWallets: {
           solana: { createOnLogin: "users-without-wallets" },
         },
-        loginMethods: ["email", "sms"],
+        loginMethods: ["email", "google", "apple", "sms"],
         appearance: { walletChainType: "solana-only" },
       }}
     >
-      <EmbeddedPay />
+      <ActiveFlow />
     </PrivyProvider>
   );
 }

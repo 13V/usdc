@@ -219,17 +219,19 @@
 
     var c = document.getElementById("hCreate"), n = document.getElementById("hConnect"),
         ap = document.getElementById("hApple"), gg = document.getElementById("hGoogle");
-    if (c) c.onclick = function () { Auth.createWallet().catch(function (e) { app.toast(e.message); }); };
-    if (n) n.onclick = function () { Auth.signInWithWallet().catch(function (e) { app.toast(e.message); }); };
-    // social sign-in is best-effort (Privy); surface a friendly toast if not wired.
-    function social() {
-      try {
-        if (window.Auth && Auth.signInWithPrivy) Auth.signInWithPrivy().catch(function (e) { app.toast(e.message); });
-        else app.toast("email sign-in isn't ready yet — create a wallet instead");
-      } catch (e) { app.toast("couldn't start sign-in — create a wallet instead"); }
+    // Onboarding goes through the Privy embedded-wallet flow at /embedded: log in
+    // with email/social, get an auto-provisioned Solana wallet, and come back
+    // signed in (the flow stashes the session token in shared localStorage).
+    function privyOnboard(method) {
+      var ret = encodeURIComponent("/#/home");
+      window.location.href =
+        "/embedded/?return=" + ret + (method ? "&method=" + method : "");
     }
-    if (ap) ap.onclick = social;
-    if (gg) gg.onclick = social;
+    if (c) c.onclick = function () { privyOnboard(); };
+    if (ap) ap.onclick = function () { privyOnboard("apple"); };
+    if (gg) gg.onclick = function () { privyOnboard("google"); };
+    // "i already have one" → connect an injected wallet (Phantom) via SIWS.
+    if (n) n.onclick = function () { Auth.signInWithWallet().catch(function (e) { app.toast(e.message); }); };
   }
 
   async function signedIn(view) {
