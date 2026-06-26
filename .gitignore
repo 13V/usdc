@@ -17,3 +17,4 @@ divvy.db-wal
 
 # Landing page (deployed to GitHub Pages) — keep its assets despite *.png above.
 !site/**
+_itest.js

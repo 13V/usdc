@@ -17,6 +17,7 @@ import * as crypto from "crypto";
 import { Router, Request, Response } from "express";
 
 import { db } from "./db";
+import { usingSupabase, supabase } from "./supabase";
 import { requireAuth } from "./auth";
 import { getTrip, addExpense } from "./trips";
 import { toCents, fmt } from "./split";
@@ -107,8 +108,33 @@ interface RecurringRow {
   paused: number;
 }
 
-function serialize(row: RecurringRow): Record<string, unknown> {
-  const trip = getTrip(row.trip_id);
+/**
+ * Normalize a row coming from either backend into the in-memory RecurringRow
+ * shape the rest of this module expects. The only field that differs is
+ * `participants`: SQLite stores it as a JSON string, Supabase as a JSONB array.
+ */
+function mapRow(raw: Record<string, unknown>): RecurringRow {
+  return {
+    id: String(raw.id),
+    owner_user_id: (raw.owner_user_id as string | null) ?? null,
+    trip_id: String(raw.trip_id),
+    title: String(raw.title),
+    amount_cents: Number(raw.amount_cents),
+    paid_by: String(raw.paid_by),
+    participants:
+      typeof raw.participants === "string"
+        ? raw.participants
+        : JSON.stringify(raw.participants ?? []),
+    interval: String(raw.interval),
+    next_due: String(raw.next_due),
+    created_at: String(raw.created_at),
+    active: Number(raw.active),
+    paused: Number(raw.paused),
+  };
+}
+
+async function serialize(row: RecurringRow): Promise<Record<string, unknown>> {
+  const trip = await getTrip(row.trip_id);
   return {
     id: row.id,
     tripId: row.trip_id,
@@ -125,6 +151,196 @@ function serialize(row: RecurringRow): Record<string, unknown> {
   };
 }
 
+// ---- Data access (dual backend) --------------------------------------------
+
+/** Fetch one rule by id (regardless of owner/active). */
+async function getRule(id: string): Promise<RecurringRow | undefined> {
+  if (usingSupabase) {
+    const { data, error } = await supabase().from("recurring").select("*").eq("id", id).maybeSingle();
+    if (error) throw new Error(`recurring.getRule: ${error.message}`);
+    return data ? mapRow(data) : undefined;
+  }
+  const row = db.prepare("SELECT * FROM recurring WHERE id = ?").get(id) as RecurringRow | undefined;
+  return row;
+}
+
+/** Fetch one ACTIVE rule owned by `userId`, by id. */
+async function getOwnedActiveRule(id: string, userId: string): Promise<RecurringRow | undefined> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("recurring")
+      .select("*")
+      .eq("id", id)
+      .eq("owner_user_id", userId)
+      .eq("active", 1)
+      .maybeSingle();
+    if (error) throw new Error(`recurring.getOwnedActiveRule: ${error.message}`);
+    return data ? mapRow(data) : undefined;
+  }
+  const row = db
+    .prepare("SELECT * FROM recurring WHERE id = ? AND owner_user_id = ? AND active = 1")
+    .get(id, userId) as RecurringRow | undefined;
+  return row;
+}
+
+/** Insert a new rule row. */
+async function insertRule(row: {
+  id: string;
+  owner_user_id: string;
+  trip_id: string;
+  title: string;
+  amount_cents: number;
+  paid_by: string;
+  participants: string[];
+  interval: string;
+  next_due: string;
+  created_at: string;
+}): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("recurring")
+      .insert({
+        id: row.id,
+        owner_user_id: row.owner_user_id,
+        trip_id: row.trip_id,
+        title: row.title,
+        amount_cents: row.amount_cents,
+        paid_by: row.paid_by,
+        participants: row.participants, // JSONB: pass the array directly
+        interval: row.interval,
+        next_due: row.next_due,
+        created_at: row.created_at,
+        active: 1,
+        paused: 0,
+      });
+    if (error) throw new Error(`recurring.insertRule: ${error.message}`);
+    return;
+  }
+  db.prepare(
+    `INSERT INTO recurring
+       (id, owner_user_id, trip_id, title, amount_cents, paid_by, participants, interval, next_due, created_at, active)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
+  ).run(
+    row.id,
+    row.owner_user_id,
+    row.trip_id,
+    row.title,
+    row.amount_cents,
+    row.paid_by,
+    JSON.stringify(row.participants),
+    row.interval,
+    row.next_due,
+    row.created_at
+  );
+}
+
+/** List a user's active rules, newest first. */
+async function listActiveRulesByOwner(userId: string): Promise<RecurringRow[]> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("recurring")
+      .select("*")
+      .eq("active", 1)
+      .eq("owner_user_id", userId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(`recurring.listActiveRulesByOwner: ${error.message}`);
+    return (data ?? []).map(mapRow);
+  }
+  const rows = db
+    .prepare("SELECT * FROM recurring WHERE active = 1 AND owner_user_id = ? ORDER BY created_at DESC")
+    .all(userId) as RecurringRow[];
+  return rows;
+}
+
+/** List rules eligible for materialization (active, not paused), optionally for one owner. */
+async function listDueCandidates(ownerUserId?: string): Promise<RecurringRow[]> {
+  if (usingSupabase) {
+    let q = supabase().from("recurring").select("*").eq("active", 1).eq("paused", 0);
+    if (ownerUserId) q = q.eq("owner_user_id", ownerUserId);
+    const { data, error } = await q;
+    if (error) throw new Error(`recurring.listDueCandidates: ${error.message}`);
+    return (data ?? []).map(mapRow);
+  }
+  const rows = (
+    ownerUserId
+      ? db
+          .prepare("SELECT * FROM recurring WHERE active = 1 AND paused = 0 AND owner_user_id = ?")
+          .all(ownerUserId)
+      : db.prepare("SELECT * FROM recurring WHERE active = 1 AND paused = 0").all()
+  ) as RecurringRow[];
+  return rows;
+}
+
+/** Set next_due on one rule. */
+async function setNextDue(id: string, nextDue: string): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase().from("recurring").update({ next_due: nextDue }).eq("id", id);
+    if (error) throw new Error(`recurring.setNextDue: ${error.message}`);
+    return;
+  }
+  db.prepare("UPDATE recurring SET next_due = ? WHERE id = ?").run(nextDue, id);
+}
+
+/** Soft-delete (deactivate) one rule, unconditionally. */
+async function deactivateRule(id: string): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase().from("recurring").update({ active: 0 }).eq("id", id);
+    if (error) throw new Error(`recurring.deactivateRule: ${error.message}`);
+    return;
+  }
+  db.prepare("UPDATE recurring SET active = 0 WHERE id = ?").run(id);
+}
+
+/** Soft-delete one ACTIVE rule owned by `userId`. Returns true iff a row changed. */
+async function deleteOwnedRule(id: string, userId: string): Promise<boolean> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("recurring")
+      .update({ active: 0 })
+      .eq("id", id)
+      .eq("owner_user_id", userId)
+      .eq("active", 1)
+      .select("id");
+    if (error) throw new Error(`recurring.deleteOwnedRule: ${error.message}`);
+    return (data ?? []).length > 0;
+  }
+  const info = db
+    .prepare("UPDATE recurring SET active = 0 WHERE id = ? AND owner_user_id = ? AND active = 1")
+    .run(id, userId);
+  return info.changes > 0;
+}
+
+/**
+ * Apply a dynamic field update to a rule, then return the fresh row.
+ * `fields` keys are snake_case column names; `participants`, if present, is a
+ * JS array (this layer handles the per-backend serialization).
+ */
+async function updateRuleFields(id: string, fields: Record<string, unknown>): Promise<RecurringRow> {
+  if (usingSupabase) {
+    const obj: Record<string, unknown> = { ...fields };
+    // JSONB: keep the array as-is for Supabase.
+    const { error } = await supabase().from("recurring").update(obj).eq("id", id);
+    if (error) throw new Error(`recurring.updateRuleFields: ${error.message}`);
+    const { data, error: selErr } = await supabase()
+      .from("recurring")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (selErr) throw new Error(`recurring.updateRuleFields(select): ${selErr.message}`);
+    return mapRow(data as Record<string, unknown>);
+  }
+  const sets: string[] = [];
+  const vals: unknown[] = [];
+  for (const [col, value] of Object.entries(fields)) {
+    sets.push(`${col} = ?`);
+    // SQLite: participants column stores a JSON string.
+    vals.push(col === "participants" ? JSON.stringify(value) : value);
+  }
+  vals.push(id);
+  db.prepare(`UPDATE recurring SET ${sets.join(", ")} WHERE id = ?`).run(...(vals as any[]));
+  return db.prepare("SELECT * FROM recurring WHERE id = ?").get(id) as RecurringRow;
+}
+
 // ---- Materialize -----------------------------------------------------------
 
 const MAX_CATCHUP = 12; // cap catch-up iterations per rule per pass
@@ -136,18 +352,9 @@ const MAX_CATCHUP = 12; // cap catch-up iterations per rule per pass
  * its trip was deleted) can't break the others — such rules are deactivated.
  * Returns the number of expenses materialized.
  */
-export function materializeDue(ownerUserId?: string): number {
+export async function materializeDue(ownerUserId?: string): Promise<number> {
   const now = Date.now();
-  const rows = (
-    ownerUserId
-      ? db
-          .prepare("SELECT * FROM recurring WHERE active = 1 AND paused = 0 AND owner_user_id = ?")
-          .all(ownerUserId)
-      : db.prepare("SELECT * FROM recurring WHERE active = 1 AND paused = 0").all()
-  ) as RecurringRow[];
-
-  const setDue = db.prepare("UPDATE recurring SET next_due = ? WHERE id = ?");
-  const deactivate = db.prepare("UPDATE recurring SET active = 0 WHERE id = ?");
+  const rows = await listDueCandidates(ownerUserId);
 
   let materialized = 0;
 
@@ -156,14 +363,14 @@ export function materializeDue(ownerUserId?: string): number {
       let nextDue = row.next_due;
       let iterations = 0;
       while (new Date(nextDue).getTime() <= now && iterations < MAX_CATCHUP) {
-        addExpense(row.trip_id, {
+        await addExpense(row.trip_id, {
           title: row.title,
           amountCents: row.amount_cents,
           paidBy: row.paid_by,
           participants: JSON.parse(row.participants),
         });
         nextDue = advanceDue(nextDue, row.interval);
-        setDue.run(nextDue, row.id);
+        await setNextDue(row.id, nextDue);
         materialized += 1;
         iterations += 1;
       }
@@ -171,7 +378,7 @@ export function materializeDue(ownerUserId?: string): number {
       // A rule whose trip/members vanished can never succeed — retire it so it
       // stops blocking and stops being retried every pass.
       try {
-        deactivate.run(row.id);
+        await deactivateRule(row.id);
       } catch {
         /* best effort */
       }
@@ -188,12 +395,12 @@ export const recurringRouter = Router();
 // Per-route requireAuth ONLY. This router is mounted path-lessly
 // (app.use(recurringRouter)); a router-wide guard would gate the whole app.
 
-recurringRouter.post("/api/recurring", requireAuth, (req: Request, res: Response) => {
+recurringRouter.post("/api/recurring", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const body = req.body || {};
 
   const tripId = String(body.tripId || "");
-  const trip = getTrip(tripId);
+  const trip = await getTrip(tripId);
   if (!trip) {
     res.status(404).json({ error: "trip not found" });
     return;
@@ -280,47 +487,39 @@ recurringRouter.post("/api/recurring", requireAuth, (req: Request, res: Response
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
 
-  db.prepare(
-    `INSERT INTO recurring
-       (id, owner_user_id, trip_id, title, amount_cents, paid_by, participants, interval, next_due, created_at, active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
-  ).run(
+  await insertRule({
     id,
-    userId,
-    tripId,
+    owner_user_id: userId,
+    trip_id: tripId,
     title,
-    amountCents,
-    paidBy,
-    JSON.stringify(participants),
+    amount_cents: amountCents,
+    paid_by: paidBy,
+    participants,
     interval,
-    nextDue,
-    createdAt
-  );
+    next_due: nextDue,
+    created_at: createdAt,
+  });
 
-  const row = db.prepare("SELECT * FROM recurring WHERE id = ?").get(id) as RecurringRow;
-  res.json(serialize(row));
+  const row = (await getRule(id)) as RecurringRow;
+  res.json(await serialize(row));
 });
 
-recurringRouter.get("/api/recurring", requireAuth, (req: Request, res: Response) => {
+recurringRouter.get("/api/recurring", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   // Lazy materialize first so the returned rules reflect due expenses.
   try {
-    materializeDue(userId);
+    await materializeDue(userId);
   } catch {
     /* never let materialization break the read */
   }
-  const rows = db
-    .prepare("SELECT * FROM recurring WHERE active = 1 AND owner_user_id = ? ORDER BY created_at DESC")
-    .all(userId) as RecurringRow[];
-  res.json({ rules: rows.map(serialize) });
+  const rows = await listActiveRulesByOwner(userId);
+  res.json({ rules: await Promise.all(rows.map(serialize)) });
 });
 
-recurringRouter.delete("/api/recurring/:id", requireAuth, (req: Request, res: Response) => {
+recurringRouter.delete("/api/recurring/:id", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
-  const info = db
-    .prepare("UPDATE recurring SET active = 0 WHERE id = ? AND owner_user_id = ? AND active = 1")
-    .run(req.params.id, userId);
-  if (info.changes === 0) {
+  const changed = await deleteOwnedRule(req.params.id, userId);
+  if (!changed) {
     res.status(404).json({ error: "rule not found" });
     return;
   }
@@ -336,22 +535,21 @@ recurringRouter.delete("/api/recurring/:id", requireAuth, (req: Request, res: Re
  * Paused rules stay listed but are skipped by the materializer; on resume we roll
  * next_due past now so a long pause doesn't dump a backlog.
  */
-recurringRouter.patch("/api/recurring/:id", requireAuth, (req: Request, res: Response) => {
+recurringRouter.patch("/api/recurring/:id", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const body = (req.body || {}) as {
     paused?: unknown; title?: unknown; amountCents?: unknown;
     paidBy?: unknown; participants?: unknown; interval?: unknown; startDate?: unknown;
   };
-  const row = db
-    .prepare("SELECT * FROM recurring WHERE id = ? AND owner_user_id = ? AND active = 1")
-    .get(req.params.id, userId) as RecurringRow | undefined;
+  const row = await getOwnedActiveRule(req.params.id, userId);
   if (!row) {
     res.status(404).json({ error: "rule not found" });
     return;
   }
 
-  const sets: string[] = [];
-  const vals: unknown[] = [];
+  // Build a dynamic field update as a plain object keyed by snake_case column.
+  // `participants`, if set, is a JS array; the data layer serializes per backend.
+  const updates: Record<string, unknown> = {};
 
   // pause / resume
   if (body.paused !== undefined) {
@@ -369,8 +567,8 @@ recurringRouter.patch("/api/recurring/:id", requireAuth, (req: Request, res: Res
         }
       } catch { /* leave as-is */ }
     }
-    sets.push("paused = ?"); vals.push(body.paused ? 1 : 0);
-    sets.push("next_due = ?"); vals.push(nextDue);
+    updates.paused = body.paused ? 1 : 0;
+    updates.next_due = nextDue;
   }
 
   // field edits
@@ -378,13 +576,13 @@ recurringRouter.patch("/api/recurring/:id", requireAuth, (req: Request, res: Res
     body.title !== undefined || body.amountCents !== undefined || body.paidBy !== undefined ||
     body.participants !== undefined || body.interval !== undefined || body.startDate !== undefined;
   if (editing) {
-    const trip = getTrip(row.trip_id);
+    const trip = await getTrip(row.trip_id);
     const memberIds = new Set(trip ? trip.members.map((m) => m.id) : []);
 
     if (body.title !== undefined) {
       const t = String(body.title).trim();
       if (!t) { res.status(400).json({ error: "title required" }); return; }
-      sets.push("title = ?"); vals.push(t);
+      updates.title = t;
     }
     if (body.amountCents !== undefined) {
       const a = Number(body.amountCents);
@@ -392,14 +590,14 @@ recurringRouter.patch("/api/recurring/:id", requireAuth, (req: Request, res: Res
         res.status(400).json({ error: "amountCents must be an integer between 1 and 100000000" });
         return;
       }
-      sets.push("amount_cents = ?"); vals.push(a);
+      updates.amount_cents = a;
     }
     if (body.interval !== undefined) {
       if (!isValidInterval(body.interval)) {
         res.status(400).json({ error: 'interval must be "weekly", "monthly", "yearly", or "<n>d"' });
         return;
       }
-      sets.push("interval = ?"); vals.push(body.interval);
+      updates.interval = body.interval;
     }
     if (body.participants !== undefined) {
       if (!Array.isArray(body.participants) || body.participants.length === 0) {
@@ -412,34 +610,32 @@ recurringRouter.patch("/api/recurring/:id", requireAuth, (req: Request, res: Res
           if (!memberIds.has(p)) { res.status(400).json({ error: `participant ${p} is not a trip member` }); return; }
         }
       }
-      sets.push("participants = ?"); vals.push(JSON.stringify(ps));
+      updates.participants = ps;
     }
     if (body.paidBy !== undefined) {
       const pb = String(body.paidBy);
       if (trip && !memberIds.has(pb)) { res.status(400).json({ error: "paidBy must be a trip member" }); return; }
-      sets.push("paid_by = ?"); vals.push(pb);
+      updates.paid_by = pb;
     }
     if (body.startDate !== undefined) {
       const dt = new Date(String(body.startDate));
       if (Number.isNaN(dt.getTime())) { res.status(400).json({ error: "startDate is not a valid date" }); return; }
-      sets.push("next_due = ?"); vals.push(dt.toISOString());
+      updates.next_due = dt.toISOString();
     }
   }
 
-  if (!sets.length) {
+  if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: "nothing to update" });
     return;
   }
 
-  vals.push(row.id);
-  db.prepare(`UPDATE recurring SET ${sets.join(", ")} WHERE id = ?`).run(...(vals as any[]));
-  const updated = db.prepare("SELECT * FROM recurring WHERE id = ?").get(row.id) as RecurringRow;
-  res.json(serialize(updated));
+  const updated = await updateRuleFields(row.id, updates);
+  res.json(await serialize(updated));
 });
 
-recurringRouter.post("/api/recurring/run", requireAuth, (req: Request, res: Response) => {
+recurringRouter.post("/api/recurring/run", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
-  const materialized = materializeDue(userId);
+  const materialized = await materializeDue(userId);
   res.json({ materialized });
 });
 
@@ -447,10 +643,12 @@ recurringRouter.post("/api/recurring/run", requireAuth, (req: Request, res: Resp
 // Lazy materialize on GET covers the common case; this catches rules whose
 // owners are inactive. unref() so it never holds the process open.
 const timer = setInterval(() => {
-  try {
-    materializeDue();
-  } catch {
-    /* ignore */
-  }
+  void (async () => {
+    try {
+      await materializeDue();
+    } catch {
+      /* ignore */
+    }
+  })();
 }, 60000);
 timer.unref?.();

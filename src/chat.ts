@@ -17,6 +17,7 @@
 import * as crypto from "crypto";
 import { Request, Response, Router } from "express";
 import { db } from "./db";
+import { usingSupabase, supabase } from "./supabase";
 import { getTrip, isTripAuthorized, Trip } from "./trips";
 import { getUser, serializeUser } from "./users";
 
@@ -117,10 +118,10 @@ function authorizeTripChat(req: Request, trip: Trip): boolean {
  * Resolve a human-readable author label for a signed-in user: their display
  * name, else handle, else a shortened wallet, else a stable fallback.
  */
-function authorLabelForUser(userId: string): string {
-  const user = getUser(userId);
+async function authorLabelForUser(userId: string): Promise<string> {
+  const user = await getUser(userId);
   if (!user) return "Member";
-  const s = serializeUser(user);
+  const s = await serializeUser(user);
   if (s.displayName) return s.displayName;
   if (s.handle) return s.handle;
   const wallet = s.primaryWallet || (s.wallets.length ? s.wallets[0] : null);
@@ -129,6 +130,142 @@ function authorLabelForUser(userId: string): string {
   }
   if (wallet) return wallet;
   return "Member";
+}
+
+// ---- Data access (SQLite or Supabase) --------------------------------------
+
+interface MessageRow {
+  id: string;
+  trip_id: string;
+  user_id: string | null;
+  author: string;
+  text: string | null;
+  image: string | null;
+  created_at: string;
+  reactions: string | null;
+}
+
+/**
+ * Insert a new message row. Returns nothing — callers already hold the values
+ * they need for the response (so no read-back is required).
+ */
+async function insertMessage(row: {
+  id: string;
+  trip_id: string;
+  user_id: string | null;
+  author: string;
+  text: string | null;
+  image: string | null;
+  created_at: string;
+}): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase().from("trip_messages").insert({
+      id: row.id,
+      trip_id: row.trip_id,
+      user_id: row.user_id,
+      author: row.author,
+      text: row.text,
+      image: row.image,
+      created_at: row.created_at,
+    });
+    if (error) throw new Error(`chat.insertMessage: ${error.message}`);
+    return;
+  }
+  db.prepare(
+    "INSERT INTO trip_messages (id, trip_id, user_id, author, text, image, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+  ).run(row.id, row.trip_id, row.user_id, row.author, row.text, row.image, row.created_at);
+}
+
+/**
+ * List a trip's messages ascending by time, capped at PAGE_CAP. When `after`
+ * is supplied, only messages strictly newer than that ISO timestamp.
+ */
+async function listMessages(
+  tripId: string,
+  after: string | null
+): Promise<MessageRow[]> {
+  if (usingSupabase) {
+    let q = supabase()
+      .from("trip_messages")
+      .select("*")
+      .eq("trip_id", tripId);
+    if (after) q = q.gt("created_at", after);
+    const { data, error } = await q
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(PAGE_CAP);
+    if (error) throw new Error(`chat.listMessages: ${error.message}`);
+    return (data || []) as MessageRow[];
+  }
+  if (after) {
+    return db
+      .prepare(
+        "SELECT * FROM trip_messages WHERE trip_id = ? AND created_at > ? ORDER BY created_at ASC, rowid ASC LIMIT ?"
+      )
+      .all(tripId, after, PAGE_CAP) as MessageRow[];
+  }
+  return db
+    .prepare(
+      "SELECT * FROM trip_messages WHERE trip_id = ? ORDER BY created_at ASC, rowid ASC LIMIT ?"
+    )
+    .all(tripId, PAGE_CAP) as MessageRow[];
+}
+
+/** Fetch a single message scoped to its trip, or null. */
+async function getMessage(
+  mid: string,
+  tripId: string
+): Promise<MessageRow | null> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("trip_messages")
+      .select("*")
+      .eq("id", mid)
+      .eq("trip_id", tripId)
+      .maybeSingle();
+    if (error) throw new Error(`chat.getMessage: ${error.message}`);
+    return (data as MessageRow) ?? null;
+  }
+  const row = db
+    .prepare("SELECT * FROM trip_messages WHERE id = ? AND trip_id = ?")
+    .get(mid, tripId) as MessageRow | undefined;
+  return row ?? null;
+}
+
+/** Persist the reactions JSON for a message. */
+async function updateReactions(
+  mid: string,
+  tripId: string,
+  reactionsJson: string
+): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("trip_messages")
+      .update({ reactions: reactionsJson })
+      .eq("id", mid)
+      .eq("trip_id", tripId);
+    if (error) throw new Error(`chat.updateReactions: ${error.message}`);
+    return;
+  }
+  db.prepare("UPDATE trip_messages SET reactions = ? WHERE id = ? AND trip_id = ?")
+    .run(reactionsJson, mid, tripId);
+}
+
+/** Delete a message scoped to its trip. */
+async function deleteMessage(mid: string, tripId: string): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("trip_messages")
+      .delete()
+      .eq("id", mid)
+      .eq("trip_id", tripId);
+    if (error) throw new Error(`chat.deleteMessage: ${error.message}`);
+    return;
+  }
+  db.prepare("DELETE FROM trip_messages WHERE id = ? AND trip_id = ?").run(
+    mid,
+    tripId
+  );
 }
 
 // ---- Router ----------------------------------------------------------------
@@ -141,8 +278,8 @@ export const chatRouter = Router();
  */
 chatRouter.post(
   "/api/trips/:id/messages",
-  (req: Request, res: Response): void => {
-    const trip = getTrip(req.params.id);
+  async (req: Request, res: Response): Promise<void> => {
+    const trip = await getTrip(req.params.id);
     if (!trip) {
       res.status(404).json({ error: "trip not found" });
       return;
@@ -194,15 +331,21 @@ chatRouter.post(
       return;
     }
 
-    const author = req.userId ? authorLabelForUser(req.userId) : "Guest";
+    const author = req.userId ? await authorLabelForUser(req.userId) : "Guest";
     const userId = req.userId || null;
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
 
     try {
-      db.prepare(
-        "INSERT INTO trip_messages (id, trip_id, user_id, author, text, image, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-      ).run(id, trip.id, userId, author, hasText ? text : null, image, createdAt);
+      await insertMessage({
+        id,
+        trip_id: trip.id,
+        user_id: userId,
+        author,
+        text: hasText ? text : null,
+        image,
+        created_at: createdAt,
+      });
     } catch {
       res.status(500).json({ error: "could not save message" });
       return;
@@ -226,8 +369,8 @@ chatRouter.post(
  */
 chatRouter.get(
   "/api/trips/:id/messages",
-  (req: Request, res: Response): void => {
-    const trip = getTrip(req.params.id);
+  async (req: Request, res: Response): Promise<void> => {
+    const trip = await getTrip(req.params.id);
     if (!trip) {
       res.status(404).json({ error: "trip not found" });
       return;
@@ -241,20 +384,7 @@ chatRouter.get(
     const after =
       typeof afterRaw === "string" && afterRaw.length > 0 ? afterRaw : null;
 
-    let rows: any[];
-    if (after) {
-      rows = db
-        .prepare(
-          "SELECT * FROM trip_messages WHERE trip_id = ? AND created_at > ? ORDER BY created_at ASC, rowid ASC LIMIT ?"
-        )
-        .all(trip.id, after, PAGE_CAP);
-    } else {
-      rows = db
-        .prepare(
-          "SELECT * FROM trip_messages WHERE trip_id = ? ORDER BY created_at ASC, rowid ASC LIMIT ?"
-        )
-        .all(trip.id, PAGE_CAP);
-    }
+    const rows = await listMessages(trip.id, after);
 
     res.json({ messages: rows.map((r) => hydrateMessage(r, req.userId || null)) });
   }
@@ -266,17 +396,15 @@ chatRouter.get(
  */
 chatRouter.post(
   "/api/trips/:id/messages/:mid/react",
-  (req: Request, res: Response): void => {
-    const trip = getTrip(req.params.id);
+  async (req: Request, res: Response): Promise<void> => {
+    const trip = await getTrip(req.params.id);
     if (!trip) { res.status(404).json({ error: "trip not found" }); return; }
     if (!authorizeTripChat(req, trip)) { res.status(403).json({ error: "not authorized for this trip" }); return; }
     if (!req.userId) { res.status(401).json({ error: "sign in to react" }); return; }
     const emoji = String((req.body && req.body.emoji) || "").slice(0, 8);
     if (!emoji) { res.status(400).json({ error: "emoji required" }); return; }
 
-    const row: any = db
-      .prepare("SELECT * FROM trip_messages WHERE id = ? AND trip_id = ?")
-      .get(req.params.mid, trip.id);
+    const row = await getMessage(req.params.mid, trip.id);
     if (!row) { res.status(404).json({ error: "message not found" }); return; }
 
     const map = parseReactions(row.reactions);
@@ -284,8 +412,7 @@ chatRouter.post(
     const i = list.indexOf(req.userId);
     if (i >= 0) list.splice(i, 1); else list.push(req.userId);
     if (list.length) map[emoji] = list; else delete map[emoji];
-    db.prepare("UPDATE trip_messages SET reactions = ? WHERE id = ? AND trip_id = ?")
-      .run(JSON.stringify(map), row.id, trip.id);
+    await updateReactions(row.id, trip.id, JSON.stringify(map));
 
     res.json(hydrateMessage({ ...row, reactions: JSON.stringify(map) }, req.userId));
   }
@@ -297,8 +424,8 @@ chatRouter.post(
  */
 chatRouter.delete(
   "/api/trips/:id/messages/:mid",
-  (req: Request, res: Response): void => {
-    const trip = getTrip(req.params.id);
+  async (req: Request, res: Response): Promise<void> => {
+    const trip = await getTrip(req.params.id);
     if (!trip) {
       res.status(404).json({ error: "trip not found" });
       return;
@@ -308,9 +435,7 @@ chatRouter.delete(
       return;
     }
 
-    const row: any = db
-      .prepare("SELECT * FROM trip_messages WHERE id = ? AND trip_id = ?")
-      .get(req.params.mid, trip.id);
+    const row = await getMessage(req.params.mid, trip.id);
     if (!row) {
       res.status(404).json({ error: "message not found" });
       return;
@@ -325,10 +450,7 @@ chatRouter.delete(
       return;
     }
 
-    db.prepare("DELETE FROM trip_messages WHERE id = ? AND trip_id = ?").run(
-      req.params.mid,
-      trip.id
-    );
+    await deleteMessage(req.params.mid, trip.id);
     res.json({ ok: true });
   }
 );

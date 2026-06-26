@@ -11,6 +11,7 @@
 
 import * as crypto from "crypto";
 import { db } from "./db";
+import { usingSupabase, supabase } from "./supabase";
 import { Cluster } from "./solanaPay";
 import { Transfer } from "./ledger";
 
@@ -144,29 +145,27 @@ function hydrateMember(row: any): TripMember {
   };
 }
 
+// JSON columns are TEXT in SQLite (string → JSON.parse) but jsonb in Supabase
+// (already-parsed object/array). Tolerate both.
+function asJson<T>(v: unknown, fallback: T): T {
+  if (v == null) return fallback;
+  return typeof v === "string" ? (JSON.parse(v) as T) : (v as T);
+}
+
 function hydrateExpense(row: any): TripExpense {
   return {
     id: row.id,
     title: row.title,
-    amountCents: row.amount_cents,
+    amountCents: Number(row.amount_cents),
     paidBy: row.paid_by,
-    participants: JSON.parse(row.participants),
-    fx: row.fx ? JSON.parse(row.fx) : undefined,
+    participants: asJson<string[]>(row.participants, []),
+    fx: row.fx == null ? undefined : asJson<any>(row.fx, undefined),
     createdAt: row.created_at,
   };
 }
 
-function hydrateTrip(row: any): Trip {
-  const members = db
-    .prepare("SELECT * FROM trip_members WHERE trip_id = ? ORDER BY rowid ASC")
-    .all(row.id)
-    .map(hydrateMember);
-  const expenses = db
-    .prepare(
-      "SELECT * FROM expenses WHERE trip_id = ? AND COALESCE(voided, 0) = 0 ORDER BY created_at ASC, rowid ASC"
-    )
-    .all(row.id)
-    .map(hydrateExpense);
+/** Assemble a Trip from its own row plus already-hydrated members/expenses. */
+function buildTrip(row: any, members: TripMember[], expenses: TripExpense[]): Trip {
   return {
     id: row.id,
     name: row.name,
@@ -179,14 +178,76 @@ function hydrateTrip(row: any): Trip {
   };
 }
 
+async function hydrateTrip(row: any): Promise<Trip> {
+  if (usingSupabase) {
+    const sb = supabase();
+    const [mRes, eRes] = await Promise.all([
+      sb.from("trip_members").select("*").eq("trip_id", row.id).order("id", { ascending: true }),
+      sb
+        .from("expenses")
+        .select("*")
+        .eq("trip_id", row.id)
+        .eq("voided", 0)
+        .order("created_at", { ascending: true }),
+    ]);
+    if (mRes.error) throw new Error(`trips.hydrate.members: ${mRes.error.message}`);
+    if (eRes.error) throw new Error(`trips.hydrate.expenses: ${eRes.error.message}`);
+    return buildTrip(row, (mRes.data || []).map(hydrateMember), (eRes.data || []).map(hydrateExpense));
+  }
+  const members = db
+    .prepare("SELECT * FROM trip_members WHERE trip_id = ? ORDER BY rowid ASC")
+    .all(row.id)
+    .map(hydrateMember);
+  const expenses = db
+    .prepare(
+      "SELECT * FROM expenses WHERE trip_id = ? AND COALESCE(voided, 0) = 0 ORDER BY created_at ASC, rowid ASC"
+    )
+    .all(row.id)
+    .map(hydrateExpense);
+  return buildTrip(row, members, expenses);
+}
+
+/**
+ * Hydrate many trips without an N+1 storm: one members query + one expenses
+ * query across all trip ids, grouped in memory. (SQLite path hydrates per-row —
+ * its synchronous prepared statements are already cheap.)
+ */
+async function hydrateTrips(rows: any[]): Promise<Trip[]> {
+  if (!usingSupabase) return Promise.all(rows.map(hydrateTrip));
+  if (!rows.length) return [];
+  const ids = rows.map((r) => r.id);
+  const sb = supabase();
+  const [mRes, eRes] = await Promise.all([
+    sb.from("trip_members").select("*").in("trip_id", ids).order("id", { ascending: true }),
+    sb
+      .from("expenses")
+      .select("*")
+      .in("trip_id", ids)
+      .eq("voided", 0)
+      .order("created_at", { ascending: true }),
+  ]);
+  if (mRes.error) throw new Error(`trips.hydrate.members: ${mRes.error.message}`);
+  if (eRes.error) throw new Error(`trips.hydrate.expenses: ${eRes.error.message}`);
+  const byTrip = <T extends { trip_id: string }>(arr: T[]) => {
+    const m = new Map<string, T[]>();
+    for (const x of arr) (m.get(x.trip_id) || m.set(x.trip_id, []).get(x.trip_id)!).push(x);
+    return m;
+  };
+  const mMap = byTrip((mRes.data || []) as any[]);
+  const eMap = byTrip((eRes.data || []) as any[]);
+  return rows.map((row) =>
+    buildTrip(row, (mMap.get(row.id) || []).map(hydrateMember), (eMap.get(row.id) || []).map(hydrateExpense))
+  );
+}
+
 // ---- CRUD ------------------------------------------------------------------
 
-export function createTrip(
+export async function createTrip(
   name: string,
   cluster: Cluster,
   members: { name: string; wallet?: string; userId?: string }[],
   ownerUserId?: string
-): Trip {
+): Promise<Trip> {
   const trimmedName = String(name || "").trim();
   if (!trimmedName) throw new Error("createTrip: need a name");
   const cleanMembers = (members || [])
@@ -197,6 +258,29 @@ export function createTrip(
   const id = crypto.randomUUID();
   const shareToken = crypto.randomBytes(8).toString("hex");
   const createdAt = new Date().toISOString();
+
+  if (usingSupabase) {
+    const sb = supabase();
+    const ins = await sb.from("trips").insert({
+      id,
+      name: trimmedName,
+      share_token: shareToken,
+      cluster,
+      created_at: createdAt,
+      owner_user_id: ownerUserId ?? null,
+    });
+    if (ins.error) throw new Error(`createTrip: ${ins.error.message}`);
+    const memberRows = cleanMembers.map((m) => ({
+      id: crypto.randomUUID(),
+      trip_id: id,
+      name: m.name,
+      wallet: m.wallet ?? null,
+      user_id: m.userId ?? null,
+    }));
+    const mins = await sb.from("trip_members").insert(memberRows);
+    if (mins.error) throw new Error(`createTrip.members: ${mins.error.message}`);
+    return (await getTrip(id)) as Trip;
+  }
 
   const insertTrip = db.prepare(
     "INSERT INTO trips (id, name, share_token, cluster, created_at, owner_user_id) VALUES (?, ?, ?, ?, ?, ?)"
@@ -216,7 +300,7 @@ export function createTrip(
   });
   tx();
 
-  return getTrip(id) as Trip;
+  return (await getTrip(id)) as Trip;
 }
 
 /**
@@ -228,27 +312,62 @@ export function createTrip(
  * redirect their payout. Re-claiming your own slot (e.g. to refresh the wallet)
  * is allowed.
  */
-export function claimMember(
+export async function claimMember(
   tripId: string,
   memberId: string,
   userId: string,
   wallet: string
-): Trip {
-  const trip = getTrip(tripId);
+): Promise<Trip> {
+  const trip = await getTrip(tripId);
   if (!trip) throw new Error("claimMember: trip not found");
   const member = trip.members.find((m) => m.id === memberId);
   if (!member) throw new Error("claimMember: member not found");
   if (member.userId && member.userId !== userId) {
     throw new Error("claimMember: this member is already claimed");
   }
-  db.prepare(
-    "UPDATE trip_members SET user_id = ?, wallet = ? WHERE id = ? AND trip_id = ?"
-  ).run(userId, wallet, memberId, tripId);
-  return getTrip(tripId) as Trip;
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("trip_members")
+      .update({ user_id: userId, wallet })
+      .eq("id", memberId)
+      .eq("trip_id", tripId);
+    if (error) throw new Error(`claimMember: ${error.message}`);
+  } else {
+    db.prepare(
+      "UPDATE trip_members SET user_id = ?, wallet = ? WHERE id = ? AND trip_id = ?"
+    ).run(userId, wallet, memberId, tripId);
+  }
+  return (await getTrip(tripId)) as Trip;
 }
 
 /** Trips a user owns OR has claimed a member slot in, most recent first. */
-export function listTripsForUser(userId: string): Trip[] {
+export async function listTripsForUser(userId: string): Promise<Trip[]> {
+  if (usingSupabase) {
+    const sb = supabase();
+    // Two cheap lookups (owned + claimed-member trip ids), unioned, then a single
+    // trips fetch — PostgREST has no JOIN, and this keeps it to a few round-trips.
+    const [ownRes, memRes] = await Promise.all([
+      sb.from("trips").select("*").eq("owner_user_id", userId),
+      sb.from("trip_members").select("trip_id").eq("user_id", userId),
+    ]);
+    if (ownRes.error) throw new Error(`trips.listForUser.owned: ${ownRes.error.message}`);
+    if (memRes.error) throw new Error(`trips.listForUser.member: ${memRes.error.message}`);
+    const owned = (ownRes.data || []) as any[];
+    const haveIds = new Set(owned.map((t) => t.id));
+    const memberTripIds = Array.from(
+      new Set((memRes.data || []).map((r: any) => r.trip_id))
+    ).filter((id) => !haveIds.has(id));
+    let extra: any[] = [];
+    if (memberTripIds.length) {
+      const exRes = await sb.from("trips").select("*").in("id", memberTripIds);
+      if (exRes.error) throw new Error(`trips.listForUser.extra: ${exRes.error.message}`);
+      extra = (exRes.data || []) as any[];
+    }
+    const all = [...owned, ...extra].sort((a, b) =>
+      a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0
+    );
+    return hydrateTrips(all);
+  }
   const rows = db
     .prepare(
       `SELECT DISTINCT t.* FROM trips t
@@ -257,53 +376,83 @@ export function listTripsForUser(userId: string): Trip[] {
        ORDER BY t.created_at DESC, t.rowid DESC`
     )
     .all(userId, userId);
-  return rows.map(hydrateTrip);
+  return hydrateTrips(rows);
 }
 
-export function listTrips(): Trip[] {
-  return db
-    .prepare("SELECT * FROM trips ORDER BY created_at DESC, rowid DESC")
-    .all()
-    .map(hydrateTrip);
+export async function listTrips(): Promise<Trip[]> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("trips")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(`trips.listTrips: ${error.message}`);
+    return hydrateTrips((data || []) as any[]);
+  }
+  const rows = db.prepare("SELECT * FROM trips ORDER BY created_at DESC, rowid DESC").all();
+  return hydrateTrips(rows);
 }
 
-export function getTrip(id: string): Trip | undefined {
+export async function getTrip(id: string): Promise<Trip | undefined> {
+  if (usingSupabase) {
+    const { data, error } = await supabase().from("trips").select("*").eq("id", id).maybeSingle();
+    if (error) throw new Error(`trips.getTrip: ${error.message}`);
+    return data ? hydrateTrip(data) : undefined;
+  }
   const row = db.prepare("SELECT * FROM trips WHERE id = ?").get(id);
   return row ? hydrateTrip(row) : undefined;
 }
 
-export function getTripByToken(token: string): Trip | undefined {
+export async function getTripByToken(token: string): Promise<Trip | undefined> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("trips")
+      .select("*")
+      .eq("share_token", token)
+      .maybeSingle();
+    if (error) throw new Error(`trips.getTripByToken: ${error.message}`);
+    return data ? hydrateTrip(data) : undefined;
+  }
   const row = db.prepare("SELECT * FROM trips WHERE share_token = ?").get(token);
   return row ? hydrateTrip(row) : undefined;
 }
 
-export function getTripByIdOrToken(x: string): Trip | undefined {
-  return getTrip(x) || getTripByToken(x);
+export async function getTripByIdOrToken(x: string): Promise<Trip | undefined> {
+  return (await getTrip(x)) || (await getTripByToken(x));
 }
 
-export function addMember(
+export async function addMember(
   tripId: string,
   member: { name: string; wallet?: string }
-): Trip {
-  const trip = getTrip(tripId);
+): Promise<Trip> {
+  const trip = await getTrip(tripId);
   if (!trip) throw new Error("addMember: trip not found");
   const name = String(member.name || "").trim();
   if (!name) throw new Error("addMember: need a name");
-  db.prepare("INSERT INTO trip_members (id, trip_id, name, wallet) VALUES (?, ?, ?, ?)").run(
-    crypto.randomUUID(),
-    tripId,
-    name,
-    member.wallet ?? null
-  );
-  return getTrip(tripId) as Trip;
+  if (usingSupabase) {
+    const { error } = await supabase().from("trip_members").insert({
+      id: crypto.randomUUID(),
+      trip_id: tripId,
+      name,
+      wallet: member.wallet ?? null,
+    });
+    if (error) throw new Error(`addMember: ${error.message}`);
+  } else {
+    db.prepare("INSERT INTO trip_members (id, trip_id, name, wallet) VALUES (?, ?, ?, ?)").run(
+      crypto.randomUUID(),
+      tripId,
+      name,
+      member.wallet ?? null
+    );
+  }
+  return (await getTrip(tripId)) as Trip;
 }
 
-export function updateMember(
+export async function updateMember(
   tripId: string,
   memberId: string,
   patch: { name?: string; wallet?: string }
-): Trip {
-  const trip = getTrip(tripId);
+): Promise<Trip> {
+  const trip = await getTrip(tripId);
   if (!trip) throw new Error("updateMember: trip not found");
   const member = trip.members.find((m) => m.id === memberId);
   if (!member) throw new Error("updateMember: member not found");
@@ -313,16 +462,25 @@ export function updateMember(
   const wallet =
     patch.wallet !== undefined ? (patch.wallet ? String(patch.wallet) : null) : member.wallet ?? null;
 
-  db.prepare("UPDATE trip_members SET name = ?, wallet = ? WHERE id = ? AND trip_id = ?").run(
-    name,
-    wallet,
-    memberId,
-    tripId
-  );
-  return getTrip(tripId) as Trip;
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("trip_members")
+      .update({ name, wallet })
+      .eq("id", memberId)
+      .eq("trip_id", tripId);
+    if (error) throw new Error(`updateMember: ${error.message}`);
+  } else {
+    db.prepare("UPDATE trip_members SET name = ?, wallet = ? WHERE id = ? AND trip_id = ?").run(
+      name,
+      wallet,
+      memberId,
+      tripId
+    );
+  }
+  return (await getTrip(tripId)) as Trip;
 }
 
-export function addExpense(
+export async function addExpense(
   tripId: string,
   expense: {
     title: string;
@@ -331,8 +489,8 @@ export function addExpense(
     participants: string[];
     fx?: any;
   }
-): Trip {
-  const trip = getTrip(tripId);
+): Promise<Trip> {
+  const trip = await getTrip(tripId);
   if (!trip) throw new Error("addExpense: trip not found");
 
   const title = String(expense.title || "").trim() || "Expense";
@@ -354,19 +512,34 @@ export function addExpense(
     if (!memberIds.has(p)) throw new Error(`addExpense: participant ${p} is not a trip member`);
   }
 
-  db.prepare(
-    "INSERT INTO expenses (id, trip_id, title, amount_cents, paid_by, participants, fx, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-  ).run(
-    crypto.randomUUID(),
-    tripId,
-    title,
-    amountCents,
-    expense.paidBy,
-    JSON.stringify(participants),
-    expense.fx ? JSON.stringify(expense.fx) : null,
-    new Date().toISOString()
-  );
-  return getTrip(tripId) as Trip;
+  if (usingSupabase) {
+    const { error } = await supabase().from("expenses").insert({
+      id: crypto.randomUUID(),
+      trip_id: tripId,
+      title,
+      amount_cents: amountCents,
+      paid_by: expense.paidBy,
+      participants, // jsonb
+      fx: expense.fx ?? null, // jsonb
+      created_at: new Date().toISOString(),
+      voided: 0,
+    });
+    if (error) throw new Error(`addExpense: ${error.message}`);
+  } else {
+    db.prepare(
+      "INSERT INTO expenses (id, trip_id, title, amount_cents, paid_by, participants, fx, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    ).run(
+      crypto.randomUUID(),
+      tripId,
+      title,
+      amountCents,
+      expense.paidBy,
+      JSON.stringify(participants),
+      expense.fx ? JSON.stringify(expense.fx) : null,
+      new Date().toISOString()
+    );
+  }
+  return (await getTrip(tripId)) as Trip;
 }
 
 /**
@@ -374,7 +547,7 @@ export function addExpense(
  * Validates + dedupes participants exactly like addExpense. Throws on a missing
  * trip/expense or invalid field.
  */
-export function editExpense(
+export async function editExpense(
   tripId: string,
   expenseId: string,
   patch: {
@@ -383,8 +556,8 @@ export function editExpense(
     paidBy?: string;
     participants?: string[];
   }
-): Trip {
-  const trip = getTrip(tripId);
+): Promise<Trip> {
+  const trip = await getTrip(tripId);
   if (!trip) throw new Error("editExpense: trip not found");
   const existing = trip.expenses.find((e) => e.id === expenseId);
   if (!existing) throw new Error("editExpense: expense not found");
@@ -424,37 +597,63 @@ export function editExpense(
     }
   }
 
-  db.prepare(
-    "UPDATE expenses SET title = ?, amount_cents = ?, paid_by = ?, participants = ? WHERE id = ? AND trip_id = ? AND COALESCE(voided, 0) = 0"
-  ).run(title, amountCents, paidBy, JSON.stringify(participants), expenseId, tripId);
-  return getTrip(tripId) as Trip;
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("expenses")
+      .update({ title, amount_cents: amountCents, paid_by: paidBy, participants })
+      .eq("id", expenseId)
+      .eq("trip_id", tripId)
+      .eq("voided", 0);
+    if (error) throw new Error(`editExpense: ${error.message}`);
+  } else {
+    db.prepare(
+      "UPDATE expenses SET title = ?, amount_cents = ?, paid_by = ?, participants = ? WHERE id = ? AND trip_id = ? AND COALESCE(voided, 0) = 0"
+    ).run(title, amountCents, paidBy, JSON.stringify(participants), expenseId, tripId);
+  }
+  return (await getTrip(tripId)) as Trip;
 }
 
-export function deleteExpense(tripId: string, expenseId: string): Trip {
-  const trip = getTrip(tripId);
+export async function deleteExpense(tripId: string, expenseId: string): Promise<Trip> {
+  const trip = await getTrip(tripId);
   if (!trip) throw new Error("deleteExpense: trip not found");
   // Soft-delete: keep the row for audit, exclude it from reads/balances.
-  db.prepare("UPDATE expenses SET voided = 1 WHERE id = ? AND trip_id = ?").run(
-    expenseId,
-    tripId
-  );
-  return getTrip(tripId) as Trip;
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("expenses")
+      .update({ voided: 1 })
+      .eq("id", expenseId)
+      .eq("trip_id", tripId);
+    if (error) throw new Error(`deleteExpense: ${error.message}`);
+  } else {
+    db.prepare("UPDATE expenses SET voided = 1 WHERE id = ? AND trip_id = ?").run(expenseId, tripId);
+  }
+  return (await getTrip(tripId)) as Trip;
 }
 
-export function saveSettlement(
+export async function saveSettlement(
   tripId: string,
   signature: string,
   transfers: SettlementTransfer[]
-): StoredSettlement {
+): Promise<StoredSettlement> {
   const createdAt = new Date().toISOString();
-  db.prepare(
-    `INSERT INTO settlements (trip_id, signature, transfers, created_at)
-     VALUES (?, ?, ?, ?)
-     ON CONFLICT(trip_id) DO UPDATE SET
-       signature = excluded.signature,
-       transfers = excluded.transfers,
-       created_at = excluded.created_at`
-  ).run(tripId, signature, JSON.stringify(transfers), createdAt);
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("settlements")
+      .upsert(
+        { trip_id: tripId, signature, transfers, created_at: createdAt },
+        { onConflict: "trip_id" }
+      );
+    if (error) throw new Error(`saveSettlement: ${error.message}`);
+  } else {
+    db.prepare(
+      `INSERT INTO settlements (trip_id, signature, transfers, created_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(trip_id) DO UPDATE SET
+         signature = excluded.signature,
+         transfers = excluded.transfers,
+         created_at = excluded.created_at`
+    ).run(tripId, signature, JSON.stringify(transfers), createdAt);
+  }
   return { tripId, signature, transfers, createdAt };
 }
 
@@ -479,24 +678,37 @@ export function isTripAuthorized(input: {
   return false;
 }
 
-/** Every stored settlement (used by receipt lookup). */
-export function listAllSettlements(): StoredSettlement[] {
-  const rows = db.prepare("SELECT * FROM settlements").all() as any[];
-  return rows.map((row) => ({
-    tripId: row.trip_id,
-    signature: row.signature,
-    transfers: JSON.parse(row.transfers),
-    createdAt: row.created_at,
-  }));
-}
-
-export function getSettlement(tripId: string): StoredSettlement | undefined {
-  const row: any = db.prepare("SELECT * FROM settlements WHERE trip_id = ?").get(tripId);
-  if (!row) return undefined;
+function hydrateSettlement(row: any): StoredSettlement {
   return {
     tripId: row.trip_id,
     signature: row.signature,
-    transfers: JSON.parse(row.transfers),
+    transfers: asJson<SettlementTransfer[]>(row.transfers, []),
     createdAt: row.created_at,
   };
+}
+
+/** Every stored settlement (used by receipt lookup). */
+export async function listAllSettlements(): Promise<StoredSettlement[]> {
+  if (usingSupabase) {
+    const { data, error } = await supabase().from("settlements").select("*");
+    if (error) throw new Error(`listAllSettlements: ${error.message}`);
+    return (data || []).map(hydrateSettlement);
+  }
+  const rows = db.prepare("SELECT * FROM settlements").all() as any[];
+  return rows.map(hydrateSettlement);
+}
+
+export async function getSettlement(tripId: string): Promise<StoredSettlement | undefined> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("settlements")
+      .select("*")
+      .eq("trip_id", tripId)
+      .maybeSingle();
+    if (error) throw new Error(`getSettlement: ${error.message}`);
+    return data ? hydrateSettlement(data) : undefined;
+  }
+  const row: any = db.prepare("SELECT * FROM settlements WHERE trip_id = ?").get(tripId);
+  if (!row) return undefined;
+  return hydrateSettlement(row);
 }

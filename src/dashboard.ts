@@ -49,9 +49,9 @@ interface CounterpartyAcc {
 dashboardRouter.get(
   "/api/me/balances",
   requireAuth,
-  (req: Request, res: Response): void => {
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.userId as string;
-    const trips = listTripsForUser(userId);
+    const trips = await listTripsForUser(userId);
 
     const tripEntries: TripEntry[] = [];
     let owedCents = 0;

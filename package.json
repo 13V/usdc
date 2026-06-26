@@ -33,6 +33,7 @@
     "better-sqlite3": "^12.11.1",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "express-async-errors": "^3.1.1",
     "jose": "^6.2.3",
     "pg": "^8.22.0",
     "qrcode": "^1.5.4",

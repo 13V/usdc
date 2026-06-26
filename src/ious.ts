@@ -19,6 +19,7 @@ import { Router, Request, Response } from "express";
 import { Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
 
 import { db } from "./db";
+import { usingSupabase, supabase } from "./supabase";
 import { requireAuth } from "./auth";
 import { getPrimaryWallet } from "./users";
 import {
@@ -107,11 +108,120 @@ function serialize(row: IouRow) {
 
 // ---- Helpers ---------------------------------------------------------------
 
-function getOwnedIou(id: string, userId: string): IouRow | undefined {
+async function getOwnedIou(
+  id: string,
+  userId: string
+): Promise<IouRow | undefined> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("ious")
+      .select("*")
+      .eq("id", id)
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+    if (error) throw new Error(`ious.getOwnedIou: ${error.message}`);
+    return (data as IouRow | null) ?? undefined;
+  }
   const row = db
     .prepare("SELECT * FROM ious WHERE id = ? AND owner_user_id = ?")
     .get(id, userId) as IouRow | undefined;
   return row;
+}
+
+/** Insert a new IOU row. */
+async function insertIou(row: IouRow): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase().from("ious").insert({
+      id: row.id,
+      owner_user_id: row.owner_user_id,
+      direction: row.direction,
+      counterparty_name: row.counterparty_name,
+      counterparty_wallet: row.counterparty_wallet,
+      amount_cents: row.amount_cents,
+      note: row.note,
+      status: row.status,
+      reference: row.reference,
+      pay_wallet: row.pay_wallet,
+      signature: row.signature,
+      created_at: row.created_at,
+    });
+    if (error) throw new Error(`ious.insertIou: ${error.message}`);
+    return;
+  }
+  db.prepare(
+    `INSERT INTO ious
+       (id, owner_user_id, direction, counterparty_name, counterparty_wallet,
+        amount_cents, note, status, reference, pay_wallet, signature, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    row.id,
+    row.owner_user_id,
+    row.direction,
+    row.counterparty_name,
+    row.counterparty_wallet,
+    row.amount_cents,
+    row.note,
+    row.status,
+    row.reference,
+    row.pay_wallet,
+    row.signature,
+    row.created_at
+  );
+}
+
+/** List a user's IOUs, newest first. */
+async function listIous(userId: string): Promise<IouRow[]> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("ious")
+      .select("*")
+      .eq("owner_user_id", userId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(`ious.listIous: ${error.message}`);
+    return (data as IouRow[]) ?? [];
+  }
+  return db
+    .prepare(
+      "SELECT * FROM ious WHERE owner_user_id = ? ORDER BY created_at DESC, rowid DESC"
+    )
+    .all(userId) as IouRow[];
+}
+
+/** Mark an IOU paid with the settling signature. */
+async function markIouPaid(
+  id: string,
+  userId: string,
+  signature: string | null
+): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("ious")
+      .update({ status: "paid", signature })
+      .eq("id", id)
+      .eq("owner_user_id", userId);
+    if (error) throw new Error(`ious.markIouPaid: ${error.message}`);
+    return;
+  }
+  db.prepare(
+    "UPDATE ious SET status = ?, signature = ? WHERE id = ? AND owner_user_id = ?"
+  ).run("paid", signature, id, userId);
+}
+
+/** Delete a user's IOU; returns true if a row was removed. */
+async function deleteIou(id: string, userId: string): Promise<boolean> {
+  if (usingSupabase) {
+    const { count, error } = await supabase()
+      .from("ious")
+      .delete({ count: "exact" })
+      .eq("id", id)
+      .eq("owner_user_id", userId);
+    if (error) throw new Error(`ious.deleteIou: ${error.message}`);
+    return (count ?? 0) > 0;
+  }
+  const info = db
+    .prepare("DELETE FROM ious WHERE id = ? AND owner_user_id = ?")
+    .run(id, userId);
+  return info.changes > 0;
 }
 
 // ---- Router ----------------------------------------------------------------
@@ -125,7 +235,7 @@ export const iouRouter = Router();
 /**
  * POST /api/ious — create a one-off IOU / money request.
  */
-iouRouter.post("/api/ious", requireAuth, (req: Request, res: Response) => {
+iouRouter.post("/api/ious", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const body = (req.body || {}) as Record<string, unknown>;
 
@@ -184,7 +294,7 @@ iouRouter.post("/api/ious", requireAuth, (req: Request, res: Response) => {
   if (direction === "i_owe") {
     payWallet = counterpartyWallet;
   } else {
-    payWallet = getPrimaryWallet(userId);
+    payWallet = await getPrimaryWallet(userId);
   }
 
   let reference: string | null = null;
@@ -195,40 +305,31 @@ iouRouter.post("/api/ious", requireAuth, (req: Request, res: Response) => {
   const id = crypto.randomUUID();
   const createdAt = new Date().toISOString();
 
-  db.prepare(
-    `INSERT INTO ious
-       (id, owner_user_id, direction, counterparty_name, counterparty_wallet,
-        amount_cents, note, status, reference, pay_wallet, signature, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(
+  await insertIou({
     id,
-    userId,
+    owner_user_id: userId,
     direction,
-    counterpartyName,
-    counterpartyWallet,
-    amountCents,
+    counterparty_name: counterpartyName,
+    counterparty_wallet: counterpartyWallet,
+    amount_cents: amountCents,
     note,
-    "open",
+    status: "open",
     reference,
-    payWallet,
-    null,
-    createdAt
-  );
+    pay_wallet: payWallet,
+    signature: null,
+    created_at: createdAt,
+  });
 
-  const row = getOwnedIou(id, userId) as IouRow;
+  const row = (await getOwnedIou(id, userId)) as IouRow;
   return res.status(201).json(serialize(row));
 });
 
 /**
  * GET /api/ious — list your IOUs, newest first.
  */
-iouRouter.get("/api/ious", requireAuth, (req: Request, res: Response) => {
+iouRouter.get("/api/ious", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
-  const rows = db
-    .prepare(
-      "SELECT * FROM ious WHERE owner_user_id = ? ORDER BY created_at DESC, rowid DESC"
-    )
-    .all(userId) as IouRow[];
+  const rows = await listIous(userId);
   return res.json(rows.map(serialize));
 });
 
@@ -240,7 +341,7 @@ iouRouter.post(
   requireAuth,
   async (req: Request, res: Response) => {
     const userId = req.userId as string;
-    const row = getOwnedIou(req.params.id, userId);
+    const row = await getOwnedIou(req.params.id, userId);
     if (!row) return res.status(404).json({ error: "not found" });
 
     if (!row.reference || !row.pay_wallet) {
@@ -258,12 +359,10 @@ iouRouter.post(
     });
 
     if (result.ok) {
-      db.prepare(
-        "UPDATE ious SET status = ?, signature = ? WHERE id = ? AND owner_user_id = ?"
-      ).run("paid", result.signature ?? null, row.id, userId);
+      await markIouPaid(row.id, userId, result.signature ?? null);
     }
 
-    const updated = getOwnedIou(row.id, userId) as IouRow;
+    const updated = (await getOwnedIou(row.id, userId)) as IouRow;
     return res.json({ ...serialize(updated), verified: result.ok, reason: result.reason });
   }
 );
@@ -271,11 +370,9 @@ iouRouter.post(
 /**
  * DELETE /api/ious/:id — delete one of your IOUs.
  */
-iouRouter.delete("/api/ious/:id", requireAuth, (req: Request, res: Response) => {
+iouRouter.delete("/api/ious/:id", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
-  const info = db
-    .prepare("DELETE FROM ious WHERE id = ? AND owner_user_id = ?")
-    .run(req.params.id, userId);
-  if (info.changes === 0) return res.status(404).json({ error: "not found" });
+  const removed = await deleteIou(req.params.id, userId);
+  if (!removed) return res.status(404).json({ error: "not found" });
   return res.json({ ok: true });
 });

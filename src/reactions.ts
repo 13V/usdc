@@ -15,6 +15,7 @@
 
 import { Request, Response, Router } from "express";
 import { db } from "./db";
+import { usingSupabase, supabase } from "./supabase";
 import { getTrip, isTripAuthorized, Trip } from "./trips";
 
 // ---- Schema ----------------------------------------------------------------
@@ -63,15 +64,25 @@ function authorizeTrip(req: Request, trip: Trip): boolean {
 // ---- Aggregation -----------------------------------------------------------
 
 /** All reactions for a trip as { target: [{emoji,count,mine}] }. */
-function reactionsForTrip(
+async function reactionsForTrip(
   tripId: string,
   viewerId: string | null
-): Record<string, SerializedReaction[]> {
-  const rows = db
-    .prepare(
-      "SELECT target, emoji, user_id FROM trip_reactions WHERE trip_id = ?"
-    )
-    .all(tripId) as { target: string; emoji: string; user_id: string }[];
+): Promise<Record<string, SerializedReaction[]>> {
+  let rows: { target: string; emoji: string; user_id: string }[];
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("trip_reactions")
+      .select("target, emoji, user_id")
+      .eq("trip_id", tripId);
+    if (error) throw new Error(`reactions.reactionsForTrip: ${error.message}`);
+    rows = (data || []) as { target: string; emoji: string; user_id: string }[];
+  } else {
+    rows = db
+      .prepare(
+        "SELECT target, emoji, user_id FROM trip_reactions WHERE trip_id = ?"
+      )
+      .all(tripId) as { target: string; emoji: string; user_id: string }[];
+  }
 
   // target -> emoji -> { count, mine }
   const byTarget: Record<string, Record<string, { count: number; mine: boolean }>> = {};
@@ -94,16 +105,27 @@ function reactionsForTrip(
 }
 
 /** A single target's reactions as [{emoji,count,mine}]. */
-function reactionsForTarget(
+async function reactionsForTarget(
   tripId: string,
   target: string,
   viewerId: string | null
-): SerializedReaction[] {
-  const rows = db
-    .prepare(
-      "SELECT emoji, user_id FROM trip_reactions WHERE trip_id = ? AND target = ?"
-    )
-    .all(tripId, target) as { emoji: string; user_id: string }[];
+): Promise<SerializedReaction[]> {
+  let rows: { emoji: string; user_id: string }[];
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("trip_reactions")
+      .select("emoji, user_id")
+      .eq("trip_id", tripId)
+      .eq("target", target);
+    if (error) throw new Error(`reactions.reactionsForTarget: ${error.message}`);
+    rows = (data || []) as { emoji: string; user_id: string }[];
+  } else {
+    rows = db
+      .prepare(
+        "SELECT emoji, user_id FROM trip_reactions WHERE trip_id = ? AND target = ?"
+      )
+      .all(tripId, target) as { emoji: string; user_id: string }[];
+  }
   const map: Record<string, { count: number; mine: boolean }> = {};
   for (const r of rows) {
     const e = (map[r.emoji] = map[r.emoji] || { count: 0, mine: false });
@@ -117,6 +139,86 @@ function reactionsForTarget(
   }));
 }
 
+// ---- Mutations -------------------------------------------------------------
+
+/** Whether the given user already reacted (trip,target,emoji,user). */
+async function reactionExists(
+  tripId: string,
+  target: string,
+  emoji: string,
+  userId: string
+): Promise<boolean> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("trip_reactions")
+      .select("user_id")
+      .eq("trip_id", tripId)
+      .eq("target", target)
+      .eq("emoji", emoji)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) throw new Error(`reactions.reactionExists: ${error.message}`);
+    return !!data;
+  }
+  const existing = db
+    .prepare(
+      "SELECT 1 FROM trip_reactions WHERE trip_id = ? AND target = ? AND emoji = ? AND user_id = ?"
+    )
+    .get(tripId, target, emoji, userId);
+  return !!existing;
+}
+
+/** Remove the given user's reaction (trip,target,emoji,user). */
+async function removeReaction(
+  tripId: string,
+  target: string,
+  emoji: string,
+  userId: string
+): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("trip_reactions")
+      .delete()
+      .eq("trip_id", tripId)
+      .eq("target", target)
+      .eq("emoji", emoji)
+      .eq("user_id", userId);
+    if (error) throw new Error(`reactions.removeReaction: ${error.message}`);
+    return;
+  }
+  db.prepare(
+    "DELETE FROM trip_reactions WHERE trip_id = ? AND target = ? AND emoji = ? AND user_id = ?"
+  ).run(tripId, target, emoji, userId);
+}
+
+/** Idempotently add the given user's reaction (trip,target,emoji,user). */
+async function addReaction(
+  tripId: string,
+  target: string,
+  emoji: string,
+  userId: string
+): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("trip_reactions")
+      .upsert(
+        {
+          trip_id: tripId,
+          target,
+          emoji,
+          user_id: userId,
+          created_at: new Date().toISOString(),
+        },
+        { onConflict: "trip_id,target,emoji,user_id", ignoreDuplicates: true }
+      );
+    if (error) throw new Error(`reactions.addReaction: ${error.message}`);
+    return;
+  }
+  db.prepare(
+    "INSERT INTO trip_reactions (trip_id, target, emoji, user_id, created_at) VALUES (?, ?, ?, ?, ?)"
+  ).run(tripId, target, emoji, userId, new Date().toISOString());
+}
+
 // ---- Router ----------------------------------------------------------------
 
 export const reactionsRouter = Router();
@@ -127,8 +229,8 @@ export const reactionsRouter = Router();
  */
 reactionsRouter.get(
   "/api/trips/:id/reactions",
-  (req: Request, res: Response): void => {
-    const trip = getTrip(req.params.id);
+  async (req: Request, res: Response): Promise<void> => {
+    const trip = await getTrip(req.params.id);
     if (!trip) {
       res.status(404).json({ error: "trip not found" });
       return;
@@ -137,7 +239,9 @@ reactionsRouter.get(
       res.status(403).json({ error: "not authorized for this trip" });
       return;
     }
-    res.json({ reactions: reactionsForTrip(trip.id, req.userId || null) });
+    res.json({
+      reactions: await reactionsForTrip(trip.id, req.userId || null),
+    });
   }
 );
 
@@ -148,8 +252,8 @@ reactionsRouter.get(
  */
 reactionsRouter.post(
   "/api/trips/:id/reactions",
-  (req: Request, res: Response): void => {
-    const trip = getTrip(req.params.id);
+  async (req: Request, res: Response): Promise<void> => {
+    const trip = await getTrip(req.params.id);
     if (!trip) {
       res.status(404).json({ error: "trip not found" });
       return;
@@ -175,25 +279,17 @@ reactionsRouter.post(
       return;
     }
 
-    const existing = db
-      .prepare(
-        "SELECT 1 FROM trip_reactions WHERE trip_id = ? AND target = ? AND emoji = ? AND user_id = ?"
-      )
-      .get(trip.id, target, emoji, req.userId);
+    const existing = await reactionExists(trip.id, target, emoji, req.userId);
 
     if (existing) {
-      db.prepare(
-        "DELETE FROM trip_reactions WHERE trip_id = ? AND target = ? AND emoji = ? AND user_id = ?"
-      ).run(trip.id, target, emoji, req.userId);
+      await removeReaction(trip.id, target, emoji, req.userId);
     } else {
-      db.prepare(
-        "INSERT INTO trip_reactions (trip_id, target, emoji, user_id, created_at) VALUES (?, ?, ?, ?, ?)"
-      ).run(trip.id, target, emoji, req.userId, new Date().toISOString());
+      await addReaction(trip.id, target, emoji, req.userId);
     }
 
     res.json({
       target,
-      reactions: reactionsForTarget(trip.id, target, req.userId),
+      reactions: await reactionsForTarget(trip.id, target, req.userId),
     });
   }
 );

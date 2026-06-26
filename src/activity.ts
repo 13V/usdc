@@ -46,7 +46,7 @@ function memberName(members: TripMember[], memberId: string): string | undefined
 }
 
 /** Build the events for a single trip, skipping anything malformed. */
-function eventsForTrip(trip: Trip): ActivityEvent[] {
+async function eventsForTrip(trip: Trip): Promise<ActivityEvent[]> {
   const out: ActivityEvent[] = [];
   if (!trip || !trip.id) return out;
 
@@ -91,7 +91,7 @@ function eventsForTrip(trip: Trip): ActivityEvent[] {
   // settlement (persisted)
   let settlement;
   try {
-    settlement = getSettlement(tripId);
+    settlement = await getSettlement(tripId);
   } catch {
     settlement = undefined;
   }
@@ -147,12 +147,12 @@ export const activityRouter = Router();
 activityRouter.get(
   "/api/activity",
   requireAuth,
-  (req: Request, res: Response): void => {
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.userId as string;
 
     let trips: Trip[];
     try {
-      trips = listTripsForUser(userId);
+      trips = await listTripsForUser(userId);
     } catch {
       res.json([]);
       return;
@@ -161,7 +161,7 @@ activityRouter.get(
     const events: ActivityEvent[] = [];
     for (const trip of trips) {
       try {
-        events.push(...eventsForTrip(trip));
+        events.push(...(await eventsForTrip(trip)));
       } catch {
         // Be robust: one bad trip shouldn't sink the whole feed.
         continue;

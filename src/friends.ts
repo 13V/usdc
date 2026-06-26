@@ -15,6 +15,7 @@
 
 import { Router, Request, Response } from "express";
 import { db } from "./db";
+import { usingSupabase, supabase } from "./supabase";
 import { requireAuth } from "./auth";
 import {
   getUser,
@@ -52,14 +53,42 @@ function cleanString(v: unknown): string | null {
  * identity (provider='solana', subject=<wallet>) or via the user_wallets table.
  * Identity is the canonical mapping; user_wallets is the fallback.
  */
-function resolveUserByWallet(wallet: string): User | null {
+async function resolveUserByWallet(wallet: string): Promise<User | null> {
+  if (usingSupabase) {
+    const { data: idRow, error: idErr } = await supabase()
+      .from("identities")
+      .select("user_id")
+      .eq("provider", "solana")
+      .eq("subject", wallet)
+      .maybeSingle();
+    if (idErr) throw new Error(`friends.resolveUserByWallet: ${idErr.message}`);
+    if (idRow && idRow.user_id) {
+      const u = await getUser(idRow.user_id);
+      if (u) return u;
+    }
+
+    const { data: wRow, error: wErr } = await supabase()
+      .from("user_wallets")
+      .select("user_id")
+      .eq("wallet", wallet)
+      .limit(1)
+      .maybeSingle();
+    if (wErr) throw new Error(`friends.resolveUserByWallet: ${wErr.message}`);
+    if (wRow && wRow.user_id) {
+      const u = await getUser(wRow.user_id);
+      if (u) return u;
+    }
+
+    return null;
+  }
+
   const idRow: any = db
     .prepare(
       "SELECT user_id FROM identities WHERE provider = 'solana' AND subject = ?"
     )
     .get(wallet);
   if (idRow && idRow.user_id) {
-    const u = getUser(idRow.user_id);
+    const u = await getUser(idRow.user_id);
     if (u) return u;
   }
 
@@ -67,7 +96,7 @@ function resolveUserByWallet(wallet: string): User | null {
     .prepare("SELECT user_id FROM user_wallets WHERE wallet = ? LIMIT 1")
     .get(wallet);
   if (wRow && wRow.user_id) {
-    const u = getUser(wRow.user_id);
+    const u = await getUser(wRow.user_id);
     if (u) return u;
   }
 
@@ -77,12 +106,12 @@ function resolveUserByWallet(wallet: string): User | null {
 /**
  * Resolve a target user by handle or wallet. Returns the user or null.
  */
-function resolveUserByHandleOrWallet(input: {
+async function resolveUserByHandleOrWallet(input: {
   handle?: string;
   wallet?: string;
-}): User | null {
+}): Promise<User | null> {
   if (input.handle) {
-    return findByHandle(input.handle) || null;
+    return (await findByHandle(input.handle)) || null;
   }
   if (input.wallet) {
     return resolveUserByWallet(input.wallet);
@@ -97,8 +126,24 @@ const insertFriendship = db.prepare(
    VALUES (?, ?, ?)`
 );
 
-function addFriendship(meId: string, themId: string): void {
+async function addFriendship(meId: string, themId: string): Promise<void> {
   const now = new Date().toISOString();
+  if (usingSupabase) {
+    // INSERT OR IGNORE semantics: upsert on the (user_id, friend_user_id) PK so
+    // re-adding an existing friendship is a no-op rather than an error.
+    const { error } = await supabase()
+      .from("friendships")
+      .upsert(
+        [
+          { user_id: meId, friend_user_id: themId, created_at: now },
+          { user_id: themId, friend_user_id: meId, created_at: now },
+        ],
+        { onConflict: "user_id,friend_user_id", ignoreDuplicates: true }
+      );
+    if (error) throw new Error(`friends.addFriendship: ${error.message}`);
+    return;
+  }
+
   const tx = db.transaction(() => {
     insertFriendship.run(meId, themId, now);
     insertFriendship.run(themId, meId, now);
@@ -106,7 +151,23 @@ function addFriendship(meId: string, themId: string): void {
   tx();
 }
 
-function removeFriendship(meId: string, themId: string): void {
+async function removeFriendship(meId: string, themId: string): Promise<void> {
+  if (usingSupabase) {
+    const { error: e1 } = await supabase()
+      .from("friendships")
+      .delete()
+      .eq("user_id", meId)
+      .eq("friend_user_id", themId);
+    if (e1) throw new Error(`friends.removeFriendship: ${e1.message}`);
+    const { error: e2 } = await supabase()
+      .from("friendships")
+      .delete()
+      .eq("user_id", themId)
+      .eq("friend_user_id", meId);
+    if (e2) throw new Error(`friends.removeFriendship: ${e2.message}`);
+    return;
+  }
+
   const del = db.prepare(
     "DELETE FROM friendships WHERE user_id = ? AND friend_user_id = ?"
   );
@@ -128,7 +189,7 @@ export const friendsRouter = Router();
 friendsRouter.post(
   "/api/friends",
   requireAuth,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const meId = req.userId as string;
 
     const body = (req.body || {}) as { handle?: unknown; wallet?: unknown };
@@ -142,7 +203,7 @@ friendsRouter.post(
       return;
     }
 
-    const target = resolveUserByHandleOrWallet({
+    const target = await resolveUserByHandleOrWallet({
       handle: handle || undefined,
       wallet: wallet || undefined,
     });
@@ -160,7 +221,7 @@ friendsRouter.post(
       return;
     }
 
-    addFriendship(meId, target.id);
+    await addFriendship(meId, target.id);
     res.json({ friend: serializeUser(target) });
   }
 );
@@ -172,21 +233,32 @@ friendsRouter.post(
 friendsRouter.get(
   "/api/friends",
   requireAuth,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const meId = req.userId as string;
 
-    const rows = db
-      .prepare(
-        `SELECT friend_user_id FROM friendships
-         WHERE user_id = ?
-         ORDER BY created_at DESC, rowid DESC`
-      )
-      .all(meId) as Array<{ friend_user_id: string }>;
+    let rows: Array<{ friend_user_id: string }>;
+    if (usingSupabase) {
+      const { data, error } = await supabase()
+        .from("friendships")
+        .select("friend_user_id")
+        .eq("user_id", meId)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`friends.list: ${error.message}`);
+      rows = (data || []) as Array<{ friend_user_id: string }>;
+    } else {
+      rows = db
+        .prepare(
+          `SELECT friend_user_id FROM friendships
+           WHERE user_id = ?
+           ORDER BY created_at DESC, rowid DESC`
+        )
+        .all(meId) as Array<{ friend_user_id: string }>;
+    }
 
     const friends = [];
     for (const row of rows) {
-      const u = getUser(row.friend_user_id);
-      if (u) friends.push(serializeUser(u));
+      const u = await getUser(row.friend_user_id);
+      if (u) friends.push(await serializeUser(u));
     }
 
     res.json({ friends });
@@ -200,7 +272,7 @@ friendsRouter.get(
 friendsRouter.delete(
   "/api/friends/:friendUserId",
   requireAuth,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const meId = req.userId as string;
     const friendUserId = cleanString(req.params.friendUserId);
 
@@ -209,7 +281,7 @@ friendsRouter.delete(
       return;
     }
 
-    removeFriendship(meId, friendUserId);
+    await removeFriendship(meId, friendUserId);
     res.json({ ok: true });
   }
 );

@@ -15,7 +15,11 @@
 
 import "dotenv/config";
 import * as path from "path";
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
+// Patches Express 4 so a rejected promise from an async route handler is routed
+// to the error-handling middleware instead of becoming an unhandled rejection
+// that crashes the process. Must be imported before routes are registered.
+import "express-async-errors";
 import { Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
 import { createBill, Bill, BillFx, collectedCents, outstandingCents } from "./bill";
 import { store } from "./store";
@@ -158,7 +162,7 @@ app.get("/api/auth/nonce", authRateLimit, (_req: Request, res: Response) => {
   res.json(issueNonce());
 });
 
-app.post("/api/auth/siws/verify", authRateLimit, (req: Request, res: Response) => {
+app.post("/api/auth/siws/verify", authRateLimit, async (req: Request, res: Response) => {
   try {
     const body = req.body as { pubkey?: string; signature?: string; message?: string };
     const pubkey = String(body.pubkey || "");
@@ -167,8 +171,8 @@ app.post("/api/auth/siws/verify", authRateLimit, (req: Request, res: Response) =
     if (!verifySiws({ pubkey, signatureB64, message })) {
       return res.status(401).json({ error: "invalid signature or nonce" });
     }
-    const user = upsertUserByWallet(pubkey);
-    res.json({ token: signSession(user.id), user: serializeUser(user) });
+    const user = await upsertUserByWallet(pubkey);
+    res.json({ token: signSession(user.id), user: await serializeUser(user) });
   } catch (err) {
     res.status(401).json({ error: (err as Error).message });
   }
@@ -182,31 +186,31 @@ app.post("/api/auth/privy/verify", authRateLimit, async (req: Request, res: Resp
     const body = req.body as { token?: string; wallet?: string };
     const verified = await verifyPrivyToken(String(body.token || ""));
     if (!verified) return res.status(401).json({ error: "invalid token" });
-    const user = upsertUserByIdentity("privy", verified.subject, { wallet: body.wallet });
-    res.json({ token: signSession(user.id), user: serializeUser(user) });
+    const user = await upsertUserByIdentity("privy", verified.subject, { wallet: body.wallet });
+    res.json({ token: signSession(user.id), user: await serializeUser(user) });
   } catch (err) {
     res.status(401).json({ error: (err as Error).message });
   }
 });
 
-app.get("/api/me", (req: Request, res: Response) => {
+app.get("/api/me", async (req: Request, res: Response) => {
   if (!req.userId) return res.json({ user: null });
-  const user = getUser(req.userId);
-  res.json({ user: user ? serializeUser(user) : null });
+  const user = await getUser(req.userId);
+  res.json({ user: user ? await serializeUser(user) : null });
 });
 
-app.patch("/api/me", requireAuth, (req: Request, res: Response) => {
+app.patch("/api/me", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const body = req.body as { handle?: string; displayName?: string; emoji?: string; color?: string };
   try {
-    let user = getUser(userId);
+    let user = await getUser(userId);
     if (!user) return res.status(404).json({ error: "not found" });
-    if (body.handle !== undefined) user = setHandle(userId, body.handle);
-    if (body.displayName !== undefined) user = setDisplayName(userId, body.displayName);
+    if (body.handle !== undefined) user = await setHandle(userId, body.handle);
+    if (body.displayName !== undefined) user = await setDisplayName(userId, body.displayName);
     if (body.emoji !== undefined || body.color !== undefined) {
-      user = setIdentity(userId, { emoji: body.emoji, color: body.color });
+      user = await setIdentity(userId, { emoji: body.emoji, color: body.color });
     }
-    res.json({ user: serializeUser(user) });
+    res.json({ user: await serializeUser(user) });
   } catch (err) {
     const msg = (err as Error).message;
     if (msg === "handle taken") return res.status(409).json({ error: msg });
@@ -217,7 +221,7 @@ app.patch("/api/me", requireAuth, (req: Request, res: Response) => {
 // On-chain USDC balance of the signed-in user's primary wallet (read-only).
 app.get("/api/me/wallet", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
-  const wallet = getPrimaryWallet(userId);
+  const wallet = await getPrimaryWallet(userId);
   if (!wallet) return res.json({ wallet: null, usdcCents: null, usdcFmt: null });
   try {
     const connection = new Connection(rpcUrl(CLUSTER), "confirmed");
@@ -255,7 +259,7 @@ interface CreateBillBody {
   fx?: BillFx;
 }
 
-app.post("/api/bills", (req: Request, res: Response) => {
+app.post("/api/bills", async (req: Request, res: Response) => {
   try {
     const body = req.body as CreateBillBody;
 
@@ -263,10 +267,10 @@ app.post("/api/bills", (req: Request, res: Response) => {
     let names = (body.names || []).map((n) => String(n).trim()).filter(Boolean);
 
     if (body.groupId) {
-      const group = getGroup(body.groupId);
+      const group = await getGroup(body.groupId);
       if (!group) return res.status(404).json({ error: "group not found" });
       names = group.members.map((m) => String(m).trim()).filter(Boolean);
-      touchGroup(body.groupId);
+      await touchGroup(body.groupId);
     } else if (names.length === 0 && Number.isInteger(body.count) && (body.count as number) > 0) {
       names = Array.from({ length: body.count as number }, (_v, i) => `Person ${i + 1}`);
     }
@@ -279,7 +283,7 @@ app.post("/api/bills", (req: Request, res: Response) => {
     const saveGroupName = body.saveGroupName && String(body.saveGroupName).trim();
     if (saveGroupName) {
       try {
-        createGroup(saveGroupName, names);
+        await createGroup(saveGroupName, names);
       } catch {
         /* ignore — saving a group is a convenience, not a requirement */
       }
@@ -296,7 +300,7 @@ app.post("/api/bills", (req: Request, res: Response) => {
     // (money sent there is unspendable). Fall back to an explicit body.collector,
     // then refuse rather than silently collecting to the placeholder.
     const SYSTEM_PROGRAM = "11111111111111111111111111111111";
-    const creatorWallet = req.userId ? getPrimaryWallet(req.userId) : null;
+    const creatorWallet = req.userId ? await getPrimaryWallet(req.userId) : null;
     const collector = creatorWallet || body.collector || COLLECTOR;
     if (!collector || collector === SYSTEM_PROGRAM) {
       return res
@@ -315,25 +319,25 @@ app.post("/api/bills", (req: Request, res: Response) => {
       customCents: body.customCents,
       fx: body.fx,
     });
-    store.put(bill);
+    await store.put(bill);
     res.json(serializeBill(bill));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
 });
 
-app.get("/api/bills", (_req: Request, res: Response) => {
-  res.json(store.all().map(serializeBill));
+app.get("/api/bills", async (_req: Request, res: Response) => {
+  res.json((await store.all()).map(serializeBill));
 });
 
-app.get("/api/bills/:id", (req: Request, res: Response) => {
-  const bill = store.get(req.params.id);
+app.get("/api/bills/:id", async (req: Request, res: Response) => {
+  const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).json({ error: "not found" });
   res.json(serializeBill(bill));
 });
 
 app.post("/api/bills/:id/verify", async (req: Request, res: Response) => {
-  const bill = store.get(req.params.id);
+  const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).json({ error: "not found" });
   try {
     const connection = new Connection(rpcUrl(bill.cluster), "confirmed");
@@ -354,7 +358,7 @@ app.post("/api/bills/:id/verify", async (req: Request, res: Response) => {
         updated.push(p.name);
       }
     }
-    store.put(bill);
+    await store.put(bill);
     res.json({ ...serializeBill(bill), updated });
   } catch (err) {
     const status = isRpcFailure(err) ? 502 : 400;
@@ -364,22 +368,22 @@ app.post("/api/bills/:id/verify", async (req: Request, res: Response) => {
 
 // ---- Saved groups ---------------------------------------------------------
 
-app.get("/api/groups", (_req: Request, res: Response) => {
-  res.json(listGroups());
+app.get("/api/groups", async (_req: Request, res: Response) => {
+  res.json(await listGroups());
 });
 
-app.post("/api/groups", (req: Request, res: Response) => {
+app.post("/api/groups", async (req: Request, res: Response) => {
   const body = req.body as { name?: string; members?: string[] };
   try {
-    const group = createGroup(body.name || "", body.members || []);
+    const group = await createGroup(body.name || "", body.members || []);
     res.json(group);
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
 });
 
-app.delete("/api/groups/:id", (req: Request, res: Response) => {
-  if (deleteGroup(req.params.id)) return res.json({ ok: true });
+app.delete("/api/groups/:id", async (req: Request, res: Response) => {
+  if (await deleteGroup(req.params.id)) return res.json({ ok: true });
   res.status(404).json({ error: "not found" });
 });
 
@@ -546,8 +550,8 @@ function assertLen(value: string, label: string, min: number, max: number): stri
   return v;
 }
 
-function serializeSettlement(trip: Trip) {
-  const stored = getSettlement(trip.id);
+async function serializeSettlement(trip: Trip) {
+  const stored = await getSettlement(trip.id);
   if (!stored) return null;
   const transfers = stored.transfers.map((t: SettlementTransfer) => ({
     from: t.from,
@@ -566,7 +570,7 @@ function serializeSettlement(trip: Trip) {
   return { transfers, allPaid, createdAt: stored.createdAt };
 }
 
-function serializeTrip(trip: Trip) {
+async function serializeTrip(trip: Trip) {
   const memberIds = trip.members.map((m) => m.id);
   const balances = computeBalances(
     memberIds,
@@ -586,10 +590,10 @@ function serializeTrip(trip: Trip) {
     cluster: trip.cluster,
     createdAt: trip.createdAt,
     ownerUserId: trip.ownerUserId || null,
-    members: trip.members.map((m) => {
+    members: await Promise.all(trip.members.map(async (m) => {
       // A linked member shows that account's chosen emoji/color; otherwise the
       // member's own deterministic identity.
-      const linked = m.userId ? getUser(m.userId) : undefined;
+      const linked = m.userId ? await getUser(m.userId) : undefined;
       return {
         id: m.id,
         name: m.name,
@@ -599,7 +603,7 @@ function serializeTrip(trip: Trip) {
         emoji: (linked && linked.emoji) || m.emoji || null,
         color: (linked && linked.color) || m.color || null,
       };
-    }),
+    })),
     expenses: trip.expenses.map((e) => ({
       id: e.id,
       title: e.title,
@@ -626,11 +630,11 @@ function serializeTrip(trip: Trip) {
       fmt: fmt(Math.abs(b.cents)),
       direction: b.cents > 0 ? "owed" : b.cents < 0 ? "owes" : "settled",
     })),
-    settle: serializeSettlement(trip),
+    settle: await serializeSettlement(trip),
   };
 }
 
-app.post("/api/trips", (req: Request, res: Response) => {
+app.post("/api/trips", async (req: Request, res: Response) => {
   try {
     const body = req.body as {
       name?: string;
@@ -656,13 +660,13 @@ app.post("/api/trips", (req: Request, res: Response) => {
     if (req.userId && members[0] && !members[0].userId) {
       members[0].userId = req.userId;
       if (!members[0].wallet) {
-        const w = getPrimaryWallet(req.userId);
+        const w = await getPrimaryWallet(req.userId);
         if (w) members[0].wallet = w;
       }
     }
     // Record ownership so this trip shows up in "my trips".
-    const trip = createTrip(name, cluster, members, req.userId);
-    res.json(serializeTrip(trip));
+    const trip = await createTrip(name, cluster, members, req.userId);
+    res.json(await serializeTrip(trip));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
@@ -694,15 +698,15 @@ function tripSummary(trip: Trip) {
   };
 }
 
-app.get("/api/trips", requireAuth, (req: Request, res: Response) => {
+app.get("/api/trips", requireAuth, async (req: Request, res: Response) => {
   // Privacy-scoped: only trips the caller owns or has claimed a spot in.
   // (?mine is accepted harmlessly; it's now the only behavior.)
-  const trips = listTripsForUser(req.userId as string);
+  const trips = await listTripsForUser(req.userId as string);
   res.json(trips.map(tripSummary));
 });
 
-app.get("/api/trips/:idOrToken", (req: Request, res: Response) => {
-  const trip = getTripByIdOrToken(req.params.idOrToken);
+app.get("/api/trips/:idOrToken", async (req: Request, res: Response) => {
+  const trip = await getTripByIdOrToken(req.params.idOrToken);
   if (!trip) return res.status(404).json({ error: "not found" });
   // Authorized if the path was the share token (capability), if X-Trip-Token
   // matches, or if the caller is the owner / a claimed member.
@@ -711,13 +715,13 @@ app.get("/api/trips/:idOrToken", (req: Request, res: Response) => {
     return res.status(403).json({ error: "not authorized for this trip" });
   }
   // They have access, so the full trip MAY include the shareToken.
-  res.json(serializeTrip(trip));
+  res.json(await serializeTrip(trip));
 });
 
-app.post("/api/trips/:id/members", (req: Request, res: Response) => {
+app.post("/api/trips/:id/members", async (req: Request, res: Response) => {
   try {
     const body = req.body as { name?: string; wallet?: string };
-    const existing = getTrip(req.params.id);
+    const existing = await getTrip(req.params.id);
     if (!existing) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, existing)) {
       return res.status(403).json({ error: "not authorized for this trip" });
@@ -727,17 +731,17 @@ app.post("/api/trips/:id/members", (req: Request, res: Response) => {
     }
     const name = assertLen(String(body.name || ""), "member name", 1, MAX_MEMBER_NAME);
     if (body.wallet) assertValidWallet(String(body.wallet));
-    const trip = addMember(req.params.id, { name, wallet: body.wallet });
-    res.json(serializeTrip(trip));
+    const trip = await addMember(req.params.id, { name, wallet: body.wallet });
+    res.json(await serializeTrip(trip));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
 });
 
-app.patch("/api/trips/:id/members/:mid", (req: Request, res: Response) => {
+app.patch("/api/trips/:id/members/:mid", async (req: Request, res: Response) => {
   try {
     const body = req.body as { name?: string; wallet?: string };
-    const existing = getTrip(req.params.id);
+    const existing = await getTrip(req.params.id);
     if (!existing) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, existing)) {
       return res.status(403).json({ error: "not authorized for this trip" });
@@ -758,8 +762,8 @@ app.patch("/api/trips/:id/members/:mid", (req: Request, res: Response) => {
     if (body.name !== undefined) {
       assertLen(String(body.name), "member name", 1, MAX_MEMBER_NAME);
     }
-    const trip = updateMember(req.params.id, req.params.mid, body);
-    res.json(serializeTrip(trip));
+    const trip = await updateMember(req.params.id, req.params.mid, body);
+    res.json(await serializeTrip(trip));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
@@ -768,26 +772,26 @@ app.patch("/api/trips/:id/members/:mid", (req: Request, res: Response) => {
 // Claim your spot: a signed-in user takes over a member slot so settle-up routes
 // to their primary wallet. Requires auth; the capability link still governs who
 // can SEE the trip (per-member action authz is a fast-follow).
-app.post("/api/trips/:id/members/:mid/claim", requireAuth, (req: Request, res: Response) => {
+app.post("/api/trips/:id/members/:mid/claim", requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.userId as string;
-    const existing = getTrip(req.params.id);
+    const existing = await getTrip(req.params.id);
     if (!existing) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, existing)) {
       return res.status(403).json({ error: "not authorized for this trip" });
     }
-    const wallet = getPrimaryWallet(userId);
+    const wallet = await getPrimaryWallet(userId);
     if (!wallet) return res.status(400).json({ error: "link a wallet first" });
-    const trip = claimMember(req.params.id, req.params.mid, userId, wallet);
-    res.json(serializeTrip(trip));
+    const trip = await claimMember(req.params.id, req.params.mid, userId, wallet);
+    res.json(await serializeTrip(trip));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
 });
 
-app.post("/api/trips/:id/expenses", (req: Request, res: Response) => {
+app.post("/api/trips/:id/expenses", async (req: Request, res: Response) => {
   try {
-    const trip = getTrip(req.params.id);
+    const trip = await getTrip(req.params.id);
     if (!trip) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, trip)) {
       return res.status(403).json({ error: "not authorized for this trip" });
@@ -820,22 +824,22 @@ app.post("/api/trips/:id/expenses", (req: Request, res: Response) => {
     if (participants.length === 0) {
       return res.status(400).json({ error: "need at least one participant" });
     }
-    const updated = addExpense(req.params.id, {
+    const updated = await addExpense(req.params.id, {
       title: String(body.title || ""),
       amountCents,
       paidBy: String(body.paidBy || ""),
       participants,
       fx: body.fx,
     });
-    res.json(serializeTrip(updated));
+    res.json(await serializeTrip(updated));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
 });
 
-app.patch("/api/trips/:id/expenses/:eid", (req: Request, res: Response) => {
+app.patch("/api/trips/:id/expenses/:eid", async (req: Request, res: Response) => {
   try {
-    const trip = getTrip(req.params.id);
+    const trip = await getTrip(req.params.id);
     if (!trip) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, trip)) {
       return res.status(403).json({ error: "not authorized for this trip" });
@@ -871,30 +875,30 @@ app.patch("/api/trips/:id/expenses/:eid", (req: Request, res: Response) => {
     if (body.paidBy !== undefined) patch.paidBy = String(body.paidBy);
     if (body.participants !== undefined) patch.participants = body.participants;
 
-    const updated = editExpense(req.params.id, req.params.eid, patch);
-    res.json(serializeTrip(updated));
+    const updated = await editExpense(req.params.id, req.params.eid, patch);
+    res.json(await serializeTrip(updated));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
 });
 
-app.delete("/api/trips/:id/expenses/:eid", (req: Request, res: Response) => {
+app.delete("/api/trips/:id/expenses/:eid", async (req: Request, res: Response) => {
   try {
-    const existing = getTrip(req.params.id);
+    const existing = await getTrip(req.params.id);
     if (!existing) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, existing)) {
       return res.status(403).json({ error: "not authorized for this trip" });
     }
-    const trip = deleteExpense(req.params.id, req.params.eid);
-    res.json(serializeTrip(trip));
+    const trip = await deleteExpense(req.params.id, req.params.eid);
+    res.json(await serializeTrip(trip));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
 });
 
-app.post("/api/trips/:id/settle", (req: Request, res: Response) => {
+app.post("/api/trips/:id/settle", async (req: Request, res: Response) => {
   try {
-    const trip = getTrip(req.params.id);
+    const trip = await getTrip(req.params.id);
     if (!trip) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, trip)) {
       return res.status(403).json({ error: "not authorized for this trip" });
@@ -916,7 +920,7 @@ app.post("/api/trips/:id/settle", (req: Request, res: Response) => {
     const signature = JSON.stringify(
       [...balances].sort((a, b) => (a.memberId < b.memberId ? -1 : a.memberId > b.memberId ? 1 : 0))
     );
-    const existing = getSettlement(trip.id);
+    const existing = await getSettlement(trip.id);
 
     // Build a payable transfer for a plan edge, or a wallet-less stub if the
     // recipient has no wallet yet.
@@ -954,25 +958,25 @@ app.post("/api/trips/:id/settle", (req: Request, res: Response) => {
         }
         return t;
       });
-      if (changed) saveSettlement(trip.id, signature, transfers);
+      if (changed) await saveSettlement(trip.id, signature, transfers);
     } else {
       transfers = plan.map(buildTransfer);
-      saveSettlement(trip.id, signature, transfers);
+      await saveSettlement(trip.id, signature, transfers);
     }
 
-    res.json(serializeTrip(getTrip(trip.id) as Trip));
+    res.json(await serializeTrip(await getTrip(trip.id) as Trip));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
 });
 
 app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => {
-  const trip = getTrip(req.params.id);
+  const trip = await getTrip(req.params.id);
   if (!trip) return res.status(404).json({ error: "not found" });
   if (!authorizeTrip(req, trip)) {
     return res.status(403).json({ error: "not authorized for this trip" });
   }
-  const stored = getSettlement(trip.id);
+  const stored = await getSettlement(trip.id);
   if (!stored) return res.status(400).json({ error: "no settlement to verify; call /settle first" });
   try {
     const connection = new Connection(rpcUrl(trip.cluster), "confirmed");
@@ -991,8 +995,8 @@ app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => 
         (t as any).signature = valid.signature; // record the on-chain sig for receipts/lookups
       }
     }
-    saveSettlement(trip.id, stored.signature, stored.transfers);
-    res.json(serializeTrip(getTrip(trip.id) as Trip));
+    await saveSettlement(trip.id, stored.signature, stored.transfers);
+    res.json(await serializeTrip(await getTrip(trip.id) as Trip));
   } catch (err) {
     const status = isRpcFailure(err) ? 502 : 400;
     res.status(status).json({ error: `verify failed: ${(err as Error).message}` });
@@ -1003,7 +1007,7 @@ app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => 
 // Look up a single payment by its Solana Pay reference OR confirmed signature,
 // across both settlement transfers and bill participants. Returns the receipt
 // fields, or { found:false } (HTTP 200) when nothing matches.
-app.get("/api/receipts/:ref", requireAuth, (req: Request, res: Response) => {
+app.get("/api/receipts/:ref", requireAuth, async (req: Request, res: Response) => {
   const ref = String(req.params.ref || "");
   if (!ref) return res.json({ found: false });
   const userId = req.userId as string;
@@ -1011,8 +1015,8 @@ app.get("/api/receipts/:ref", requireAuth, (req: Request, res: Response) => {
   // 1) Settlement transfers (transfer.reference or transfer.signature). Only
   // returned to a caller authorized for that trip — never leak another trip's
   // wallets/amounts/names. An unauthorized match is skipped (existence hidden).
-  for (const stored of listAllSettlements()) {
-    const trip = getTrip(stored.tripId);
+  for (const stored of await listAllSettlements()) {
+    const trip = await getTrip(stored.tripId);
     if (!trip) continue;
     for (const t of stored.transfers) {
       const sig = (t as any).signature as string | undefined;
@@ -1037,10 +1041,10 @@ app.get("/api/receipts/:ref", requireAuth, (req: Request, res: Response) => {
 
   // 2) Bill participants — only the bill's collector (its creator wallet) may
   // read it back, so one person's split links don't expose another's.
-  for (const bill of store.all()) {
+  for (const bill of await store.all()) {
     for (const p of bill.participants) {
       if (p.reference === ref || (p.signature && p.signature === ref)) {
-        if (getPrimaryWallet(userId) !== bill.collector) continue;
+        if (await getPrimaryWallet(userId) !== bill.collector) continue;
         return res.json({
           found: true,
           title: bill.title,
@@ -1070,7 +1074,7 @@ app.get("/t/:token", (_req: Request, res: Response) => {
 // ---- Pay page (server-rendered) -------------------------------------------
 
 app.get("/pay/:id/:name", async (req: Request, res: Response) => {
-  const bill = store.get(req.params.id);
+  const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).send("Bill not found");
   const name = decodeURIComponent(req.params.name);
   const p = bill.participants.find((x) => x.name === name);
@@ -1169,6 +1173,29 @@ function renderPayPage(
 </body>
 </html>`;
 }
+
+// Final error-handling middleware. With express-async-errors above, a rejected
+// promise from any async handler lands here instead of crashing the process.
+// Maps known error shapes to status codes; everything else is a 500. Must be
+// registered AFTER all routes.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  if (res.headersSent) return;
+  const message = (err as Error)?.message || "internal error";
+  const status = err instanceof ValidationError ? 400 : isRpcFailure(err) ? 502 : 500;
+  if (status >= 500) {
+    // eslint-disable-next-line no-console
+    console.error("unhandled route error:", err);
+  }
+  res.status(status).json({ error: message });
+});
+
+// Last-resort backstop: a stray rejection from a background task (e.g. the
+// recurring self-scheduler) must never take the whole server down. Log, stay up.
+process.on("unhandledRejection", (reason) => {
+  // eslint-disable-next-line no-console
+  console.error("unhandledRejection:", reason);
+});
 
 if (require.main === module) {
   app.listen(PORT, () => {

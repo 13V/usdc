@@ -46,7 +46,9 @@ create table if not exists trip_members (
   trip_id   text not null references trips(id) on delete cascade,
   name      text not null,
   wallet    text,
-  user_id   text
+  user_id   text,
+  emoji     text,
+  color     text
 );
 create index if not exists trip_members_trip_idx on trip_members (trip_id);
 create index if not exists trip_members_user_idx on trip_members (user_id);
@@ -76,7 +78,9 @@ create table if not exists users (
   id            text primary key,
   handle        text unique,
   display_name  text,
-  created_at    text not null
+  created_at    text not null,
+  emoji         text,
+  color         text
 );
 
 create table if not exists identities (
@@ -132,7 +136,8 @@ create table if not exists recurring (
   interval       text,
   next_due       text,
   created_at     text,
-  active         integer default 1
+  active         integer default 1,
+  paused         integer not null default 0
 );
 create index if not exists recurring_owner_idx on recurring (owner_user_id);
 create index if not exists recurring_due_idx on recurring (next_due);
@@ -145,6 +150,30 @@ create table if not exists trip_messages (
   author      text not null,
   text        text,
   image       text,
-  created_at  text not null
+  created_at  text not null,
+  reactions   text
 );
 create index if not exists trip_messages_trip_idx on trip_messages (trip_id, created_at);
+
+-- ---- money-card reactions (src/reactions.ts) ------------------------------
+create table if not exists trip_reactions (
+  trip_id     text not null,
+  target      text not null,
+  emoji       text not null,
+  user_id     text not null,
+  created_at  text not null,
+  primary key (trip_id, target, emoji, user_id)
+);
+create index if not exists trip_reactions_trip_idx on trip_reactions (trip_id);
+
+-- ---- additive column patches ----------------------------------------------
+-- `create table if not exists` above will NOT add columns to a table that
+-- already exists, so these idempotent ALTERs bring an older Supabase project up
+-- to date. They mirror the SQLite ALTER-TABLE migrations in src/*.ts. Safe to
+-- re-run (ADD COLUMN IF NOT EXISTS is a no-op when the column is present).
+alter table users         add column if not exists emoji    text;
+alter table users         add column if not exists color    text;
+alter table trip_members  add column if not exists emoji    text;
+alter table trip_members  add column if not exists color    text;
+alter table trip_messages add column if not exists reactions text;
+alter table recurring     add column if not exists paused   integer not null default 0;

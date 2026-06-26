@@ -25,6 +25,7 @@ const TABLES = [
   "ious",
   "recurring",
   "trip_messages",
+  "trip_reactions",
 ];
 
 async function main() {

@@ -1,15 +1,19 @@
 /**
- * store.ts — SQLite-backed bill store.
+ * store.ts — bill store, dual-backed by SQLite (local) or Supabase (prod).
  *
- * Keeps the same synchronous interface as before (put/get/has/all/delete) so
- * the rest of the app can stay unchanged. Bills are stored as JSON in the
- * `bills` table, keyed by id, with created_at = bill.createdAt.
+ * Backend is chosen by DATA_BACKEND (see src/supabase.ts). Both paths share the
+ * same async interface (put/get/has/all/delete). Bills are stored as a JSON
+ * blob keyed by id, with created_at = bill.createdAt:
+ *   • SQLite   → `data` TEXT  (JSON.stringify / JSON.parse)
+ *   • Supabase → `data` jsonb (the client sends/returns parsed objects)
  */
 
 import { db } from "./db";
 import { Bill } from "./bill";
+import { usingSupabase, supabase } from "./supabase";
 
 export class BillStore {
+  // Prepared statements for the SQLite path (unused when on Supabase).
   private putStmt = db.prepare(
     "INSERT OR REPLACE INTO bills (id, created_at, data) VALUES (?, ?, ?)"
   );
@@ -18,24 +22,64 @@ export class BillStore {
   private delStmt = db.prepare("DELETE FROM bills WHERE id = ?");
   private allStmt = db.prepare("SELECT data FROM bills ORDER BY created_at DESC");
 
-  put(bill: Bill): void {
+  async put(bill: Bill): Promise<void> {
+    if (usingSupabase) {
+      const { error } = await supabase()
+        .from("bills")
+        .upsert({ id: bill.id, created_at: bill.createdAt, data: bill });
+      if (error) throw new Error(`bills.put: ${error.message}`);
+      return;
+    }
     this.putStmt.run(bill.id, bill.createdAt, JSON.stringify(bill));
   }
 
-  get(id: string): Bill | undefined {
+  async get(id: string): Promise<Bill | undefined> {
+    if (usingSupabase) {
+      const { data, error } = await supabase()
+        .from("bills")
+        .select("data")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw new Error(`bills.get: ${error.message}`);
+      return data ? (data.data as Bill) : undefined;
+    }
     const row = this.getStmt.get(id) as { data: string } | undefined;
     return row ? (JSON.parse(row.data) as Bill) : undefined;
   }
 
-  has(id: string): boolean {
+  async has(id: string): Promise<boolean> {
+    if (usingSupabase) {
+      const { count, error } = await supabase()
+        .from("bills")
+        .select("id", { count: "exact", head: true })
+        .eq("id", id);
+      if (error) throw new Error(`bills.has: ${error.message}`);
+      return (count || 0) > 0;
+    }
     return this.hasStmt.get(id) !== undefined;
   }
 
-  delete(id: string): boolean {
+  async delete(id: string): Promise<boolean> {
+    if (usingSupabase) {
+      const { error, count } = await supabase()
+        .from("bills")
+        .delete({ count: "exact" })
+        .eq("id", id);
+      if (error) throw new Error(`bills.delete: ${error.message}`);
+      return (count || 0) > 0;
+    }
     return this.delStmt.run(id).changes > 0;
   }
 
-  all(): Bill[] {
+  async all(): Promise<Bill[]> {
+    if (usingSupabase) {
+      const { data, error } = await supabase()
+        .from("bills")
+        .select("data")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`bills.all: ${error.message}`);
+      return (data || []).map((r) => r.data as Bill);
+    }
     const rows = this.allStmt.all() as { data: string }[];
     return rows.map((r) => JSON.parse(r.data) as Bill);
   }

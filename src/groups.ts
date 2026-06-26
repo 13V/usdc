@@ -1,12 +1,14 @@
 /**
- * groups.ts — saved groups (reusable member lists) backed by SQLite.
+ * groups.ts — saved groups (reusable member lists) backed by SQLite or Supabase.
  *
  * A group is just a named list of member names that a host can reuse to spin
- * up a bill quickly. `members` is stored as a JSON string array.
+ * up a bill quickly. In SQLite `members` is stored as a JSON string array; in
+ * Supabase it's a jsonb column (passed/returned as a real array).
  */
 
 import { randomUUID } from "crypto";
 import { db } from "./db";
+import { usingSupabase, supabase } from "./supabase";
 
 export interface Group {
   id: string;
@@ -19,7 +21,8 @@ export interface Group {
 interface GroupRow {
   id: string;
   name: string;
-  members: string;
+  // SQLite: JSON string. Supabase (jsonb): already-parsed array.
+  members: string | string[];
   created_at: string;
   last_used_at: string;
 }
@@ -28,7 +31,9 @@ function rowToGroup(row: GroupRow): Group {
   return {
     id: row.id,
     name: row.name,
-    members: JSON.parse(row.members) as string[],
+    members: (typeof row.members === "string"
+      ? JSON.parse(row.members)
+      : row.members) as string[],
     createdAt: row.created_at,
     lastUsedAt: row.last_used_at,
   };
@@ -46,16 +51,36 @@ const touchStmt = db.prepare(
   "UPDATE groups SET last_used_at = ? WHERE id = ?"
 );
 
-export function listGroups(): Group[] {
+export async function listGroups(): Promise<Group[]> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("groups")
+      .select("*")
+      .order("last_used_at", { ascending: false });
+    if (error) throw new Error(`groups.listGroups: ${error.message}`);
+    return (data as GroupRow[]).map(rowToGroup);
+  }
   return (listStmt.all() as GroupRow[]).map(rowToGroup);
 }
 
-export function getGroup(id: string): Group | undefined {
+export async function getGroup(id: string): Promise<Group | undefined> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("groups")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw new Error(`groups.getGroup: ${error.message}`);
+    return data ? rowToGroup(data as GroupRow) : undefined;
+  }
   const row = getStmt.get(id) as GroupRow | undefined;
   return row ? rowToGroup(row) : undefined;
 }
 
-export function createGroup(name: string, members: string[]): Group {
+export async function createGroup(
+  name: string,
+  members: string[]
+): Promise<Group> {
   const trimmedName = String(name || "").trim();
   if (!trimmedName) throw new Error("group name is required");
 
@@ -72,6 +97,20 @@ export function createGroup(name: string, members: string[]): Group {
     createdAt: now,
     lastUsedAt: now,
   };
+
+  if (usingSupabase) {
+    // members is jsonb → pass the array directly (no JSON.stringify).
+    const { error } = await supabase().from("groups").insert({
+      id: group.id,
+      name: group.name,
+      members: group.members,
+      created_at: group.createdAt,
+      last_used_at: group.lastUsedAt,
+    });
+    if (error) throw new Error(`groups.createGroup: ${error.message}`);
+    return group;
+  }
+
   insertStmt.run(
     group.id,
     group.name,
@@ -82,10 +121,26 @@ export function createGroup(name: string, members: string[]): Group {
   return group;
 }
 
-export function deleteGroup(id: string): boolean {
+export async function deleteGroup(id: string): Promise<boolean> {
+  if (usingSupabase) {
+    const { count, error } = await supabase()
+      .from("groups")
+      .delete({ count: "exact" })
+      .eq("id", id);
+    if (error) throw new Error(`groups.deleteGroup: ${error.message}`);
+    return (count ?? 0) > 0;
+  }
   return deleteStmt.run(id).changes > 0;
 }
 
-export function touchGroup(id: string): void {
+export async function touchGroup(id: string): Promise<void> {
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("groups")
+      .update({ last_used_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) throw new Error(`groups.touchGroup: ${error.message}`);
+    return;
+  }
   touchStmt.run(new Date().toISOString(), id);
 }
