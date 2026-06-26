@@ -337,6 +337,7 @@ app.post("/api/bills", async (req: Request, res: Response) => {
     const bill = createBill({
       title: body.title || "Dinner",
       cluster: body.cluster || CLUSTER,
+      creatorUserId: req.userId || undefined,
       collector,
       totalCents,
       names,
@@ -352,8 +353,26 @@ app.post("/api/bills", async (req: Request, res: Response) => {
   }
 });
 
-app.get("/api/bills", async (_req: Request, res: Response) => {
-  res.json((await store.all()).map(serializeBill));
+// The caller's own bills (standalone "tabs"), newest first, as lightweight
+// summaries for the home screen. Scoped to creatorUserId so one user never
+// sees another's tabs.
+app.get("/api/me/bills", requireAuth, async (req: Request, res: Response) => {
+  const userId = req.userId as string;
+  const myWallet = await getPrimaryWallet(userId);
+  const all = await store.all();
+  const mine = all.filter(
+    (b) => b.creatorUserId === userId || (!!myWallet && b.collector === myWallet)
+  );
+  // Backfill ownership on legacy bills created before creatorUserId existed:
+  // a bill's collector is bound to its creator's primary wallet, so a match is
+  // authoritative. Persist it best-effort so later queries are a clean id match.
+  for (const b of mine) {
+    if (!b.creatorUserId && myWallet && b.collector === myWallet) {
+      b.creatorUserId = userId;
+      try { await store.put(b); } catch { /* non-fatal */ }
+    }
+  }
+  res.json({ bills: mine.map(billSummary) });
 });
 
 app.get("/api/bills/:id", async (req: Request, res: Response) => {
@@ -1112,6 +1131,25 @@ app.get("/pay/:id/:name", async (req: Request, res: Response) => {
 });
 
 // ---- helpers --------------------------------------------------------------
+
+/** Compact bill view for the home "tabs" list (no per-person pay URLs). */
+function billSummary(bill: Bill) {
+  const paid = bill.participants.filter((p) => p.paid).length;
+  return {
+    id: bill.id,
+    title: bill.title,
+    createdAt: bill.createdAt,
+    totalCents: bill.totalCents,
+    totalFmt: fmt(bill.totalCents),
+    collectedCents: collectedCents(bill),
+    collectedFmt: fmt(collectedCents(bill)),
+    outstandingCents: outstandingCents(bill),
+    outstandingFmt: fmt(outstandingCents(bill)),
+    settled: outstandingCents(bill) === 0,
+    peopleCount: bill.participants.length,
+    paidCount: paid,
+  };
+}
 
 function serializeBill(bill: Bill) {
   const fxNote = bill.fx

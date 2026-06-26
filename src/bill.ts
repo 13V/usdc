@@ -58,6 +58,8 @@ export interface Bill {
   title: string;
   createdAt: string;
   cluster: Cluster;
+  /** The signed-in user who created this bill (owns it on their home tabs). */
+  creatorUserId?: string;
   /** Collector wallet (base58). */
   collector: string;
   /** USDC mint used. */
@@ -74,6 +76,7 @@ export interface CreateBillInput {
   title: string;
   cluster: Cluster;
   collector: string;
+  creatorUserId?: string;
   totalCents: number;
   names: string[];
   mode: SplitMode;
@@ -118,6 +121,7 @@ export function createBill(input: CreateBillInput): Bill {
     title: input.title,
     createdAt: new Date().toISOString(),
     cluster: input.cluster,
+    ...(input.creatorUserId ? { creatorUserId: input.creatorUserId } : {}),
     collector: input.collector,
     splToken,
     totalCents: input.totalCents,

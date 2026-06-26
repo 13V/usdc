@@ -128,6 +128,28 @@
     '</div>';
   }
 
+  // A standalone "tab" (bill) the user sent — a shareable split that isn't a
+  // persistent group. Tapping opens its collect screen to track who's paid.
+  function billCard(b, i) {
+    var cover = COVERS[i % COVERS.length];
+    var emoji = groupEmoji(b.title);
+    var done = b.settled;
+    var paid = b.paidCount || 0, ppl = b.peopleCount || 0;
+    var right = done
+      ? '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.14); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:5px 11px; flex:none; font-family:\'Space Mono\',monospace; font-size:11px; color:#3DE8C7;">paid ✨</span>'
+      : '<div style="text-align:right; flex:none;"><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:#3B92E8;"><span style="opacity:.5;">$</span>' + money3(b.outstandingCents) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:0.5px; color:rgba(244,247,250,0.4); margin-top:2px;">left</div></div>';
+    var sub = done ? (ppl + (ppl === 1 ? " person" : " people")) : (paid + " of " + ppl + " paid");
+    return '<a href="#/collect/' + encodeURIComponent(b.id) + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; background:#13212E; border:1px solid rgba(244,247,250,0.06); border-radius:18px; padding:11px 14px 11px 11px;">' +
+      '<div style="position:relative; width:48px; height:48px; border-radius:13px; background:' + cover + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; overflow:hidden;">' +
+        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>' +
+        '<span style="position:relative;">' + emoji + '</span></div>' +
+      '<div style="flex:1; min-width:0;">' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#F4F7FA;">' + app.esc(b.title) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(244,247,250,0.42); margin-top:3px;">' + sub + '</div>' +
+      '</div>' + right + '</a>';
+  }
+
   function sectionLabel(name, count) {
     return '<div style="display:flex; align-items:baseline; gap:10px; margin:30px 2px 14px;">' +
       '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#F4F7FA;">' + name + '</span>' +
@@ -241,19 +263,34 @@
 
   async function signedIn(view) {
     view.innerHTML = topbar() + '<div class="appscroll"><div class="skeleton" style="height:230px;border-radius:23px;margin:14px 0;"></div><div class="skeleton" style="height:54px;margin:10px 0;"></div><div class="skeleton" style="height:54px;margin:10px 0;"></div></div>';
-    var d;
-    try { d = await app.api.get("/api/me/balances"); }
+    var d, bills = [];
+    try {
+      var both = await Promise.all([
+        app.api.get("/api/me/balances"),
+        app.api.get("/api/me/bills").catch(function () { return { bills: [] }; }),
+      ]);
+      d = both[0];
+      bills = (both[1] && both[1].bills) || [];
+    }
     catch (e) { view.innerHTML = topbar() + '<div class="empty"><div class="title lower">couldn\'t load balances</div><div class="hint">' + app.esc(e.message) + "</div></div>"; return; }
     var t = d.totals || {}, net = t.netCents || 0, owed = t.owedCents || 0, owe = t.owesCents || 0;
     var ppl = d.counterparties || [], grp = d.trips || [];
     window.__grpCount = grp.length;
 
-    var peopleHtml = ppl.length ? sectionLabel("people", ppl.length) + '<div style="display:flex; flex-direction:column; gap:3px;">' + ppl.map(personRow).join("") + "</div>" : "";
-    var groupsHtml;
-    if (grp.length) groupsHtml = sectionLabel("groups", grp.length) + '<div style="display:flex; flex-direction:column; gap:11px;">' + grp.map(groupCard).join("") + "</div>";
-    else groupsHtml = '<div class="empty" style="padding-top:30px;">' + app.mascot({ size: 96, mood: "happy" }) + '<div class="title lower">no tabs yet</div><div class="hint">start a group and split something 🎉</div><button class="btn" style="max-width:240px;margin-top:8px;" onclick="location.hash=\'#/new\'">new tab</button></div>';
+    // Open tabs first (most recent), then settled ones — they collapse out of
+    // sight once everyone's paid but stay tappable in history.
+    var openBills = bills.filter(function (b) { return !b.settled; });
+    var doneBills = bills.filter(function (b) { return b.settled; });
+    var orderedBills = openBills.concat(doneBills);
 
-    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + hero(net, owed, owe, ppl) + peopleHtml + groupsHtml + "</div>";
+    var peopleHtml = ppl.length ? sectionLabel("people", ppl.length) + '<div style="display:flex; flex-direction:column; gap:3px;">' + ppl.map(personRow).join("") + "</div>" : "";
+    var billsHtml = orderedBills.length ? sectionLabel("tabs", orderedBills.length) + '<div style="display:flex; flex-direction:column; gap:11px;">' + orderedBills.map(billCard).join("") + "</div>" : "";
+    var groupsHtml = grp.length ? sectionLabel("groups", grp.length) + '<div style="display:flex; flex-direction:column; gap:11px;">' + grp.map(groupCard).join("") + "</div>" : "";
+
+    var emptyHtml = (orderedBills.length || grp.length) ? "" :
+      '<div class="empty" style="padding-top:30px;">' + app.mascot({ size: 96, mood: "happy" }) + '<div class="title lower">no tabs yet</div><div class="hint">start a group and split something 🎉</div><button class="btn" style="max-width:240px;margin-top:8px;" onclick="location.hash=\'#/new\'">new tab</button></div>';
+
+    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + hero(net, owed, owe, ppl) + peopleHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
     var s = document.getElementById("hSettle"), rq = document.getElementById("hRequest");
     if (s) s.onclick = function () { app.go("groups"); };
     if (rq) rq.onclick = function () { app.go("new"); };
