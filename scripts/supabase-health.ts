@@ -33,7 +33,9 @@ async function main() {
   let missing = 0;
 
   for (const t of TABLES) {
-    const { error } = await sb.from(t).select("*", { count: "exact", head: true });
+    // A real data select (not a HEAD count) — HEAD can falsely succeed for a
+    // table that exists but isn't exposed by PostgREST (no grant / stale cache).
+    const { error } = await sb.from(t).select("*").limit(1);
     if (error) {
       console.log(`  ✗ ${t.padEnd(16)} ${error.message}`);
       missing++;
