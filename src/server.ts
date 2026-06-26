@@ -74,6 +74,7 @@ import {
   serializeUser,
 } from "./users";
 import { scanReceipt, parseDataUrl, NoScanProvider } from "./scan";
+import { fundingConfigured, fundWallet } from "./funding";
 import {
   convertForeignCentsToUsd,
   convertMajorToUsd,
@@ -238,6 +239,31 @@ app.get("/api/me/wallet", requireAuth, async (req: Request, res: Response) => {
   } catch (err) {
     // Network hiccup / no token account → report null rather than failing the screen.
     res.json({ wallet, usdcCents: null, usdcFmt: null, error: (err as Error).message });
+  }
+});
+
+// Devnet demo funding: drip a little gas SOL + mint test-USDC to the caller's
+// wallet so a freshly created wallet can actually settle. No-op (501) when the
+// treasury isn't configured. Devnet/test value only.
+app.post("/api/me/fund", requireAuth, async (req: Request, res: Response) => {
+  const userId = req.userId as string;
+  if (CLUSTER !== "devnet" || !fundingConfigured()) {
+    return res.status(501).json({ error: "funding not available" });
+  }
+  const wallet = await getPrimaryWallet(userId);
+  if (!wallet) return res.status(400).json({ error: "link a wallet first" });
+  try {
+    const r = await fundWallet(wallet);
+    res.json({
+      wallet,
+      sol: r.sol,
+      usdcCents: Math.round(r.usdc * 100),
+      usdcFmt: fmt(Math.round(r.usdc * 100)),
+      funded: r.solDripped || r.usdcMinted,
+    });
+  } catch (err) {
+    const status = isRpcFailure(err) ? 502 : 400;
+    res.status(status).json({ error: `funding failed: ${(err as Error).message}` });
   }
 });
 

@@ -206,15 +206,34 @@
         '</div>' +
       '</div>';
 
+    var amtStr = "$" + (Math.abs(t.amountCents || 0) / 100).toFixed(2);
     S.view.innerHTML = header(true) +
       '<div class="appscroll" style="padding-top:0;">' +
         stage("",
           '<div style="margin-bottom:14px;">' + mascot(58, "happy") + '</div>' +
+          // primary: pay in-app with the user's own (Privy/created) wallet
+          '<button id="stInApp" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:340px; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 12px 30px rgba(39,117,202,0.5);">' +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">pay ' + amtStr + ' with my wallet</span><span style="font-size:14px;">✨</span>' +
+          '</button>' +
+          '<div style="display:flex; align-items:center; gap:12px; width:100%; max-width:340px; padding:14px 0 4px;"><span style="flex:1; height:1px; background:rgba(244,247,250,0.10);"></span><span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(244,247,250,0.4);">or pay from another wallet</span><span style="flex:1; height:1px; background:rgba(244,247,250,0.10);"></span></div>' +
           card +
           '<button id="stPaid" style="appearance:none; cursor:pointer; width:100%; max-width:340px; margin-top:14px; min-height:48px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">i\'ve paid — check now</button>'
         ) +
       '</div>';
     wireCancel();
+    var inapp = document.getElementById("stInApp");
+    if (inapp) inapp.onclick = function () {
+      // hand off to the embedded Privy wallet to sign + send the USDC transfer.
+      var mint = (/[?&]spl-token=([^&]+)/.exec(solUrl || "") || [])[1] || "";
+      var qs = "pay=settle" +
+        "&to=" + encodeURIComponent(t.toWallet || "") +
+        "&amount=" + (Math.abs(t.amountCents || 0)) +
+        "&ref=" + encodeURIComponent(t.reference || "") +
+        "&mint=" + encodeURIComponent(mint) +
+        "&trip=" + encodeURIComponent((S.trip && S.trip.id) || "") +
+        "&ret=" + encodeURIComponent(location.hash || "#/home");
+      window.location.href = "/embedded/?" + qs;
+    };
     var ph = document.getElementById("stPhantom");
     if (ph) ph.onclick = function () { openUrl(phantomLink(solUrl)); go("waiting"); };
     var w = document.getElementById("stWallet");

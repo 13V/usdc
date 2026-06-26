@@ -15,13 +15,18 @@
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { dollars } from "./split";
 
-/** USDC SPL token mints. */
+/**
+ * USDC SPL token mints. The devnet mint is overridable via TEST_USDC_MINT so the
+ * demo can settle in an app-controlled test-USDC token (minted on demand) rather
+ * than Circle's devnet USDC (which needs an external faucet). Falls back to
+ * Circle's devnet mint when unset.
+ */
 export const USDC_MINT = {
   "mainnet-beta": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  devnet: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+  devnet: process.env.TEST_USDC_MINT || "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
 } as const;
 
-export type Cluster = keyof typeof USDC_MINT;
+export type Cluster = "mainnet-beta" | "devnet";
 
 export interface PaymentRequest {
   /** Collector wallet (base58). */
