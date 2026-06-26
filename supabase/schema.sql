@@ -177,3 +177,13 @@ alter table trip_members  add column if not exists emoji    text;
 alter table trip_members  add column if not exists color    text;
 alter table trip_messages add column if not exists reactions text;
 alter table recurring     add column if not exists paused   integer not null default 0;
+
+-- ---- grants ---------------------------------------------------------------
+-- The server talks to Postgres as `service_role` (which also bypasses RLS).
+-- Supabase's default privileges usually grant new tables automatically, but a
+-- table created in a later migration can miss that — PostgREST then refuses to
+-- expose it ("Could not find the table in the schema cache"). Granting
+-- explicitly to service_role is idempotent and guarantees the API can reach
+-- every table. `notify` forces PostgREST to reload its schema cache now.
+grant all on all tables in schema public to service_role;
+notify pgrst, 'reload schema';
