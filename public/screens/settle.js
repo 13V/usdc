@@ -231,7 +231,10 @@
         "&ref=" + encodeURIComponent(t.reference || "") +
         "&mint=" + encodeURIComponent(mint) +
         "&trip=" + encodeURIComponent((S.trip && S.trip.id) || "") +
-        "&ret=" + encodeURIComponent(location.hash || "#/home");
+        // Absolute return path: the embedded app lives at /embedded/, so a bare
+        // "#/settle/.." would just append a hash there and strand the user.
+        // Prefix "/" so we return to the MAIN app (e.g. /#/settle/<tripId>).
+        "&ret=" + encodeURIComponent("/" + (location.hash || "#/home"));
       window.location.href = "/embedded/?" + qs;
     };
     var ph = document.getElementById("stPhantom");
@@ -635,6 +638,15 @@
       friendly("can't build a payment yet", "the person you owe hasn't added a wallet — nudge them to claim their spot.", "back to groups");
       return;
     }
+    // Returning from an in-app (embedded wallet) send: the wallet was just
+    // debited, so skip the balance gate (it would wrongly show "balance too
+    // low") and poll the chain until the transfer finalizes → "squared".
+    try {
+      if (sessionStorage.getItem("divvy.settle.sent") === S.tripId) {
+        sessionStorage.removeItem("divvy.settle.sent");
+        go("waiting"); poll(); return;
+      }
+    } catch (_) { /* sessionStorage unavailable — fall through to normal flow */ }
     // Check the live on-chain USDC balance — if you can't cover it, show needs-funds.
     try {
       var w = await app.api.get("/api/me/wallet");

@@ -43,7 +43,11 @@ export function SettlePay() {
   const reference = q.get("ref") || "";
   const mint = q.get("mint") || "";
   const tripId = q.get("trip") || "";
-  const ret = q.get("ret") || "/#/home";
+  // Normalize to an absolute path: the embedded app is served from /embedded/,
+  // so a bare "#/settle/.." would just re-hash this page instead of returning to
+  // the main app. Force a leading "/".
+  const retRaw = q.get("ret") || "/#/home";
+  const ret = retRaw.startsWith("/") ? retRaw : "/" + retRaw;
 
   const { ready, authenticated, login } = usePrivy();
   const { wallets } = useSolanaWallets();
@@ -102,13 +106,19 @@ export function SettlePay() {
       setStatus("confirm in your wallet…");
       const receipt = await sendTransaction({ transaction, connection: conn });
       setStatus(`sent (${receipt.signature.slice(0, 8)}…) — confirming…`);
-      // ask the server to re-check the chain and mark this transfer settled
+      // Hand off confirmation to the settle screen: it polls /settle/verify
+      // until the transfer FINALIZES on-chain (a few seconds on devnet) and
+      // shows "squared". Marking paid here and firing a single verify would be
+      // premature — the tx isn't finalized yet, so the server wouldn't record
+      // it. The flag tells the settle screen to resume in its polling state.
+      try { sessionStorage.setItem("divvy.settle.sent", tripId); } catch { /* ignore */ }
+      // Best-effort early kick (harmless if not yet finalized).
       await fetch(`/api/trips/${tripId}/settle/verify`, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + token() },
       }).catch(() => {});
       setPaid(true); setStatus("");
-      setTimeout(() => { window.location.href = ret; }, 1500);
+      setTimeout(() => { window.location.href = ret; }, 1200);
     } catch (e) {
       setError((e as Error).message || "payment failed");
       setStatus("");
