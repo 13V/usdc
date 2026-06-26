@@ -229,12 +229,15 @@ app.get("/api/me/wallet", requireAuth, async (req: Request, res: Response) => {
     const accounts = await connection.getParsedTokenAccountsByOwner(new PublicKey(wallet), {
       mint: new PublicKey(USDC_MINT[CLUSTER]),
     });
-    let ui = 0;
+    // Sum base units (6-decimal integer strings) as BigInt, then floor to cents.
+    // Never round a float uiAmount: that can disagree by a cent with the floored
+    // amount used at pay time, surfacing as a confusing "insufficient funds".
+    let baseUnits = 0n;
     for (const a of accounts.value) {
-      const amt = (a.account.data as any).parsed?.info?.tokenAmount?.uiAmount;
-      if (typeof amt === "number") ui += amt;
+      const raw = (a.account.data as any).parsed?.info?.tokenAmount?.amount;
+      if (typeof raw === "string" && /^\d+$/.test(raw)) baseUnits += BigInt(raw);
     }
-    const usdcCents = Math.round(ui * 100);
+    const usdcCents = Number(baseUnits / 10000n); // 6 decimals -> cents = /10^4
     res.json({ wallet, usdcCents, usdcFmt: fmt(usdcCents), cluster: CLUSTER });
   } catch (err) {
     // Network hiccup / no token account → report null rather than failing the screen.
@@ -317,6 +320,12 @@ app.post("/api/bills", async (req: Request, res: Response) => {
 
     let totalCents = toCents(body.total);
     if (body.tipPercent) totalCents = withTip(totalCents, body.tipPercent);
+    // Reject non-positive totals (a tiny foreign amount can round to $0.00 via the
+    // FX path) — a $0 bill with payable URLs is junk state, and pairs badly with
+    // any 0-amount verify match. Mirrors the trip-expense guard.
+    if (totalCents <= 0) {
+      return res.status(400).json({ error: "amount must be greater than $0" });
+    }
     if (totalCents > MAX_AMOUNT_CENTS) {
       return res.status(400).json({ error: `amount exceeds cap ($${MAX_AMOUNT_CENTS / 100})` });
     }

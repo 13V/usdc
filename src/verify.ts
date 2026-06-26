@@ -95,6 +95,11 @@ export async function validatePayment(
 
   // Expected raw amount: USDC has 6 decimals; cents -> base units = cents * 10^4.
   const expectedBaseUnits = BigInt(expected.amountCents) * 10000n;
+  // A zero-amount transfer is never proof of payment — a 0-cent share must not be
+  // flippable to PAID by some unrelated 0-base-unit transfer that touched the ref.
+  if (expectedBaseUnits <= 0n) {
+    return { ok: false, signature, reason: "zero expected amount" };
+  }
   // The collector receives into their associated token account for this mint.
   const mintKey = new PublicKey(expected.splToken);
   const recipientKey = new PublicKey(expected.recipient);
