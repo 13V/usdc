@@ -248,7 +248,13 @@ export async function addWallet(userId: string, wallet: string, primary = false)
        ON CONFLICT(user_id, wallet) DO UPDATE SET is_primary = MAX(is_primary, excluded.is_primary)`
     ).run(userId, wallet, isPrimary);
     // A wallet is also an identity, so the same wallet always maps to this user.
-    linkIdentity("solana", wallet, userId);
+    // Run the insert synchronously INSIDE the transaction — calling the async
+    // linkIdentity() here would leave a floating promise that resolves after the
+    // transaction commits, so the identity could be missing immediately after
+    // addWallet() returns (diverging from the awaited Supabase path).
+    db.prepare(
+      "INSERT OR IGNORE INTO identities (provider, subject, user_id) VALUES (?, ?, ?)"
+    ).run("solana", wallet, userId);
   });
   tx();
 }

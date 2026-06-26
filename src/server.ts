@@ -381,7 +381,7 @@ app.get("/api/bills/:id", async (req: Request, res: Response) => {
   res.json(serializeBill(bill));
 });
 
-app.post("/api/bills/:id/verify", async (req: Request, res: Response) => {
+app.post("/api/bills/:id/verify", requireAuth, async (req: Request, res: Response) => {
   const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).json({ error: "not found" });
   try {
@@ -413,11 +413,11 @@ app.post("/api/bills/:id/verify", async (req: Request, res: Response) => {
 
 // ---- Saved groups ---------------------------------------------------------
 
-app.get("/api/groups", async (_req: Request, res: Response) => {
+app.get("/api/groups", requireAuth, async (_req: Request, res: Response) => {
   res.json(await listGroups());
 });
 
-app.post("/api/groups", async (req: Request, res: Response) => {
+app.post("/api/groups", requireAuth, async (req: Request, res: Response) => {
   const body = req.body as { name?: string; members?: string[] };
   try {
     const group = await createGroup(body.name || "", body.members || []);
@@ -427,7 +427,7 @@ app.post("/api/groups", async (req: Request, res: Response) => {
   }
 });
 
-app.delete("/api/groups/:id", async (req: Request, res: Response) => {
+app.delete("/api/groups/:id", requireAuth, async (req: Request, res: Response) => {
   if (await deleteGroup(req.params.id)) return res.json({ ok: true });
   res.status(404).json({ error: "not found" });
 });
@@ -796,13 +796,15 @@ app.patch("/api/trips/:id/members/:mid", async (req: Request, res: Response) => 
 
     // Wallet changes are a payout redirect — require a SESSION check beyond the
     // capability token: the caller must be the trip owner OR own this member.
-    if (body.wallet !== undefined && body.wallet) {
-      assertValidWallet(String(body.wallet));
+    // This guards ANY wallet modification, including CLEARING it (null/"") — a
+    // share-token holder must not be able to wipe a creditor's payout address.
+    if (body.wallet !== undefined) {
       const isOwner = !!req.userId && existing.ownerUserId === req.userId;
       const isSelf = !!req.userId && member.userId === req.userId;
       if (!isOwner && !isSelf) {
         return res.status(403).json({ error: "not authorized for this trip" });
       }
+      if (body.wallet) assertValidWallet(String(body.wallet));
     }
     if (body.name !== undefined) {
       assertLen(String(body.name), "member name", 1, MAX_MEMBER_NAME);
@@ -967,21 +969,36 @@ app.post("/api/trips/:id/settle", async (req: Request, res: Response) => {
     );
     const existing = await getSettlement(trip.id);
 
+    // Index the prior settlement's legs by identity (from→to, amount). When the
+    // balance signature changes (an expense was added/edited), an UNCHANGED leg
+    // must keep its existing reference/url/paid — otherwise a payment already
+    // made against the old reference would never verify after the regeneration
+    // overwrites it. Only genuinely new/changed legs get a fresh reference.
+    const legKey = (t: { from: string; to: string; amountCents: number }) =>
+      `${t.from}|${t.to}|${t.amountCents}`;
+    const priorByLeg = new Map<string, SettlementTransfer>();
+    for (const t of existing?.transfers || []) priorByLeg.set(legKey(t), t);
+
     // Build a payable transfer for a plan edge, or a wallet-less stub if the
     // recipient has no wallet yet.
     const buildTransfer = (t: Transfer): SettlementTransfer => {
       const recipient = trip.members.find((m) => m.id === t.to);
       if (recipient && recipient.wallet) {
-        const reference = newReference();
-        const url = buildSolanaPayUrl({
-          recipient: recipient.wallet,
-          amountCents: t.amountCents,
-          splToken: USDC_MINT[trip.cluster],
-          reference,
-          label: trip.name,
-          message: `${memberName(trip, t.from)} → ${memberName(trip, t.to)}`,
-        });
-        return { ...t, reference, url, paid: false };
+        const prior = priorByLeg.get(legKey(t));
+        // Reuse a still-valid reference/url for an identical leg so any payment
+        // already in flight against it stays detectable.
+        const reference = (prior && prior.reference) || newReference();
+        const url =
+          (prior && prior.url) ||
+          buildSolanaPayUrl({
+            recipient: recipient.wallet,
+            amountCents: t.amountCents,
+            splToken: USDC_MINT[trip.cluster],
+            reference,
+            label: trip.name,
+            message: `${memberName(trip, t.from)} → ${memberName(trip, t.to)}`,
+          });
+        return { ...t, reference, url, paid: !!(prior && prior.paid) };
       }
       return { ...t, reference: null, url: null, paid: false };
     };

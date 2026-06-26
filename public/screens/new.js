@@ -21,6 +21,18 @@
   var F_MONO = "'Space Mono',monospace";
 
   // ---- helpers ---------------------------------------------------------
+  // Pick a group emoji from its name (mirrors home.js groupEmoji) — the trips
+  // API doesn't return a top-level emoji, so we derive one client-side.
+  function groupEmojiFromName(name) {
+    var n = (name || "").toLowerCase();
+    if (/tokyo|japan|trip|travel|flight/.test(n)) return "🗼";
+    if (/apart|rent|house|home|flat/.test(n)) return "🏠";
+    if (/bali|beach|island|vacation/.test(n)) return "🏝️";
+    if (/room|mate/.test(n)) return "🧻";
+    if (/food|dinner|lunch|eat/.test(n)) return "🍜";
+    return "✨";
+  }
+
   // parse a dollar string -> integer cents (best effort, never NaN-explodes).
   function toCents(str) {
     var v = String(str == null ? "" : str).replace(/[^0-9.]/g, "");
@@ -694,7 +706,11 @@
         '<div class="skeleton" style="height:60px;margin:10px 0;"></div></div>');
       app.api.get("/api/trips/" + encodeURIComponent(groupId)).then(function (trip) {
         st._groupName = trip && trip.name;
+        // The API doesn't return a top-level trip emoji, so derive one from the
+        // name (mirrors home.js groupEmoji) rather than silently keeping the
+        // default. Honor an explicit trip.emoji if the API ever adds one.
         if (trip && trip.emoji) st._groupEmoji = trip.emoji;
+        else if (trip && trip.name) st._groupEmoji = groupEmojiFromName(trip.name);
         seedMembers(trip && trip.members);
         render();
       }).catch(function () {
