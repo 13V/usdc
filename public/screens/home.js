@@ -223,15 +223,20 @@
     // with email/social, get an auto-provisioned Solana wallet, and come back
     // signed in (the flow stashes the session token in shared localStorage).
     function privyOnboard(method) {
-      var ret = encodeURIComponent("/#/home");
-      window.location.href =
-        "/embedded/?return=" + ret + (method ? "&method=" + method : "");
+      // No return param → the Privy flow lands on the "wallet ready" celebration.
+      window.location.href = "/embedded/?" + (method ? "method=" + method : "");
     }
     if (c) c.onclick = function () { privyOnboard(); };
     if (ap) ap.onclick = function () { privyOnboard("apple"); };
     if (gg) gg.onclick = function () { privyOnboard("google"); };
-    // "i already have one" → connect an injected wallet (Phantom) via SIWS.
-    if (n) n.onclick = function () { Auth.signInWithWallet().catch(function (e) { app.toast(e.message); }); };
+    // "i already have one" → connect an injected wallet (Phantom) via SIWS, then
+    // show the wallet-ready celebration (connected variant).
+    if (n) n.onclick = function () {
+      Auth.signInWithWallet().then(function () {
+        try { sessionStorage.setItem("divvy.onboardVia", "phantom"); } catch (_) {}
+        location.hash = "#/welcome";
+      }).catch(function (e) { app.toast(e.message); });
+    };
   }
 
   async function signedIn(view) {

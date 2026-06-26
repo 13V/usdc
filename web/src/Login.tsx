@@ -58,7 +58,10 @@ export function Login() {
         const data = await res.json().catch(() => null);
         if (!res.ok) throw new Error((data && data.error) || "Sign-in failed");
         try { localStorage.setItem(DIVVY_TOKEN_KEY, data.token); } catch { /* private mode */ }
-        window.location.href = returnTo;
+        // Land on the "wallet ready" celebration (created variant) rather than
+        // dropping straight onto home. returnTo is kept for deep-link cases.
+        try { sessionStorage.setItem("divvy.onboardVia", "privy"); } catch { /* ignore */ }
+        window.location.href = returnTo && returnTo !== "/" ? returnTo : "/#/welcome";
       } catch (e) {
         verifiedRef.current = false;
         setError((e as Error).message);
