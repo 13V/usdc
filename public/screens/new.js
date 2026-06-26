@@ -487,15 +487,17 @@
     function personSheet(member) {
       var editing = !!member;
       var html =
-        '<h3 class="lower" style="font-size:18px;margin-bottom:4px;">' + (editing ? "edit person" : "add someone") + '</h3>' +
-        '<div style="font-family:' + F_MONO + ';font-size:10px;letter-spacing:.5px;color:rgba(244,247,250,0.4);margin-bottom:13px;">name them, or pick a friend</div>' +
-        '<input id="psName" type="text" placeholder="name" value="' + (editing && !member.you ? app.esc(member.name) : "") + '" autocomplete="off" ' +
-          'style="width:100%;box-sizing:border-box;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card-2);color:#F4F7FA;font-family:\'General Sans\',sans-serif;font-size:16px;outline:none;" />' +
-        '<div id="psFriends" style="margin-top:12px;"></div>' +
-        '<div style="display:flex;gap:10px;margin-top:18px;">' +
-          (editing && !member.you ? '<button id="psRemove" style="flex:none;appearance:none;cursor:pointer;padding:0 18px;min-height:50px;border-radius:999px;background:transparent;border:1px solid rgba(255,107,94,0.4);color:#FF6B5E;font-family:\'General Sans\',sans-serif;font-weight:500;font-size:15px;">remove</button>' : '') +
-          '<button id="psSave" style="flex:1;appearance:none;border:none;cursor:pointer;min-height:50px;border-radius:999px;background:linear-gradient(120deg,#3286db,#2775CA);color:#fff;font-family:\'Clash Display\',sans-serif;font-weight:600;font-size:16px;">' + (editing ? "save" : "add") + '</button>' +
-        '</div>';
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif;font-weight:600;font-size:19px;">' + (editing ? "edit person" : "split with") + '</div>' +
+        '<div style="font-family:' + F_MONO + ';font-size:10px;letter-spacing:.5px;color:rgba(244,247,250,0.4);margin:3px 0 14px;">tap a friend' + (editing ? ', rename, or remove' : ', or add a guest') + '</div>' +
+        '<div id="psFriends" style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;-webkit-overflow-scrolling:touch;">' +
+          '<div style="font-family:' + F_MONO + ';font-size:11px;color:rgba(244,247,250,0.4);padding:6px 2px;">loading friends…</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:12px;margin:16px 0 12px;"><span style="flex:1;height:1px;background:rgba(244,247,250,0.1);"></span><span style="font-family:' + F_MONO + ';font-size:10px;color:rgba(244,247,250,0.35);">' + (editing ? "or rename" : "or add a guest") + '</span><span style="flex:1;height:1px;background:rgba(244,247,250,0.1);"></span></div>' +
+        '<div style="display:flex;gap:9px;">' +
+          '<input id="psName" type="text" placeholder="name" value="' + (editing && !member.you ? app.esc(member.name) : "") + '" autocomplete="off" style="flex:1;box-sizing:border-box;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card-2);color:#F4F7FA;font-family:\'General Sans\',sans-serif;font-size:16px;outline:none;" />' +
+          '<button id="psSave" style="flex:none;appearance:none;border:none;cursor:pointer;padding:0 22px;min-height:50px;border-radius:14px;background:linear-gradient(120deg,#3286db,#2775CA);color:#fff;font-family:\'Clash Display\',\'General Sans\',sans-serif;font-weight:600;font-size:15px;">' + (editing ? "save" : "add") + '</button>' +
+        '</div>' +
+        (editing && !member.you ? '<button id="psRemove" style="width:100%;margin-top:12px;appearance:none;cursor:pointer;min-height:46px;border-radius:999px;background:transparent;border:1px solid rgba(255,107,94,0.4);color:#FF6B5E;font-family:\'General Sans\',sans-serif;font-weight:500;font-size:15px;">remove from split</button>' : '');
       var el = app.sheet(html);
 
       function commit(name, uid, wallet, emoji) {
@@ -525,25 +527,30 @@
         app.closeSheet(); render();
       };
 
-      // friends quick-pick (best-effort; hidden if you have none)
+      // friends list — a simple tappable list (the primary way to add someone)
       app.api.get("/api/friends").then(function (r) {
         var box = el.querySelector("#psFriends");
         if (!box) return;
         var have = {}; st.members.forEach(function (m) { if (m.userId) have[m.userId] = 1; });
         var fs = ((r && r.friends) || []).filter(function (f) { return !have[f.id]; });
-        if (!fs.length) { box.innerHTML = ""; return; }
-        box.innerHTML = '<div style="font-family:' + F_MONO + ';font-size:9px;letter-spacing:1px;color:rgba(244,247,250,0.4);margin:2px 2px 9px;">YOUR FRIENDS</div>' +
-          '<div style="display:flex;flex-wrap:wrap;gap:8px;">' +
-          fs.map(function (f) {
-            var nm = f.displayName || f.handle || "friend"; var em = f.emoji || "🙂";
-            return '<button class="psFriend" data-name="' + app.esc(nm) + '" data-uid="' + app.esc(f.id) + '" data-wallet="' + app.esc(f.primaryWallet || "") + '" data-emoji="' + app.esc(em) + '" ' +
-              'style="appearance:none;cursor:pointer;display:flex;align-items:center;gap:7px;padding:7px 13px 7px 9px;border-radius:999px;background:var(--card-2);border:1px solid var(--line);color:#F4F7FA;font-family:\'General Sans\',sans-serif;font-size:14px;">' +
-              '<span style="font-size:17px;">' + app.esc(em) + '</span>' + app.esc(nm) + '</button>';
-          }).join("") + '</div>';
+        if (!fs.length) {
+          box.innerHTML = '<div style="text-align:center;padding:10px 8px 4px;color:rgba(244,247,250,0.5);font-family:\'General Sans\',sans-serif;font-size:14px;line-height:1.5;">no friends to pick yet — add people on the <span style="color:#7fc0ff;">people</span> tab (they accept), then they\'ll show here. add a guest below 👇</div>';
+          return;
+        }
+        box.innerHTML = fs.map(function (f) {
+          var nm = f.displayName || f.handle || "friend"; var em = f.emoji || "🙂";
+          var color = f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)";
+          return '<button class="psFriend" data-name="' + app.esc(nm) + '" data-uid="' + app.esc(f.id) + '" data-wallet="' + app.esc(f.primaryWallet || "") + '" data-emoji="' + app.esc(em) + '" ' +
+            'style="display:flex;align-items:center;gap:12px;width:100%;appearance:none;cursor:pointer;text-align:left;background:var(--card-2);border:1px solid var(--line);border-radius:14px;padding:10px 13px;">' +
+            '<div style="width:40px;height:40px;border-radius:50%;background:' + color + ';display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;">' + app.esc(em) + '</div>' +
+            '<span style="flex:1;font-family:\'General Sans\',sans-serif;font-weight:600;font-size:15px;color:#F4F7FA;">' + app.esc(nm) + '</span>' +
+            '<span style="font-family:' + F_MONO + ';font-size:11px;letter-spacing:.5px;color:#5BA6F0;">add</span>' +
+          '</button>';
+        }).join("");
         [].forEach.call(el.querySelectorAll(".psFriend"), function (b) {
           b.onclick = function () { commit(b.getAttribute("data-name"), b.getAttribute("data-uid"), b.getAttribute("data-wallet"), b.getAttribute("data-emoji")); };
         });
-      }).catch(function () {});
+      }).catch(function () { var box = el.querySelector("#psFriends"); if (box) box.innerHTML = ""; });
     }
 
     function pickEmoji() {
