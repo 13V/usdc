@@ -474,7 +474,29 @@ app.get("/api/me/bills", requireAuth, async (req: Request, res: Response) => {
       try { await store.put(b); } catch { /* non-fatal */ }
     }
   }
-  res.json({ bills: mine.map(billSummary) });
+  // Tabs someone else created where a share is YOURS — by linked userId, or
+  // (fallback) by your primary wallet. These auto-appear as "tabs to pay".
+  const incoming = all
+    .filter((b) => b.creatorUserId !== userId)
+    .map((b) => {
+      const share = b.participants.find(
+        (p) => p.userId === userId || (!!myWallet && p.wallet === myWallet)
+      );
+      if (!share) return null;
+      return {
+        ...billSummary(b),
+        mine: {
+          name: share.name,
+          amountCents: share.amountCents,
+          amountFmt: fmt(share.amountCents),
+          paid: share.paid,
+          payPath: `/pay/${b.id}/${encodeURIComponent(share.name)}`,
+        },
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
+  res.json({ bills: mine.map(billSummary), incoming });
 });
 
 app.get("/api/bills/:id", async (req: Request, res: Response) => {

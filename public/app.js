@@ -4,12 +4,47 @@
 (function () {
   "use strict";
 
+  // ---- share-token store (token attached to a trip's share link) ----
+  // sessionStorage map of tripId -> shareToken, so an unclaimed visitor who
+  // arrives via /t/<token> can keep viewing + claiming after we redirect them
+  // to #/group/<id> (the token survives the redirect/refresh).
+  var TOKENS_KEY = "divvy.tripTokens";
+  function loadTokens() {
+    try { return JSON.parse(sessionStorage.getItem(TOKENS_KEY) || "{}") || {}; }
+    catch (_) { return {}; }
+  }
+  function saveTokens(map) {
+    try { sessionStorage.setItem(TOKENS_KEY, JSON.stringify(map || {})); } catch (_) {}
+  }
+  function setTripToken(tripId, token) {
+    if (!tripId || !token) return;
+    var map = loadTokens();
+    map[String(tripId)] = String(token);
+    saveTokens(map);
+  }
+  function tripToken(tripId) {
+    if (!tripId) return null;
+    return loadTokens()[String(tripId)] || null;
+  }
+  // For a /api/trips/<id>... path, return the stored share token for <id> (or null).
+  function tokenForPath(path) {
+    var m = /^\/api\/trips\/([^/?#]+)/.exec(String(path || ""));
+    if (!m) return null;
+    return tripToken(decodeURIComponent(m[1]));
+  }
+
   // ---- API helper (reuses window.Auth.authFetch when signed in) ----
   function fetchFn() {
     return (window.Auth && window.Auth.authFetch) ? window.Auth.authFetch : fetch;
   }
   async function req(method, path, body) {
-    var opts = { method: method, headers: { "content-type": "application/json" } };
+    var headers = { "content-type": "application/json" };
+    // For trip paths we know a share token for, attach X-Trip-Token so an
+    // unclaimed visitor can view + claim. Merged below so it rides alongside
+    // any auth header (bearer) that authFetch adds — never replacing it.
+    var token = tokenForPath(path);
+    if (token) headers["X-Trip-Token"] = token;
+    var opts = { method: method, headers: headers };
     if (body !== undefined) opts.body = JSON.stringify(body);
     var res = await fetchFn()(path, opts);
     var data = null;
@@ -414,6 +449,7 @@
     api: api, esc: esc, money: money, avatar: avatar, colorFor: colorFor, mascot: mascot,
     toast: toast, sheet: sheet, closeSheet: closeSheet, go: go, render: render,
     depositSheet: depositSheet, copy: copy, haptic: haptic, pullToRefresh: pullToRefresh,
+    tripToken: tripToken, setTripToken: setTripToken,
     _sheet: null, _sheetKey: null,
   };
   window.app = app;
@@ -440,10 +476,46 @@
   }
   if (window.Auth && window.Auth.onChange) window.Auth.onChange(function () { syncIdentity(); });
 
+  // ---- share-link boot (/t/<shareToken>) ----
+  // A second person opens a group's share link at /t/<token>. The server serves
+  // the SPA shell for that path, so here we: read the token, fetch the trip with
+  // it (authorized without a session), remember token->tripId, clean the URL,
+  // and route to #/group/<id>. From then on req() attaches X-Trip-Token for
+  // this trip so the visitor can view + claim a spot. Falls back to home on any
+  // failure so a dead/expired link doesn't strand the user.
+  async function handleShareLink() {
+    var m = /^\/t\/([^/]+)/.exec(location.pathname || "");
+    if (!m) return false;
+    var token = decodeURIComponent(m[1]);
+    try {
+      var trip = await fetchFn()("/api/trips/" + encodeURIComponent(token), {
+        headers: { "content-type": "application/json", "X-Trip-Token": token },
+      }).then(function (res) {
+        return res.json().then(function (data) {
+          if (!res.ok) { var e = new Error("share link failed"); e.status = res.status; throw e; }
+          return data;
+        });
+      });
+      if (!trip || !trip.id) throw new Error("no trip");
+      setTripToken(trip.id, token);
+      // Clean the /t/ path so refreshes land on a normal SPA URL.
+      try { history.replaceState(null, "", "/"); } catch (_) {}
+      location.hash = "#/group/" + encodeURIComponent(trip.id);
+      return true;
+    } catch (_) {
+      try { history.replaceState(null, "", "/"); } catch (_) {}
+      location.hash = "#/home";
+      return true;
+    }
+  }
+
   window.addEventListener("hashchange", render);
   window.addEventListener("DOMContentLoaded", function () {
     syncIdentity();
-    if (!location.hash) location.hash = "#/home";
-    render();
+    handleShareLink().then(function (handled) {
+      if (handled) { render(); return; }
+      if (!location.hash) location.hash = "#/home";
+      render();
+    });
   });
 })();

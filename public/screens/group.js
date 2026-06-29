@@ -205,6 +205,87 @@
     return { id: id, name: id };
   }
 
+  // unclaimed slots = members with no userId (no wallet attached yet).
+  function unclaimedSlots(trip) {
+    return (trip.members || []).filter(function (m) { return m && !m.userId; });
+  }
+
+  // ---------- "claim your spot" card (shown to an unclaimed visitor) ----------
+  // When the signed-in viewer isn't already a member of this trip AND there are
+  // open slots, invite them to attach their wallet to one. Required before the
+  // group can settle up to them. Rendered as a live node so taps wire cleanly.
+  function claimCardEl(trip) {
+    var slots = unclaimedSlots(trip);
+    var rows = slots.map(function (m) {
+      return '<div class="gClaimSlot" data-mid="' + app.esc(m.id) + '" role="button" tabindex="0" ' +
+        'style="display:flex; align-items:center; gap:12px; background:#0B1622; border:1px solid rgba(61,232,199,0.28); border-radius:14px; padding:11px 14px; cursor:pointer;">' +
+        gavatar(m, 34) +
+        '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name || "someone") + '</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:#3DE8C7;">claim →</span>' +
+      '</div>';
+    }).join("");
+
+    var html = '' +
+    '<div style="margin:22px 0 4px; border-radius:20px; padding:18px 18px 16px; ' +
+      'background:linear-gradient(150deg, rgba(61,232,199,0.12), rgba(39,117,202,0.10)); ' +
+      'border:1px solid rgba(61,232,199,0.35); box-shadow:0 12px 30px rgba(61,232,199,0.12);">' +
+      '<div style="display:flex; align-items:center; gap:9px;">' +
+        '<span style="font-size:20px;">✨</span>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.3px; color:#F4F7FA;">is one of these you?</span>' +
+      '</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(244,247,250,0.65); margin-top:6px;">claim your spot so the group can settle up to your wallet.</div>' +
+      '<div style="display:flex; flex-direction:column; gap:9px; margin-top:14px;">' + rows + '</div>' +
+    '</div>';
+
+    var el = elFrom(html);
+    var slotEls = el.querySelectorAll(".gClaimSlot");
+    Array.prototype.forEach.call(slotEls, function (s) {
+      function go() { claimSlot(trip, s.getAttribute("data-mid")); }
+      s.onclick = go;
+      s.onkeydown = function (e) {
+        if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); go(); }
+      };
+    });
+    return el;
+  }
+
+  // POST the claim. Needs the caller signed in; if not, create a wallet (which
+  // signs them in) and retry once. On success: toast + reload so findMe() now
+  // resolves them as a claimed member with a wallet, unlocking settle-up.
+  function claimSlot(trip, memberId, retried) {
+    if (!memberId) return;
+    var u = window.Auth && window.Auth.user;
+    if (!u) {
+      if (retried) { app.toast("sign in to claim your spot"); return; }
+      app.toast("creating your wallet…");
+      if (!(window.Auth && window.Auth.createWallet)) { app.toast("sign in to claim your spot"); return; }
+      window.Auth.createWallet()
+        .then(function () { claimSlot(trip, memberId, true); })
+        .catch(function () { app.toast("couldn't set up a wallet — try again"); });
+      return;
+    }
+    app.api.post("/api/trips/" + encodeURIComponent(trip.id) + "/members/" + encodeURIComponent(memberId) + "/claim")
+      .then(function (fresh) {
+        app.haptic([30, 40, 30]);
+        app.toast("claimed ✨");
+        if (fresh && fresh.id) paint(view_, fresh);
+        else load(view_, trip.id);
+      })
+      .catch(function (err) {
+        if (err && (err.status === 401 || err.status === 403)) {
+          if (retried) { app.toast("sign in to claim your spot"); return; }
+          app.toast("sign in to claim your spot");
+          if (window.Auth && window.Auth.createWallet) {
+            window.Auth.createWallet()
+              .then(function () { claimSlot(trip, memberId, true); })
+              .catch(function () { app.toast("couldn't set up a wallet — try again"); });
+          }
+          return;
+        }
+        app.toast((err && err.message) || "couldn't claim that spot");
+      });
+  }
+
   // ---------- your balance hero (big mono + owe bar) ----------
   function balanceHero(trip, me) {
     // net for "you"
@@ -602,15 +683,25 @@
   function paint(view, trip) {
     var me = findMe(trip);
     var emoji = groupEmoji(trip);
+    // Show the "claim your spot" card to a signed-in (or about-to-sign-in)
+    // visitor who isn't yet a member, when open slots exist. Injected as a live
+    // node into a placeholder so its tap handlers wire cleanly.
+    var showClaim = !me && unclaimedSlots(trip).length > 0;
     view.innerHTML =
       topbar(trip, emoji) +
       '<div class="appscroll gd-scroll" style="padding:0 0 140px;">' +
         coverHeader(trip) +
+        (showClaim ? '<div id="gClaimHost" style="padding:0 22px;"></div>' : "") +
         balanceHero(trip, me) +
       '</div>' +
       stickyBar();
 
     wireBack();
+
+    if (showClaim) {
+      var claimHost = document.getElementById("gClaimHost");
+      if (claimHost) claimHost.appendChild(claimCardEl(trip));
+    }
 
     var more = document.getElementById("gMore");
     if (more) more.onclick = function () { location.hash = "#/chat/" + encodeURIComponent(trip.id); };

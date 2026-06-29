@@ -99,7 +99,21 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.5
 /* universal tactile press for the inline-styled screen buttons (skip ones that
    set their own transform, and the .btn class which has its own press above) */
 button:active:not(.btn):not([style*="transform"]) { transform: scale(.97); transition: transform .07s ease; }
-@media (prefers-reduced-motion: reduce) { .btn:active, button:active:not(.btn):not([style*="transform"]) { transform: none; } }
+/* same tactile press for inline-styled tappable cards/rows/links the screens
+   render (anchors and pointer-cursor divs), so they don't read as dead on tap.
+   the tabbar links opt out via their own .tabbar styling; these are keyed on the
+   inline patterns the screens emit and skip elements that set their own transform. */
+.appscroll a[style]:active:not([style*="transform"]),
+a[style*="color:inherit"]:active:not([style*="transform"]),
+a[style*="cursor:pointer"]:active:not([style*="transform"]),
+div[style*="cursor:pointer"]:active:not([style*="transform"]) {
+  transform: scale(.985); transition: transform .07s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn:active, button:active:not(.btn):not([style*="transform"]),
+  .appscroll a[style]:active, a[style*="color:inherit"]:active,
+  a[style*="cursor:pointer"]:active, div[style*="cursor:pointer"]:active { transform: none; }
+}
 .btn.ghost { background: transparent; border: 1px solid var(--line-2); color: var(--text);
   box-shadow: none; font-family: var(--sans); font-weight: 500; }
 .btn.ghost:hover { background: rgba(244,247,250,0.05); border-color: rgba(244,247,250,0.3); filter: none; }

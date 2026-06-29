@@ -746,6 +746,9 @@
             total: dollars(grand),     // dollars; server re-derives cents
             tipPercent: 0,             // tip already baked into total
             names: inc.map(function (m) { return m.you ? "you" : m.name; }),
+            // also carry each participant's identity so friend shares can
+            // auto-appear on THEIR home (guests carry no userId/wallet).
+            members: inc.map(function (m) { return { name: m.you ? "you" : m.name, userId: m.userId, wallet: m.wallet }; }),
             mode: customCents ? "custom" : "equal",
             customCents: customCents || undefined,
           });

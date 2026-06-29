@@ -175,6 +175,30 @@
       '</div>' + right + '</a>';
   }
 
+  // An INCOMING "tab" — a split someone else sent you where a share is yours.
+  // Shows the title + your share, and a "pay" button that opens the in-app pay
+  // flow (mine.payPath → /pay/<billId>/<yourName>). Paid shares show a chip.
+  function incomingCard(b, i) {
+    var cover = COVERS[i % COVERS.length];
+    var emoji = groupEmoji(b.title);
+    var mine = b.mine || {};
+    var paid = !!mine.paid;
+    var right = paid
+      ? '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.14); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:5px 11px; flex:none; font-family:\'Space Mono\',monospace; font-size:11px; color:#3DE8C7;">paid ✨</span>'
+      : '<a href="' + app.esc(mine.payPath || ("/pay/" + encodeURIComponent(b.id))) + '" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(120deg,#3286db,#2775CA); border-radius:999px; padding:9px 16px; flex:none; box-shadow:0 6px 16px rgba(39,117,202,0.4);">' +
+          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#fff;">pay <span style="font-family:\'Space Mono\',monospace;">' + app.esc(mine.amountFmt || "") + '</span></span>' +
+        '</a>';
+    var sub = paid ? "you paid your share" : "your share";
+    return '<div style="display:flex; align-items:center; gap:13px; background:#13212E; border:1px solid rgba(244,247,250,0.06); border-radius:18px; padding:11px 14px 11px 11px;">' +
+      '<div style="position:relative; width:48px; height:48px; border-radius:13px; background:' + cover + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; overflow:hidden;">' +
+        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>' +
+        '<span style="position:relative;">' + emoji + '</span></div>' +
+      '<div style="flex:1; min-width:0;">' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#F4F7FA;">' + app.esc(b.title) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(244,247,250,0.42); margin-top:3px;">' + sub + '</div>' +
+      '</div>' + right + '</div>';
+  }
+
   function sectionLabel(name, count) {
     return '<div style="display:flex; align-items:baseline; gap:10px; margin:30px 2px 14px;">' +
       '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#F4F7FA;">' + name + '</span>' +
@@ -288,15 +312,16 @@
 
   async function signedIn(view) {
     view.innerHTML = topbar() + '<div class="appscroll"><div class="skeleton" style="height:230px;border-radius:23px;margin:14px 0;"></div><div class="skeleton" style="height:54px;margin:10px 0;"></div><div class="skeleton" style="height:54px;margin:10px 0;"></div></div>';
-    var d, bills = [], walletCents = null;
+    var d, bills = [], incoming = [], walletCents = null;
     try {
       var both = await Promise.all([
         app.api.get("/api/me/balances"),
-        app.api.get("/api/me/bills").catch(function () { return { bills: [] }; }),
+        app.api.get("/api/me/bills").catch(function () { return { bills: [], incoming: [] }; }),
         app.api.get("/api/me/wallet").catch(function () { return null; }),
       ]);
       d = both[0];
       bills = (both[1] && both[1].bills) || [];
+      incoming = (both[1] && both[1].incoming) || [];
       if (both[2] && typeof both[2].usdcCents === "number") walletCents = both[2].usdcCents;
     }
     catch (e) { view.innerHTML = topbar() + '<div class="empty"><div class="title lower">couldn\'t load balances</div><div class="hint">' + app.esc(e.message) + "</div></div>"; return; }
@@ -317,12 +342,18 @@
 
     var peopleHtml = ppl.length ? sectionLabel("people", ppl.length) + '<div style="display:flex; flex-direction:column; gap:3px;">' + ppl.map(personRow).join("") + "</div>" : "";
     var billsHtml = orderedBills.length ? sectionLabel("tabs", orderedBills.length) + '<div style="display:flex; flex-direction:column; gap:11px;">' + orderedBills.map(billCard).join("") + "</div>" : "";
+
+    // Tabs to pay: splits others sent you. Unpaid first, then paid (history).
+    var openIncoming = incoming.filter(function (b) { return !(b.mine && b.mine.paid); });
+    var paidIncoming = incoming.filter(function (b) { return b.mine && b.mine.paid; });
+    var orderedIncoming = openIncoming.concat(paidIncoming);
+    var incomingHtml = orderedIncoming.length ? sectionLabel("tabs to pay", orderedIncoming.length) + '<div style="display:flex; flex-direction:column; gap:11px;">' + orderedIncoming.map(incomingCard).join("") + "</div>" : "";
     var groupsHtml = grp.length ? sectionLabel("groups", grp.length) + '<div style="display:flex; flex-direction:column; gap:11px;">' + grp.map(groupCard).join("") + "</div>" : "";
 
-    var emptyHtml = (orderedBills.length || grp.length) ? "" :
+    var emptyHtml = (orderedBills.length || grp.length || orderedIncoming.length) ? "" :
       '<div class="empty" style="padding-top:30px;">' + app.mascot({ size: 96, mood: "happy" }) + '<div class="title lower">no tabs yet</div><div class="hint">start a group and split something 🎉</div><button class="btn" style="max-width:240px;margin-top:8px;" onclick="location.hash=\'#/new\'">new tab</button></div>';
 
-    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + hero(net, owed, owe, ppl, walletCents, quick) + peopleHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
+    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + hero(net, owed, owe, ppl, walletCents, quick) + incomingHtml + peopleHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
     var s = document.getElementById("hSettle"), rq = document.getElementById("hRequest");
     if (s) s.onclick = function () {
       if (quick) location.hash = "#/settle/" + encodeURIComponent(quick.tripId);
