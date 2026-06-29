@@ -34,7 +34,18 @@ app is "safe"; it is the list of what must be true before it can be.
 instruction (not just the transaction) requires raw-instruction parsing and must
 be validated against live on-chain fixtures before shipping — rushing it risks
 false negatives that strand real payments. The signature-uniqueness guard
-already closes the fund-loss path, so this is defense-in-depth.
+already closes the single-context fund-loss path, so this is defense-in-depth.
+
+**Open (confirmed by the security sweep) — cross-context signature reuse:**
+signature-uniqueness is enforced *within* a single bill / trip, but **not
+across** them. If the same person is the collector in two separate bills/trips
+for the same amount, a crafted single on-chain transfer carrying both
+references could mark the payer "paid" in **both** — discharging two debts with
+one payment and shorting the collector. **Devnet impact: none (test funds).**
+Before mainnet, replace per-context dedup with a **global consumed-signature
+store**: a signature can settle at most one share system-wide. (Needs a small
+`consumed_signatures` table applied to Supabase + wired into both verify loops;
+safe because each legitimate share is paid by its own distinct transaction.)
 
 ## 4. Custody / recovery — decision required
 
