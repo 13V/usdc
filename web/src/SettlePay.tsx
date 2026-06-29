@@ -54,7 +54,10 @@ export function SettlePay() {
   const { sendTransaction } = useSendTransaction();
   const wallet = wallets[0];
 
-  const conn = useMemo(() => new Connection("https://api.devnet.solana.com", "confirmed"), []);
+  // Use the configured RPC (Helius) injected at build time via VITE_RPC_URL —
+  // the public devnet endpoint rate-limits and makes sends/balance reads flaky.
+  const rpc = (import.meta.env.VITE_RPC_URL as string | undefined) || "https://api.devnet.solana.com";
+  const conn = useMemo(() => new Connection(rpc, "confirmed"), [rpc]);
   const [balanceCents, setBalanceCents] = useState<number | null>(null);
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);

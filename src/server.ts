@@ -396,19 +396,25 @@ app.post("/api/bills/:id/verify", requireAuth, async (req: Request, res: Respons
   try {
     const connection = new Connection(rpcUrl(bill.cluster), "confirmed");
     const updated: string[] = [];
+    // Signatures already credited — one on-chain payment settles at most one share.
+    const usedSigs = new Set<string>(
+      bill.participants.filter((p) => p.paid && p.signature).map((p) => p.signature as string)
+    );
     for (const p of bill.participants) {
       if (p.paid) continue;
       // Production gate: only mark PAID once the transfer is validated at
-      // "finalized" with the exact amount, token, and collector ATA.
+      // "finalized" with the exact amount, token, and collector ATA — and the
+      // settling signature hasn't already been credited to another participant.
       const valid = await validatePayment(connection, {
         reference: p.reference,
         recipient: bill.collector,
         splToken: bill.splToken,
         amountCents: p.amountCents,
-      });
+      }, { excludeSignatures: usedSigs });
       if (valid.ok) {
         p.paid = true;
         p.signature = valid.signature;
+        if (valid.signature) usedSigs.add(valid.signature);
         updated.push(p.name);
       }
     }
@@ -1051,6 +1057,11 @@ app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => 
   if (!stored) return res.status(400).json({ error: "no settlement to verify; call /settle first" });
   try {
     const connection = new Connection(rpcUrl(trip.cluster), "confirmed");
+    // Signatures already credited (this pass or a prior one) — one on-chain
+    // payment settles at most one transfer.
+    const usedSigs = new Set<string>(
+      stored.transfers.filter((t) => t.paid && (t as any).signature).map((t) => (t as any).signature as string)
+    );
     for (const t of stored.transfers) {
       if (t.paid) continue;
       const recipient = trip.members.find((m) => m.id === t.to);
@@ -1060,10 +1071,11 @@ app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => 
         recipient: recipient.wallet,
         splToken: USDC_MINT[trip.cluster],
         amountCents: t.amountCents,
-      });
+      }, { excludeSignatures: usedSigs });
       if (valid.ok) {
         t.paid = true;
         (t as any).signature = valid.signature; // record the on-chain sig for receipts/lookups
+        if (valid.signature) usedSigs.add(valid.signature);
       }
     }
     await saveSettlement(trip.id, stored.signature, stored.transfers);
