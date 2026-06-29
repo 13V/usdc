@@ -166,6 +166,17 @@ create table if not exists trip_reactions (
 );
 create index if not exists trip_reactions_trip_idx on trip_reactions (trip_id);
 
+-- ---- consumed_signatures (src/consumedSignatures.ts) -----------------------
+-- Global "one on-chain payment settles one share" ledger. Each confirmed
+-- signature can be claimed by exactly one owner (bill:<id>:<ref> or
+-- trip:<id>:<from>-><to>); a second, different owner is rejected so a single
+-- crafted transfer can't discharge debts across multiple bills/trips.
+create table if not exists consumed_signatures (
+  signature  text primary key,
+  owner      text not null,
+  created_at text not null
+);
+
 -- ---- additive column patches ----------------------------------------------
 -- `create table if not exists` above will NOT add columns to a table that
 -- already exists, so these idempotent ALTERs bring an older Supabase project up

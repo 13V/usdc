@@ -26,6 +26,7 @@ const TABLES = [
   "recurring",
   "trip_messages",
   "trip_reactions",
+  "consumed_signatures",
 ];
 
 async function main() {

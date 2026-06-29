@@ -31,6 +31,7 @@ import {
   touchGroup,
 } from "./groups";
 import { validatePayment } from "./verify";
+import { claimSignature } from "./consumedSignatures";
 import { qrToDataUrl } from "./qr";
 import { cardOptions } from "./onramp";
 import { fmt, toCents, withTip, SplitMode } from "./split";
@@ -482,10 +483,17 @@ app.post("/api/bills/:id/verify", moneyRateLimit, requireAuth, async (req: Reque
         splToken: bill.splToken,
         amountCents: p.amountCents,
       }, { excludeSignatures: usedSigs });
-      if (valid.ok) {
+      if (valid.ok && valid.signature) {
+        // Global guard: this signature must not have settled a DIFFERENT share
+        // anywhere else (another bill/trip). One on-chain payment ⇒ one share.
+        const claimed = await claimSignature(valid.signature, `bill:${bill.id}:${p.reference}`);
+        if (!claimed) {
+          logMoney("bill.verify.sig_conflict", req, { billId: bill.id, name: p.name, signature: valid.signature });
+          continue; // already consumed elsewhere — do not double-credit
+        }
         p.paid = true;
         p.signature = valid.signature;
-        if (valid.signature) usedSigs.add(valid.signature);
+        usedSigs.add(valid.signature);
         updated.push(p.name);
       }
     }
@@ -1143,10 +1151,17 @@ app.post("/api/trips/:id/settle/verify", moneyRateLimit, async (req: Request, re
         splToken: USDC_MINT[trip.cluster],
         amountCents: t.amountCents,
       }, { excludeSignatures: usedSigs });
-      if (valid.ok) {
+      if (valid.ok && valid.signature) {
+        // Global guard: one on-chain payment settles at most one share, across
+        // every bill/trip — not just within this settlement.
+        const claimed = await claimSignature(valid.signature, `trip:${trip.id}:${t.from}->${t.to}`);
+        if (!claimed) {
+          logMoney("settle.verify.sig_conflict", req, { tripId: trip.id, from: t.from, to: t.to, signature: valid.signature });
+          continue; // already consumed elsewhere — do not double-credit
+        }
         t.paid = true;
         (t as any).signature = valid.signature; // record the on-chain sig for receipts/lookups
-        if (valid.signature) usedSigs.add(valid.signature);
+        usedSigs.add(valid.signature);
       }
     }
     await saveSettlement(trip.id, stored.signature, stored.transfers);
