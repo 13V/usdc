@@ -356,7 +356,11 @@
   function renderTabbar(active) {
     var bar = document.getElementById("tabbar");
     if (!bar) return;
-    if (!TOPLEVEL[active]) { bar.style.display = "none"; bar.innerHTML = ""; return; }
+    // The signed-out home is a full-bleed onboarding welcome — hide the tab bar
+    // (its destinations all need auth, and hiding it frees the space the CTAs
+    // need so they don't sit behind it).
+    var signedOutHome = active === "home" && !(window.Auth && window.Auth.user);
+    if (!TOPLEVEL[active] || signedOutHome) { bar.style.display = "none"; bar.innerHTML = ""; return; }
     bar.style.display = "";
     // "friends" is a top-level destination but not one of the five tabs; map it
     // onto "groups" so the bar always has a sensible highlighted item.
@@ -474,7 +478,12 @@
       localStorage.setItem("divvy.profile", JSON.stringify(p));
     } catch (_) {}
   }
-  if (window.Auth && window.Auth.onChange) window.Auth.onChange(function () { syncIdentity(); });
+  if (window.Auth && window.Auth.onChange) window.Auth.onChange(function () {
+    syncIdentity();
+    // Auth resolving (or signing in/out) flips whether the signed-out-home tab
+    // bar should show — re-evaluate it for the current route.
+    try { renderTabbar(parseHash().name); } catch (_) {}
+  });
 
   // ---- share-link boot (/t/<shareToken>) ----
   // A second person opens a group's share link at /t/<token>. The server serves

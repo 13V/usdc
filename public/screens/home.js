@@ -219,7 +219,7 @@
         '<div style="position:absolute; left:50%; top:24%; width:340px; height:340px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.22), transparent 70%); filter:blur(8px); pointer-events:none;"></div>' +
 
         // ── HERO ──
-        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; padding-top:48px;">' +
+        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; padding-top:32px;">' +
           // featured mascot (big, glow) — canonical asset
           app.mascot({ size: 132, mood: "happy", glow: true }) +
 
@@ -252,7 +252,7 @@
         '<div style="flex:1; min-height:34px;"></div>' +
 
         // ── ACTIONS ──
-        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:11px; padding-bottom:26px;">' +
+        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:11px; padding-bottom:40px;">' +
           // primary: create a wallet (with mono subline)
           '<button id="hCreate" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:62px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 10px 30px rgba(39,117,202,0.45);">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">create a wallet</span>' +
