@@ -121,7 +121,14 @@ export function EmbeddedPay() {
       const receipt = await sendTransaction({ transaction, connection });
       setStatus(`Sent: ${receipt.signature}. Confirming…`);
       // Tell the server to re-check the chain and flip this share to PAID.
-      await fetch(`/api/bills/${bill.id}/verify`, { method: "POST" }).catch(() => {});
+      // Send the session token when the payer is signed in (verify requires auth);
+      // a signed-out payer's call no-ops and the collector's screen confirms instead.
+      let tok: string | null = null;
+      try { tok = localStorage.getItem("divvy.token"); } catch { /* ignore */ }
+      await fetch(`/api/bills/${bill.id}/verify`, {
+        method: "POST",
+        headers: tok ? { authorization: "Bearer " + tok } : {},
+      }).catch(() => {});
       setPaid(true);
       setStatus("");
     } catch (e) {
