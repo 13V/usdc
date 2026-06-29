@@ -329,8 +329,13 @@
       return;
     }
     // incoming friend requests (people who added you — you choose to accept)
-    var requests = [];
-    try { var rq = await app.api.get("/api/friends/requests"); requests = (rq && Array.isArray(rq.requests)) ? rq.requests : []; } catch (_) {}
+    // + outgoing requests you've sent that are still pending acceptance.
+    var requests = [], sent = [];
+    try {
+      var rq = await app.api.get("/api/friends/requests");
+      requests = (rq && Array.isArray(rq.requests)) ? rq.requests : [];
+      sent = (rq && Array.isArray(rq.sent)) ? rq.sent : [];
+    } catch (_) {}
     // best-effort extras — never block the screen on these
     try { balances = await app.api.get("/api/me/balances"); } catch (_) {}
     try { var td = await app.api.get("/api/trips?mine=1"); trips = Array.isArray(td) ? td : []; } catch (_) {}
@@ -339,10 +344,11 @@
 
     var sub = friends.length ? counts(friends) : "no one here yet";
     var body;
-    if (friends.length || requests.length) {
+    if (friends.length || requests.length || sent.length) {
       body =
         '<div class="appscroll" style="padding:10px 16px 120px;">' +
           requestsBlock(requests) +
+          sentBlock(sent) +
           savedTabs(trips) +
           (friends.length
             ? '<div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 8px;">' +
@@ -383,7 +389,34 @@
       '<button data-accept="' + app.esc(f.id) + '" style="appearance:none; border:none; cursor:pointer; flex:none; min-height:36px; padding:0 16px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); color:#fff; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px;">accept</button>' +
     '</div>';
   }
+  // ---- outgoing requests you've sent (still pending acceptance) ------------
+  function sentBlock(sent) {
+    if (!sent || !sent.length) return "";
+    return '<div style="margin:12px 0 6px;">' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(255,198,92,0.85); margin:0 2px 9px;">REQUESTED · ' + sent.length + '</div>' +
+      '<div style="display:flex; flex-direction:column; gap:9px;">' + sent.map(sentRow).join("") + '</div>' +
+    '</div>';
+  }
+  function sentRow(f) {
+    var name = f.displayName || f.handle || (f.primaryWallet ? shortWallet(f.primaryWallet) : "someone");
+    var emoji = f.emoji || "🙂";
+    var color = f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)";
+    return '<div style="display:flex; align-items:center; gap:11px; background:#13212E; border:1px solid rgba(244,247,250,0.07); border-radius:18px; padding:11px 12px;">' +
+      '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none; opacity:.9;">' + app.esc(emoji) + '</div>' +
+      '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#F4F7FA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div><div style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(244,247,250,0.4);">waiting for them to accept</div></div>' +
+      '<span style="display:inline-flex; align-items:center; gap:5px; flex:none; background:rgba(255,198,92,0.1); border:1px solid rgba(255,198,92,0.35); border-radius:999px; padding:5px 11px; font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; letter-spacing:.5px; color:#FFC65C;"><span style="width:5px; height:5px; border-radius:50%; background:#FFC65C;"></span>pending</span>' +
+      '<button data-cancel="' + app.esc(f.id) + '" title="cancel request" style="appearance:none; cursor:pointer; flex:none; width:34px; height:34px; border-radius:50%; background:transparent; border:1px solid rgba(244,247,250,0.12); color:rgba(244,247,250,0.5); font-size:14px;">✕</button>' +
+    '</div>';
+  }
   function wireRequests(view, refresh) {
+    [].forEach.call(view.querySelectorAll("[data-cancel]"), function (b) {
+      b.onclick = function () {
+        b.disabled = true; b.style.opacity = ".5";
+        app.api.del("/api/friends/" + encodeURIComponent(b.getAttribute("data-cancel")))
+          .then(function () { app.toast("request canceled"); refresh(); })
+          .catch(function (e) { b.disabled = false; b.style.opacity = "1"; app.toast(e.message || "couldn't cancel"); });
+      };
+    });
     [].forEach.call(view.querySelectorAll("[data-accept]"), function (b) {
       b.onclick = function () {
         b.disabled = true; b.style.opacity = ".6";

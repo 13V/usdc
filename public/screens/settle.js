@@ -96,58 +96,16 @@
       inner + '</div></div>';
   }
 
-  // ---- mascot body builder (lifted from the frame: squishy USDC-blue blob) ----
-  // mood: happy | watching | shrug | sparkle | broke
-  function mascot(size, mood, floatAnim) {
-    var feetY = Math.round(size * 0.30);
-    var armY = Math.round(size * 0.32);
-    var sparkles = mood === "sparkle"
-      ? '<span style="position:absolute; top:-7px; left:-17px; font-size:15px; animation:stSpark 1.4s ease-in-out infinite;">✨</span>' +
-        '<span style="position:absolute; top:1px; right:-17px; font-size:12px; animation:stSpark 1.4s ease-in-out .4s infinite;">✨</span>'
-      : "";
-    var brokeMark = mood === "broke"
-      ? '<span style="position:absolute; top:-4px; right:-16px; font-size:15px;">💸</span>' : "";
-
-    // arms — shrug throws them up; others wave
-    var arms = mood === "shrug"
-      ? '<div style="position:absolute; left:-8px; top:' + (armY - 12) + 'px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform:rotate(48deg); z-index:-1;"></div>' +
-        '<div style="position:absolute; right:-8px; top:' + (armY - 12) + 'px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform:rotate(-48deg); z-index:-1;"></div>'
-      : '<div style="position:absolute; left:-5px; top:' + armY + 'px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform-origin:7px 2px; animation:stWaveL 4.2s ease-in-out infinite; z-index:-1;"></div>' +
-        '<div style="position:absolute; right:-5px; top:' + armY + 'px; width:10px; height:18px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform-origin:3px 2px; animation:stWaveR 4.2s ease-in-out infinite; z-index:-1;"></div>';
-
-    // eyes
-    var eyes;
-    if (mood === "watching") {
-      var e = '<div style="width:13px; height:14px; border-radius:50%; background:#eef6ff; display:flex; align-items:center; justify-content:center;"><div style="width:6px; height:6px; border-radius:50%; background:#0B1622; animation:stWatch 3s ease-in-out infinite;"></div></div>';
-      eyes = '<div style="display:flex; gap:7px; margin-top:-2px;">' + e + e + '</div>';
-    } else if (mood === "shrug") {
-      var d = '<div style="width:9px; height:2.6px; border-radius:2px; background:#0B1622;"></div>';
-      eyes = '<div style="display:flex; gap:8px; margin-top:-2px; align-items:center;">' + d + d + '</div>';
-    } else {
-      var blink = mood === "sparkle" ? "" : "animation:stBlink 5s infinite;";
-      var dot = '<div style="width:7px; height:9px; border-radius:50%; background:#0B1622;' + blink + '"></div>';
-      eyes = '<div style="display:flex; gap:8px; margin-top:-4px;">' + dot + dot + '</div>';
-    }
-
-    // mouth
-    var mouth;
-    if (mood === "shrug")
-      mouth = '<div style="position:absolute; bottom:20px; width:9px; height:9px; border:2.4px solid #0B1622; border-radius:50%; border-bottom-color:transparent; border-left-color:transparent; transform:rotate(45deg);"></div>';
-    else if (mood === "broke")
-      mouth = '<div style="position:absolute; bottom:17px; width:12px; height:3px; border-radius:2px; background:#0B1622;"></div>';
-    else if (mood === "watching")
-      mouth = "";
-    else
-      mouth = '<div style="position:absolute; bottom:16px; width:16px; height:9px; border:2.6px solid #0B1622; border-top:none; border-radius:0 0 11px 11px;"></div>';
-
-    return '<div style="position:relative; animation:' + (floatAnim || "stFloat 5s ease-in-out infinite") + ';">' +
-      sparkles + brokeMark +
-      '<div style="position:relative; width:' + size + 'px; height:' + size + 'px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:stSquish 4.5s ease-in-out infinite; box-shadow:0 12px 28px rgba(39,117,202,0.5), inset 0 2px 5px rgba(255,255,255,0.28); display:flex; align-items:center; justify-content:center;">' +
-        '<div style="position:absolute; left:' + Math.round(size * 0.30) + 'px; bottom:-7px; width:9px; height:15px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>' +
-        '<div style="position:absolute; right:' + Math.round(size * 0.30) + 'px; bottom:-7px; width:9px; height:15px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>' +
-        arms + eyes + mouth +
-      '</div>' +
-    '</div>';
+  // ---- mascot ----
+  // Use the canonical window.Mascot asset so the blob is IDENTICAL on every
+  // screen (home/you/welcome/here). settle's per-state moods map onto the shared
+  // mood set; the stage already provides the colored glow, so the mascot's own
+  // glow is off here. (3rd arg from old call sites is ignored — canonical floats
+  // itself.)
+  var MOOD_MAP = { happy: "happy", watching: "watching", shrug: "worried", sparkle: "sparkle", broke: "worried" };
+  function mascot(size, mood) {
+    if (!window.Mascot) return "";
+    return window.Mascot.html({ size: size, mood: MOOD_MAP[mood] || "happy", glow: false });
   }
 
   // ---- avatars for the you → name card ----

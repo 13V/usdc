@@ -43,22 +43,12 @@
         '<div style="position:absolute; left:184px; top:88px; width:9px; height:9px; border-radius:50%; background:#5BA6F0; animation:wrConf 2.7s ease-in-out infinite; animation-delay:1.3s;"></div>' +
         '<div style="position:absolute; left:54px; top:6px; width:7px; height:7px; border-radius:2px; background:#FFC65C; animation:wrConf 3.3s ease-in-out infinite; animation-delay:1.7s;"></div>' +
         '<div style="position:absolute; left:132px; top:8px; width:8px; height:8px; border-radius:50%; background:#3DE8C7; animation:wrConf 2.8s ease-in-out infinite; animation-delay:2.1s;"></div>' +
-        // mascot body
-        '<div style="position:relative; width:148px; height:148px; animation:wrFloat 4.6s ease-in-out infinite;">' +
-          '<div style="position:absolute; left:6px; top:30px; width:30px; height:62px; border-radius:999px; background:linear-gradient(165deg,#3f95e6,#1a5290); transform-origin:15px 56px; animation:wrCheer 1.6s ease-in-out infinite;"></div>' +
-          '<div style="position:absolute; right:6px; top:30px; width:30px; height:62px; border-radius:999px; background:linear-gradient(165deg,#3f95e6,#1a5290); transform-origin:15px 56px; animation:wrCheerR 1.6s ease-in-out infinite;"></div>' +
-          '<div style="position:absolute; left:46px; bottom:-10px; width:26px; height:42px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f);"></div>' +
-          '<div style="position:absolute; right:46px; bottom:-10px; width:26px; height:42px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f);"></div>' +
-          '<div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:130px; height:130px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:wrSquish 5s ease-in-out infinite; box-shadow:0 18px 38px rgba(6,14,24,0.5), inset 0 6px 14px rgba(255,255,255,0.32), inset 0 -8px 18px rgba(13,40,72,0.5); display:flex; align-items:center; justify-content:center;">' +
-            '<div style="position:absolute; top:18px; left:26px; width:58px; height:38px; border-radius:50%; background:radial-gradient(closest-side, rgba(255,255,255,0.4), rgba(255,255,255,0)); pointer-events:none;"></div>' +
-            '<div style="display:flex; gap:20px; margin-top:-8px;">' +
-              '<div style="width:15px; height:20px; border-radius:50%; background:#0B1622; animation:wrBlink 5.5s infinite;"></div>' +
-              '<div style="width:15px; height:20px; border-radius:50%; background:#0B1622; animation:wrBlink 5.5s infinite;"></div>' +
-            '</div>' +
-            '<div style="position:absolute; bottom:42px; width:34px; height:17px; border:6px solid #0B1622; border-top:none; border-radius:0 0 22px 22px;"></div>' +
-          '</div>' +
-          // mint check badge
-          '<div style="position:absolute; right:2px; bottom:8px; width:40px; height:40px; border-radius:50%; background:linear-gradient(150deg,#5ff0d4,#2bccae); border:3px solid #0B1622; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(61,232,199,0.5); animation:wrPop .5s ease-out both; animation-delay:.35s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B1622" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
+        // canonical mascot (identical on every screen), celebratory sparkle mood,
+        // with the mint check badge overlaid. Halo + confetti above stay as the
+        // welcome-only celebration decoration.
+        '<div style="position:relative; display:flex; align-items:center; justify-content:center;">' +
+          (window.Mascot ? window.Mascot.html({ size: 132, mood: "sparkle", glow: false }) : "") +
+          '<div style="position:absolute; right:24px; bottom:28px; width:40px; height:40px; border-radius:50%; background:linear-gradient(150deg,#5ff0d4,#2bccae); border:3px solid #0B1622; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(61,232,199,0.5); animation:wrPop .5s ease-out both; animation-delay:.35s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B1622" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
         '</div>' +
       '</div>';
   }

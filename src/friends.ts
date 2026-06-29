@@ -279,13 +279,22 @@ friendsRouter.get(
     const meId = req.userId as string;
     const [out, inc] = await Promise.all([outgoingIds(meId), incomingIds(meId)]);
     const outSet = new Set(out);
+    const incSet = new Set(inc);
+    // Incoming: they added me, I haven't added back (I choose to accept).
     const pending = inc.filter((id) => !outSet.has(id));
+    // Outgoing: I added them, they haven't accepted yet (shows as "requested").
+    const sentPending = out.filter((id) => !incSet.has(id));
     const requests = [];
     for (const id of pending) {
       const u = await getUser(id);
       if (u) requests.push(await serializeUser(u));
     }
-    res.json({ requests });
+    const sent = [];
+    for (const id of sentPending) {
+      const u = await getUser(id);
+      if (u) sent.push(await serializeUser(u));
+    }
+    res.json({ requests, sent });
   }
 );
 

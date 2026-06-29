@@ -33,6 +33,20 @@
     return "✨";
   }
 
+  // a half-width "choice" card button (icon tile + title + subtitle) for the
+  // upload / manual options under the scan hero.
+  function smallChoice(id, tint, line, stroke, svgPath, title, sub) {
+    return '<button id="' + id + '" style="appearance:none; cursor:pointer; flex:1; min-width:0; border-radius:15px; background:#13212E; border:1px solid rgba(244,247,250,0.12); display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:13px 13px; text-align:left;">' +
+      '<div style="width:34px; height:34px; border-radius:10px; background:' + tint + '; border:1px solid ' + line + '; display:flex; align-items:center; justify-content:center; flex:none;">' +
+        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + svgPath + '</svg>' +
+      '</div>' +
+      '<div style="min-width:0;">' +
+        '<div style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:14.5px; color:#F4F7FA;">' + title + '</div>' +
+        '<div style="font-family:' + F_SANS + '; font-size:11.5px; color:rgba(244,247,250,0.5); margin-top:1px;">' + sub + '</div>' +
+      '</div>' +
+    '</button>';
+  }
+
   // parse a dollar string -> integer cents (best effort, never NaN-explodes).
   function toCents(str) {
     var v = String(str == null ? "" : str).replace(/[^0-9.]/g, "");
@@ -219,29 +233,23 @@
           (st.scanning ? '' : '<div style="position:absolute; left:14px; right:14px; height:2px; background:linear-gradient(90deg, transparent, #3DE8C7, transparent); border-radius:2px; box-shadow:0 0 10px rgba(61,232,199,0.8); animation:nsScanLine 2.6s ease-in-out infinite alternate;"></div>') +
           '<div style="width:54px; height:54px; border-radius:15px; background:#13212E; border:1px solid rgba(244,247,250,0.12); display:flex; align-items:center; justify-content:center; flex:none;">' + heroIcon + '</div>' +
           '<div style="flex:1; min-width:0;">' +
-            '<div style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:18px; color:#F4F7FA;">' + (st.scanning ? "reading receipt…" : "scan receipt") + '</div>' +
-            '<div style="font-family:' + F_SANS + '; font-size:13px; color:rgba(244,247,250,0.55); margin-top:2px;">snap it, we\'ll read the total</div>' +
+            '<div style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:18px; color:#F4F7FA;">' + (st.scanning ? "reading receipt…" : "snap a receipt") + '</div>' +
+            '<div style="font-family:' + F_SANS + '; font-size:13px; color:rgba(244,247,250,0.55); margin-top:2px;">take a photo, we\'ll read the total</div>' +
           '</div>' +
           '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>' +
         '</div>' +
+        // camera capture (the hero) + a separate gallery picker (the upload btn).
+        '<input type="file" id="nCamera" accept="image/*" capture="environment" style="display:none;">' +
         '<input type="file" id="nFile" accept="image/*" style="display:none;">' +
-        // two-weight divider + a real secondary button so the manual path (the
-        // one most people take) reads as a peer choice, not a fine-print link.
-        '<div style="display:flex; align-items:center; gap:11px; margin-top:13px;">' +
-          '<div style="flex:1; height:1px; background:rgba(244,247,250,0.1);"></div>' +
-          '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1px; color:rgba(244,247,250,0.4);">OR</span>' +
-          '<div style="flex:1; height:1px; background:rgba(244,247,250,0.1);"></div>' +
-        '</div>' +
-        '<button id="nManual" style="appearance:none; cursor:pointer; width:100%; min-height:54px; border-radius:15px; background:#13212E; border:1px solid rgba(244,247,250,0.12); display:flex; align-items:center; gap:14px; padding:0 16px; margin-top:13px; text-align:left;">' +
-          '<div style="width:38px; height:38px; border-radius:11px; background:rgba(39,117,202,0.14); border:1px solid rgba(39,117,202,0.3); display:flex; align-items:center; justify-content:center; flex:none;">' +
-            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>' +
-          '</div>' +
-          '<div style="flex:1; min-width:0;">' +
-            '<div style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:15px; color:#F4F7FA;">enter it yourself</div>' +
-            '<div style="font-family:' + F_SANS + '; font-size:12px; color:rgba(244,247,250,0.5); margin-top:1px;">just type the total</div>' +
-          '</div>' +
-          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>' +
-        '</button>';
+        // three peer paths: take a photo (hero above), upload an image, or type it.
+        '<div style="display:flex; gap:11px; margin-top:13px;">' +
+          smallChoice("nUpload", "rgba(39,117,202,0.14)", "rgba(39,117,202,0.3)", "#2775CA",
+            '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="m3 16 5-5 4 4 3-3 6 6"/><circle cx="9" cy="9" r="1.6"/>',
+            "upload a photo", "from your camera roll") +
+          smallChoice("nManual", "rgba(61,232,199,0.12)", "rgba(61,232,199,0.3)", "#3DE8C7",
+            '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+            "enter it yourself", "just type the total") +
+        '</div>';
 
       // what's it for — exact frame card (emoji button + title input + mint caret)
       var whatFor =
@@ -444,19 +452,25 @@
       };
 
       var scan = document.getElementById("nScan");
+      var camera = document.getElementById("nCamera");
       var file = document.getElementById("nFile");
+      var upload = document.getElementById("nUpload");
       var manual = document.getElementById("nManual");
-      if (scan && file) scan.onclick = function () { file.click(); };
+      // hero card → camera; "upload a photo" → gallery picker.
+      if (scan && camera) scan.onclick = function () { camera.click(); };
+      if (upload && file) upload.onclick = function () { file.click(); };
       if (manual) manual.onclick = function () {
         var t = document.getElementById("nTotal"); if (t) t.focus();
       };
-      if (file) file.onchange = function () {
-        var f = file.files && file.files[0];
+      function readImage(input) {
+        var f = input && input.files && input.files[0];
         if (!f) return;
         var reader = new FileReader();
         reader.onload = function () { doScan(reader.result); };
         reader.readAsDataURL(f);
-      };
+      }
+      if (camera) camera.onchange = function () { readImage(camera); };
+      if (file) file.onchange = function () { readImage(file); };
 
       var emoji = document.getElementById("nEmoji");
       if (emoji) emoji.onclick = function () { pickEmoji(); };

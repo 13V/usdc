@@ -142,14 +142,12 @@
       'display:flex; align-items:center; justify-content:center; font-size:21px; flex:none;">' +
       app.esc(emoji || tripEmoji(seed)) + '</div>';
   }
-  // the mascot blob, shrunk for your-own-settle rows (lifted exactly).
+  // the canonical mascot, shrunk for your-own-settle rows — same creature as
+  // every other screen (was a one-off mini blob before).
   function mascotMini() {
-    return '<div style="position:relative; width:42px; height:42px; flex:none; display:flex; align-items:center; justify-content:center;">' +
-      '<div class="ac-anim" style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.34) 0%, rgba(61,232,199,0) 68%); animation:acPulse 3s ease-in-out infinite;"></div>' +
-      '<div class="ac-anim" style="position:relative; width:28px; height:28px; background:linear-gradient(155deg,#5cf0d4,#2775CA); animation:acSquish 4s ease-in-out infinite; box-shadow:0 4px 11px rgba(39,117,202,0.5);">' +
-        '<div class="ac-anim" style="position:absolute; top:8px; left:6px; width:4px; height:5px; border-radius:50%; background:#0B1622; animation:acBlink 4.6s infinite;"></div>' +
-        '<div class="ac-anim" style="position:absolute; top:8px; right:6px; width:4px; height:5px; border-radius:50%; background:#0B1622; animation:acBlink 4.6s infinite;"></div>' +
-      '</div></div>';
+    return '<div style="flex:none; display:flex; align-items:center; justify-content:center;">' +
+      (window.Mascot ? window.Mascot.html({ size: 30, mood: "happy", glow: false }) : "") +
+    '</div>';
   }
 
   // ---- right-aligned mono amount: lighter $/decimals, +blue / −coral / grey-settled ----
