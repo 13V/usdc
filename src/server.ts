@@ -122,6 +122,46 @@ function rateLimit(max: number, windowMs: number) {
 
 const authRateLimit = rateLimit(60, 60_000); // ~60 req/min
 const scanRateLimit = rateLimit(10, 60_000); // ~10 req/min
+// Money endpoints: tighter caps so the settle/verify + bill paths can't be
+// hammered, and the funding faucet can't be drained by rapid repeat calls.
+const moneyRateLimit = rateLimit(30, 60_000); // ~30 req/min per IP
+const fundRateLimit = rateLimit(8, 60_000); // ~8 mints/min per IP (treasury guard)
+const rpcProxyRateLimit = rateLimit(150, 60_000); // web3.js is chatty; per-IP cap
+
+/**
+ * Structured audit line for money-moving actions. One JSON object per event so
+ * it's greppable in the deploy logs (settle/fund/verify forensics).
+ */
+function logMoney(action: string, req: Request, extra: Record<string, unknown> = {}): void {
+  try {
+    console.log(
+      JSON.stringify({
+        t: new Date().toISOString(),
+        evt: "money",
+        action,
+        ip: req.ip || null,
+        userId: (req as Request & { userId?: string }).userId || null,
+        ...extra,
+      })
+    );
+  } catch {
+    /* never let logging break a request */
+  }
+}
+
+// JSON-RPC methods the browser RPC proxy will forward. Read calls + the two
+// write calls web3.js/Privy need (send + simulate). Heavy/scan methods
+// (getProgramAccounts, getBlock(s), getLeaderSchedule…) are intentionally absent.
+const RPC_ALLOWED_METHODS = new Set<string>([
+  "getLatestBlockhash", "getLatestBlockhashAndContext", "getRecentBlockhash",
+  "getAccountInfo", "getMultipleAccounts", "getBalance",
+  "getTokenAccountBalance", "getTokenAccountsByOwner", "getTokenSupply",
+  "getSignaturesForAddress", "getSignatureStatuses",
+  "getTransaction", "getParsedTransaction",
+  "sendTransaction", "simulateTransaction",
+  "getMinimumBalanceForRentExemption", "getFeeForMessage",
+  "getEpochInfo", "getVersion", "getGenesisHash", "getBlockHeight", "getSlot",
+]);
 const COLLECTOR =
   process.env.COLLECTOR_WALLET || "11111111111111111111111111111111"; // system program as a harmless default
 
@@ -248,7 +288,7 @@ app.get("/api/me/wallet", requireAuth, async (req: Request, res: Response) => {
 // Devnet demo funding: drip a little gas SOL + mint test-USDC to the caller's
 // wallet so a freshly created wallet can actually settle. No-op (501) when the
 // treasury isn't configured. Devnet/test value only.
-app.post("/api/me/fund", requireAuth, async (req: Request, res: Response) => {
+app.post("/api/me/fund", fundRateLimit, requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   if (CLUSTER !== "devnet" || !fundingConfigured()) {
     return res.status(501).json({ error: "funding not available" });
@@ -257,6 +297,7 @@ app.post("/api/me/fund", requireAuth, async (req: Request, res: Response) => {
   if (!wallet) return res.status(400).json({ error: "link a wallet first" });
   try {
     const r = await fundWallet(wallet);
+    logMoney("fund", req, { wallet, solDripped: r.solDripped, usdcMinted: r.usdcMinted });
     res.json({
       wallet,
       sol: r.sol,
@@ -267,6 +308,36 @@ app.post("/api/me/fund", requireAuth, async (req: Request, res: Response) => {
   } catch (err) {
     const status = isRpcFailure(err) ? 502 : 400;
     res.status(status).json({ error: `funding failed: ${(err as Error).message}` });
+  }
+});
+
+// Browser RPC proxy: keeps the upstream RPC key (Helius) server-side instead of
+// baking it into the embedded bundle. Forwards an allowlisted set of JSON-RPC
+// methods to RPC_URL. HTTP only — the client never opens a subscription here
+// (Privy confirms via its own websocket RPC), so no WS proxy is needed.
+app.post("/api/rpc", rpcProxyRateLimit, async (req: Request, res: Response) => {
+  const upstream = process.env.RPC_URL;
+  if (!upstream) return res.status(501).json({ error: "rpc not configured" });
+  const body = req.body;
+  const calls = Array.isArray(body) ? body : [body];
+  if (calls.length === 0 || calls.length > 20) {
+    return res.status(400).json({ error: "bad rpc batch" });
+  }
+  for (const c of calls) {
+    if (!c || typeof c.method !== "string" || !RPC_ALLOWED_METHODS.has(c.method)) {
+      return res.status(403).json({ error: `rpc method not allowed: ${c && c.method}` });
+    }
+  }
+  try {
+    const upstreamRes = await fetch(upstream, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const text = await upstreamRes.text();
+    res.status(upstreamRes.status).type("application/json").send(text);
+  } catch {
+    res.status(502).json({ error: "rpc upstream error" });
   }
 });
 
@@ -288,7 +359,7 @@ interface CreateBillBody {
   fx?: BillFx;
 }
 
-app.post("/api/bills", async (req: Request, res: Response) => {
+app.post("/api/bills", moneyRateLimit, async (req: Request, res: Response) => {
   try {
     const body = req.body as CreateBillBody;
 
@@ -390,7 +461,7 @@ app.get("/api/bills/:id", async (req: Request, res: Response) => {
   res.json(serializeBill(bill));
 });
 
-app.post("/api/bills/:id/verify", requireAuth, async (req: Request, res: Response) => {
+app.post("/api/bills/:id/verify", moneyRateLimit, requireAuth, async (req: Request, res: Response) => {
   const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).json({ error: "not found" });
   try {
@@ -958,7 +1029,7 @@ app.delete("/api/trips/:id/expenses/:eid", async (req: Request, res: Response) =
   }
 });
 
-app.post("/api/trips/:id/settle", async (req: Request, res: Response) => {
+app.post("/api/trips/:id/settle", moneyRateLimit, async (req: Request, res: Response) => {
   try {
     const trip = await getTrip(req.params.id);
     if (!trip) return res.status(404).json({ error: "not found" });
@@ -1047,7 +1118,7 @@ app.post("/api/trips/:id/settle", async (req: Request, res: Response) => {
   }
 });
 
-app.post("/api/trips/:id/settle/verify", async (req: Request, res: Response) => {
+app.post("/api/trips/:id/settle/verify", moneyRateLimit, async (req: Request, res: Response) => {
   const trip = await getTrip(req.params.id);
   if (!trip) return res.status(404).json({ error: "not found" });
   if (!authorizeTrip(req, trip)) {

@@ -54,10 +54,13 @@ export function SettlePay() {
   const { sendTransaction } = useSendTransaction();
   const wallet = wallets[0];
 
-  // Use the configured RPC (Helius) injected at build time via VITE_RPC_URL —
-  // the public devnet endpoint rate-limits and makes sends/balance reads flaky.
-  const rpc = (import.meta.env.VITE_RPC_URL as string | undefined) || "https://api.devnet.solana.com";
-  const conn = useMemo(() => new Connection(rpc, "confirmed"), [rpc]);
+  // Route RPC through the same-origin server proxy (/api/rpc) so the upstream
+  // (Helius) key stays server-side, never in this bundle. HTTP only — Privy
+  // confirms via its own websocket RPC, so nothing here opens a subscription.
+  const conn = useMemo(
+    () => new Connection(window.location.origin + "/api/rpc", "confirmed"),
+    []
+  );
   const [balanceCents, setBalanceCents] = useState<number | null>(null);
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);

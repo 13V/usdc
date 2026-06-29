@@ -25,8 +25,11 @@ function useQuery() {
 }
 
 function rpcFor(cluster: Bill["cluster"]): string {
-  const fromEnv = import.meta.env.VITE_RPC_URL as string | undefined;
-  return fromEnv || clusterApiUrl(cluster === "mainnet-beta" ? "mainnet-beta" : "devnet");
+  // Devnet (the server's configured cluster) goes through the same-origin proxy
+  // so the upstream RPC key stays server-side. Mainnet bills fall back to the
+  // public mainnet endpoint (the server proxy is wired to the devnet upstream).
+  if (cluster === "mainnet-beta") return clusterApiUrl("mainnet-beta");
+  return window.location.origin + "/api/rpc";
 }
 
 const box: React.CSSProperties = {

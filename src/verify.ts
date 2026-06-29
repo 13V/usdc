@@ -158,6 +158,11 @@ export async function validatePayment(
       maxSupportedTransactionVersion: 0,
     });
     if (!tx || tx.meta?.err) continue;
+    // Binding check: the transaction must actually carry this reference among
+    // its account keys. getSignaturesForAddress should only return such txs, but
+    // assert it so a payment is bound to its own reference, not merely correlated.
+    const keys = tx.transaction.message.accountKeys.map((k) => k.pubkey.toBase58());
+    if (!keys.includes(expected.reference)) continue;
     if (txHasMatchingTransfer(tx, expectedBaseUnits, expected.splToken, expectedAta)) {
       return { ok: true, signature: c.signature };
     }
