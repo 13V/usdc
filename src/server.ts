@@ -1244,6 +1244,14 @@ app.get("/t/:token", (_req: Request, res: Response) => {
 
 // ---- Pay page (server-rendered) -------------------------------------------
 
+// Tab landing: the link shared from "copy link" / "share tab" points here.
+// Lists every share so whoever opens it can pick theirs and pay.
+app.get("/pay/:id", async (req: Request, res: Response) => {
+  const bill = await store.get(req.params.id);
+  if (!bill) return res.status(404).send("Tab not found");
+  res.type("html").send(renderBillLanding(bill));
+});
+
 app.get("/pay/:id/:name", async (req: Request, res: Response) => {
   const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).send("Bill not found");
@@ -1303,6 +1311,47 @@ function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string)
   );
+}
+
+function renderBillLanding(bill: Bill): string {
+  const rows = bill.participants
+    .map((p) => {
+      const href = `/pay/${bill.id}/${encodeURIComponent(p.name)}`;
+      const right = p.paid
+        ? `<span class="pill paid">paid ✓</span>`
+        : `<a class="pay" href="${esc(href)}">pay ${fmt(p.amountCents)}</a>`;
+      return `<div class="row"><span class="nm">${esc(p.name)}</span><span class="amt">${fmt(p.amountCents)}</span>${right}</div>`;
+    })
+    .join("");
+  const out = outstandingCents(bill);
+  return `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${esc(bill.title)} — split the tab</title>
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 24px; max-width: 460px;
+         margin-inline: auto; background: #0B1622; color: #F4F7FA; line-height: 1.5; }
+  h1 { font-size: 1.4rem; margin: 0 0 2px; }
+  .muted { color: rgba(244,247,250,.55); font-size: .9rem; }
+  .total { font-size: 2.2rem; font-weight: 800; margin: 14px 0 4px; letter-spacing: -1px; }
+  .row { display: flex; align-items: center; gap: 12px; background: #13212E; border: 1px solid rgba(244,247,250,.08);
+         border-radius: 14px; padding: 12px 14px; margin: 10px 0; }
+  .nm { font-weight: 600; }
+  .amt { margin-left: auto; font-variant-numeric: tabular-nums; color: rgba(244,247,250,.7); }
+  a.pay { text-decoration: none; padding: 9px 16px; border-radius: 999px; font-weight: 700; font-size: .9rem;
+          background: linear-gradient(120deg,#3286db,#2775CA); color: #fff; white-space: nowrap; }
+  .pill.paid { padding: 7px 13px; border-radius: 999px; font-size: .8rem; font-weight: 700;
+               background: rgba(61,232,199,.14); color: #3DE8C7; }
+  .foot { margin-top: 20px; }
+</style></head><body>
+  <h1>${esc(bill.title)}</h1>
+  <div class="muted">${bill.participants.length} ${bill.participants.length === 1 ? "person" : "people"} · settle in USDC · dollars, just faster</div>
+  <div class="total">${fmt(bill.totalCents)}</div>
+  <div class="muted">${out > 0 ? `${fmt(out)} still owed` : `all settled ✨`}</div>
+  ${rows}
+  <p class="foot muted">tap your name to pay your share — no app needed.</p>
+</body></html>`;
 }
 
 function renderPayPage(
