@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { usePrivy, useSetWalletRecovery } from "@privy-io/react-auth";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { safeReturnPath } from "./safeReturn";
 
 // Wallet & recovery manager (embedded). Lets a user back up (export the private
 // key of) their Privy embedded wallet and add a self-controlled recovery
@@ -31,8 +32,7 @@ const mono = "'Space Mono',monospace";
 
 export function Wallet() {
   const q = useMemo(() => new URLSearchParams(window.location.search), []);
-  const retRaw = q.get("ret") || "/#/you";
-  const ret = retRaw.startsWith("/") ? retRaw : "/" + retRaw;
+  const ret = safeReturnPath(q.get("ret"), "/#/you");
 
   const { ready, authenticated, login } = usePrivy();
   const { wallets, exportWallet } = useSolanaWallets();

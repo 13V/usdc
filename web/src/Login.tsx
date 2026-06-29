@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
+import { safeReturnPath } from "./safeReturn";
 import "./onboarding.css";
 
 // The main (vanilla) app reads its session token from this localStorage key.
@@ -133,7 +134,8 @@ export function Login() {
   const autoLoginRef = useRef(false);
 
   const params = new URLSearchParams(window.location.search);
-  const returnTo = params.get("return") || "/";
+  // Same-origin only — never let `return` open-redirect off the app.
+  const returnTo = safeReturnPath(params.get("return"), "/");
 
   // Open Privy's login as soon as it's ready (the user already tapped "create a
   // wallet"), with the connecting frame behind the modal.

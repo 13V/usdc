@@ -3,6 +3,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useSolanaWallets, useSendTransaction } from "@privy-io/react-auth/solana";
 import { Connection } from "@solana/web3.js";
 import { buildTransferTransaction, readUsdcBalanceCents } from "./spl";
+import { safeReturnPath } from "./safeReturn";
 
 // In-app trip settlement: pay a single settle-up transfer in USDC from the
 // Privy embedded wallet. Params (from the main app's settle screen):
@@ -43,11 +44,9 @@ export function SettlePay() {
   const reference = q.get("ref") || "";
   const mint = q.get("mint") || "";
   const tripId = q.get("trip") || "";
-  // Normalize to an absolute path: the embedded app is served from /embedded/,
-  // so a bare "#/settle/.." would just re-hash this page instead of returning to
-  // the main app. Force a leading "/".
-  const retRaw = q.get("ret") || "/#/home";
-  const ret = retRaw.startsWith("/") ? retRaw : "/" + retRaw;
+  // Same-origin path only — never let `ret` open-redirect off the app. The
+  // embedded app is served from /embedded/, so this returns to the main app.
+  const ret = safeReturnPath(q.get("ret"), "/#/home");
 
   const { ready, authenticated, login } = usePrivy();
   const { wallets } = useSolanaWallets();
