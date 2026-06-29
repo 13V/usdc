@@ -496,6 +496,8 @@
     if (!Array.isArray(items)) items = (items && Array.isArray(items.events)) ? items.events : [];
     if (!items.length) { emptyState(view); return; }
     feed(view, items);
+    // pull down at the top to re-pull the feed and re-render.
+    app.pullToRefresh(view, function () { return signedIn(view); });
   }
 
   window.Screens = window.Screens || {};

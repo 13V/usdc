@@ -25,8 +25,8 @@
     '</div>';
   }
 
-  // exact "people" row from the frame
-  function personRow(c) {
+  // exact "people" row from the frame — now tappable. owed → nudge, owes → settle.
+  function personRow(c, i) {
     var pos = c.direction === "owed", neg = c.direction === "owes";
     var col = pos ? "#3B92E8" : neg ? "#FF6B5E" : "rgba(244,247,250,0.5)";
     var sub = pos ? "owes you" : neg ? "you owe" : "square ✨";
@@ -35,12 +35,23 @@
     // recolor the avatar bg to a soft tint like the frame
     var amt = c.direction === "settled" ? '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:#3DE8C7;">square ✨</span>'
       : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:18px; letter-spacing:-0.4px; color:' + col + ';"><span style="opacity:.5;">' + (pos ? "+$" : "−$") + '</span>' + money3(Math.abs(c.cents)) + '</div>';
-    return '<div style="display:flex; align-items:center; gap:13px; padding:11px 4px;">' +
+    // tap affordance: nudge pill for owed, chevron for owes. settled rows stay inert.
+    var tappable = pos || neg;
+    var affordance = pos
+      ? '<span class="pr-nudge" style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:#3B92E8; opacity:.85; margin-left:2px; flex:none;">nudge</span>'
+      : neg
+      ? '<span style="display:flex; align-items:center; color:rgba(244,247,250,0.28); margin-left:2px; flex:none;"><svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+      : "";
+    var tag = tappable ? "button" : "div";
+    var tapAttrs = tappable
+      ? ' type="button" data-person="' + i + '" style="appearance:none; border:none; text-align:left; width:100%; background:transparent; cursor:pointer;'
+      : ' style="';
+    return '<' + tag + tapAttrs + ' display:flex; align-items:center; gap:13px; padding:11px 4px;">' +
       '<div style="width:40px;height:40px;border-radius:50%;background:rgba(39,117,202,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;">' + (c.emoji || app.esc((c.name||"?")[0])) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
         '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#F4F7FA;">' + app.esc(c.name) + '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + subcol + '; margin-top:2px;">' + sub + '</div>' +
-      '</div>' + amt + '</div>';
+      '</div>' + amt + affordance + '</' + tag + '>';
   }
 
   // $ split into whole + .dec, frame-style (caller adds the colored $ prefix)
@@ -318,6 +329,46 @@
       else app.go("groups");
     };
     if (rq) rq.onclick = function () { app.go("new"); };
+
+    // people rows are tappable: owed → nudge, owes → settle (resolve a single group or fall back to groups).
+    function settlePerson(c) {
+      // try to resolve the one group this debt maps to; otherwise just open groups.
+      var pid = c.tripId || c.groupId;
+      if (!pid) {
+        var matches = grp.filter(function (g) { return (g.netCents || 0) < 0; });
+        if (matches.length === 1) pid = matches[0].tripId || matches[0].id;
+      }
+      if (pid) location.hash = "#/settle/" + encodeURIComponent(pid);
+      else app.go("groups");
+    }
+    function nudgePerson(c, btn) {
+      if (btn) btn.disabled = true;
+      // pass the wallet too so the nudge can resolve to a real user and land in
+      // their notifications (name alone usually can't be resolved).
+      app.api.post("/api/nudge", { name: c.name, wallet: c.wallet || undefined, kind: "owed" }).then(function (r) {
+        app.toast(r && r.sent ? "nudge sent ✨" : "reminder saved 📌");
+        app.haptic(20);
+      }).catch(function (e) {
+        app.toast((e && e.message) || "couldn't nudge");
+      }).then(function () {
+        if (btn) btn.disabled = false;
+      });
+    }
+    var personBtns = view.querySelectorAll("[data-person]");
+    Array.prototype.forEach.call(personBtns, function (btn) {
+      btn.onclick = function () {
+        var c = ppl[+btn.getAttribute("data-person")];
+        if (!c) return;
+        if (c.direction === "owed") nudgePerson(c, btn);
+        else if (c.direction === "owes") settlePerson(c);
+      };
+    });
+
+    // pull-to-refresh: re-run signedIn (which returns a promise) on the scroll area.
+    if (app.pullToRefresh) {
+      var scrollEl = view.querySelector(".appscroll");
+      if (scrollEl) app.pullToRefresh(scrollEl, function () { return signedIn(view); });
+    }
   }
 
   window.Screens = window.Screens || {};

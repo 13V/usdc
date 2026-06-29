@@ -161,9 +161,10 @@
         row("yFriends", "🫂", "rgba(39,117,202,0.16)", "friends") + divider() +
         row("yRecurring", "🔁", "rgba(61,232,199,0.14)", "recurring") + divider() +
         row("ySaved", "🧾", "rgba(255,198,92,0.16)", "saved tabs") + divider() +
-        // notifications + help aren't wired yet — render them as "soon" so they
-        // read as not-yet-available rather than tappable rows that silently no-op.
-        row("yNotif", "🔔", "rgba(255,107,94,0.14)", "notifications", null, true) + divider() +
+        // notifications taps through to the activity feed; an unread count badge
+        // is patched in after render (best-effort, see wireNotifBadge). help isn't
+        // wired yet — render it as "soon" so it reads as not-yet-available.
+        row("yNotif", "🔔", "rgba(255,107,94,0.14)", "notifications") + divider() +
         row("yNet", "🌐", "rgba(39,117,202,0.16)", "network", netTag) + divider() +
         row("yHelp", "💁", "rgba(244,247,250,0.07)", "help", null, true) +
       '</div>';
@@ -213,6 +214,28 @@
     wireIdentity(id);
     wireBalance();
     wireSettings();
+    wireNotifBadge(); // non-blocking; patches an unread badge in after render
+  }
+
+  // best-effort unread badge on the notifications row. the endpoint may not exist
+  // yet — if it 404s or fails for any reason, we just leave the row badge-free.
+  function wireNotifBadge() {
+    var row = document.getElementById("yNotif");
+    if (!row) return;
+    Promise.resolve().then(function () { return app.api.get("/api/me/notifications"); })
+      .then(function (res) {
+        var n = res && res.unread;
+        if (typeof n !== "number" || !(n > 0)) return;
+        // bail if the row got re-rendered out from under us (auth change, nav).
+        if (!document.body.contains(row)) return;
+        var label = n > 99 ? "99+" : String(n);
+        var badge = document.createElement("span");
+        badge.style.cssText = "display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#FF6B5E; font-family:'Space Mono',monospace; font-weight:700; font-size:10px; line-height:1; color:#0B1622; margin-right:2px;";
+        badge.textContent = label;
+        // tuck the badge just before the chevron (last child of the row).
+        row.insertBefore(badge, row.lastChild);
+      })
+      .catch(function () { /* endpoint missing or failed — leave row badge-free */ });
   }
 
   // ── signed-out (mascot + connect) ────────────────────────────────────────────
@@ -262,7 +285,32 @@
   function wireBalance() {
     var add = document.getElementById("yAdd"), cash = document.getElementById("yCash");
     if (add) add.onclick = function () { app.depositSheet(); };
-    if (cash) cash.onclick = function () { app.toast("cash out — coming soon"); };
+    if (cash) cash.onclick = cashOutSheet;
+  }
+
+  // honest "cash out" explainer — your dollars already live in your wallet; you
+  // spend them with any card or send to a friend. no fake bank withdrawal.
+  function cashOutSheet() {
+    app.haptic && app.haptic();
+    app.sheet(
+      '<div style="padding:4px 2px 2px;">' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45); margin-bottom:12px;">CASH OUT</div>' +
+        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:22px; letter-spacing:-0.5px; margin:0 0 8px; color:#F4F7FA;">your money\'s already out</h2>' +
+        '<p style="font-family:\'General Sans\',sans-serif; font-size:14px; line-height:1.55; color:rgba(244,247,250,0.7); margin:0 0 16px;">' +
+          'these are real dollars, sitting in your wallet — no waiting, nothing to "withdraw". spend them anywhere with your card, or send them to a friend in a tap. dollars, just faster.' +
+        '</p>' +
+        '<div style="display:flex; flex-direction:column; gap:10px; margin:0 0 18px;">' +
+          '<div style="display:flex; align-items:center; gap:11px;"><span style="font-size:15px;">💳</span><span style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(244,247,250,0.7);">spend with any card, online or in person</span></div>' +
+          '<div style="display:flex; align-items:center; gap:11px;"><span style="font-size:15px;">🤝</span><span style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(244,247,250,0.7);">send to a friend, settles instantly</span></div>' +
+        '</div>' +
+        '<button class="btn" id="yCashGot" style="width:100%; min-height:52px; border:none; cursor:pointer; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 8px 24px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);">got it</button>' +
+        '<button id="yCashAdd" style="width:100%; min-height:52px; margin-top:11px; appearance:none; cursor:pointer; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.2); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#F4F7FA;">add money instead</button>' +
+      '</div>'
+    );
+    var got = document.getElementById("yCashGot");
+    if (got) got.onclick = function () { app.closeSheet(); };
+    var more = document.getElementById("yCashAdd");
+    if (more) more.onclick = function () { app.closeSheet(); app.depositSheet(); };
   }
 
   function wireSettings() {
@@ -278,7 +326,9 @@
     if (r) r.onclick = function () { location.hash = "#/recurring"; };
     var saved = document.getElementById("ySaved");
     if (saved) saved.onclick = function () { app.go("groups"); };
-    // notifications + help are "soon" rows — intentionally not wired (no no-op tap).
+    var notif = document.getElementById("yNotif");
+    if (notif) notif.onclick = function () { location.hash = "#/activity"; };
+    // help is a "soon" row — intentionally not wired (no no-op tap).
     var net = document.getElementById("yNet");
     if (net) net.onclick = function () { app.toast("devnet · usdc on solana 🌐"); };
     var so = document.getElementById("ySignOut");

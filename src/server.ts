@@ -89,6 +89,7 @@ import { recurringRouter } from "./recurring";
 import { friendsRouter } from "./friends";
 import { chatRouter } from "./chat";
 import { reactionsRouter } from "./reactions";
+import { nudgesRouter } from "./nudges";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
@@ -193,6 +194,7 @@ app.use(recurringRouter);
 app.use(friendsRouter);
 app.use(chatRouter);
 app.use(reactionsRouter);
+app.use(nudgesRouter);
 
 // ---- Auth & identity (progressive, optional) ------------------------------
 

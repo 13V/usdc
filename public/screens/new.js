@@ -225,9 +225,23 @@
           '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>' +
         '</div>' +
         '<input type="file" id="nFile" accept="image/*" style="display:none;">' +
-        '<div style="text-align:center; margin-top:11px;">' +
-          '<span id="nManual" style="font-family:' + F_SANS + '; font-size:13px; color:rgba(244,247,250,0.5); border-bottom:1px solid rgba(244,247,250,0.2); padding-bottom:1px; cursor:pointer;">enter manually</span>' +
-        '</div>';
+        // two-weight divider + a real secondary button so the manual path (the
+        // one most people take) reads as a peer choice, not a fine-print link.
+        '<div style="display:flex; align-items:center; gap:11px; margin-top:13px;">' +
+          '<div style="flex:1; height:1px; background:rgba(244,247,250,0.1);"></div>' +
+          '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1px; color:rgba(244,247,250,0.4);">OR</span>' +
+          '<div style="flex:1; height:1px; background:rgba(244,247,250,0.1);"></div>' +
+        '</div>' +
+        '<button id="nManual" style="appearance:none; cursor:pointer; width:100%; min-height:54px; border-radius:15px; background:#13212E; border:1px solid rgba(244,247,250,0.12); display:flex; align-items:center; gap:14px; padding:0 16px; margin-top:13px; text-align:left;">' +
+          '<div style="width:38px; height:38px; border-radius:11px; background:rgba(39,117,202,0.14); border:1px solid rgba(39,117,202,0.3); display:flex; align-items:center; justify-content:center; flex:none;">' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>' +
+          '</div>' +
+          '<div style="flex:1; min-width:0;">' +
+            '<div style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:15px; color:#F4F7FA;">enter it yourself</div>' +
+            '<div style="font-family:' + F_SANS + '; font-size:12px; color:rgba(244,247,250,0.5); margin-top:1px;">just type the total</div>' +
+          '</div>' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>' +
+        '</button>';
 
       // what's it for — exact frame card (emoji button + title input + mint caret)
       var whatFor =

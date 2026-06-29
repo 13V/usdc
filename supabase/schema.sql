@@ -177,6 +177,22 @@ create table if not exists consumed_signatures (
   created_at text not null
 );
 
+-- ---- nudges (src/nudges.ts) -----------------------------------------------
+-- Payment reminders. NON-money: never moves funds. to_user_id is nullable
+-- because a nudge can target someone who isn't a reachable Divvy user (then
+-- only to_name is stored).
+create table if not exists nudges (
+  id            text primary key,
+  from_user_id  text not null,
+  to_user_id    text,
+  to_name       text,
+  trip_id       text,
+  kind          text not null,
+  created_at    text not null
+);
+create index if not exists nudges_to_user_idx on nudges (to_user_id);
+create index if not exists nudges_from_user_idx on nudges (from_user_id);
+
 -- ---- additive column patches ----------------------------------------------
 -- `create table if not exists` above will NOT add columns to a table that
 -- already exists, so these idempotent ALTERs bring an older Supabase project up

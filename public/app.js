@@ -141,6 +141,49 @@
     document.body.appendChild(scrim); document.body.appendChild(el);
     app._sheet = [scrim, el];
     app._sheetKey = onKey;
+    // Swipe-to-dismiss: drag the sheet down past ~90px (or a quick flick) to
+    // close; otherwise it springs back. Honors prefers-reduced-motion (no
+    // transform follow — tap-out close stays the only path).
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) {
+      var startY = 0, lastY = 0, startT = 0, dragging = false;
+      // Don't hijack drags that start on a scrolled-down inner scroller.
+      function fromScroller(target) {
+        for (var n = target; n && n !== el; n = n.parentNode) {
+          if (n.scrollTop > 0) return true;
+        }
+        return false;
+      }
+      el.addEventListener("touchstart", function (e) {
+        if (e.touches.length !== 1 || fromScroller(e.target)) { dragging = false; return; }
+        dragging = true;
+        startY = lastY = e.touches[0].clientY;
+        startT = Date.now();
+        el.style.transition = "none";
+      }, { passive: true });
+      el.addEventListener("touchmove", function (e) {
+        if (!dragging) return;
+        lastY = e.touches[0].clientY;
+        var dy = Math.max(0, lastY - startY); // downward only
+        el.style.transform = "translateY(" + dy + "px)";
+      }, { passive: true });
+      el.addEventListener("touchend", function () {
+        if (!dragging) return;
+        dragging = false;
+        var dy = Math.max(0, lastY - startY);
+        var dt = Date.now() - startT;
+        var flick = dt > 0 && (dy / dt) > 0.5 && dy > 24; // quick downward flick
+        if (dy > 90 || flick) {
+          haptic(8);
+          el.style.transition = "transform .2s ease-in";
+          el.style.transform = "translateY(110%)";
+          setTimeout(closeSheet, 180);
+        } else {
+          el.style.transition = "transform .22s cubic-bezier(.2,.9,.3,1)";
+          el.style.transform = "translateY(0)";
+        }
+      }, { passive: true });
+    }
     // Move focus into the sheet (first focusable element, else the sheet itself).
     var focusTarget = el.querySelector(FOCUSABLE) || el;
     try { focusTarget.focus(); } catch (_) {}
@@ -149,6 +192,96 @@
   function closeSheet() {
     if (app._sheetKey) { document.removeEventListener("keydown", app._sheetKey); app._sheetKey = null; }
     if (app._sheet) { app._sheet.forEach(function (n) { n.remove(); }); app._sheet = null; }
+  }
+
+  // ---- pull-to-refresh ----
+  // pullToRefresh(scrollEl, onRefresh): when the user drags down at the very top
+  // of scrollEl past ~70px, show a small on-brand spinner, await onRefresh()
+  // (which returns a Promise), then hide it. Touch-based, dependency-free,
+  // debounced so it can't double-fire. No-op-safe if scrollEl is null.
+  function pullToRefresh(scrollEl, onRefresh) {
+    if (!scrollEl || typeof onRefresh !== "function") return;
+    if (scrollEl._ptrBound) return; // bind once per element
+    scrollEl._ptrBound = true;
+
+    var THRESHOLD = 70, MAX = 96;
+    var startY = 0, pull = 0, tracking = false, refreshing = false;
+
+    // The indicator floats above the scroll content; the host should be
+    // position:relative (screens are) so it pins to the top.
+    var ind = document.createElement("div");
+    ind.setAttribute("aria-hidden", "true");
+    ind.style.cssText = "position:absolute; left:50%; top:0; z-index:30; transform:translate(-50%,-44px); " +
+      "width:30px; height:30px; border-radius:50%; pointer-events:none; opacity:0; " +
+      "transition:opacity .15s; display:flex; align-items:center; justify-content:center;";
+    ind.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">' +
+      '<circle cx="12" cy="12" r="9" stroke="rgba(244,247,250,0.12)" stroke-width="3"/>' +
+      '<path d="M12 3a9 9 0 0 1 9 9" stroke="#3DE8C7" stroke-width="3" stroke-linecap="round"/></svg>';
+    if (!document.getElementById("divvy-ptr-css")) {
+      var s = document.createElement("style");
+      s.id = "divvy-ptr-css";
+      s.textContent = "@keyframes divvyPtrSpin{to{transform:rotate(360deg)}}" +
+        "@media (prefers-reduced-motion: reduce){.divvy-ptr-spin svg{animation:none!important}}";
+      document.head.appendChild(s);
+    }
+    // Pin the indicator to the top of the scroller's viewport. Append it into
+    // a positioned host so absolute top:0 lines up; promote the host if needed.
+    var host = scrollEl.parentNode || scrollEl;
+    try {
+      var pos = window.getComputedStyle(host).position;
+      if (pos === "static") host.style.position = "relative";
+    } catch (_) {}
+    host.appendChild(ind);
+
+    function place() {
+      var y = Math.min(pull, MAX);
+      ind.style.transform = "translate(-50%," + (y - 44) + "px)";
+      ind.style.opacity = pull > 6 ? "1" : "0";
+      var svg = ind.firstChild;
+      if (svg) svg.style.transform = "rotate(" + (pull * 3) + "deg)";
+    }
+    function reset() {
+      tracking = false; pull = 0;
+      ind.classList.remove("divvy-ptr-spin");
+      var svg = ind.firstChild; if (svg) svg.style.animation = "";
+      ind.style.transition = "opacity .15s, transform .2s";
+      ind.style.transform = "translate(-50%,-44px)";
+      ind.style.opacity = "0";
+    }
+    function trigger() {
+      refreshing = true;
+      ind.style.transition = "opacity .15s, transform .2s";
+      ind.style.transform = "translate(-50%,8px)";
+      ind.style.opacity = "1";
+      ind.classList.add("divvy-ptr-spin");
+      var svg = ind.firstChild;
+      if (svg) svg.style.animation = "divvyPtrSpin .8s linear infinite";
+      var done = function () { refreshing = false; reset(); };
+      try {
+        Promise.resolve(onRefresh()).then(done, done);
+      } catch (_) { done(); }
+    }
+
+    scrollEl.addEventListener("touchstart", function (e) {
+      if (refreshing || e.touches.length !== 1) { tracking = false; return; }
+      if (scrollEl.scrollTop > 0) { tracking = false; return; }
+      tracking = true; startY = e.touches[0].clientY; pull = 0;
+      ind.style.transition = "none";
+    }, { passive: true });
+    scrollEl.addEventListener("touchmove", function (e) {
+      if (!tracking || refreshing) return;
+      if (scrollEl.scrollTop > 0) { tracking = false; reset(); return; }
+      var dy = e.touches[0].clientY - startY;
+      if (dy <= 0) { pull = 0; place(); return; }
+      pull = dy * 0.5; // rubber-band resistance
+      place();
+    }, { passive: true });
+    scrollEl.addEventListener("touchend", function () {
+      if (!tracking || refreshing) return;
+      if (pull >= THRESHOLD) trigger();
+      else reset();
+      tracking = false;
+    }, { passive: true });
   }
 
   // ---- router (hash-based: #/home, #/group/:id, ...) ----
@@ -280,7 +413,8 @@
   var app = {
     api: api, esc: esc, money: money, avatar: avatar, colorFor: colorFor, mascot: mascot,
     toast: toast, sheet: sheet, closeSheet: closeSheet, go: go, render: render,
-    depositSheet: depositSheet, copy: copy, haptic: haptic, _sheet: null, _sheetKey: null,
+    depositSheet: depositSheet, copy: copy, haptic: haptic, pullToRefresh: pullToRefresh,
+    _sheet: null, _sheetKey: null,
   };
   window.app = app;
 

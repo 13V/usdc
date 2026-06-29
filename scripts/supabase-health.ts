@@ -27,6 +27,7 @@ const TABLES = [
   "trip_messages",
   "trip_reactions",
   "consumed_signatures",
+  "nudges",
 ];
 
 async function main() {

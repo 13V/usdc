@@ -33,6 +33,37 @@
     try { window.location.href = u; } catch (_) { /* ignore */ }
   }
 
+  // ---- UX polish: inline "working" feedback ---------------------------------
+  // Show an immediate, on-brand busy state on a tapped button + a light haptic,
+  // so a tap never feels dead while a poll / handoff is in flight. Purely
+  // cosmetic — it never gates or changes the money/verify flow.
+  function tap() { if (window.app && app.haptic) { try { app.haptic(15); } catch (_) {} } }
+  var SPINNER =
+    '<span style="display:inline-block; width:14px; height:14px; border-radius:50%; ' +
+    'border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; ' +
+    'animation:stSpin .7s linear infinite; vertical-align:-2px;"></span>';
+  // Swap a button into a busy state. Returns a restore() that puts it back —
+  // call it on completion/failure so the button re-enables correctly.
+  function busy(el, label) {
+    if (!el) return function () {};
+    var prevHTML = el.innerHTML;
+    var prevDisabled = el.disabled;
+    var prevPointer = el.style.pointerEvents;
+    var prevOpacity = el.style.opacity;
+    el.disabled = true;
+    el.style.pointerEvents = "none";
+    el.style.opacity = "0.85";
+    el.innerHTML = SPINNER + (label ? '<span style="margin-left:9px;">' + esc(label) + '</span>' : '');
+    var restored = false;
+    return function restore() {
+      if (restored || !el) return; restored = true;
+      el.innerHTML = prevHTML;
+      el.disabled = prevDisabled;
+      el.style.pointerEvents = prevPointer;
+      el.style.opacity = prevOpacity;
+    };
+  }
+
   // ---- inline icons (lifted from the frame SVGs) ----
   var PHANTOM_SVG =
     '<svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true" style="flex:none;">' +
@@ -223,6 +254,8 @@
     wireCancel();
     var inapp = document.getElementById("stInApp");
     if (inapp) inapp.onclick = function () {
+      tap();
+      busy(inapp, "opening wallet…"); // navigating away — no restore needed
       // hand off to the embedded Privy wallet to sign + send the USDC transfer.
       var mint = (/[?&]spl-token=([^&]+)/.exec(solUrl || "") || [])[1] || "";
       var qs = "pay=settle" +
@@ -238,11 +271,11 @@
       window.location.href = "/embedded/?" + qs;
     };
     var ph = document.getElementById("stPhantom");
-    if (ph) ph.onclick = function () { openUrl(phantomLink(solUrl)); go("waiting"); };
+    if (ph) ph.onclick = function () { tap(); busy(ph, "opening phantom…"); openUrl(phantomLink(solUrl)); go("waiting"); };
     var w = document.getElementById("stWallet");
-    if (w) w.onclick = function () { openUrl(solUrl); go("waiting"); };
+    if (w) w.onclick = function () { tap(); busy(w, "opening…"); openUrl(solUrl); go("waiting"); };
     var paid = document.getElementById("stPaid");
-    if (paid) paid.onclick = function () { go("waiting"); poll(); };
+    if (paid) paid.onclick = function () { tap(); busy(paid, "checking…"); go("waiting"); poll(); };
   }
 
   // ---- STATE: waiting (lifted FRAME 3) ----------------------------------------
@@ -266,6 +299,8 @@
           '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; line-height:1.18; letter-spacing:-0.3px; text-align:center; margin:22px 0 0; color:#F4F7FA; max-width:280px;">watching the chain<br>for your payment</h2>' +
           '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(244,247,250,0.5); margin-top:11px;">' +
             esc(t.amountFmt || "") + ' → ' + esc(S.toName) + (t.toWallet ? ' · ' + esc(trunc(t.toWallet)) : '') + '</div>' +
+          // truthful reassurance — we're watching, nothing's confirmed yet.
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(244,247,250,0.42); margin-top:8px; max-width:280px;">hang tight — we check automatically every few seconds.</div>' +
           '<div style="width:100%; max-width:340px; margin-top:30px; display:flex; flex-direction:column; gap:11px;">' +
             '<button id="stCheck" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 10px 26px rgba(39,117,202,0.42);">i\'ve paid — check now</button>' +
             '<button id="stWalletAgain" style="appearance:none; background:transparent; border:none; cursor:pointer; width:100%; min-height:44px; font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.5);">open wallet again</button>' +
@@ -273,9 +308,9 @@
         ) +
       '</div>';
     var c = document.getElementById("stCheck");
-    if (c) c.onclick = function () { poll(true); };
+    if (c) c.onclick = function () { tap(); poll(true); };
     var wa = document.getElementById("stWalletAgain");
-    if (wa) wa.onclick = function () { openUrl(t.url); };
+    if (wa) wa.onclick = function () { tap(); openUrl(t.url); };
     startAutoPoll();
   }
 
@@ -299,9 +334,9 @@
         ) +
       '</div>';
     var a = document.getElementById("stAgain");
-    if (a) a.onclick = function () { go("waiting"); poll(); };
+    if (a) a.onclick = function () { tap(); busy(a, "checking…"); go("waiting"); poll(); };
     var o = document.getElementById("stOpenAgain");
-    if (o) o.onclick = function () { openUrl(t.url); go("waiting"); };
+    if (o) o.onclick = function () { tap(); busy(o, "opening…"); openUrl(t.url); go("waiting"); };
   }
 
   // ---- STATE: needs-funds / balance too low (lifted FRAME 5) ------------------
@@ -493,6 +528,7 @@
       "@keyframes stPulseC{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,107,94,0.5)}50%{transform:scale(1.25);box-shadow:0 0 0 5px rgba(255,107,94,0)}}" +
       "@keyframes stGrad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}" +
       "@keyframes stStamp{0%{transform:rotate(-11deg) scale(1.7);opacity:0}55%{opacity:1}100%{transform:rotate(-11deg) scale(1);opacity:1}}" +
+      "@keyframes stSpin{to{transform:rotate(360deg)}}" +
       "@media (prefers-reduced-motion: reduce){.appscroll *{animation:none!important}}";
     document.head.appendChild(s);
   }
@@ -526,8 +562,10 @@
     if (!S || S.polling) return;          // debounce overlapping calls
     if (location.hash.indexOf("settle") < 0) return;
     S.polling = true;
+    // Inline busy state on whichever check button is on screen, with a spinner —
+    // makes the in-flight check feel alive and re-enables it on completion.
     var btn = document.getElementById("stCheck") || document.getElementById("stAgain");
-    if (btn) btn.textContent = "checking…";
+    var restore = busy(btn, "checking…");
     app.api.post("/api/trips/" + encodeURIComponent(S.tripId) + "/settle/verify")
       .then(function (trip) {
         S.polling = false;
@@ -538,11 +576,12 @@
         S.tries = (S.tries || 0) + 1;
         if (S.state === "waiting") {
           if (manual || S.tries >= 3) { go("retry"); }   // after a few silent tries, surface retry
-          else { if (btn) btn.textContent = "i've paid — check now"; startAutoPoll(); }
+          else { restore(); startAutoPoll(); }            // re-enable the check button
         }
       })
       .catch(function () {
         S.polling = false;
+        restore();                         // re-enable before transitioning
         if (S.state === "waiting") go("retry");
       });
   }
