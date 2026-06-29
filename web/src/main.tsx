@@ -17,7 +17,7 @@ const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID as string | undefined;
 //   • otherwise         → onboarding: create a wallet + sign in (Login)
 function ActiveFlow() {
   const p = new URLSearchParams(window.location.search);
-  if (p.get("pay") === "settle") return <SettlePay />;
+  if (p.get("pay") === "settle" || p.get("pay") === "send") return <SettlePay />;
   if (p.get("manage") === "wallet") return <Wallet />;
   if (p.has("bill")) return <EmbeddedPay />;
   return <Login />;

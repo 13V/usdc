@@ -266,7 +266,8 @@ app.patch("/api/me", requireAuth, async (req: Request, res: Response) => {
 app.get("/api/me/wallet", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const wallet = await getPrimaryWallet(userId);
-  if (!wallet) return res.json({ wallet: null, usdcCents: null, usdcFmt: null });
+  const mint = USDC_MINT[CLUSTER];
+  if (!wallet) return res.json({ wallet: null, usdcCents: null, usdcFmt: null, mint, cluster: CLUSTER });
   try {
     const connection = new Connection(rpcUrl(CLUSTER), "confirmed");
     const accounts = await connection.getParsedTokenAccountsByOwner(new PublicKey(wallet), {
@@ -281,7 +282,7 @@ app.get("/api/me/wallet", requireAuth, async (req: Request, res: Response) => {
       if (typeof raw === "string" && /^\d+$/.test(raw)) baseUnits += BigInt(raw);
     }
     const usdcCents = Number(baseUnits / 10000n); // 6 decimals -> cents = /10^4
-    res.json({ wallet, usdcCents, usdcFmt: fmt(usdcCents), cluster: CLUSTER });
+    res.json({ wallet, usdcCents, usdcFmt: fmt(usdcCents), mint, cluster: CLUSTER });
   } catch (err) {
     // Network hiccup / no token account → report null rather than failing the screen.
     res.json({ wallet, usdcCents: null, usdcFmt: null, error: (err as Error).message });
@@ -351,6 +352,9 @@ interface CreateBillBody {
   total?: number | string; // dollars
   tipPercent?: number;
   names?: string[];
+  /** Per-participant identity (when split via the friend picker) so the tab can
+   *  auto-appear on each friend's home. Aligned with `names` if both are sent. */
+  members?: { name?: string; userId?: string; wallet?: string }[];
   mode?: SplitMode;
   weights?: number[];
   customCents?: number[];
@@ -366,8 +370,22 @@ app.post("/api/bills", moneyRateLimit, async (req: Request, res: Response) => {
   try {
     const body = req.body as CreateBillBody;
 
-    // Resolve participant names. Precedence: groupId > explicit names > count.
+    // Resolve participant names. Precedence: members[] > groupId > names > count.
+    // When `members` is provided (the friend picker), it carries identities so
+    // the tab can be delivered to each friend's account.
     let names = (body.names || []).map((n) => String(n).trim()).filter(Boolean);
+    let participantMeta: ({ userId?: string; wallet?: string } | null)[] | undefined;
+    if (Array.isArray(body.members) && body.members.length) {
+      const mem = body.members
+        .map((m) => ({ name: String(m && m.name || "").trim(), userId: m && m.userId, wallet: m && m.wallet }))
+        .filter((m) => m.name);
+      if (mem.length) {
+        names = mem.map((m) => m.name);
+        participantMeta = mem.map((m) =>
+          m.userId || m.wallet ? { userId: m.userId || undefined, wallet: m.wallet || undefined } : null
+        );
+      }
+    }
 
     if (body.groupId) {
       const group = await getGroup(body.groupId);
@@ -424,6 +442,7 @@ app.post("/api/bills", moneyRateLimit, async (req: Request, res: Response) => {
       collector,
       totalCents,
       names,
+      participantMeta,
       mode: body.mode || "equal",
       weights: body.weights,
       customCents: body.customCents,
@@ -1317,40 +1336,65 @@ function renderBillLanding(bill: Bill): string {
   const rows = bill.participants
     .map((p) => {
       const href = `/pay/${bill.id}/${encodeURIComponent(p.name)}`;
+      const initial = esc((p.name || "?").trim().charAt(0).toUpperCase() || "?");
       const right = p.paid
         ? `<span class="pill paid">paid ✓</span>`
         : `<a class="pay" href="${esc(href)}">pay ${fmt(p.amountCents)}</a>`;
-      return `<div class="row"><span class="nm">${esc(p.name)}</span><span class="amt">${fmt(p.amountCents)}</span>${right}</div>`;
+      return `<div class="row"><span class="av">${initial}</span><span class="nm">${esc(p.name)}</span><span class="amt">${fmt(p.amountCents)}</span>${right}</div>`;
     })
     .join("");
   const out = outstandingCents(bill);
+  const paidCount = bill.participants.filter((p) => p.paid).length;
+  const pct = bill.totalCents > 0 ? Math.round((collectedCents(bill) / bill.totalCents) * 100) : 0;
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(bill.title)} — split the tab</title>
 <style>
   :root { color-scheme: dark; }
-  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 24px; max-width: 460px;
-         margin-inline: auto; background: #0B1622; color: #F4F7FA; line-height: 1.5; }
-  h1 { font-size: 1.4rem; margin: 0 0 2px; }
-  .muted { color: rgba(244,247,250,.55); font-size: .9rem; }
-  .total { font-size: 2.2rem; font-weight: 800; margin: 14px 0 4px; letter-spacing: -1px; }
-  .row { display: flex; align-items: center; gap: 12px; background: #13212E; border: 1px solid rgba(244,247,250,.08);
-         border-radius: 14px; padding: 12px 14px; margin: 10px 0; }
-  .nm { font-weight: 600; }
-  .amt { margin-left: auto; font-variant-numeric: tabular-nums; color: rgba(244,247,250,.7); }
-  a.pay { text-decoration: none; padding: 9px 16px; border-radius: 999px; font-weight: 700; font-size: .9rem;
-          background: linear-gradient(120deg,#3286db,#2775CA); color: #fff; white-space: nowrap; }
-  .pill.paid { padding: 7px 13px; border-radius: 999px; font-size: .8rem; font-weight: 700;
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, system-ui, "Segoe UI", sans-serif; margin: 0; padding: 22px 20px 40px;
+         max-width: 440px; margin-inline: auto; background: #0B1622; color: #F4F7FA; line-height: 1.45;
+         -webkit-font-smoothing: antialiased; }
+  .brand { display:flex; align-items:center; gap:8px; margin-bottom: 22px; }
+  .mark { width:30px; height:30px; border-radius:9px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8);
+          display:flex; align-items:center; justify-content:center; font-weight:800; font-size:19px; color:#fff;
+          box-shadow:0 5px 14px rgba(39,117,202,.4); }
+  .word { font-weight:700; font-size:19px; letter-spacing:-.5px; }
+  .hero { background:#13212E; border:1px solid rgba(244,247,250,.08); border-radius:22px; padding:20px;
+          box-shadow:0 14px 36px rgba(0,0,0,.32); }
+  h1 { font-size: 1.5rem; margin: 0 0 3px; letter-spacing:-.4px; }
+  .muted { color: rgba(244,247,250,.5); font-size: .85rem; }
+  .total { font-size: 2.6rem; font-weight: 800; margin: 12px 0 4px; letter-spacing: -1.5px;
+           background:linear-gradient(120deg,#7fc0ff,#3DE8C7); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .bar { height:7px; border-radius:999px; background:rgba(244,247,250,.08); overflow:hidden; margin:14px 0 4px; }
+  .bar > i { display:block; height:100%; width:${pct}%; background:linear-gradient(90deg,#2775CA,#3DE8C7); border-radius:999px; }
+  .sec { font-family: "Space Mono", ui-monospace, monospace; font-size:.62rem; letter-spacing:1.5px; text-transform:uppercase;
+         color:rgba(244,247,250,.4); margin:24px 4px 10px; }
+  .row { display: flex; align-items: center; gap: 12px; background: #13212E; border: 1px solid rgba(244,247,250,.07);
+         border-radius: 16px; padding: 13px 14px; margin: 9px 0; }
+  .av { width:38px; height:38px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center;
+        font-weight:700; background:linear-gradient(150deg,#2775CA,#3DE8C7); color:#04121a; }
+  .nm { font-weight: 700; }
+  .amt { margin-left: auto; font-variant-numeric: tabular-nums; color: rgba(244,247,250,.6); font-size:.9rem; }
+  a.pay { text-decoration: none; padding: 10px 18px; border-radius: 999px; font-weight: 800; font-size: .88rem;
+          background: linear-gradient(120deg,#3286db,#2775CA); color: #fff; white-space: nowrap;
+          box-shadow:0 6px 16px rgba(39,117,202,.4); }
+  .pill.paid { padding: 8px 14px; border-radius: 999px; font-size: .78rem; font-weight: 800;
                background: rgba(61,232,199,.14); color: #3DE8C7; }
-  .foot { margin-top: 20px; }
+  .foot { margin-top: 22px; text-align:center; }
 </style></head><body>
-  <h1>${esc(bill.title)}</h1>
-  <div class="muted">${bill.participants.length} ${bill.participants.length === 1 ? "person" : "people"} · settle in USDC · dollars, just faster</div>
-  <div class="total">${fmt(bill.totalCents)}</div>
-  <div class="muted">${out > 0 ? `${fmt(out)} still owed` : `all settled ✨`}</div>
+  <div class="brand"><span class="mark">/</span><span class="word">divvy</span></div>
+  <div class="hero">
+    <h1>${esc(bill.title)}</h1>
+    <div class="muted">${bill.participants.length} ${bill.participants.length === 1 ? "person" : "people"} · ${out > 0 ? `${fmt(out)} still owed` : "all settled ✨"}</div>
+    <div class="total">${fmt(bill.totalCents)}</div>
+    <div class="bar"><i></i></div>
+    <div class="muted">${paidCount} of ${bill.participants.length} paid · settles in USDC</div>
+  </div>
+  <div class="sec">tap your name to pay</div>
   ${rows}
-  <p class="foot muted">tap your name to pay your share — no app needed.</p>
+  <p class="foot muted">no app needed — pay your share with a card or a wallet.<br/>dollars, just faster.</p>
 </body></html>`;
 }
 

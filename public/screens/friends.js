@@ -362,12 +362,14 @@
       body = emptyState();
     }
 
-    view.innerHTML = canvas(header(sub) + addWell() + body);
+    view.innerHTML = canvas(header(sub) + addWell() + sendBar() + body);
 
     var refresh = function () { return signedIn(view); };
     wireAdd(view, refresh);
     wireRows(view);
     wireRequests(view, refresh);
+    var sb = view.querySelector("#frSend");
+    if (sb) sb.onclick = function () { sendSheet(); };
   }
 
   // ---- friend requests (incoming) -----------------------------------------
@@ -433,6 +435,81 @@
           .catch(function (e) { b.disabled = false; app.toast(e.message || "couldn't dismiss"); });
       };
     });
+  }
+
+  // ---- send money ---------------------------------------------------------
+  // A prominent button + a sheet to SEND USDC (the opposite of a tab, which
+  // requests). Pick a friend with a wallet, or paste any wallet, set an amount,
+  // and hand off to the embedded wallet to sign + send.
+  function sendBar() {
+    return '<div style="margin:2px 16px 0;">' +
+      '<button id="frSend" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:15px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 8px 22px rgba(61,232,199,0.28);">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1622" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#0B1622;">send money</span>' +
+      '</button></div>';
+  }
+  var WALLET_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+  function sendSheet(prefill) {
+    prefill = prefill || {};
+    var el = app.sheet('<div id="snBody" style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(244,247,250,0.5); padding:12px 2px;">loading…</div>');
+    var mint = null, balCents = null, friends = [];
+    Promise.all([
+      app.api.get("/api/me/wallet").catch(function () { return null; }),
+      app.api.get("/api/friends").catch(function () { return { friends: [] }; })
+    ]).then(function (r) {
+      var w = r[0] || {};
+      mint = w.mint; balCents = (typeof w.usdcCents === "number") ? w.usdcCents : null;
+      friends = ((r[1] && r[1].friends) || []).filter(function (f) { return f.primaryWallet; });
+      render();
+    });
+    function render() {
+      var body = el.querySelector("#snBody"); if (!body) return;
+      var bal = (balCents == null) ? "—" : "$" + (balCents / 100).toFixed(2);
+      var chips = friends.length
+        ? '<div style="display:flex; gap:8px; overflow-x:auto; padding:2px 0 4px; margin-top:8px;">' +
+            friends.map(function (f) {
+              var nm = (f.displayName || f.handle || "friend");
+              return '<button class="snFriend" data-w="' + app.esc(f.primaryWallet) + '" data-n="' + app.esc(nm) + '" style="appearance:none; cursor:pointer; flex:none; display:flex; align-items:center; gap:7px; background:#0e1a24; border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:6px 12px 6px 7px;">' +
+                '<span style="width:24px; height:24px; border-radius:50%; background:' + (f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)") + '; display:flex; align-items:center; justify-content:center; font-size:13px;">' + app.esc(f.emoji || "🙂") + '</span>' +
+                '<span style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:#F4F7FA;">' + app.esc(nm.toLowerCase()) + '</span></button>';
+            }).join("") +
+          '</div>'
+        : '';
+      body.innerHTML =
+        '<h2 class="lower" style="font-size:22px; margin:2px 0 2px;">send money</h2>' +
+        '<p class="hint" style="margin:0 0 4px;">straight to their wallet · usdc, just faster. you have <b style="color:#3DE8C7;">' + bal + '</b>.</p>' +
+        '<label style="margin-top:12px;">to</label>' +
+        '<input class="input" id="snTo" placeholder="paste a wallet, or pick a friend" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + app.esc(prefill.wallet || "") + '">' +
+        chips +
+        '<label style="margin-top:14px;">amount</label>' +
+        '<input class="input" id="snAmt" inputmode="decimal" placeholder="0.00">' +
+        '<div id="snErr" style="font-family:\'Space Mono\',monospace; font-size:11px; color:#FF6B5E; min-height:14px; margin-top:8px;"></div>' +
+        '<button class="btn" id="snGo" style="margin-top:6px;">send 💸</button>';
+      var toEl = el.querySelector("#snTo");
+      [].forEach.call(el.querySelectorAll(".snFriend"), function (b) {
+        b.onclick = function () { toEl.value = b.getAttribute("data-w"); toEl.setAttribute("data-name", b.getAttribute("data-n")); };
+      });
+      var go = el.querySelector("#snGo");
+      if (go) go.onclick = function () {
+        var err = el.querySelector("#snErr"); err.textContent = "";
+        var to = (toEl.value || "").trim();
+        var nm = toEl.getAttribute("data-name") || "";
+        // allow picking a friend by @handle typed in
+        if (to[0] === "@") {
+          var h = to.replace(/^@+/, "").toLowerCase();
+          var f = friends.filter(function (x) { return (x.handle || "").toLowerCase() === h; })[0];
+          if (f) { to = f.primaryWallet; nm = f.displayName || f.handle; }
+        }
+        if (!WALLET_RE.test(to)) { err.textContent = "paste a valid wallet, or pick a friend"; return; }
+        var cents = Math.round(parseFloat((el.querySelector("#snAmt").value || "").replace(/[^0-9.]/g, "")) * 100);
+        if (!cents || cents <= 0) { err.textContent = "enter an amount"; return; }
+        if (!mint) { err.textContent = "couldn't load the token — try again"; return; }
+        var qs = "pay=send&to=" + encodeURIComponent(to) + "&amount=" + cents +
+          "&mint=" + encodeURIComponent(mint) + "&label=" + encodeURIComponent(nm || "") +
+          "&ret=" + encodeURIComponent("/#/friends");
+        window.location.href = "/embedded/?" + qs;
+      };
+    }
   }
 
   // ---- register -----------------------------------------------------------

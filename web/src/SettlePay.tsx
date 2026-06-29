@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSolanaWallets, useSendTransaction } from "@privy-io/react-auth/solana";
-import { Connection } from "@solana/web3.js";
+import { Connection, Keypair } from "@solana/web3.js";
 import { buildTransferTransaction, readUsdcBalanceCents } from "./spl";
 import { safeReturnPath } from "./safeReturn";
 
@@ -39,11 +39,20 @@ const mono = "'Space Mono',monospace";
 
 export function SettlePay() {
   const q = useMemo(() => new URLSearchParams(window.location.search), []);
+  // Two modes off one component: "settle" a trip transfer (verifies against a
+  // trip), or a plain "send" to any wallet (no trip, just move the USDC).
+  const isSend = q.get("pay") === "send";
   const to = q.get("to") || "";
   const amountCents = parseInt(q.get("amount") || "0", 10);
-  const reference = q.get("ref") || "";
   const mint = q.get("mint") || "";
   const tripId = q.get("trip") || "";
+  const toLabel = q.get("label") || "";
+  // settle carries the bill/trip reference; send doesn't need one tracked
+  // server-side, so generate a throwaway reference (it just rides the transfer).
+  const reference = useMemo(
+    () => q.get("ref") || Keypair.generate().publicKey.toBase58(),
+    [q]
+  );
   // Same-origin path only — never let `ret` open-redirect off the app. The
   // embedded app is served from /embedded/, so this returns to the main app.
   const ret = safeReturnPath(q.get("ret"), "/#/home");
@@ -111,28 +120,33 @@ export function SettlePay() {
       setStatus("confirm in your wallet…");
       const receipt = await sendTransaction({ transaction, connection: conn });
       setStatus(`sent (${receipt.signature.slice(0, 8)}…) — confirming…`);
-      // Hand off confirmation to the settle screen: it polls /settle/verify
-      // until the transfer FINALIZES on-chain (a few seconds on devnet) and
-      // shows "squared". Marking paid here and firing a single verify would be
-      // premature — the tx isn't finalized yet, so the server wouldn't record
-      // it. The flag tells the settle screen to resume in its polling state.
-      try { sessionStorage.setItem("divvy.settle.sent", tripId); } catch { /* ignore */ }
-      // Best-effort early kick (harmless if not yet finalized).
-      await fetch(`/api/trips/${tripId}/settle/verify`, {
-        method: "POST",
-        headers: { "content-type": "application/json", authorization: "Bearer " + token() },
-      }).catch(() => {});
-      setPaid(true); setStatus("");
-      setTimeout(() => { window.location.href = ret; }, 1200);
+      if (isSend) {
+        // Plain send: the transfer IS the whole job. Nothing to verify against a
+        // trip; the recipient's balance reflects it once it confirms.
+        setPaid(true); setStatus("");
+        setTimeout(() => { window.location.href = ret; }, 1400);
+      } else {
+        // Settle: hand off confirmation to the settle screen, which polls
+        // /settle/verify until the transfer FINALIZES on-chain and shows
+        // "squared". Marking paid here would be premature (not finalized yet).
+        try { sessionStorage.setItem("divvy.settle.sent", tripId); } catch { /* ignore */ }
+        await fetch(`/api/trips/${tripId}/settle/verify`, {
+          method: "POST",
+          headers: { "content-type": "application/json", authorization: "Bearer " + token() },
+        }).catch(() => {});
+        setPaid(true); setStatus("");
+        setTimeout(() => { window.location.href = ret; }, 1200);
+      }
     } catch (e) {
       setError((e as Error).message || "payment failed");
       setStatus("");
     } finally { setBusy(false); }
   }
 
-  if (!to || !amountCents || !reference || !mint) {
-    return <div style={wrap}><p style={{ color: "#FF6B5E" }}>missing settle details</p></div>;
+  if (!to || !amountCents || !mint) {
+    return <div style={wrap}><p style={{ color: "#FF6B5E" }}>missing {isSend ? "send" : "settle"} details</p></div>;
   }
+  const toName = toLabel || (to.slice(0, 4) + "…" + to.slice(-4));
 
   return (
     <div style={wrap}>
@@ -141,12 +155,12 @@ export function SettlePay() {
         <span style={{ color: "rgba(244,247,250,0.6)", fontSize: 18 }}>‹</span>
       </div>
 
-      <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#3DE8C7" }}>SETTLE UP</div>
+      <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#3DE8C7" }}>{isSend ? "SEND" : "SETTLE UP"}</div>
       <div style={{ fontFamily: mono, fontWeight: 700, fontSize: 52, letterSpacing: -1, margin: "10px 0 0" }}>{fmt(amountCents)}</div>
-      <div style={{ fontFamily: mono, fontSize: 11, color: "rgba(244,247,250,0.45)", marginTop: 6 }}>to {to.slice(0, 4)}…{to.slice(-4)} · USDC on devnet</div>
+      <div style={{ fontFamily: mono, fontSize: 11, color: "rgba(244,247,250,0.45)", marginTop: 6 }}>to {toName} · USDC on devnet</div>
 
       {paid ? (
-        <div style={{ ...card, background: "linear-gradient(120deg,#2bccae,#3DE8C7)", color: "#04121a", fontWeight: 700 }}>✓ settled — thank you!</div>
+        <div style={{ ...card, background: "linear-gradient(120deg,#2bccae,#3DE8C7)", color: "#04121a", fontWeight: 700 }}>{isSend ? "✓ sent!" : "✓ settled — thank you!"}</div>
       ) : !ready ? (
         <p style={{ color: "rgba(244,247,250,0.5)", marginTop: 24 }}>starting…</p>
       ) : !authenticated ? (
@@ -162,7 +176,7 @@ export function SettlePay() {
             </div>
           </div>
           <button style={{ ...primary, opacity: busy ? 0.7 : 1 }} onClick={pay} disabled={busy}>
-            {busy ? "working…" : `pay ${fmt(amountCents)}`}
+            {busy ? "working…" : (isSend ? `send ${fmt(amountCents)}` : `pay ${fmt(amountCents)}`)}
           </button>
           {status && <p style={{ fontFamily: mono, fontSize: 12.5, color: "rgba(244,247,250,0.55)", marginTop: 14 }}>{status}</p>}
           {error && <p style={{ fontSize: 13, color: "#FF6B5E", marginTop: 12, maxWidth: 320 }}>{error}</p>}

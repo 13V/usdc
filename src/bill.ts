@@ -33,6 +33,11 @@ export interface BillParticipant {
   paid: boolean;
   /** Confirmed signature, once paid. */
   signature?: string;
+  /** Divvy user this share belongs to (when split with a friend) — lets the
+   *  tab auto-appear on that person's home. */
+  userId?: string;
+  /** That person's wallet (fallback identity if userId isn't known yet). */
+  wallet?: string;
 }
 
 /**
@@ -79,6 +84,9 @@ export interface CreateBillInput {
   creatorUserId?: string;
   totalCents: number;
   names: string[];
+  /** Optional per-participant identity, aligned with `names` by index, so a
+   *  share split with a Divvy friend can be delivered to their account. */
+  participantMeta?: ({ userId?: string; wallet?: string } | null)[];
   mode: SplitMode;
   weights?: number[];
   customCents?: number[];
@@ -97,7 +105,7 @@ export function createBill(input: CreateBillInput): Bill {
     customCents: input.customCents,
   });
 
-  const participants: BillParticipant[] = shares.map((share) => {
+  const participants: BillParticipant[] = shares.map((share, i) => {
     const reference = newReference();
     const url = buildSolanaPayUrl({
       recipient: input.collector,
@@ -107,12 +115,15 @@ export function createBill(input: CreateBillInput): Bill {
       label: input.title,
       message: `${share.name}'s share — ${fmt(share.cents)}`,
     });
+    const meta = input.participantMeta && input.participantMeta[i];
     return {
       name: share.name,
       amountCents: share.cents,
       reference,
       url,
       paid: false,
+      ...(meta && meta.userId ? { userId: meta.userId } : {}),
+      ...(meta && meta.wallet ? { wallet: meta.wallet } : {}),
     };
   });
 
