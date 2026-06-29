@@ -12,7 +12,7 @@ app is "safe"; it is the list of what must be true before it can be.
 | 1 | Third-party security audit | ❌ Not done — **required** before mainnet. Internal sweeps ≠ an audit. |
 | 2 | Payment-verification hardening | ⚠️ Substantially done (see below); one belt-and-suspenders piece deferred |
 | 3 | RPC key out of the client bundle | ✅ Done — client uses the same-origin `/api/rpc` proxy; key lives in `RPC_URL` server-side |
-| 4 | Custody / recovery decision | ⏳ Documented below — **product decision still required** |
+| 4 | Custody / recovery | ✅ Backup (key export) + recovery-password UI shipped; two policy/config decisions remain (below) |
 | 5 | Monitoring + rate limits on money endpoints | ✅ Done — per-IP caps + structured `money` audit log |
 
 ## 2. Payment verification — what's in place
@@ -47,10 +47,18 @@ Privy's infrastructure and reconstructed when the user re-authenticates.
 (email/phone/OAuth). If a user permanently loses that, recovery depends entirely
 on Privy. There is currently **no user-held backup** and **no key export**.
 
-**Decisions to make before mainnet:**
-1. Offer **key export** (Privy supports it) so users aren't locked to Privy.
-2. Decide whether to require a **user-controlled recovery factor** (passkey /
-   password) for stronger self-custody guarantees.
+**Shipped (`web/src/Wallet.tsx`, reached from you → "wallet & recovery"):**
+- **Key export** — Privy `exportWallet`, so users can back up and move the wallet
+  outside Divvy. *(Requires "allow export" enabled in the Privy dashboard — if it
+  errors, that toggle is off.)*
+- **Recovery password** — Privy `setWalletRecovery`, a user-controlled factor so a
+  user can recover even if they lose their login method.
+
+**Decisions still required:**
+1. Enable **key export** in the Privy dashboard (otherwise the export button
+   errors gracefully).
+2. Decide whether a recovery factor is **optional or required** (currently
+   offered, not enforced) — enforcing it at onboarding is stronger self-custody.
 3. Write the **"I lost my login" support path** explicitly.
 4. Confirm Privy's custody terms are acceptable for the amounts you'll allow.
 
