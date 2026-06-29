@@ -157,6 +157,7 @@
     return '' +
       '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.42); padding:24px 2px 11px;">SETTINGS</div>' +
       '<div style="background:#13212E; border:1px solid rgba(244,247,250,0.07); border-radius:18px; overflow:hidden;">' +
+        row("yWallet", "🔑", "rgba(139,92,246,0.16)", "wallet & recovery") + divider() +
         row("yFriends", "🫂", "rgba(39,117,202,0.16)", "friends") + divider() +
         row("yRecurring", "🔁", "rgba(61,232,199,0.14)", "recurring") + divider() +
         row("ySaved", "🧾", "rgba(255,198,92,0.16)", "saved tabs") + divider() +
@@ -265,6 +266,12 @@
   }
 
   function wireSettings() {
+    var wal = document.getElementById("yWallet");
+    if (wal) wal.onclick = function () {
+      // Wallet backup/recovery lives in the embedded Privy app (it needs the
+      // wallet context). Hand off with an absolute return path back to here.
+      window.location.href = "/embedded/?manage=wallet&ret=" + encodeURIComponent("/#/you");
+    };
     var f = document.getElementById("yFriends");
     if (f) f.onclick = function () { location.hash = "#/friends"; };
     var r = document.getElementById("yRecurring");

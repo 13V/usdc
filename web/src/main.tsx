@@ -3,19 +3,22 @@ import { createRoot } from "react-dom/client";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { EmbeddedPay } from "./EmbeddedPay";
 import { SettlePay } from "./SettlePay";
+import { Wallet } from "./Wallet";
 import { Login } from "./Login";
 
 // Privy app id is injected at build time via VITE_PRIVY_APP_ID. Without it the
 // page renders a clear "not configured" state instead of half-working.
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID as string | undefined;
 
-// /embedded serves three flows off one bundle:
+// /embedded serves these flows off one bundle:
 //   • ?bill=…&name=…    → pay a single bill share (EmbeddedPay)
 //   • ?pay=settle&…     → pay a trip settle-up transfer (SettlePay)
+//   • ?manage=wallet    → back up / set recovery on the embedded wallet (Wallet)
 //   • otherwise         → onboarding: create a wallet + sign in (Login)
 function ActiveFlow() {
   const p = new URLSearchParams(window.location.search);
   if (p.get("pay") === "settle") return <SettlePay />;
+  if (p.get("manage") === "wallet") return <Wallet />;
   if (p.has("bill")) return <EmbeddedPay />;
   return <Login />;
 }
