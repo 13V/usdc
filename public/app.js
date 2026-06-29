@@ -99,6 +99,12 @@
     }
     return r;
   }
+  // Tactile feedback. navigator.vibrate is a no-op on desktop / unsupported
+  // browsers, so this is always safe to call. Pass a ms number or a pattern
+  // array (e.g. [30,40,30] for a celebratory double-pulse).
+  function haptic(pattern) {
+    try { if (navigator.vibrate) navigator.vibrate(pattern || 12); } catch (_) {}
+  }
   function toast(msg) {
     var t = document.createElement("div");
     t.textContent = msg;
@@ -274,9 +280,17 @@
   var app = {
     api: api, esc: esc, money: money, avatar: avatar, colorFor: colorFor, mascot: mascot,
     toast: toast, sheet: sheet, closeSheet: closeSheet, go: go, render: render,
-    depositSheet: depositSheet, copy: copy, _sheet: null, _sheetKey: null,
+    depositSheet: depositSheet, copy: copy, haptic: haptic, _sheet: null, _sheetKey: null,
   };
   window.app = app;
+
+  // Universal tactile tick: a tiny pulse on every button press. One delegated
+  // listener covers all screens (inline-styled buttons included). Screens can
+  // call app.haptic([30,40,30]) for stronger, celebratory moments.
+  document.addEventListener("pointerdown", function (e) {
+    var t = e.target;
+    if (t && t.closest && t.closest("button")) haptic(12);
+  }, { passive: true });
 
   // Bridge the server-persisted emoji/color identity into localStorage so every
   // screen (which reads "divvy.profile") reflects it, even on a fresh device.

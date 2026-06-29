@@ -545,7 +545,13 @@
     var s = document.getElementById("gTabSettle");
     if (s) s.onclick = function () { app.closeSheet(); location.hash = "#/settle/" + encodeURIComponent(trip.id); };
     var edit = document.getElementById("gTabEdit");
-    if (edit) edit.onclick = function () { app.closeSheet(); location.hash = "#/new/" + encodeURIComponent(trip.id); };
+    if (edit) edit.onclick = function () {
+      app.closeSheet();
+      // Hand the expense to the form so it opens pre-filled for editing instead
+      // of as a blank "add" (which looked like it lost your data).
+      try { if (e && e.id) sessionStorage.setItem("divvy.editExpense", JSON.stringify({ tripId: trip.id, id: e.id })); } catch (_) {}
+      location.hash = "#/new/" + encodeURIComponent(trip.id);
+    };
     var del = document.getElementById("gTabDelete");
     if (del) {
       var armed = false, armTimer = null;

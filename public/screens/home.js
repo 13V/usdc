@@ -84,7 +84,21 @@
     return "✨";
   }
 
-  function hero(net, owed, owe, ppl) {
+  // "$X in your wallet · ready to settle / top up to settle" — shown when you
+  // owe money, so you instantly know whether you can clear it now. Mirrors
+  // group.js walletReadyChip.
+  function heroWalletChip(walletCents, oweCents) {
+    if (walletCents == null || oweCents <= 0) return "";
+    var covers = walletCents >= oweCents;
+    var c = covers ? "#3DE8C7" : "#FF6B5E";
+    var label = covers ? "in your wallet · ready to settle" : "in your wallet · top up to settle";
+    return '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:10px; margin-left:8px; border:1px solid ' + c + '55; background:' + c + '1f; border-radius:999px; padding:4px 11px;">' +
+      '<span style="width:6px; height:6px; border-radius:50%; background:' + c + '; box-shadow:0 0 7px ' + c + 'cc;"></span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:10px; color:' + c + ';">$' + (walletCents / 100).toFixed(2) + '</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.55);">' + label + '</span>' +
+    '</div>';
+  }
+  function hero(net, owed, owe, ppl, walletCents, quick) {
     var pos = net >= 0;
     var col = pos ? "#3B92E8" : "#FF6B5E";
     var owedSeg = Math.max(owed, 1), oweSeg = Math.max(owe, 1);
@@ -114,13 +128,13 @@
         '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid rgba(39,117,202,0.4); background:rgba(39,117,202,0.10); border-radius:999px; padding:4px 11px;">' +
           '<span style="width:6px; height:6px; border-radius:50%; background:#3B92E8; box-shadow:0 0 7px rgba(59,146,232,0.8);"></span>' +
           '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(244,247,250,0.62);">settles instantly · ~$0.001 fee</span>' +
-        '</div>' + bar +
+        '</div>' + heroWalletChip(walletCents, owe) + bar +
         '<div style="position:relative; height:1px; margin:20px -20px 16px; border-top:1.5px dashed rgba(244,247,250,0.16);">' +
           '<div style="position:absolute; left:-7px; top:-8px; width:15px; height:15px; border-radius:50%; background:#0B1622;"></div>' +
           '<div style="position:absolute; right:-7px; top:-8px; width:15px; height:15px; border-radius:50%; background:#0B1622;"></div>' +
         '</div>' +
         '<div style="display:flex; gap:11px;">' +
-          '<button id="hSettle" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 8px 24px rgba(39,117,202,0.42);">settle up</button>' +
+          '<button id="hSettle" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 8px 24px rgba(39,117,202,0.42); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 12px;">' + (quick ? "settle " + app.esc(String(quick.tripName || "up").toLowerCase().slice(0, 14)) : "settle up") + '</button>' +
           '<button id="hRequest" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.2); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#F4F7FA;">request</button>' +
         '</div>' +
       '</div>' +
@@ -263,19 +277,26 @@
 
   async function signedIn(view) {
     view.innerHTML = topbar() + '<div class="appscroll"><div class="skeleton" style="height:230px;border-radius:23px;margin:14px 0;"></div><div class="skeleton" style="height:54px;margin:10px 0;"></div><div class="skeleton" style="height:54px;margin:10px 0;"></div></div>';
-    var d, bills = [];
+    var d, bills = [], walletCents = null;
     try {
       var both = await Promise.all([
         app.api.get("/api/me/balances"),
         app.api.get("/api/me/bills").catch(function () { return { bills: [] }; }),
+        app.api.get("/api/me/wallet").catch(function () { return null; }),
       ]);
       d = both[0];
       bills = (both[1] && both[1].bills) || [];
+      if (both[2] && typeof both[2].usdcCents === "number") walletCents = both[2].usdcCents;
     }
     catch (e) { view.innerHTML = topbar() + '<div class="empty"><div class="title lower">couldn\'t load balances</div><div class="hint">' + app.esc(e.message) + "</div></div>"; return; }
     var t = d.totals || {}, net = t.netCents || 0, owed = t.owedCents || 0, owe = t.owesCents || 0;
     var ppl = d.counterparties || [], grp = d.trips || [];
     window.__grpCount = grp.length;
+
+    // Quick-settle: if you owe money in EXACTLY one group, the hero's settle
+    // button jumps straight there instead of bouncing through the groups list.
+    var oweGroups = grp.filter(function (g) { return (g.netCents || 0) < 0; });
+    var quick = (owe > 0 && oweGroups.length === 1) ? oweGroups[0] : null;
 
     // Open tabs first (most recent), then settled ones — they collapse out of
     // sight once everyone's paid but stay tappable in history.
@@ -290,9 +311,12 @@
     var emptyHtml = (orderedBills.length || grp.length) ? "" :
       '<div class="empty" style="padding-top:30px;">' + app.mascot({ size: 96, mood: "happy" }) + '<div class="title lower">no tabs yet</div><div class="hint">start a group and split something 🎉</div><button class="btn" style="max-width:240px;margin-top:8px;" onclick="location.hash=\'#/new\'">new tab</button></div>';
 
-    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + hero(net, owed, owe, ppl) + peopleHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
+    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + hero(net, owed, owe, ppl, walletCents, quick) + peopleHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
     var s = document.getElementById("hSettle"), rq = document.getElementById("hRequest");
-    if (s) s.onclick = function () { app.go("groups"); };
+    if (s) s.onclick = function () {
+      if (quick) location.hash = "#/settle/" + encodeURIComponent(quick.tripId);
+      else app.go("groups");
+    };
     if (rq) rq.onclick = function () { app.go("new"); };
   }
 

@@ -125,9 +125,32 @@
       members: [],              // {id,name,emoji,bg,included,you}
       custom: {},               // id -> cents (only edited rows)
       scanning: false,
+      editId: null,            // when set, we're editing an existing expense (PATCH)
       _groupName: null,
       _groupEmoji: "🗼",
     };
+
+    // Edit intent handed over from the group tab sheet: pre-fill this expense.
+    var editIntent = null;
+    try {
+      var raw = sessionStorage.getItem("divvy.editExpense");
+      if (raw) { var ei = JSON.parse(raw); if (ei && groupId && ei.tripId === groupId) editIntent = ei; }
+      sessionStorage.removeItem("divvy.editExpense");
+    } catch (_) {}
+
+    // Pre-fill the form from an existing expense (title, total, payer, who's in).
+    function applyEdit(trip) {
+      if (!editIntent || !trip || !trip.expenses) return;
+      var ex = trip.expenses.filter(function (x) { return x.id === editIntent.id; })[0];
+      if (!ex) return;
+      st.editId = ex.id;
+      st.title = ex.title || "";
+      st.totalCents = ex.amountCents || 0;
+      if (ex.title) st.titleEmoji = groupEmojiFromName(ex.title);
+      var inSet = {}; (ex.participants || []).forEach(function (p) { inSet[p] = 1; });
+      st.members.forEach(function (m) { m.included = !!inSet[m.id]; });
+      if (ex.paidBy && memberById(ex.paidBy)) st.paidBy = ex.paidBy;
+    }
 
     function tipPct() {
       var t = TIPS.filter(function (x) { return x.key === st.tipKey; })[0];
@@ -165,6 +188,7 @@
     // ---- render ----
     function render() {
       var inGroup = !!groupId;
+      var editing = !!st.editId;
       // The trip expenses endpoint only does even splits, so "by share" can't be
       // honored in-group — force evenly there rather than silently discarding it.
       if (inGroup && st.mode === "custom") st.mode = "equally";
@@ -177,7 +201,7 @@
       // headline
       var headline =
         '<h1 style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:30px; letter-spacing:-0.6px; margin:4px 2px 0; color:#F4F7FA;">' +
-          (inGroup ? "add expense" : "new tab") + '</h1>';
+          (editing ? "edit expense" : inGroup ? "add expense" : "new tab") + '</h1>';
 
       // adding-to-group pill (only when in a group)
       var grpPill = inGroup ?
@@ -265,7 +289,10 @@
         '</div>';
 
       // ---- split between: header + stepper + mode toggle + member chips ----
-      var canStep = !inGroup;
+      // The stepper only earns its space in "by share" mode. In the common
+      // evenly path, adding people lives on the "+ add" chip and removing lives
+      // in the edit sheet — so the −/+ box is redundant chrome on the hot path.
+      var canStep = !inGroup && st.mode === "custom";
       var stepper = canStep ?
         '<div style="display:flex; align-items:center; gap:14px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:13px; padding:8px 10px; margin-top:9px; width:fit-content;">' +
           '<button id="nMinus" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:10px; background:#0e2734; color:#F4F7FA; font-size:20px; font-family:' + F_MONO + ';">−</button>' +
@@ -384,13 +411,13 @@
       var footer =
         '<div style="position:fixed; left:0; right:0; bottom:0; z-index:55; padding:14px 20px calc(14px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(11,22,34,0) 0%, #0B1622 24%);">' +
           '<button id="nSend" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 12px 30px rgba(39,117,202,0.45);">' +
-            '<span style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (inGroup ? "add to tab" : "send the tab") + '</span>' +
+            '<span style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (editing ? "save changes" : inGroup ? "add to tab" : "send the tab") + '</span>' +
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>' +
           '</button>' +
           '<div style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.36); text-align:center; margin-top:10px;">no app needed to pay. dollars, just faster.</div>' +
         '</div>';
 
-      view.innerHTML = shell(topbar(inGroup ? "add expense" : "new tab") + scroll) + footer;
+      view.innerHTML = shell(topbar(editing ? "edit expense" : inGroup ? "add expense" : "new tab") + scroll) + footer;
       wire();
     }
 
@@ -671,13 +698,19 @@
 
       try {
         if (groupId) {
-          await app.api.post("/api/trips/" + encodeURIComponent(groupId) + "/expenses", {
+          var payload = {
             title: title,
             amountCents: grand,
             paidBy: st.paidBy,
             participants: inc.map(function (m) { return m.id; }),
-          });
-          app.toast("added to the tab ✨");
+          };
+          if (st.editId) {
+            await app.api.patch("/api/trips/" + encodeURIComponent(groupId) + "/expenses/" + encodeURIComponent(st.editId), payload);
+            app.toast("saved ✨");
+          } else {
+            await app.api.post("/api/trips/" + encodeURIComponent(groupId) + "/expenses", payload);
+            app.toast("added to the tab ✨");
+          }
           location.hash = "#/group/" + encodeURIComponent(groupId);
         } else {
           var bill = await app.api.post("/api/bills", {
@@ -712,6 +745,7 @@
         if (trip && trip.emoji) st._groupEmoji = trip.emoji;
         else if (trip && trip.name) st._groupEmoji = groupEmojiFromName(trip.name);
         seedMembers(trip && trip.members);
+        applyEdit(trip);
         render();
       }).catch(function () {
         // group didn't load — fall back to a standalone tab so we never crash.

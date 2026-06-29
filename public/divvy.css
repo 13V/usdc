@@ -90,9 +90,16 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.5
 .btn { appearance: none; border: none; cursor: pointer; width: 100%; min-height: 56px; border-radius: 999px;
   background: var(--blue-grad); color: #fff; font-family: var(--display); font-weight: 600; font-size: 17px;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  box-shadow: 0 10px 30px rgba(39,117,202,0.42); transition: transform .12s ease, filter .15s ease; }
+  box-shadow: 0 10px 30px rgba(39,117,202,0.42); transition: transform .12s ease, filter .15s ease, box-shadow .12s ease; }
 .btn:hover { filter: brightness(1.07); }
-.btn:active { transform: translateY(1px) scale(.99); }
+/* deeper, tactile press: sink in + collapse the lift shadow */
+.btn:active { transform: translateY(2px) scale(.975); box-shadow: 0 3px 12px rgba(39,117,202,0.3); filter: brightness(.98); }
+.btn.coral:active { box-shadow: 0 3px 12px rgba(255,107,94,0.28); }
+.btn.ghost:active { transform: translateY(2px) scale(.975); background: rgba(244,247,250,0.06); }
+/* universal tactile press for the inline-styled screen buttons (skip ones that
+   set their own transform, and the .btn class which has its own press above) */
+button:active:not(.btn):not([style*="transform"]) { transform: scale(.97); transition: transform .07s ease; }
+@media (prefers-reduced-motion: reduce) { .btn:active, button:active:not(.btn):not([style*="transform"]) { transform: none; } }
 .btn.ghost { background: transparent; border: 1px solid var(--line-2); color: var(--text);
   box-shadow: none; font-family: var(--sans); font-weight: 500; }
 .btn.ghost:hover { background: rgba(244,247,250,0.05); border-color: rgba(244,247,250,0.3); filter: none; }

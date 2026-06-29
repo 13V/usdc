@@ -435,6 +435,7 @@
         ) +
       '</div>';
     ensureKeyframes();
+    if (window.app && app.haptic) app.haptic([28, 40, 28, 55, 110]); // squared-up fanfare
     tickToZero();
     var sol = document.getElementById("stSolscan");
     if (sol) sol.onclick = function () {
