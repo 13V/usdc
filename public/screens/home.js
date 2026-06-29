@@ -218,26 +218,26 @@
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 22%, rgba(244,247,250,0.03) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
         '<div style="position:absolute; left:50%; top:24%; width:340px; height:340px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.22), transparent 70%); filter:blur(8px); pointer-events:none;"></div>' +
 
-        // ── HERO ──
-        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; padding-top:32px;">' +
-          // featured mascot (big, glow) — canonical asset
-          app.mascot({ size: 132, mood: "happy", glow: true }) +
+        // ── HERO ── (compact enough to fit short/desktop viewports without scroll)
+        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; padding-top:14px;">' +
+          // featured mascot (glow) — canonical asset
+          app.mascot({ size: 96, mood: "happy", glow: true }) +
 
           // wordmark: div [slash] vy
-          '<div style="display:flex; align-items:center; gap:1px; margin-top:18px;">' +
+          '<div style="display:flex; align-items:center; gap:1px; margin-top:10px;">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:40px; line-height:1; letter-spacing:-1.5px; color:#F4F7FA;">div</span>' +
             '<span style="display:inline-block; width:11px; height:38px; background:#2775CA; border-radius:2px; transform:skewX(-13deg); margin:0 6px; box-shadow:0 0 16px rgba(39,117,202,0.5);"></span>' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:40px; line-height:1; letter-spacing:-1.5px; color:#F4F7FA;">vy</span>' +
           '</div>' +
 
           // mono kicker
-          '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(244,247,250,0.45); margin-top:20px;">split bills · settle in seconds</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(244,247,250,0.45); margin-top:12px;">split bills · settle in seconds</span>' +
 
           // lowercase value headline
-          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:27px; line-height:1.22; letter-spacing:-0.6px; text-align:center; text-wrap:pretty; max-width:320px; margin:12px 0 0; color:#F4F7FA;">split the bill. get your money back — before you leave the table.</h1>' +
+          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; line-height:1.16; letter-spacing:-0.6px; text-align:center; text-wrap:pretty; max-width:320px; margin:8px 0 0; color:#F4F7FA;">split the bill. get your money back — before you leave the table.</h1>' +
 
           // 3-step strip
-          '<div style="display:flex; align-items:center; gap:9px; margin-top:26px;">' +
+          '<div style="display:flex; align-items:center; gap:9px; margin-top:16px;">' +
             '<span style="width:7px; height:7px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 8px rgba(61,232,199,0.7);"></span>' +
             '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(244,247,250,0.62);">scan</span>' +
             '<span style="width:24px; height:1.5px; background:rgba(244,247,250,0.16);"></span>' +
@@ -249,12 +249,12 @@
           '</div>' +
         '</div>' +
 
-        '<div style="flex:1; min-height:34px;"></div>' +
+        '<div style="flex:1; min-height:14px;"></div>' +
 
         // ── ACTIONS ──
-        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:11px; padding-bottom:40px;">' +
+        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:10px; padding-bottom:22px;">' +
           // primary: create a wallet (with mono subline)
-          '<button id="hCreate" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:62px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 10px 30px rgba(39,117,202,0.45);">' +
+          '<button id="hCreate" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 10px 30px rgba(39,117,202,0.45);">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">create a wallet</span>' +
             '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:0.8px; color:rgba(255,255,255,0.78);">~10 seconds, no app</span>' +
           '</button>' +
