@@ -130,18 +130,29 @@ An adversarial audit of the money / settlement / auth path was run. Disposition:
   so the "claim your spot" flow is intact. (Verified with an end-to-end test:
   attacker→creditor 403, attacker→debtor 200, owner→creditor 200.)
 
+- **Trip expense edit/delete authz (closed)**: editing/deleting an expense
+  rewrites the ledger (can erase a debt). Now gated to the trip owner or the
+  person who fronted that expense (the payer slot's claimer); anonymous/ownerless
+  trips keep the open behavior. Adding expenses stays collaborative. (Verified:
+  token-only attacker delete → 403, owner delete → 200.)
+- **`/api/rpc` write throttle (partially closed)**: `sendTransaction` now has a
+  tight per-IP cap (~20/min) separate from reads, cutting the broadcast-relay /
+  quota-sink abuse. Full fix (a session requirement on write methods) still wants
+  the embedded `Connection` to attach a Bearer — a client change — so it's noted
+  below, not yet done.
+- **Per-transaction rail cap**: on/off-ramp amounts are now capped at
+  `RAIL_MAX_CENTS` ($2,000 default) instead of the $1M ledger cap.
+- **Mainnet readiness boot check**: the server now refuses to start on
+  `mainnet-beta` in an unsafe/half-configured state (missing RPC_URL /
+  SESSION_SECRET / COLLECTOR_WALLET, faucet still present, fail-open enabled) — so
+  going live is a deliberate flag-flip, not a silent slide.
+
 **Open — must fix before mainnet (documented, not yet patched to avoid breaking
 working flows without proper design):**
-- **Trip expense-write authz** (`authorizeTrip`): any share-link holder can still
-  add/edit/delete expenses to rewrite balances (ledger-integrity griefing, not
-  direct fund loss — the payout-reroute path above is closed). Fix: gate expense
-  writes to the owner or claimed members. Needs product design so the shared-link
-  collaboration UX isn't broken — hence deferred, not rushed.
-- **`/api/rpc` is an unauthenticated relay** to the paid upstream RPC and allows
-  `sendTransaction`/`simulateTransaction`. Method-allowlisted (no SSRF, no heavy
-  scans) and per-IP rate-limited, so impact is quota burn + transaction relay, not
-  data theft. Fix: require a session for the write methods (needs the embedded
-  `Connection` to attach the Bearer — a client change) and/or per-user quotas.
+- **`/api/rpc` write methods are still unauthenticated** (now throttled). Full
+  fix: require a session for `sendTransaction`/`simulateTransaction` (needs the
+  embedded `Connection` to attach the Bearer — a client change) and/or per-user
+  quotas.
 - **`/api/bills/:id/verify` has no resource-level authz** — any signed-in user can
   drive verification on any bill. It can't fabricate payments (only real validated
   transfers flip shares) and the bill is already public, so impact is RPC spend.

@@ -194,6 +194,24 @@ const RPC_ALLOWED_METHODS = new Set<string>([
   "getMinimumBalanceForRentExemption", "getFeeForMessage",
   "getEpochInfo", "getVersion", "getGenesisHash", "getBlockHeight", "getSlot",
 ]);
+// Write JSON-RPC methods get a much tighter per-IP cap than reads: the proxy is
+// unauthenticated (web3.js can't attach a Bearer), so this limits its use as a
+// transaction-broadcast relay / quota sink without breaking legit settles (which
+// send only a handful of sendTransaction calls).
+const RPC_WRITE_METHODS = new Set<string>(["sendTransaction"]);
+const rpcWriteHits = new Map<string, number[]>();
+function rpcWriteAllowed(ip: string): boolean {
+  const now = Date.now();
+  const recent = (rpcWriteHits.get(ip) || []).filter((t) => now - t < 60_000);
+  if (recent.length >= 20) return false; // ~20 broadcasts/min/IP
+  recent.push(now);
+  rpcWriteHits.set(ip, recent);
+  if (rpcWriteHits.size > 10000) {
+    for (const [k, v] of rpcWriteHits) if (v.every((t) => now - t >= 60_000)) rpcWriteHits.delete(k);
+  }
+  return true;
+}
+
 const COLLECTOR =
   process.env.COLLECTOR_WALLET || "11111111111111111111111111111111"; // system program as a harmless default
 
@@ -371,10 +389,15 @@ app.post("/api/rpc", rpcProxyRateLimit, async (req: Request, res: Response) => {
   if (calls.length === 0 || calls.length > 20) {
     return res.status(400).json({ error: "bad rpc batch" });
   }
+  let hasWrite = false;
   for (const c of calls) {
     if (!c || typeof c.method !== "string" || !RPC_ALLOWED_METHODS.has(c.method)) {
       return res.status(403).json({ error: `rpc method not allowed: ${c && c.method}` });
     }
+    if (RPC_WRITE_METHODS.has(c.method)) hasWrite = true;
+  }
+  if (hasWrite && !rpcWriteAllowed(req.ip || "unknown")) {
+    return res.status(429).json({ error: "too many transaction broadcasts, slow down" });
   }
   try {
     const upstreamRes = await fetch(upstream, {
@@ -725,6 +748,15 @@ function parseAmountCents(raw: string): number | null {
   return amountCents;
 }
 
+// Per-transaction ceiling on the fiat rails. Much lower than the $1M ledger cap —
+// a sane launch limit that real KYC/AML + provider limits will refine. Override
+// with RAIL_MAX_CENTS (e.g. 500000 = $5,000).
+const RAIL_MAX_CENTS = Number(process.env.RAIL_MAX_CENTS || 200_000); // $2,000 default
+function railAmountError(amountCents: number): string | null {
+  if (amountCents > RAIL_MAX_CENTS) return `amount exceeds the per-transaction limit ($${RAIL_MAX_CENTS / 100})`;
+  return null;
+}
+
 // Card on-ramp links for the signed-in user's own primary wallet. Top up your
 // own balance with a card / Apple Pay. `live` reports whether real provider
 // keys are present (vs. test mode — URLs build but won't actually charge).
@@ -734,6 +766,8 @@ app.get("/api/me/onramp/:amountCents", requireAuth, async (req: Request, res: Re
   if (!wallet) return res.status(400).json({ error: "no wallet" });
   const amountCents = parseAmountCents(req.params.amountCents);
   if (amountCents === null) return res.status(400).json({ error: "bad amount" });
+  const railErr = railAmountError(amountCents);
+  if (railErr) return res.status(400).json({ error: railErr });
   res.json({
     wallet,
     amountCents,
@@ -751,6 +785,8 @@ app.get("/api/me/offramp/:amountCents", requireAuth, async (req: Request, res: R
   if (!wallet) return res.status(400).json({ error: "no wallet" });
   const amountCents = parseAmountCents(req.params.amountCents);
   if (amountCents === null) return res.status(400).json({ error: "bad amount" });
+  const railErr = railAmountError(amountCents);
+  if (railErr) return res.status(400).json({ error: railErr });
   res.json({
     wallet,
     amountCents,
@@ -789,6 +825,22 @@ function authorizeTrip(req: Request, trip: Trip): boolean {
     ownerUserId: trip.ownerUserId || null,
     memberUserIds: trip.members.map((m) => m.userId).filter((x): x is string => !!x),
   });
+}
+
+/**
+ * Editing or deleting an expense rewrites the ledger (and can erase a debt), so
+ * it is gated tighter than the collaborative ADD: only the trip owner or the
+ * person who fronted that expense (the payer slot's claimer) may mutate it.
+ * Fully anonymous (ownerless) trips keep the open behavior — there is no identity
+ * or payout to protect there.
+ */
+function canMutateExpense(req: Request, trip: Trip, paidBy: string): boolean {
+  if (!trip.ownerUserId) return true; // keyless/anonymous trip — status quo
+  const uid = req.userId;
+  if (!uid) return false;
+  if (trip.ownerUserId === uid) return true;
+  const payer = trip.members.find((m) => m.id === paidBy);
+  return !!payer && payer.userId === uid;
 }
 
 /** Validate a Solana wallet string; throws a 400-style Error on bad input. */
@@ -1134,6 +1186,11 @@ app.patch("/api/trips/:id/expenses/:eid", async (req: Request, res: Response) =>
     if (!authorizeTrip(req, trip)) {
       return res.status(403).json({ error: "not authorized for this trip" });
     }
+    const existingExpense = trip.expenses.find((e) => e.id === req.params.eid);
+    if (!existingExpense) return res.status(404).json({ error: "expense not found" });
+    if (!canMutateExpense(req, trip, existingExpense.paidBy)) {
+      return res.status(403).json({ error: "only the trip owner or the person who paid can edit this expense" });
+    }
     const body = req.body as {
       title?: string;
       amountCents?: number;
@@ -1178,6 +1235,11 @@ app.delete("/api/trips/:id/expenses/:eid", async (req: Request, res: Response) =
     if (!existing) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, existing)) {
       return res.status(403).json({ error: "not authorized for this trip" });
+    }
+    const toDelete = existing.expenses.find((e) => e.id === req.params.eid);
+    if (!toDelete) return res.status(404).json({ error: "expense not found" });
+    if (!canMutateExpense(req, existing, toDelete.paidBy)) {
+      return res.status(403).json({ error: "only the trip owner or the person who paid can delete this expense" });
     }
     const trip = await deleteExpense(req.params.id, req.params.eid);
     res.json(await serializeTrip(trip));
@@ -1611,7 +1673,33 @@ process.on("unhandledRejection", (reason) => {
   console.error("unhandledRejection:", reason);
 });
 
+/**
+ * Refuse to boot on mainnet in a half-configured (unsafe) state, so the go-live
+ * cutover is a deliberate flag-flip rather than a silent slide into real money on
+ * a misconfigured server. No-op on devnet. See docs/PRE-MAINNET.md.
+ */
+function assertMainnetReadiness(): void {
+  if (CLUSTER !== "mainnet-beta") return;
+  const problems: string[] = [];
+  if (!process.env.RPC_URL) problems.push("RPC_URL must be a paid mainnet endpoint (not the public default)");
+  if (!process.env.SESSION_SECRET) problems.push("SESSION_SECRET must be set");
+  if (COLLECTOR === "11111111111111111111111111111111") problems.push("COLLECTOR_WALLET must be set");
+  if (fundingConfigured()) problems.push("the devnet faucet (MINT_AUTHORITY_SECRET) must be removed on mainnet");
+  if (process.env.CONSUMED_SIG_FAIL_OPEN === "1") problems.push("CONSUMED_SIG_FAIL_OPEN must not be enabled on mainnet");
+  if (process.env.RAILS_REQUIRE_LIVE === "1" && !ramsConfigured()) {
+    problems.push("on/off-ramp provider keys must be configured (RAILS_REQUIRE_LIVE=1)");
+  }
+  if (problems.length) {
+    throw new Error(
+      "Refusing to boot on mainnet-beta — unsafe configuration:\n  - " +
+        problems.join("\n  - ") +
+        "\nSee docs/PRE-MAINNET.md."
+    );
+  }
+}
+
 if (require.main === module) {
+  assertMainnetReadiness();
   app.listen(PORT, () => {
     // eslint-disable-next-line no-console
     console.log(`Divvy web app on http://localhost:${PORT}  (cluster: ${CLUSTER})`);
