@@ -288,28 +288,85 @@
     if (cash) cash.onclick = cashOutSheet;
   }
 
-  // honest "cash out" explainer — your dollars already live in your wallet; you
-  // spend them with any card or send to a friend. no fake bank withdrawal.
-  function cashOutSheet() {
+  // Real cash-out (off-ramp): pick an amount and send it to your card/bank via a
+  // provider. We keep the honest framing — these are real dollars you can also
+  // just spend with any card or send to a friend — as a compact secondary note.
+  async function cashOutSheet() {
     app.haptic && app.haptic();
+
+    // Best-effort balance for the cap + chip sizing. Skipped silently on failure.
+    var maxCents = null;
+    try {
+      var w = await app.api.get("/api/me/wallet");
+      if (w && typeof w.usdcCents === "number") maxCents = w.usdcCents;
+    } catch (_) {}
+
+    // Pick a sensible default that doesn't exceed the balance when we know it.
+    var DEFAULT = 5000;
+    if (typeof maxCents === "number" && maxCents > 0 && maxCents < DEFAULT) {
+      DEFAULT = maxCents;
+    }
+
+    var entryOpts = { idp: "out", default: DEFAULT };
+    if (typeof maxCents === "number" && maxCents > 0) entryOpts.maxCents = maxCents;
+
     app.sheet(
-      '<div style="padding:4px 2px 2px;">' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45); margin-bottom:12px;">CASH OUT</div>' +
-        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:22px; letter-spacing:-0.5px; margin:0 0 8px; color:#F4F7FA;">your money\'s already out</h2>' +
-        '<p style="font-family:\'General Sans\',sans-serif; font-size:14px; line-height:1.55; color:rgba(244,247,250,0.7); margin:0 0 16px;">' +
-          'these are real dollars, sitting in your wallet — no waiting, nothing to "withdraw". spend them anywhere with your card, or send them to a friend in a tap. dollars, just faster.' +
-        '</p>' +
-        '<div style="display:flex; flex-direction:column; gap:10px; margin:0 0 18px;">' +
-          '<div style="display:flex; align-items:center; gap:11px;"><span style="font-size:15px;">💳</span><span style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(244,247,250,0.7);">spend with any card, online or in person</span></div>' +
-          '<div style="display:flex; align-items:center; gap:11px;"><span style="font-size:15px;">🤝</span><span style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(244,247,250,0.7);">send to a friend, settles instantly</span></div>' +
+      '<div style="padding:4px 20px 26px;">' +
+        '<div style="text-align:center; margin-bottom:6px;">' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45);">CASH OUT</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#F4F7FA; margin-top:4px;">cash out to your card</div>' +
         '</div>' +
-        '<button class="btn" id="yCashGot" style="width:100%; min-height:52px; border:none; cursor:pointer; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 8px 24px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);">got it</button>' +
-        '<button id="yCashAdd" style="width:100%; min-height:52px; margin-top:11px; appearance:none; cursor:pointer; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.2); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#F4F7FA;">add money instead</button>' +
+        app.amountEntryHtml(entryOpts) +
+        '<button id="yOut" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 8px 24px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);">' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>' +
+          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">cash out to card/bank</span>' +
+        '</button>' +
+        '<div style="text-align:center; margin-top:9px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.5);">to your debit card or bank</span>' +
+        '</div>' +
+        '<div id="yOutTestNote"></div>' +
+        // honest secondary framing — compact version of the old explainer.
+        '<div style="display:flex; align-items:center; gap:8px; justify-content:center; margin-top:16px; text-align:center;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.2px; line-height:1.5; color:rgba(244,247,250,0.42);">these are real dollars — you can also just spend them with any card or send to a friend.</span>' +
+        '</div>' +
+        '<button id="yOutAdd" type="button" style="appearance:none; border:none; cursor:pointer; background:transparent; display:block; width:100%; text-align:center; margin-top:12px; padding:6px; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(127,192,255,0.75);">add money instead</button>' +
       '</div>'
     );
-    var got = document.getElementById("yCashGot");
-    if (got) got.onclick = function () { app.closeSheet(); };
-    var more = document.getElementById("yCashAdd");
+
+    var entry = app.wireAmountEntry("out");
+
+    // Prefetch live flag for the subtle test-mode note.
+    app.api.get("/api/me/offramp/" + DEFAULT).then(function (r) {
+      if (r && r.live === false) {
+        var note = document.getElementById("yOutTestNote");
+        if (note) note.innerHTML = app.testModeNote();
+      }
+    }).catch(function () {});
+
+    var out = document.getElementById("yOut");
+    if (out) out.onclick = function () {
+      var cents = entry.getCents();
+      if (!(cents > 0)) { app.toast("enter an amount first"); return; }
+      if (typeof maxCents === "number" && maxCents > 0 && cents > maxCents) {
+        app.toast("that's more than your balance");
+        return;
+      }
+      var prev = out.innerHTML;
+      out.disabled = true;
+      out.innerHTML = '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">opening…</span>';
+      app.api.get("/api/me/offramp/" + cents).then(function (r) {
+        var url = r && (r.moonpay || r.coinbase);
+        if (!url) throw new Error("couldn't start cash out");
+        app.openProvider(url);
+      }).catch(function (e) {
+        out.disabled = false;
+        out.innerHTML = prev;
+        if (e && e.status === 400) app.toast("create or connect a wallet first");
+        else app.toast((e && e.message) || "couldn't start cash out");
+      });
+    };
+
+    var more = document.getElementById("yOutAdd");
     if (more) more.onclick = function () { app.closeSheet(); app.depositSheet(); };
   }
 

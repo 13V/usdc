@@ -33,7 +33,8 @@ import {
 import { validatePayment } from "./verify";
 import { claimSignature } from "./consumedSignatures";
 import { qrToDataUrl } from "./qr";
-import { cardOptions } from "./onramp";
+import { cardOptions, ramsConfigured } from "./onramp";
+import { cashoutOptions } from "./offramp";
 import { fmt, toCents, withTip, SplitMode } from "./split";
 import { Cluster, buildSolanaPayUrl, newReference, USDC_MINT } from "./solanaPay";
 import { computeBalances, minimalSettlement, Transfer } from "./ledger";
@@ -665,6 +666,49 @@ app.get("/api/onramp/:wallet/:amountCents", (req: Request, res: Response) => {
     return res.status(400).json({ error: "bad wallet address" });
   }
   res.json(cardOptions({ walletAddress: req.params.wallet, amountCents }));
+});
+
+// Validate an amountCents path param: positive integer within the global cap.
+// Returns the parsed value, or null if invalid (caller responds 400).
+function parseAmountCents(raw: string): number | null {
+  const amountCents = Number(raw);
+  if (!Number.isInteger(amountCents) || amountCents <= 0) return null;
+  if (amountCents > MAX_AMOUNT_CENTS) return null;
+  return amountCents;
+}
+
+// Card on-ramp links for the signed-in user's own primary wallet. Top up your
+// own balance with a card / Apple Pay. `live` reports whether real provider
+// keys are present (vs. test mode — URLs build but won't actually charge).
+app.get("/api/me/onramp/:amountCents", requireAuth, async (req: Request, res: Response) => {
+  const userId = req.userId as string;
+  const wallet = await getPrimaryWallet(userId);
+  if (!wallet) return res.status(400).json({ error: "no wallet" });
+  const amountCents = parseAmountCents(req.params.amountCents);
+  if (amountCents === null) return res.status(400).json({ error: "bad amount" });
+  res.json({
+    wallet,
+    amountCents,
+    live: ramsConfigured(),
+    ...cardOptions({ walletAddress: wallet, amountCents }),
+  });
+});
+
+// Cash-out (off-ramp) links for the signed-in user's own primary wallet. Sell
+// USDC back out to a card / bank. `live` reports whether real provider keys are
+// present (vs. test mode — URLs build but won't actually pay out).
+app.get("/api/me/offramp/:amountCents", requireAuth, async (req: Request, res: Response) => {
+  const userId = req.userId as string;
+  const wallet = await getPrimaryWallet(userId);
+  if (!wallet) return res.status(400).json({ error: "no wallet" });
+  const amountCents = parseAmountCents(req.params.amountCents);
+  if (amountCents === null) return res.status(400).json({ error: "bad amount" });
+  res.json({
+    wallet,
+    amountCents,
+    live: ramsConfigured(),
+    ...cashoutOptions({ walletAddress: wallet, amountCents }),
+  });
 });
 
 // ---- Trips: shared multi-payer ledger -------------------------------------

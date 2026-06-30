@@ -395,6 +395,121 @@
   function qrImg(data) {
     return "https://api.qrserver.com/v1/create-qr-code/?size=190x190&margin=0&data=" + encodeURIComponent(data);
   }
+  // Shared amount-entry sheet body used by both add-money and cash-out flows.
+  // Renders quick chips + a custom amount input; reads/writes a cents value via
+  // the elements it creates. The caller wires the primary button. Returns
+  // markup; pair with wireAmountEntry(opts) after sheet() to bind behavior.
+  // ----------------------------------------------------------------------------
+  // CHIP amounts in cents.
+  var MONEY_CHIPS = [2000, 5000, 10000];
+
+  // Pretty-print cents -> "$50" or "$12.50" (drops trailing .00).
+  function dollarsLabel(cents) {
+    var n = (cents || 0) / 100;
+    var s = (n % 1 === 0) ? String(Math.round(n)) : n.toFixed(2);
+    return "$" + s;
+  }
+
+  // amountEntry(opts) -> { html } : a focused dollar input + quick chips.
+  //  opts.idp     : id prefix (unique per sheet, e.g. "dep" / "out")
+  //  opts.default : default cents to preselect
+  //  opts.maxCents: optional cap (cash-out balance); shown as a subtle hint
+  function amountEntryHtml(opts) {
+    opts = opts || {};
+    var idp = opts.idp || "amt";
+    var def = opts.default || 5000;
+    var chips = MONEY_CHIPS.map(function (c) {
+      var on = c === def;
+      return '<button type="button" data-cents="' + c + '" class="' + idp + '-chip" ' +
+        'style="appearance:none; cursor:pointer; flex:1; min-height:46px; border-radius:14px; ' +
+        'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; ' +
+        (on
+          ? 'background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); color:#7FC0FF;'
+          : 'background:#13212E; border:1px solid rgba(244,247,250,0.1); color:#F4F7FA;') +
+        '">' + dollarsLabel(c) + '</button>';
+    }).join("");
+    var maxHint = (typeof opts.maxCents === "number" && opts.maxCents > 0)
+      ? '<div id="' + idp + '-max" style="text-align:center; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.42); margin-top:9px;">balance ' + dollarsLabel(opts.maxCents) + ' available</div>'
+      : '';
+    return '' +
+      '<div style="display:flex; align-items:center; justify-content:center; gap:4px; margin:6px 0 2px;">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:34px; color:rgba(244,247,250,0.4);">$</span>' +
+        '<input id="' + idp + '-input" inputmode="decimal" autocomplete="off" value="' + (def / 100) + '" ' +
+          'style="width:auto; max-width:200px; min-width:60px; background:transparent; border:none; outline:none; ' +
+          'font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; letter-spacing:-2px; ' +
+          'color:#F4F7FA; text-align:center;">' +
+      '</div>' +
+      maxHint +
+      '<div style="display:flex; gap:9px; margin-top:18px;">' + chips + '</div>';
+  }
+
+  // wireAmountEntry(idp) -> { getCents } : binds chip + input behavior, returns
+  // a reader that yields the current integer cents (>= 0). Defensive: all
+  // lookups guarded since screens re-render.
+  function wireAmountEntry(idp) {
+    var input = document.getElementById(idp + "-input");
+    function readCents() {
+      if (!input) return 0;
+      var v = parseFloat(String(input.value).replace(/[^0-9.]/g, ""));
+      if (!isFinite(v) || v <= 0) return 0;
+      return Math.round(v * 100);
+    }
+    function highlight(cents) {
+      var chipsEls = document.querySelectorAll("." + idp + "-chip");
+      Array.prototype.forEach.call(chipsEls, function (b) {
+        var on = parseInt(b.getAttribute("data-cents"), 10) === cents;
+        if (on) {
+          b.style.background = "rgba(39,117,202,0.16)";
+          b.style.border = "1px solid rgba(39,117,202,0.5)";
+          b.style.color = "#7FC0FF";
+        } else {
+          b.style.background = "#13212E";
+          b.style.border = "1px solid rgba(244,247,250,0.1)";
+          b.style.color = "#F4F7FA";
+        }
+      });
+    }
+    var chipsEls = document.querySelectorAll("." + idp + "-chip");
+    Array.prototype.forEach.call(chipsEls, function (b) {
+      b.onclick = function () {
+        var c = parseInt(b.getAttribute("data-cents"), 10) || 0;
+        if (input) input.value = String(c / 100);
+        highlight(c);
+        haptic(8);
+      };
+    });
+    if (input) input.oninput = function () { highlight(readCents()); };
+    return { getCents: readCents, input: input };
+  }
+
+  // Open the provider URL reliably inside a PWA / in-app webview: a synthetic
+  // <a> click (with target+noopener) is more popup-safe than window.open; we
+  // fall back to location.href if the click is swallowed.
+  function openProvider(url) {
+    if (!url) return;
+    try {
+      var a = document.createElement("a");
+      a.href = url; a.target = "_blank"; a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (_) {}
+    // location.href is the dependable path in webviews where the click is a no-op.
+    try { location.href = url; } catch (_) {}
+  }
+
+  // Small honest "test mode" line, shown when the provider keys aren't live yet.
+  function testModeNote() {
+    return '<div style="text-align:center; margin-top:12px;">' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.4);">test mode · no real charge yet</span>' +
+      '</div>';
+  }
+
+  // ---- ADD MONEY (on-ramp) ----------------------------------------------------
+  // Lead with a card / Apple Pay path (plain dollars). Step 1 is a clean amount
+  // entry + "add with card"; tapping fetches /api/me/onramp/<cents> and navigates
+  // to the provider. A lower-emphasis "or receive USDC directly" reveals the
+  // original QR + address block for crypto-native users.
   async function depositSheet() {
     var wallet = null, cluster = "devnet";
     try {
@@ -408,26 +523,85 @@
         '</div>');
       return;
     }
+
+    var DEFAULT = 5000;
     var solUrl = "solana:" + wallet;
     var short = wallet.length > 12 ? (wallet.slice(0, 6) + "…" + wallet.slice(-6)) : wallet;
+
     sheet(
-      '<div style="padding:6px 20px 28px;">' +
-        '<div style="text-align:center;">' +
+      '<div style="padding:4px 20px 26px;">' +
+        '<div style="text-align:center; margin-bottom:6px;">' +
           '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#F4F7FA;">add money</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.5); margin-top:5px;">receive usdc · ' + esc(cluster) + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(244,247,250,0.55); margin-top:4px;">straight to your balance — dollars, just faster.</div>' +
         '</div>' +
-        '<div id="depQrWrap" style="width:206px; margin:18px auto 0; background:#fff; border-radius:16px; padding:8px;">' +
-          '<img id="depQr" alt="your wallet qr" width="190" height="190" style="display:block; border-radius:8px;" src="' + esc(qrImg(solUrl)) + '">' +
+        amountEntryHtml({ idp: "dep", default: DEFAULT }) +
+        '<button id="depCard" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 8px 24px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);">' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>' +
+          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">add with card</span>' +
+        '</button>' +
+        '<div style="text-align:center; margin-top:9px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.5);">apple pay · debit · credit</span>' +
         '</div>' +
-        '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:18px auto 0; max-width:300px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:13px; padding:12px 14px; cursor:pointer;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(244,247,250,0.85);">' + esc(short) + '</span>' +
-          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
-        '</div>' +
-        '<div style="text-align:center; margin-top:14px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.42);">send usdc to this address — it shows up in your balance.</span>' +
+        '<div id="depTestNote"></div>' +
+        '<button id="depMore" type="button" style="appearance:none; border:none; cursor:pointer; background:transparent; display:block; width:100%; text-align:center; margin-top:16px; padding:6px; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(127,192,255,0.75);">or receive usdc directly ▾</button>' +
+        // crypto-native receive block — hidden until "more options" is tapped.
+        '<div id="depRecv" style="display:none; margin-top:6px;">' +
+          '<div style="text-align:center;">' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.5);">receive usdc · ' + esc(cluster) + '</div>' +
+          '</div>' +
+          '<div id="depQrWrap" style="width:206px; margin:14px auto 0; background:#fff; border-radius:16px; padding:8px;">' +
+            '<img id="depQr" alt="your wallet qr" width="190" height="190" style="display:block; border-radius:8px;" src="' + esc(qrImg(solUrl)) + '">' +
+          '</div>' +
+          '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:16px auto 0; max-width:300px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:13px; padding:12px 14px; cursor:pointer;">' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(244,247,250,0.85);">' + esc(short) + '</span>' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
+          '</div>' +
+          '<div style="text-align:center; margin-top:12px;">' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.42);">send usdc to this address — it shows up in your balance.</span>' +
+          '</div>' +
         '</div>' +
       '</div>'
     );
+
+    var entry = wireAmountEntry("dep");
+
+    // Prefetch the live flag so the test-mode note appears without waiting for a
+    // tap. Best-effort; the note simply stays absent if the call fails.
+    api.get("/api/me/onramp/" + DEFAULT).then(function (r) {
+      if (r && r.live === false) {
+        var note = document.getElementById("depTestNote");
+        if (note) note.innerHTML = testModeNote();
+      }
+    }).catch(function () {});
+
+    var card = document.getElementById("depCard");
+    if (card) card.onclick = function () {
+      var cents = entry.getCents();
+      if (!(cents > 0)) { toast("enter an amount first"); return; }
+      var prev = card.innerHTML;
+      card.disabled = true;
+      card.innerHTML = '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">opening…</span>';
+      api.get("/api/me/onramp/" + cents).then(function (r) {
+        var url = r && (r.moonpay || r.coinbase);
+        if (!url) throw new Error("couldn't start checkout");
+        openProvider(url);
+      }).catch(function (e) {
+        card.disabled = false;
+        card.innerHTML = prev;
+        if (e && e.status === 400) toast("create or connect a wallet first");
+        else toast((e && e.message) || "couldn't start checkout");
+      });
+    };
+
+    var more = document.getElementById("depMore");
+    if (more) more.onclick = function () {
+      var recv = document.getElementById("depRecv");
+      if (!recv) return;
+      var open = recv.style.display !== "none";
+      recv.style.display = open ? "none" : "block";
+      more.innerHTML = open ? "or receive usdc directly ▾" : "hide receive address ▴";
+    };
+
     var addr = document.getElementById("depAddr");
     if (addr) addr.onclick = function () {
       copy(wallet).then(function () {
@@ -454,6 +628,8 @@
     toast: toast, sheet: sheet, closeSheet: closeSheet, go: go, render: render,
     depositSheet: depositSheet, copy: copy, haptic: haptic, pullToRefresh: pullToRefresh,
     tripToken: tripToken, setTripToken: setTripToken,
+    qrImg: qrImg, amountEntryHtml: amountEntryHtml, wireAmountEntry: wireAmountEntry,
+    openProvider: openProvider, testModeNote: testModeNote, dollarsLabel: dollarsLabel,
     _sheet: null, _sheetKey: null,
   };
   window.app = app;

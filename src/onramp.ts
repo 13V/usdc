@@ -81,3 +81,14 @@ export function cardOptions(params: OnrampParams): CardOptions {
     coinbase: coinbaseOnrampUrl(params),
   };
 }
+
+/**
+ * Whether the money rails are "live" — i.e. a real provider key is present and
+ * not a placeholder. Shared by both the on-ramp and off-ramp routes so the
+ * client can tell test-mode (URLs build but won't charge/pay out) from real.
+ */
+export function ramsConfigured(): boolean {
+  const mp = process.env.MOONPAY_API_KEY;
+  const cb = process.env.COINBASE_ONRAMP_APP_ID;
+  return Boolean((mp && !/PLACEHOLDER/i.test(mp)) || (cb && !/PLACEHOLDER/i.test(cb)));
+}

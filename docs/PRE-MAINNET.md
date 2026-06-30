@@ -73,6 +73,31 @@ on Privy. There is currently **no user-held backup** and **no key export**.
 3. Write the **"I lost my login" support path** explicitly.
 4. Confirm Privy's custody terms are acceptable for the amounts you'll allow.
 
+## Money rails (on/off-ramp)
+
+**Wired (`src/onramp.ts`, `src/offramp.ts`, routes in `src/server.ts`):**
+- **On-ramp** — fund your own balance with a card / Apple Pay:
+  `GET /api/me/onramp/:amountCents` (requireAuth). Builds MoonPay buy + Coinbase
+  Onramp widget URLs to the signed-in user's primary wallet.
+- **Off-ramp** — cash out (sell USDC → card/bank):
+  `GET /api/me/offramp/:amountCents` (requireAuth). Builds MoonPay sell +
+  Coinbase Offramp widget URLs from the signed-in user's primary wallet.
+- Both responses include `live: <bool>` (`ramsConfigured()`) so the client can
+  tell **test mode** from real.
+
+**Test-mode until keys + mainnet are set.** With placeholder keys (the default),
+the widget URLs are correctly shaped but **will not actually charge or pay out** —
+they're shaped, not live. Set `MOONPAY_API_KEY`, `MOONPAY_SECRET_KEY`, and/or
+`COINBASE_ONRAMP_APP_ID` to go live.
+
+- **MoonPay URLs must be HMAC-signed** with `MOONPAY_SECRET_KEY` (buy and sell);
+  unsigned URLs are rejected in production. Without the secret the signer returns
+  the URL unsigned (test mode only).
+- **Mainnet cutover is required to go live.** The providers only ever
+  deliver/sell **real mainnet USDC** — devnet test-USDC is not supported by
+  MoonPay/Coinbase. So a working on/off-ramp implies real money, which gates it
+  behind the full mainnet move (and everything else in this checklist).
+
 ## Also before mainnet
 
 - **Rotate** any RPC/keys that ever shipped in a client bundle (the prior
