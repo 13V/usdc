@@ -202,7 +202,7 @@
       '<div style="position:relative; min-height:100%; display:flex; flex-direction:column;">' +
         backdrop() +
         header() +
-        '<div style="position:relative; z-index:2; flex:1; padding:8px 18px 24px;">' +
+        '<div style="position:relative; z-index:2; flex:1; padding:8px 18px 104px;">' +
           identityRow(id) +
           balanceCard(balance) +
           settingsList() +
@@ -244,7 +244,7 @@
       '<div style="position:relative; min-height:100%; display:flex; flex-direction:column;">' +
         backdrop() +
         header() +
-        '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; padding:30px 24px 24px;">' +
+        '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; padding:30px 24px 104px;">' +
           '<div style="margin:10px 0 4px;">' + app.mascot({ size: 128, mood: "happy", glow: true }) + '</div>' +
           '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.6px; max-width:300px; margin:10px 0 0; color:#F4F7FA;">your wallet, your tabs, your money.</h1>' +
           '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(244,247,250,0.45); margin:16px 0 22px;">connect to see your balance</div>' +

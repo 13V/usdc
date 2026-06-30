@@ -384,7 +384,7 @@
       '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
         ambient() +
         '<div style="position:relative; z-index:2;">' + header() + '</div>' +
-        '<div class="ac-scroll" style="position:relative; z-index:2; padding:2px 18px 22px;">' + html + '</div>' +
+        '<div class="ac-scroll" style="position:relative; z-index:2; padding:2px 18px 104px;">' + html + '</div>' +
       '</div>';
   }
 
@@ -419,7 +419,7 @@
       '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
         ambient() +
         '<div style="position:relative; z-index:2;">' + header() + '</div>' +
-        '<div style="position:relative; z-index:2; padding:2px 18px 22px;">' + body + '</div>' +
+        '<div style="position:relative; z-index:2; padding:2px 18px 104px;">' + body + '</div>' +
       '</div>';
   }
 

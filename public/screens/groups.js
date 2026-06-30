@@ -315,7 +315,7 @@
 
   // ---- signed-out -------------------------------------------------------
   function signedOut(view) {
-    view.innerHTML = '<div class="appscroll" style="padding:14px 18px 26px;">' +
+    view.innerHTML = '<div class="appscroll" style="padding:14px 18px 112px;">' +
       brandRow() + header(0) +
       '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:50px 30px 0;">' +
         app.mascot({ size: 116, mood: "happy", glow: true }) +
@@ -331,7 +331,7 @@
 
   // ---- empty state (lifted from frame) ----------------------------------
   function emptyState(view) {
-    view.innerHTML = '<div class="appscroll" style="padding:14px 18px 26px;">' +
+    view.innerHTML = '<div class="appscroll" style="padding:14px 18px 112px;">' +
       brandRow() + header(0) +
       '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:66px 30px 0;">' +
         app.mascot({ size: 108, mood: "happy", glow: true }) +
@@ -347,7 +347,7 @@
 
   // ---- loading ----------------------------------------------------------
   function skeleton(view) {
-    view.innerHTML = '<div class="appscroll" style="padding:14px 18px 26px;">' +
+    view.innerHTML = '<div class="appscroll" style="padding:14px 18px 112px;">' +
       brandRow() + header(0) +
       '<div class="skeleton" style="height:150px; border-radius:18px; margin:24px 0 8px;"></div>' +
       '<div style="display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-top:20px;">' +
@@ -367,7 +367,7 @@
     try {
       trips = await app.api.get("/api/trips?mine=1");
     } catch (e) {
-      view.innerHTML = '<div class="appscroll" style="padding:14px 18px 26px;">' +
+      view.innerHTML = '<div class="appscroll" style="padding:14px 18px 112px;">' +
         brandRow() + header(0) +
         '<div class="empty"><div class="title lower">couldn\'t load groups</div><div class="hint">' + app.esc(e.message) + '</div>' +
         newGroupBtn() + '</div></div>';
@@ -395,7 +395,7 @@
       });
     } catch (_) { /* fall back to settledUp-only cards */ }
 
-    view.innerHTML = '<div class="appscroll" style="padding:14px 18px 26px;">' +
+    view.innerHTML = '<div class="appscroll" style="padding:14px 18px 112px;">' +
       brandRow() +
       header(trips.length) +
       (totals ? hero(totals, counterparties) : "") +
