@@ -1046,8 +1046,14 @@ app.patch("/api/trips/:id/members/:mid", async (req: Request, res: Response) => 
 });
 
 // Claim your spot: a signed-in user takes over a member slot so settle-up routes
-// to their primary wallet. Requires auth; the capability link still governs who
-// can SEE the trip (per-member action authz is a fast-follow).
+// to their primary wallet. Requires auth; the capability link governs who can SEE
+// the trip. SECURITY: claiming a slot sets that member's payout wallet, so a slot
+// that is OWED money (has paid for any expense → a net creditor) must not be
+// claimable by an arbitrary share-link holder, or they could reroute the
+// creditor's settle-up payout to themselves. Such slots may be claimed only by the
+// trip owner (or re-claimed by the same user); a non-owner creditor's wallet is
+// assigned by the owner via PATCH …/members/:mid. Debtor/even slots stay freely
+// self-claimable (no incoming payout to hijack).
 app.post("/api/trips/:id/members/:mid/claim", requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.userId as string;
@@ -1055,6 +1061,14 @@ app.post("/api/trips/:id/members/:mid/claim", requireAuth, async (req: Request, 
     if (!existing) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, existing)) {
       return res.status(403).json({ error: "not authorized for this trip" });
+    }
+    const member = existing.members.find((m) => m.id === req.params.mid);
+    if (!member) return res.status(404).json({ error: "member not found" });
+    const isOwner = existing.ownerUserId === userId;
+    const isPayer = (existing.expenses || []).some((e) => e.paidBy === req.params.mid);
+    if (isPayer && !isOwner && member.userId !== userId) {
+      logMoney("trip.claim.creditor_blocked", req, { tripId: existing.id, memberId: req.params.mid });
+      return res.status(403).json({ error: "this member is owed money — ask the trip owner to assign their wallet" });
     }
     const wallet = await getPrimaryWallet(userId);
     if (!wallet) return res.status(400).json({ error: "link a wallet first" });

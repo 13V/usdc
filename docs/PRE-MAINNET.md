@@ -121,17 +121,21 @@ An adversarial audit of the money / settlement / auth path was run. Disposition:
 - **Faucet per-user cap**: `/api/me/fund` was IP-rate-limited only; added a
   per-`userId` cap (5/min) so one account can't rotate IPs to drain the devnet
   treasury. (Devnet-only route; still mainnet-disabled by the `CLUSTER` gate.)
+- **Trip settle-up payout reroute (closed)**: a share-link holder could
+  `POST …/members/:mid/claim` an **unclaimed creditor slot** and overwrite its
+  payout wallet, redirecting that creditor's settle-up to themselves. Now claiming
+  a slot that has **paid for any expense** (a net creditor) requires the trip
+  owner (or the same user re-claiming) — others get 403 and the owner assigns the
+  wallet via `PATCH …/members/:mid`. Debtor/even slots stay freely self-claimable,
+  so the "claim your spot" flow is intact. (Verified with an end-to-end test:
+  attacker→creditor 403, attacker→debtor 200, owner→creditor 200.)
 
 **Open — must fix before mainnet (documented, not yet patched to avoid breaking
 working flows without proper design):**
-- **Trip capability-token authz is too broad** (`authorizeTrip`): any holder of a
-  trip share link can `POST …/members/:mid/claim` an **unclaimed creditor slot**
-  and reroute its settle-up payout to their own wallet, or add/edit/delete
-  expenses to rewrite balances. Wallet *changes* are already owner/self-gated
-  (`PATCH …/members/:mid`), but the **claim** and **expense-write** routes are not.
-  Fix: require trip-owner approval (or an identity/wallet binding) to claim or
-  reroute a slot that is a net **creditor**, and gate expense writes to the owner
-  or claimed members. Needs product design so the "claim your spot" + shared-link
+- **Trip expense-write authz** (`authorizeTrip`): any share-link holder can still
+  add/edit/delete expenses to rewrite balances (ledger-integrity griefing, not
+  direct fund loss — the payout-reroute path above is closed). Fix: gate expense
+  writes to the owner or claimed members. Needs product design so the shared-link
   collaboration UX isn't broken — hence deferred, not rushed.
 - **`/api/rpc` is an unauthenticated relay** to the paid upstream RPC and allows
   `sendTransaction`/`simulateTransaction`. Method-allowlisted (no SSRF, no heavy
