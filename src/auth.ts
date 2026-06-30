@@ -209,6 +209,44 @@ export async function verifyPrivyToken(token: string): Promise<{ subject: string
   }
 }
 
+/**
+ * Authoritative wallet list for a Privy user, fetched from Privy's server API
+ * with the app SECRET — the ONLY trustworthy source of which wallets a Privy
+ * account owns. The access-token JWT does not prove wallet ownership, and the
+ * client-supplied wallet must NEVER be trusted (an attacker can claim any
+ * address). Returns the lowercased/base58 wallet addresses Privy confirms.
+ *
+ * Fails SAFE: if PRIVY_APP_SECRET is unset or the call errors, returns [] so the
+ * caller links no wallet rather than a forged one. (Enabling Privy server-side
+ * therefore REQUIRES PRIVY_APP_SECRET to get embedded wallets linked.)
+ */
+export async function fetchPrivyWallets(subject: string): Promise<string[]> {
+  const appId = process.env.PRIVY_APP_ID;
+  const appSecret = process.env.PRIVY_APP_SECRET;
+  if (!appId || !appSecret) return [];
+  try {
+    const auth = Buffer.from(`${appId}:${appSecret}`).toString("base64");
+    const r = await fetch(`https://auth.privy.io/api/v1/users/${encodeURIComponent(subject)}`, {
+      headers: { authorization: `Basic ${auth}`, "privy-app-id": appId },
+    });
+    if (!r.ok) return [];
+    const data = (await r.json()) as { linked_accounts?: Array<Record<string, unknown>> };
+    const accounts = Array.isArray(data.linked_accounts) ? data.linked_accounts : [];
+    const wallets: string[] = [];
+    for (const a of accounts) {
+      // Solana embedded/external wallets surface as type "wallet" with an address.
+      if ((a.type === "wallet" || a.type === "smart_wallet") && typeof a.address === "string") {
+        const chain = String(a.chain_type || a.chainType || "");
+        // Keep Solana addresses only (this app settles on Solana).
+        if (!chain || chain === "solana") wallets.push(a.address);
+      }
+    }
+    return wallets;
+  } catch {
+    return [];
+  }
+}
+
 // ---- Express middleware ----------------------------------------------------
 
 export function authOptional(req: Request, _res: Response, next: NextFunction): void {

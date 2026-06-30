@@ -16,14 +16,28 @@
  * succeeds. Legitimate flows are never harmed — each real share is paid by its
  * own distinct transaction, so two honest shares never share a signature.
  *
- * Dual-backed (SQLite / Supabase). FAIL-OPEN: if the store is unavailable
- * (e.g. the Supabase table hasn't been created yet) we allow the credit and
- * fall back to per-context dedup — availability over a belt-and-suspenders
- * check — so a missing migration can never freeze settlement.
+ * Dual-backed (SQLite / Supabase). FAIL-CLOSED: this is the ONLY guard that
+ * stops one on-chain transfer from discharging several debts that share a
+ * collector + amount across different bills/trips (per-context `excludeSignatures`
+ * only dedups within a single settlement). So if the store is unavailable we must
+ * NOT credit — we return false (treat as "can't prove it's unused") and fire a
+ * high-severity alert. A transient blip just defers that share to the next verify
+ * poll; a sustained outage freezes settlement loudly rather than silently opening
+ * a double-credit window. The `CONSUMED_SIG_FAIL_OPEN=1` env var is a deliberate
+ * operator escape hatch (availability over safety) for emergencies only.
  */
 
 import { db } from "./db";
 import { usingSupabase, supabase } from "./supabase";
+import { alert } from "./alerts";
+
+const FAIL_OPEN = process.env.CONSUMED_SIG_FAIL_OPEN === "1";
+
+/** Store unreachable: page, then honor the (default-safe) fail-closed posture. */
+function onStoreError(stage: string, message: string): boolean {
+  alert("critical", "consumed_signatures_store_error", { stage, message, failOpen: FAIL_OPEN });
+  return FAIL_OPEN; // false (don't credit) unless an operator opted into fail-open
+}
 
 // SQLite: create the table locally (Supabase is provisioned via schema.sql).
 db.exec(`
@@ -52,20 +66,21 @@ export async function claimSignature(signature: string, owner: string): Promise<
           ignoreDuplicates: true,
         });
       if (insErr) {
-        // Table missing / transient error → fail open (allow credit).
-        console.warn(`consumedSignatures.claim: ${insErr.message} (failing open)`);
-        return true;
+        // Table missing / transient error → fail closed (don't credit) + page.
+        return onStoreError("supabase.upsert", insErr.message);
       }
       const { data, error: selErr } = await supabase()
         .from("consumed_signatures")
         .select("owner")
         .eq("signature", signature)
         .maybeSingle();
-      if (selErr || !data) return true; // fail open
+      if (selErr) return onStoreError("supabase.select", selErr.message);
+      // The upsert above succeeded, so a row MUST exist; a missing row means the
+      // store is lying to us — do not credit.
+      if (!data) return onStoreError("supabase.select", "row absent after upsert");
       return data.owner === owner;
     } catch (e) {
-      console.warn(`consumedSignatures.claim: ${(e as Error).message} (failing open)`);
-      return true;
+      return onStoreError("supabase.catch", (e as Error).message);
     }
   }
 
@@ -76,9 +91,9 @@ export async function claimSignature(signature: string, owner: string): Promise<
     const row = db
       .prepare("SELECT owner FROM consumed_signatures WHERE signature = ?")
       .get(signature) as { owner: string } | undefined;
-    return !!row && row.owner === owner;
+    if (!row) return onStoreError("sqlite.select", "row absent after insert");
+    return row.owner === owner;
   } catch (e) {
-    console.warn(`consumedSignatures.claim: ${(e as Error).message} (failing open)`);
-    return true;
+    return onStoreError("sqlite.catch", (e as Error).message);
   }
 }

@@ -32,6 +32,7 @@ import {
 } from "./groups";
 import { validatePayment } from "./verify";
 import { claimSignature } from "./consumedSignatures";
+import { alert, makeSpikeDetector } from "./alerts";
 import { qrToDataUrl } from "./qr";
 import { cardOptions, ramsConfigured } from "./onramp";
 import { cashoutOptions } from "./offramp";
@@ -63,6 +64,7 @@ import {
   verifySiws,
   privyConfigured,
   verifyPrivyToken,
+  fetchPrivyWallets,
   signSession,
 } from "./auth";
 import {
@@ -130,6 +132,33 @@ const scanRateLimit = rateLimit(10, 60_000); // ~10 req/min
 const moneyRateLimit = rateLimit(30, 60_000); // ~30 req/min per IP
 const fundRateLimit = rateLimit(8, 60_000); // ~8 mints/min per IP (treasury guard)
 const rpcProxyRateLimit = rateLimit(150, 60_000); // web3.js is chatty; per-IP cap
+
+// Spike detectors feeding the alert webhook (src/alerts.ts). Tuned loose enough
+// that normal polling never pages, tight enough that a real burst does. One page
+// per window, not per event.
+const verifyFailSpike = makeSpikeDetector(20, 60_000); // ≥20 verify errors / min
+const fundVolumeSpike = makeSpikeDetector(40, 60_000); // ≥40 faucet drips / min
+
+// Faucet per-USER cap. The IP limiter alone lets one account rotate IPs to drain
+// the devnet treasury; key the cap on userId too. Devnet-only route, but cheap
+// insurance. Runs after requireAuth so req.userId is set.
+const fundUserHits = new Map<string, number[]>();
+function fundUserLimit(req: Request, res: Response, next: () => void): void {
+  const uid = (req as Request & { userId?: string }).userId;
+  if (!uid) return next();
+  const now = Date.now();
+  const recent = (fundUserHits.get(uid) || []).filter((t) => now - t < 60_000);
+  if (recent.length >= 5) {
+    res.status(429).json({ error: "funding limit reached, try again in a minute" });
+    return;
+  }
+  recent.push(now);
+  fundUserHits.set(uid, recent);
+  if (fundUserHits.size > 10000) {
+    for (const [k, v] of fundUserHits) if (v.every((t) => now - t >= 60_000)) fundUserHits.delete(k);
+  }
+  next();
+}
 
 /**
  * Structured audit line for money-moving actions. One JSON object per event so
@@ -231,7 +260,19 @@ app.post("/api/auth/privy/verify", authRateLimit, async (req: Request, res: Resp
     const body = req.body as { token?: string; wallet?: string };
     const verified = await verifyPrivyToken(String(body.token || ""));
     if (!verified) return res.status(401).json({ error: "invalid token" });
-    const user = await upsertUserByIdentity("privy", verified.subject, { wallet: body.wallet });
+    // SECURITY: never trust body.wallet — a forged address would become the
+    // account's PRIMARY wallet and be trusted for collector binding, incoming-tab
+    // matching, and receipt access. Link only a wallet Privy authoritatively
+    // confirms this user owns. If the client claimed a wallet, it must be in the
+    // confirmed set; otherwise we link the first confirmed (embedded) wallet.
+    const ownedWallets = await fetchPrivyWallets(verified.subject);
+    let wallet: string | undefined;
+    if (body.wallet && ownedWallets.includes(body.wallet)) wallet = body.wallet;
+    else if (ownedWallets.length) wallet = ownedWallets[0];
+    if (body.wallet && !wallet) {
+      logMoney("privy.wallet_unverified", req, { subject: verified.subject, claimed: body.wallet });
+    }
+    const user = await upsertUserByIdentity("privy", verified.subject, { wallet });
     res.json({ token: signSession(user.id), user: await serializeUser(user) });
   } catch (err) {
     res.status(401).json({ error: (err as Error).message });
@@ -293,7 +334,7 @@ app.get("/api/me/wallet", requireAuth, async (req: Request, res: Response) => {
 // Devnet demo funding: drip a little gas SOL + mint test-USDC to the caller's
 // wallet so a freshly created wallet can actually settle. No-op (501) when the
 // treasury isn't configured. Devnet/test value only.
-app.post("/api/me/fund", fundRateLimit, requireAuth, async (req: Request, res: Response) => {
+app.post("/api/me/fund", fundRateLimit, requireAuth, fundUserLimit, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   if (CLUSTER !== "devnet" || !fundingConfigured()) {
     return res.status(501).json({ error: "funding not available" });
@@ -303,6 +344,8 @@ app.post("/api/me/fund", fundRateLimit, requireAuth, async (req: Request, res: R
   try {
     const r = await fundWallet(wallet);
     logMoney("fund", req, { wallet, solDripped: r.solDripped, usdcMinted: r.usdcMinted });
+    const fspike = fundVolumeSpike.record();
+    if (fspike.fired) alert("medium", "fund_volume", { count: fspike.count, wallet });
     res.json({
       wallet,
       sol: r.sol,
@@ -533,6 +576,9 @@ app.post("/api/bills/:id/verify", moneyRateLimit, requireAuth, async (req: Reque
         const claimed = await claimSignature(valid.signature, `bill:${bill.id}:${p.reference}`);
         if (!claimed) {
           logMoney("bill.verify.sig_conflict", req, { billId: bill.id, name: p.name, signature: valid.signature });
+          // A signature that already settled a different share was re-presented —
+          // exactly the double-credit attempt the global guard exists to stop. Page.
+          alert("high", "signature_reuse_blocked", { context: "bill", billId: bill.id, name: p.name, signature: valid.signature });
           continue; // already consumed elsewhere — do not double-credit
         }
         p.paid = true;
@@ -544,6 +590,8 @@ app.post("/api/bills/:id/verify", moneyRateLimit, requireAuth, async (req: Reque
     await store.put(bill);
     res.json({ ...serializeBill(bill), updated });
   } catch (err) {
+    const spike = verifyFailSpike.record();
+    if (spike.fired) alert("medium", "verify_failure_spike", { context: "bill", count: spike.count, lastError: (err as Error).message });
     const status = isRpcFailure(err) ? 502 : 400;
     res.status(status).json({ error: `verify failed: ${(err as Error).message}` });
   }
@@ -1244,6 +1292,7 @@ app.post("/api/trips/:id/settle/verify", moneyRateLimit, async (req: Request, re
         const claimed = await claimSignature(valid.signature, `trip:${trip.id}:${t.from}->${t.to}`);
         if (!claimed) {
           logMoney("settle.verify.sig_conflict", req, { tripId: trip.id, from: t.from, to: t.to, signature: valid.signature });
+          alert("high", "signature_reuse_blocked", { context: "trip", tripId: trip.id, from: t.from, to: t.to, signature: valid.signature });
           continue; // already consumed elsewhere — do not double-credit
         }
         t.paid = true;
@@ -1254,6 +1303,8 @@ app.post("/api/trips/:id/settle/verify", moneyRateLimit, async (req: Request, re
     await saveSettlement(trip.id, stored.signature, stored.transfers);
     res.json(await serializeTrip(await getTrip(trip.id) as Trip));
   } catch (err) {
+    const spike = verifyFailSpike.record();
+    if (spike.fired) alert("medium", "verify_failure_spike", { context: "trip", count: spike.count, lastError: (err as Error).message });
     const status = isRpcFailure(err) ? 502 : 400;
     res.status(status).json({ error: `verify failed: ${(err as Error).message}` });
   }
