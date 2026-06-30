@@ -33,6 +33,8 @@ import {
 import { validatePayment } from "./verify";
 import { claimSignature } from "./consumedSignatures";
 import { alert, makeSpikeDetector } from "./alerts";
+import { db } from "./db";
+import { usingSupabase, supabase } from "./supabase";
 import { qrToDataUrl } from "./qr";
 import { cardOptions, ramsConfigured } from "./onramp";
 import { cashoutOptions } from "./offramp";
@@ -248,6 +250,31 @@ app.use(nudgesRouter);
 
 app.get("/api/auth/config", (_req: Request, res: Response) => {
   res.json({ siws: true, privy: privyConfigured() });
+});
+
+// Readiness probe for uptime monitoring: liveness + a cheap data-store ping +
+// a config snapshot (no secrets). 503 if the data store is unreachable.
+app.get("/healthz", async (_req: Request, res: Response) => {
+  let dbOk = false;
+  try {
+    if (usingSupabase) {
+      const { error } = await supabase().from("consumed_signatures").select("signature").limit(1);
+      dbOk = !error;
+    } else {
+      db.prepare("SELECT 1").get();
+      dbOk = true;
+    }
+  } catch {
+    dbOk = false;
+  }
+  res.status(dbOk ? 200 : 503).json({
+    ok: dbOk,
+    cluster: CLUSTER,
+    backend: usingSupabase ? "supabase" : "sqlite",
+    rpc: !!process.env.RPC_URL,
+    railsLive: ramsConfigured(),
+    time: new Date().toISOString(),
+  });
 });
 
 app.get("/api/auth/nonce", authRateLimit, (_req: Request, res: Response) => {
@@ -1461,7 +1488,8 @@ app.get("/t/:token", (_req: Request, res: Response) => {
 app.get("/pay/:id", async (req: Request, res: Response) => {
   const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).send("Tab not found");
-  res.type("html").send(renderBillLanding(bill));
+  const base = `${req.protocol}://${req.get("host")}`;
+  res.type("html").send(renderBillLanding(bill, base));
 });
 
 app.get("/pay/:id/:name", async (req: Request, res: Response) => {
@@ -1525,7 +1553,7 @@ function esc(s: string): string {
   );
 }
 
-function renderBillLanding(bill: Bill): string {
+function renderBillLanding(bill: Bill, baseUrl = ""): string {
   const rows = bill.participants
     .map((p) => {
       const href = `/pay/${bill.id}/${encodeURIComponent(p.name)}`;
@@ -1539,10 +1567,32 @@ function renderBillLanding(bill: Bill): string {
   const out = outstandingCents(bill);
   const paidCount = bill.participants.filter((p) => p.paid).length;
   const pct = bill.totalCents > 0 ? Math.round((collectedCents(bill) / bill.totalCents) * 100) : 0;
+  // Rich link preview for the share loop (iMessage/WhatsApp/Slack/Twitter). The
+  // shared "pay" link is the product's main growth surface, so make it look good.
+  const ogTitle =
+    out > 0 ? `${esc(bill.title)} — ${fmt(out)} left to settle` : `${esc(bill.title)} — all settled ✓`;
+  const ogDesc =
+    out > 0
+      ? `${paidCount}/${bill.participants.length} paid · ${fmt(out)} left. Pay your share in seconds — no app, no crypto, just dollars.`
+      : `All settled ✓ — ${esc(bill.title)} on Divvy.`;
+  const ogImage = `${baseUrl}/icon.svg`;
+  const ogUrl = `${baseUrl}/pay/${esc(bill.id)}`;
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(bill.title)} — split the tab</title>
+<meta name="description" content="${ogDesc}" />
+<meta name="theme-color" content="#0B1622" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Divvy" />
+<meta property="og:title" content="${ogTitle}" />
+<meta property="og:description" content="${ogDesc}" />
+<meta property="og:url" content="${ogUrl}" />
+<meta property="og:image" content="${ogImage}" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="${ogTitle}" />
+<meta name="twitter:description" content="${ogDesc}" />
+<meta name="twitter:image" content="${ogImage}" />
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
