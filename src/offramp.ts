@@ -13,6 +13,7 @@
 
 import { createHmac } from "crypto";
 import { dollars } from "./split";
+import { moonpayHost } from "./onramp";
 
 export interface OfframpParams {
   /** User wallet (base58) — where the USDC to sell is held / refunded to. */
@@ -26,7 +27,7 @@ export interface OfframpParams {
  * Requires MOONPAY_API_KEY (publishable). Must be signed for production.
  */
 export function moonpaySellUrl(params: OfframpParams, apiKey = process.env.MOONPAY_API_KEY): string {
-  const base = "https://sell.moonpay.com";
+  const base = moonpayHost("sell", apiKey);
   const q = new URLSearchParams();
   q.set("apiKey", apiKey || "pk_test_PLACEHOLDER");
   q.set("baseCurrencyCode", "usdc_sol");

@@ -22,11 +22,22 @@ export interface OnrampParams {
 }
 
 /**
+ * MoonPay widget environment follows the key: a pk_test_ key only works against
+ * the -sandbox widget domains (prod domains reject it outright), and a pk_live_
+ * key only works against prod. Deriving it from the prefix means flipping to
+ * live is just swapping MOONPAY_API_KEY — no second env var to forget.
+ */
+export function moonpayHost(kind: "buy" | "sell", apiKey: string | undefined): string {
+  const sandbox = !apiKey || apiKey.startsWith("pk_test_");
+  return `https://${kind}${sandbox ? "-sandbox" : ""}.moonpay.com`;
+}
+
+/**
  * MoonPay buy widget URL. USDC on Solana is currency code "usdc_sol".
  * Requires MOONPAY_API_KEY (publishable). Must be signed for production.
  */
 export function moonpayUrl(params: OnrampParams, apiKey = process.env.MOONPAY_API_KEY): string {
-  const base = "https://buy.moonpay.com";
+  const base = moonpayHost("buy", apiKey);
   const q = new URLSearchParams();
   q.set("apiKey", apiKey || "pk_test_PLACEHOLDER");
   q.set("currencyCode", "usdc_sol");
