@@ -502,7 +502,6 @@ interface CreateBillBody {
   weights?: number[];
   customCents?: number[];
   collector?: string;
-  cluster?: Cluster;
   groupId?: string;
   count?: number;
   saveGroupName?: string;
@@ -537,10 +536,26 @@ app.post("/api/bills", moneyRateLimit, async (req: Request, res: Response) => {
       names = group.members.map((m) => String(m).trim()).filter(Boolean);
       await touchGroup(body.groupId, req.userId as string);
     } else if (names.length === 0 && Number.isInteger(body.count) && (body.count as number) > 0) {
+      if ((body.count as number) > MAX_MEMBERS) {
+        return res.status(400).json({ error: `too many people (max ${MAX_MEMBERS})` });
+      }
       names = Array.from({ length: body.count as number }, (_v, i) => `Person ${i + 1}`);
     }
 
     if (names.length === 0) return res.status(400).json({ error: "need at least one name" });
+    // Same caps as trips: bounded participant count and name/title lengths, so a
+    // hostile payload can't create megabyte bills or thousand-share splits.
+    if (names.length > MAX_MEMBERS) {
+      return res.status(400).json({ error: `too many people (max ${MAX_MEMBERS})` });
+    }
+    for (const n of names) {
+      if (n.length > MAX_MEMBER_NAME) {
+        return res.status(400).json({ error: `name too long (max ${MAX_MEMBER_NAME} chars)` });
+      }
+    }
+    if (body.title && String(body.title).length > MAX_TRIP_NAME) {
+      return res.status(400).json({ error: `title too long (max ${MAX_TRIP_NAME} chars)` });
+    }
     if (body.total == null) return res.status(400).json({ error: "need a total" });
 
     // Best-effort: persist this set of names as a reusable group. Never let a
@@ -581,7 +596,10 @@ app.post("/api/bills", moneyRateLimit, async (req: Request, res: Response) => {
 
     const bill = createBill({
       title: body.title || "Dinner",
-      cluster: body.cluster || CLUSTER,
+      // The server's CLUSTER is the sole authority on which chain money moves on —
+      // a client-supplied cluster could point payers at the wrong network (or an
+      // arbitrary string that breaks pay-URL building), so body.cluster is ignored.
+      cluster: CLUSTER,
       creatorUserId: req.userId || undefined,
       collector,
       totalCents,
@@ -1048,7 +1066,6 @@ app.post("/api/trips", async (req: Request, res: Response) => {
   try {
     const body = req.body as {
       name?: string;
-      cluster?: Cluster;
       members?: { name?: string; wallet?: string; userId?: string }[];
     };
     const name = assertLen(String(body.name || ""), "trip name", 1, MAX_TRIP_NAME);
@@ -1063,7 +1080,8 @@ app.post("/api/trips", async (req: Request, res: Response) => {
       assertLen(m.name, "member name", 1, MAX_MEMBER_NAME);
       if (m.wallet) assertValidWallet(String(m.wallet));
     }
-    const cluster = (body.cluster || (process.env.CLUSTER as Cluster) || "devnet") as Cluster;
+    // Server-pinned, same as bills: clients don't get to choose the chain.
+    const cluster = CLUSTER;
     // If signed in, link the creator to their own member slot (the first member,
     // typically "you") so cross-trip balances see them in this trip — unless the
     // caller already pinned that slot to a specific account.
@@ -1815,6 +1833,7 @@ function assertMainnetReadiness(): void {
   const problems: string[] = [];
   if (!process.env.RPC_URL) problems.push("RPC_URL must be a paid mainnet endpoint (not the public default)");
   if (!process.env.SESSION_SECRET) problems.push("SESSION_SECRET must be set");
+  if (!usingSupabase) problems.push("DATA_BACKEND must be supabase (SQLite is ephemeral on Railway — money data would vanish on redeploy)");
   if (COLLECTOR === "11111111111111111111111111111111") problems.push("COLLECTOR_WALLET must be set");
   if (fundingConfigured()) problems.push("the devnet faucet (MINT_AUTHORITY_SECRET) must be removed on mainnet");
   if (process.env.CONSUMED_SIG_FAIL_OPEN === "1") problems.push("CONSUMED_SIG_FAIL_OPEN must not be enabled on mainnet");

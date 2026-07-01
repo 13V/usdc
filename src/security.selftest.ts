@@ -165,6 +165,47 @@ async function main(): Promise<void> {
     ok("groups: another user can't delete your group (404)", gDelAtk.status === 404);
     const ownerSees = await fetch(`${B}/api/groups`, { headers: H(owner) }).then((r) => r.json());
     ok("groups: owner sees their own group", Array.isArray(ownerSees) && ownerSees.some((x: { id: string }) => x.id === g.id));
+
+    // --- nudge: relationship-gated delivery (no account enumeration / spam) ---
+    const ownerMe = await fetch(`${B}/api/me`, { headers: H(owner) }).then((r) => r.json());
+    const ownerId = ownerMe.user && ownerMe.user.id;
+    const stranger = await mint();
+    const nUnrelated = await fetch(`${B}/api/nudge`, {
+      method: "POST", headers: H(stranger),
+      body: JSON.stringify({ userId: ownerId, name: "target" }),
+    }).then((r) => r.json());
+    ok("nudge: unrelated target is NOT delivered (sent:false)", nUnrelated.ok === true && nUnrelated.sent === false);
+    // attacker claimed Bob's slot in owner's trip above -> they share a trip.
+    const nRelated = await fetch(`${B}/api/nudge`, {
+      method: "POST", headers: H(attacker),
+      body: JSON.stringify({ userId: ownerId, name: "target" }),
+    }).then((r) => r.json());
+    ok("nudge: trip co-participant IS delivered (sent:true)", nRelated.ok === true && nRelated.sent === true);
+
+    // --- bill input caps + server-pinned cluster ---
+    const capCount = await fetch(`${B}/api/bills`, {
+      method: "POST", headers: H(owner),
+      body: JSON.stringify({ total: 10, count: 5000 }),
+    });
+    ok("bill: participant count capped (400)", capCount.status === 400);
+    const capTitle = await fetch(`${B}/api/bills`, {
+      method: "POST", headers: H(owner),
+      body: JSON.stringify({ total: 10, count: 2, title: "x".repeat(500) }),
+    });
+    ok("bill: title length capped (400)", capTitle.status === 400);
+    const clBill = await fetch(`${B}/api/bills`, {
+      method: "POST", headers: H(owner),
+      body: JSON.stringify({ total: 10, count: 2, cluster: "mainnet-beta" }),
+    }).then((r) => r.json());
+    ok("bill: client-supplied cluster ignored (server-pinned)", clBill.cluster !== "mainnet-beta");
+
+    // --- session revocation: a deleted account's token stops resolving ---
+    const doomed = await mint();
+    const preDel = await fetch(`${B}/api/me`, { headers: H(doomed) }).then((r) => r.json());
+    ok("delete: session resolves before deletion", !!(preDel.user && preDel.user.id));
+    const del = await fetch(`${B}/api/me`, { method: "DELETE", headers: H(doomed) });
+    const postDel = await fetch(`${B}/api/me`, { headers: H(doomed) }).then((r) => r.json());
+    ok("delete: session token dies with the account", del.status === 200 && postDel.user === null);
   } finally {
     server.close();
   }

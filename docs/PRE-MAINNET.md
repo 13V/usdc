@@ -144,8 +144,25 @@ An adversarial audit of the money / settlement / auth path was run. Disposition:
   `RAIL_MAX_CENTS` ($2,000 default) instead of the $1M ledger cap.
 - **Mainnet readiness boot check**: the server now refuses to start on
   `mainnet-beta` in an unsafe/half-configured state (missing RPC_URL /
-  SESSION_SECRET / COLLECTOR_WALLET, faucet still present, fail-open enabled) — so
-  going live is a deliberate flag-flip, not a silent slide.
+  SESSION_SECRET / COLLECTOR_WALLET, faucet still present, fail-open enabled,
+  or SQLite backend — mainnet requires Supabase since Railway's disk is
+  ephemeral) — so going live is a deliberate flag-flip, not a silent slide.
+- **Server-pinned cluster**: bill/trip creation now ignores any client-supplied
+  `cluster` and always uses the server's `CLUSTER` env — clients can't point
+  payers at a different network (or inject an arbitrary string that breaks
+  pay-URL building).
+- **Session revocation on account deletion**: session tokens are stateless HMAC
+  (30-day TTL), so deletion now also kills outstanding tokens — auth requires the
+  user row to still exist (positive-cached, one DB hit per user per process;
+  fails open on store errors so an outage delays revocation rather than signing
+  everyone out).
+- **Nudge delivery is relationship-gated**: a nudge only resolves/delivers when
+  the target is a friend or shares a trip with the sender; unrelated targets are
+  recorded by name with `sent:false` — indistinguishable from "not a user", so
+  the endpoint can't be used to enumerate accounts or push-spam strangers.
+- **Bill input caps**: `POST /api/bills` now enforces the same caps as trips
+  (max 50 participants, name ≤ 80 chars, title ≤ 120 chars) so hostile payloads
+  can't create megabyte bills or thousand-share splits.
 
 **Open — must fix before mainnet (documented, not yet patched to avoid breaking
 working flows without proper design):**

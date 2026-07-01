@@ -94,6 +94,25 @@ export async function getUser(id: string): Promise<User | undefined> {
   return row ? hydrateUser(row) : undefined;
 }
 
+/**
+ * Session-revocation support. Session tokens are stateless HMAC blobs (30-day
+ * TTL, no DB), so deleting an account can't invalidate tokens already issued —
+ * instead auth checks the user still EXISTS. A positive cache keeps that to one
+ * DB hit per user per process; deleteUser evicts, so a deleted account's tokens
+ * die immediately on this instance and permanently after any restart.
+ */
+const knownUsers = new Set<string>();
+const MAX_KNOWN_USERS = 50_000; // memory backstop; a clear() just re-warms lazily
+
+export async function userExists(userId: string): Promise<boolean> {
+  if (knownUsers.has(userId)) return true;
+  const user = await getUser(userId);
+  if (!user) return false;
+  if (knownUsers.size >= MAX_KNOWN_USERS) knownUsers.clear();
+  knownUsers.add(userId);
+  return true;
+}
+
 export async function findByHandle(handle: string): Promise<User | undefined> {
   if (usingSupabase) {
     const { data, error } = await supabase().from("users").select("*").eq("handle", handle).maybeSingle();
@@ -387,6 +406,7 @@ export async function deleteUser(userId: string): Promise<void> {
     chk("wallets", (await sb.from("user_wallets").delete().eq("user_id", userId)).error);
     chk("identities", (await sb.from("identities").delete().eq("user_id", userId)).error);
     chk("user", (await sb.from("users").delete().eq("id", userId)).error);
+    knownUsers.delete(userId); // revoke: outstanding session tokens stop resolving
     return;
   }
   const tx = db.transaction((id: string) => {
@@ -400,4 +420,5 @@ export async function deleteUser(userId: string): Promise<void> {
     db.prepare("DELETE FROM users WHERE id = ?").run(id);
   });
   tx(userId);
+  knownUsers.delete(userId); // revoke: outstanding session tokens stop resolving
 }

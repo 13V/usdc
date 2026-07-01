@@ -60,7 +60,7 @@ that settles in **USDC on Solana**, presented to users as plain dollars
 5. `npx cap sync` after every web build; open with `npx cap open ios` (Xcode) /
    `npx cap open android` (Android Studio).
 6. Configure **Associated Domains** (iOS) + **assetlinks.json** (Android) so
-   `divvy.app` universal/app links open the app (needed for shared bill links).
+   `divvysol.com` universal/app links open the app (needed for shared bill links).
 7. Set up signing: Apple Developer account + provisioning; Play upload key +
    Play App Signing.
 8. Wire native entry points for **account deletion** and **privacy/terms links**.
@@ -118,11 +118,11 @@ that settles in **USDC on Solana**, presented to users as plain dollars
 | Keywords (iOS, 100 char) | split,bill,expenses,settle,friends,roommates,venmo,group,IOU,dinner,rent,dollars |
 | Category (primary) | **Finance** |
 | Category (secondary, optional) | Utilities / Social Networking |
-| Support URL | https://divvy.app/support (create; can point to a contact page) |
-| Marketing URL | https://divvy.app |
-| Privacy policy URL | **https://divvy.app/privacy.html** (`/public/privacy.html`) |
-| Terms of Use (EULA) URL | **https://divvy.app/terms.html** (`/public/terms.html`) |
-| Support email | support@divvy.app |
+| Support URL | https://divvysol.com/support (create; can point to a contact page) |
+| Marketing URL | https://divvysol.com |
+| Privacy policy URL | **https://divvysol.com/privacy.html** (`/public/privacy.html`) |
+| Terms of Use (EULA) URL | **https://divvysol.com/terms.html** (`/public/terms.html`) |
+| Support email | support@divvysol.com |
 | Copyright | © 2026 Divvy |
 | Age rating | **17+ (iOS) / Teen or higher (Play)** — see age-rating note in (f). |
 
@@ -232,7 +232,7 @@ collects (see `/public/privacy.html`). MoonPay/Coinbase collect card & KYC data
 - [ ] No placeholder text ships to users. **Fill `[State], USA`** in
       `terms.html` governing-law before store submission, and have counsel review
       both policy pages (they're marked TEMPLATE).
-- [ ] `support@divvy.app` inbox is live and monitored.
+- [ ] `support@divvysol.com` inbox is live and monitored.
 
 **Account deletion (Apple REQUIRES in-app)**
 - [ ] There is an **in-app path to delete the account** (not just email us) —
@@ -276,8 +276,8 @@ collects (see `/public/privacy.html`). MoonPay/Coinbase collect card & KYC data
 
 ## Appendix — quick reference
 
-- Privacy Policy: `/public/privacy.html` → https://divvy.app/privacy.html
-- Terms of Service: `/public/terms.html` → https://divvy.app/terms.html
+- Privacy Policy: `/public/privacy.html` → https://divvysol.com/privacy.html
+- Terms of Service: `/public/terms.html` → https://divvysol.com/terms.html
 - Web app assets: `/public/` (`index.html`, `manifest.webmanifest`, `sw.js`,
   `icon.svg`)
 - Existing mobile scaffold to audit: `/mobile/`

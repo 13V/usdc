@@ -297,7 +297,7 @@
     btn.disabled = true;
     btn.textContent = "starting…";
     try {
-      var trip = await app.api.post("/api/trips", { name: name, cluster: "devnet", members: members });
+      var trip = await app.api.post("/api/trips", { name: name, members: members });
       app.closeSheet();
       app.toast("group started ✨");
       location.hash = "#/group/" + encodeURIComponent(trip.id);

@@ -14,6 +14,7 @@ import { Request, Response, NextFunction } from "express";
 import nacl from "tweetnacl";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { PublicKey } from "@solana/web3.js";
+import { userExists } from "./users";
 
 // Express Request augmentation: req.userId is set by authOptional.
 declare global {
@@ -249,11 +250,23 @@ export async function fetchPrivyWallets(subject: string): Promise<string[]> {
 
 // ---- Express middleware ----------------------------------------------------
 
-export function authOptional(req: Request, _res: Response, next: NextFunction): void {
+export async function authOptional(req: Request, _res: Response, next: NextFunction): Promise<void> {
   const header = req.headers.authorization || "";
   const m = /^Bearer\s+(.+)$/i.exec(header);
   if (m) {
-    req.userId = verifySession(m[1]) || undefined;
+    const uid = verifySession(m[1]) || undefined;
+    if (uid) {
+      // Stateless tokens can't be individually revoked, so a deleted account's
+      // token would otherwise stay live for its full 30-day TTL. Require the
+      // user row to still exist (cached — one DB hit per user per process).
+      // Fail OPEN on a store error: an outage degrades to "revocation delayed",
+      // not "everyone signed out".
+      try {
+        req.userId = (await userExists(uid)) ? uid : undefined;
+      } catch {
+        req.userId = uid;
+      }
+    }
   }
   next();
 }

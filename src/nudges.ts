@@ -169,6 +169,39 @@ async function resolveUserIdByWallet(wallet: string): Promise<string | null> {
   return (wRow && wRow.user_id) || null;
 }
 
+/**
+ * Relationship gate for delivering a nudge: the target must be a friend (either
+ * edge direction) or share a trip with the sender. Without this, POST /api/nudge
+ * would let any signed-in caller (a) enumerate which userIds/wallets belong to
+ * real accounts via the `sent` flag, and (b) push-notify arbitrary strangers.
+ * Unrelated targets are treated exactly like unresolved ones (recorded by name,
+ * sent:false) so the response leaks nothing.
+ */
+async function isRelated(meId: string, otherId: string): Promise<boolean> {
+  if (meId === otherId) return true; // self-nudge: pointless but harmless
+  const [out, inc] = await Promise.all([outgoingFriendIds(meId), incomingFriendIds(meId)]);
+  if (out.includes(otherId) || inc.includes(otherId)) return true;
+  // Co-participants in any trip.
+  if (usingSupabase) {
+    const { data: mine, error } = await supabase()
+      .from("trip_members").select("trip_id").eq("user_id", meId);
+    if (error) throw new Error(`nudges.isRelated: ${error.message}`);
+    const tripIds = (mine || []).map((r: any) => r.trip_id);
+    if (!tripIds.length) return false;
+    const { data: theirs, error: e2 } = await supabase()
+      .from("trip_members").select("id").eq("user_id", otherId).in("trip_id", tripIds).limit(1);
+    if (e2) throw new Error(`nudges.isRelated: ${e2.message}`);
+    return !!(theirs && theirs.length);
+  }
+  const row = db
+    .prepare(
+      `SELECT 1 FROM trip_members a JOIN trip_members b ON a.trip_id = b.trip_id
+       WHERE a.user_id = ? AND b.user_id = ? LIMIT 1`
+    )
+    .get(meId, otherId);
+  return row !== undefined;
+}
+
 /** Pending incoming requests: they added me, I haven't added back. */
 async function pendingFriendRequestIds(meId: string): Promise<string[]> {
   const [out, inc] = await Promise.all([
@@ -254,6 +287,12 @@ nudgesRouter.post(
       }
       if (!toUserId && targetWallet) {
         toUserId = await resolveUserIdByWallet(targetWallet);
+      }
+      // Deliver only to friends / trip co-participants (see isRelated). An
+      // unrelated resolve is dropped BEFORE it can influence the response, so
+      // `sent` can't be used to probe which ids/wallets have accounts.
+      if (toUserId && !(await isRelated(fromUserId, toUserId))) {
+        toUserId = null;
       }
     } catch {
       // A lookup failure shouldn't block recording the nudge.
