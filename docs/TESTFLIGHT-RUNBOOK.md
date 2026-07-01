@@ -25,18 +25,20 @@ Companion docs: `docs/CAPACITOR.md` (wrapper details), `docs/APP-STORE.md`
    recommended): create a key with **App Manager** role — lets you upload
    builds from the command line later.
 
-## Phase 1 — build the shell (~15 min, Terminal)
+## Phase 1 — build the shell (~5 min, Terminal)
+
+The Xcode project is **already committed** (`ios/`), pre-configured with the
+app icon, a Divvy-navy splash, portrait lock, camera/photo purpose strings,
+`ITSAppUsesNonExemptEncryption=NO`, and the Haptics + Share native plugins
+(Swift Package Manager — no CocoaPods install needed).
 
 ```bash
 git clone <this repo> && cd usdc
 npm ci
 
-# Point the native shell at production. The app is server-driven, so the
-# wrapper loads this origin (see capacitor.config.ts).
-export CAP_SERVER_URL="https://demo.wildfireonsol.com"   # or https://app.divvysol.com once mapped
-
-# Generate the iOS project (first time only), then sync config into it.
-npx cap add ios
+# Regenerate the gitignored generated files (web-asset copy + config) into the
+# committed project. CAP_SERVER_URL defaults to the demo origin; override it
+# once the app moves to its production origin.
 npx cap sync ios
 
 # Open in Xcode.
@@ -58,10 +60,8 @@ In Xcode, select the **App** target:
    - Display Name: `Divvy`. Version `1.0.0`, Build `1` (bump Build on every
      upload).
    - Deployment target: iOS 15.0 is a safe floor.
-3. **App icon**: the asset catalog (`App/Assets.xcassets/AppIcon`) needs a
-   1024×1024 PNG with **no alpha** — use `public/icons/icon-1024.png` from the
-   repo. Drag it into the AppIcon slot (Xcode 15 auto-generates all sizes from
-   the single 1024 image).
+3. **App icon**: already in the committed asset catalog (1024×1024, no alpha)
+   — nothing to do. Splash is pre-set to Divvy navy.
 4. Run on the **iOS Simulator** once (⌘R). Sanity pass: sign in, create a tab,
    open a pay link, check the tab bar isn't clipped, dark theme everywhere.
 
@@ -75,10 +75,9 @@ In Xcode, select the **App** target:
 ## Phase 4 — TestFlight (~10 min, browser)
 
 1. App Store Connect → Divvy → **TestFlight** tab.
-2. First build: answer **Export Compliance** — the app uses standard HTTPS/TLS
-   only → "Yes, uses encryption" → "Exempt" (standard exemption). To skip this
-   prompt on every future build, add to `ios/App/App/Info.plist`:
-   `ITSAppUsesNonExemptEncryption = NO`.
+2. Export Compliance: already answered in the project —
+   `ITSAppUsesNonExemptEncryption = NO` is set in `ios/App/App/Info.plist`
+   (standard HTTPS/TLS exemption), so App Store Connect won't prompt per build.
 3. **Internal Testing** → create a group, add your own Apple ID → the build is
    installable from the TestFlight app on your phone immediately (no review).
 4. **External testers** (optional, needs a light "Beta App Review", ~1 day):

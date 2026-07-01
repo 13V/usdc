@@ -23,6 +23,9 @@ divvy.db-wal
 # App icons, store screenshots, and social/OG images — committed, served in prod.
 !public/icons/**
 !public/screenshots/**
+# Native iOS asset catalog (app icon + splash) — committed; the generated dirs
+# inside ios/ are excluded by ios/.gitignore instead.
+!ios/App/App/Assets.xcassets/**
 !public/apple-touch-icon.png
 !public/og.png
 _itest.js
