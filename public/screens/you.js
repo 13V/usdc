@@ -177,8 +177,18 @@
           '<div style="width:34px; height:34px; border-radius:11px; background:rgba(255,107,94,0.14); display:flex; align-items:center; justify-content:center; flex:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF6B5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></div>' +
           '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#FF6B5E;">sign out</span>' +
         '</div>' +
+        '<div style="height:1px; background:rgba(255,107,94,0.14); margin:0 15px;"></div>' +
+        '<div id="yDelete" style="display:flex; align-items:center; gap:13px; padding:14px 15px; cursor:pointer;">' +
+          '<div style="width:34px; height:34px; border-radius:11px; background:rgba(255,107,94,0.14); display:flex; align-items:center; justify-content:center; flex:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF6B5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></div>' +
+          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#FF6B5E;">delete account</span>' +
+        '</div>' +
       '</div>' +
-      '<div style="text-align:center; font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.5px; color:rgba(244,247,250,0.28); margin-top:18px;">divvy v1.4.0 · made for splitting, not stressing</div>';
+      '<div style="display:flex; gap:14px; justify-content:center; margin-top:16px;">' +
+        '<a href="/privacy.html" style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.4px; color:rgba(244,247,250,0.4); text-decoration:none;">privacy</a>' +
+        '<span style="color:rgba(244,247,250,0.2);">·</span>' +
+        '<a href="/terms.html" style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.4px; color:rgba(244,247,250,0.4); text-decoration:none;">terms</a>' +
+      '</div>' +
+      '<div style="text-align:center; font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.5px; color:rgba(244,247,250,0.28); margin-top:12px;">divvy v1.4.0 · made for splitting, not stressing</div>';
   }
 
   // ── background overlays (money texture + soft accent glow, frame-level) ───────
@@ -393,6 +403,21 @@
       if (window.Auth && Auth.signOut) Auth.signOut();
       app.toast("signed out");
       app.go("home");
+    };
+    var del = document.getElementById("yDelete");
+    if (del) del.onclick = function () {
+      // Two-step confirm; irreversible. Non-custodial funds stay in the user's own
+      // wallet, so the copy is honest about what is (and isn't) deleted.
+      if (!window.confirm("Delete your Divvy account? This removes your login and profile. Your wallet and any USDC in it stay yours — this only unlinks the account. This can't be undone.")) return;
+      del.style.opacity = "0.5";
+      app.api.del("/api/me").then(function () {
+        if (window.Auth && Auth.signOut) Auth.signOut();
+        app.toast("account deleted");
+        app.go("home");
+      }).catch(function (e) {
+        del.style.opacity = "1";
+        app.toast((e && e.message) || "couldn't delete account");
+      });
     };
   }
 

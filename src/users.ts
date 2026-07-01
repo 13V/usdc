@@ -358,3 +358,30 @@ export async function setIdentity(
   if (!u) throw new Error("setIdentity: user not found");
   return u;
 }
+
+/**
+ * Permanently delete a user account and its login/PII: the user row, all linked
+ * identities (email/OAuth/wallet mappings), and wallet associations. Required for
+ * App Store compliance (in-app account deletion). Does NOT touch on-chain funds —
+ * those live in the user's own non-custodial wallet, which they keep. Trips/bills
+ * the user shared with others are left intact (they belong to the shared group);
+ * only this account's identity/PII is removed, unlinking them from it.
+ */
+export async function deleteUser(userId: string): Promise<void> {
+  if (usingSupabase) {
+    const sb = supabase();
+    const w = await sb.from("user_wallets").delete().eq("user_id", userId);
+    if (w.error) throw new Error(`users.deleteUser(wallets): ${w.error.message}`);
+    const i = await sb.from("identities").delete().eq("user_id", userId);
+    if (i.error) throw new Error(`users.deleteUser(identities): ${i.error.message}`);
+    const u = await sb.from("users").delete().eq("id", userId);
+    if (u.error) throw new Error(`users.deleteUser(user): ${u.error.message}`);
+    return;
+  }
+  const tx = db.transaction((id: string) => {
+    db.prepare("DELETE FROM user_wallets WHERE user_id = ?").run(id);
+    db.prepare("DELETE FROM identities WHERE user_id = ?").run(id);
+    db.prepare("DELETE FROM users WHERE id = ?").run(id);
+  });
+  tx(userId);
+}

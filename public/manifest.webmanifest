@@ -1,18 +1,25 @@
 {
-  "name": "Divvy",
+  "name": "Divvy — split the bill, settle in seconds",
   "short_name": "Divvy",
-  "description": "Split the bill, collect in USDC on Solana.",
-  "start_url": "/",
+  "description": "Split any bill and settle up in seconds. Dollars, just faster — no app needed to pay.",
+  "id": "/",
+  "start_url": "/?src=pwa",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0b0f14",
-  "theme_color": "#2775ca",
+  "orientation": "portrait",
+  "background_color": "#0B1622",
+  "theme_color": "#0B1622",
+  "categories": ["finance", "social", "utilities"],
   "icons": [
-    {
-      "src": "/icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any maskable"
-    }
+    { "src": "/icons/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" },
+    { "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any" }
+  ],
+  "screenshots": [
+    { "src": "/screenshots/shot-welcome.png", "type": "image/png", "sizes": "860x1864", "form_factor": "narrow", "label": "Your wallet, your tabs, your money" },
+    { "src": "/screenshots/shot-home.png", "type": "image/png", "sizes": "860x1864", "form_factor": "narrow", "label": "See who owes what at a glance" },
+    { "src": "/screenshots/shot-new.png", "type": "image/png", "sizes": "860x1864", "form_factor": "narrow", "label": "Split any bill in seconds" },
+    { "src": "/screenshots/shot-you.png", "type": "image/png", "sizes": "860x1864", "form_factor": "narrow", "label": "Add cash or cash out with a card" }
   ]
 }

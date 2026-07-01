@@ -78,6 +78,7 @@ import {
   setDisplayName,
   setIdentity,
   serializeUser,
+  deleteUser,
 } from "./users";
 import { scanReceipt, parseDataUrl, NoScanProvider } from "./scan";
 import { fundingConfigured, fundWallet } from "./funding";
@@ -346,6 +347,20 @@ app.patch("/api/me", requireAuth, async (req: Request, res: Response) => {
     const msg = (err as Error).message;
     if (msg === "handle taken") return res.status(409).json({ error: msg });
     res.status(400).json({ error: msg });
+  }
+});
+
+// Permanently delete the signed-in user's account + login/PII (App Store
+// requirement 5.1.1(v)). Non-custodial: their on-chain funds stay in their own
+// wallet, which they keep — deleting the Divvy account only unlinks the login.
+app.delete("/api/me", requireAuth, async (req: Request, res: Response) => {
+  const userId = req.userId as string;
+  try {
+    await deleteUser(userId);
+    logMoney("account.delete", req, { userId });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
   }
 });
 
@@ -1575,7 +1590,7 @@ function renderBillLanding(bill: Bill, baseUrl = ""): string {
     out > 0
       ? `${paidCount}/${bill.participants.length} paid · ${fmt(out)} left. Pay your share in seconds — no app, no crypto, just dollars.`
       : `All settled ✓ — ${esc(bill.title)} on Divvy.`;
-  const ogImage = `${baseUrl}/icon.svg`;
+  const ogImage = `${baseUrl}/og.png`;
   const ogUrl = `${baseUrl}/pay/${esc(bill.id)}`;
   return `<!doctype html>
 <html lang="en"><head>
@@ -1589,7 +1604,7 @@ function renderBillLanding(bill: Bill, baseUrl = ""): string {
 <meta property="og:description" content="${ogDesc}" />
 <meta property="og:url" content="${ogUrl}" />
 <meta property="og:image" content="${ogImage}" />
-<meta name="twitter:card" content="summary" />
+<meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${ogTitle}" />
 <meta name="twitter:description" content="${ogDesc}" />
 <meta name="twitter:image" content="${ogImage}" />

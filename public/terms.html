@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Terms of Service — Divvy</title>
+<meta name="theme-color" content="#0B1622" />
+<meta name="description" content="The rules for using Divvy. Plain English." />
+<meta name="robots" content="index, follow" />
+<style>
+  :root {
+    --bg: #0B1622;
+    --card: #13212E;
+    --blue: #2775CA;
+    --mint: #3DE8C7;
+    --coral: #FF6B5E;
+    --text: #EAF1F7;
+    --muted: rgba(234, 241, 247, 0.62);
+    --faint: rgba(234, 241, 247, 0.40);
+    --line: rgba(234, 241, 247, 0.10);
+    --sans: 'General Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+    --display: 'Clash Display', var(--sans);
+    --mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .banner {
+    background: rgba(255, 107, 94, 0.14);
+    border-bottom: 1px solid rgba(255, 107, 94, 0.45);
+    color: var(--coral);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    text-align: center;
+    padding: 10px 16px;
+    line-height: 1.4;
+  }
+  header.wm {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 20px 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .wordmark {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--mint));
+    display: inline-block;
+    box-shadow: 0 0 0 4px rgba(39, 117, 202, 0.14);
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 12px 20px 64px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(28px, 7vw, 40px);
+    letter-spacing: -0.02em;
+    margin: 20px 0 6px;
+    line-height: 1.1;
+  }
+  .updated {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--faint);
+    letter-spacing: 0.02em;
+    margin: 0 0 8px;
+  }
+  .lede {
+    font-size: 17px;
+    color: var(--muted);
+    margin: 14px 0 26px;
+  }
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+    margin: 34px 0 10px;
+    color: var(--text);
+  }
+  h2 .num {
+    font-family: var(--mono);
+    color: var(--blue);
+    font-size: 14px;
+    margin-right: 8px;
+    vertical-align: 2px;
+  }
+  p { margin: 0 0 14px; }
+  a { color: var(--mint); text-decoration: none; border-bottom: 1px solid rgba(61, 232, 199, 0.35); }
+  a:hover { border-bottom-color: var(--mint); }
+  ul { margin: 0 0 14px; padding-left: 20px; }
+  li { margin: 0 0 8px; }
+  strong { color: var(--text); font-weight: 600; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin: 18px 0;
+  }
+  .card.warn { border-color: rgba(255, 107, 94, 0.30); }
+  .card.mint { border-color: rgba(61, 232, 199, 0.30); }
+  .card h2 { margin-top: 0; }
+  .legal { color: var(--muted); font-size: 14.5px; }
+  footer {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 20px 48px;
+    border-top: 1px solid var(--line);
+    color: var(--faint);
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  footer a { color: var(--muted); border: none; }
+  .contact { font-family: var(--mono); font-size: 14px; }
+</style>
+</head>
+<body>
+  <div class="banner">TEMPLATE — not legal advice; review with counsel before publishing.</div>
+
+  <header class="wm">
+    <a class="wordmark" href="/"><span class="dot"></span>Divvy</a>
+  </header>
+
+  <main>
+    <h1>Terms of Service</h1>
+    <p class="updated">Last updated: 2026-07-01</p>
+    <p class="lede">These are the rules for using Divvy. Please read them — by using the app, you agree to them. We've kept the language plain, but this is still a binding agreement.</p>
+
+    <div class="card mint">
+      <h2>The short version</h2>
+      <ul>
+        <li>Divvy is a <strong>tool for splitting bills</strong> and settling in USDC. It is <strong>not a bank, money transmitter, or custodian</strong>.</li>
+        <li><strong>You control your own wallet and keys.</strong> We can't move, freeze, or reverse your funds.</li>
+        <li>On-chain transactions are <strong>irreversible</strong> — double-check who and how much before you send.</li>
+        <li>Adding or cashing out dollars is handled by <strong>licensed third parties</strong> under their own terms.</li>
+      </ul>
+    </div>
+
+    <h2><span class="num">01</span>Eligibility</h2>
+    <p>You must be at least <strong>18 years old</strong> and a resident of the <strong>United States</strong> to use Divvy. By using the app, you represent that you meet these requirements and that you are legally able to enter into this agreement. Our fiat on/off-ramp partners may impose their own eligibility and verification requirements.</p>
+
+    <h2><span class="num">02</span>What Divvy is (and isn't)</h2>
+    <p>Divvy is a <strong>software tool</strong> that helps you split bills with friends and settle up in USDC, a US-dollar-backed stablecoin, on the Solana network. For your convenience, we present amounts in plain dollars.</p>
+    <div class="card warn">
+      <p style="margin:0;"><strong>Divvy is non-custodial.</strong> We are <strong>not a bank, money services business, money transmitter, broker, exchange, or custodian</strong>. We do not hold, control, or have access to your funds or your private keys. Your USDC lives in a wallet <strong>you</strong> control (secured through Privy's embedded-wallet technology). All settlements happen directly between users' wallets on the public Solana blockchain. Divvy simply helps you calculate splits and initiate those transfers — you authorize and control every transaction.</p>
+    </div>
+
+    <h2><span class="num">03</span>On-chain transactions are irreversible</h2>
+    <p>Blockchain transactions are <strong>final and cannot be undone, reversed, or refunded</strong> by Divvy or anyone else. You are solely responsible for:</p>
+    <ul>
+      <li>Confirming the <strong>correct recipient</strong> before sending.</li>
+      <li>Confirming the <strong>correct amount</strong> before sending.</li>
+      <li>Making sure you're sending on the <strong>correct network</strong>.</li>
+    </ul>
+    <p>If you send funds to the wrong address or in the wrong amount, we cannot recover them. Please double-check every transaction.</p>
+
+    <h2><span class="num">04</span>Adding &amp; cashing out dollars (fiat ramps)</h2>
+    <p>To convert between US dollars and USDC, Divvy connects you to <strong>licensed third-party partners</strong> (such as <strong>MoonPay</strong> or <strong>Coinbase</strong>). Those services are provided <strong>by them, not by Divvy</strong>, and are subject to <strong>their own terms of service, privacy policies, fees, limits, and identity-verification (KYC) requirements</strong>. Divvy is not a party to and is not responsible for those transactions. Any dispute about a purchase or payout is between you and the partner who processed it.</p>
+
+    <h2><span class="num">05</span>No financial, legal, or tax advice</h2>
+    <p>Divvy does not provide financial, investment, legal, accounting, or tax advice. Stablecoins and crypto assets carry risk, including the risk that a stablecoin may not maintain its value. You are responsible for understanding the tax and legal consequences of your transactions. Consult a professional if you're unsure.</p>
+
+    <h2><span class="num">06</span>Acceptable use</h2>
+    <p>You agree <strong>not</strong> to use Divvy to:</p>
+    <ul>
+      <li>Break any law, or facilitate money laundering, terrorist financing, fraud, or sanctions evasion.</li>
+      <li>Infringe anyone's rights, or send unlawful, abusive, or harassing content.</li>
+      <li>Access accounts or data that aren't yours, or attempt to breach security.</li>
+      <li>Reverse-engineer, scrape, overload, or interfere with the app or its infrastructure.</li>
+      <li>Use the app on behalf of someone else without authorization, or misrepresent who you are.</li>
+    </ul>
+    <p>We may suspend or terminate access that violates these Terms. Because Divvy is non-custodial, suspending your Divvy account does <strong>not</strong> affect your ownership of the funds in your wallet.</p>
+
+    <h2><span class="num">07</span>Your account &amp; responsibilities</h2>
+    <p>You are responsible for your login credentials, your device, and all activity under your account. Because you control your own keys, <strong>you are responsible for safeguarding access to your wallet</strong>. If you lose access to your login/recovery methods, you may permanently lose access to your funds, and we may be unable to help you recover them.</p>
+
+    <h2><span class="num">08</span>Disclaimers of warranty</h2>
+    <p class="legal">THE APP IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE APP WILL BE UNINTERRUPTED, SECURE, OR ERROR-FREE, THAT DEFECTS WILL BE CORRECTED, OR THAT THE SOLANA NETWORK OR ANY THIRD-PARTY SERVICE WILL FUNCTION AS EXPECTED. YOU USE THE APP AT YOUR OWN RISK.</p>
+
+    <h2><span class="num">09</span>Limitation of liability</h2>
+    <p class="legal">TO THE MAXIMUM EXTENT PERMITTED BY LAW, DIVVY AND ITS OFFICERS, EMPLOYEES, AND AGENTS WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF FUNDS, PROFITS, DATA, OR GOODWILL, ARISING FROM OR RELATED TO YOUR USE OF THE APP, THE SOLANA NETWORK, OR ANY THIRD-PARTY SERVICE — INCLUDING LOSSES FROM IRREVERSIBLE TRANSACTIONS, LOST KEYS, OR STABLECOIN VALUE FLUCTUATIONS. TO THE EXTENT ANY LIABILITY IS NOT DISCLAIMED, OUR TOTAL LIABILITY WILL NOT EXCEED ONE HUNDRED US DOLLARS ($100). SOME JURISDICTIONS DO NOT ALLOW CERTAIN LIMITATIONS, SO SOME OF THE ABOVE MAY NOT APPLY TO YOU.</p>
+
+    <h2><span class="num">10</span>Indemnification</h2>
+    <p class="legal">You agree to indemnify and hold harmless Divvy and its affiliates, officers, employees, and agents from any claims, losses, liabilities, and expenses (including reasonable attorneys' fees) arising out of your use of the app, your violation of these Terms, your violation of any law, or your infringement of any third party's rights.</p>
+
+    <h2><span class="num">11</span>Changes to these Terms</h2>
+    <p>We may update these Terms from time to time. When we make material changes, we'll update the "last updated" date and, where appropriate, notify you in the app. If you keep using Divvy after changes take effect, you accept the updated Terms. If you don't agree, stop using the app.</p>
+
+    <h2><span class="num">12</span>Governing law</h2>
+    <p>These Terms are governed by the laws of <strong>[State], USA</strong>, without regard to its conflict-of-laws rules. You agree to the exclusive jurisdiction of the state and federal courts located in <strong>[State]</strong> for any dispute not subject to arbitration, to the extent permitted by law.</p>
+
+    <h2><span class="num">13</span>Contact</h2>
+    <p class="contact">📧 <a href="mailto:support@divvy.app">support@divvy.app</a></p>
+  </main>
+
+  <footer>
+    <a href="/">← Back to Divvy</a>
+    <span>© 2026 Divvy</span>
+  </footer>
+</body>
+</html>

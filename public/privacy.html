@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Privacy Policy — Divvy</title>
+<meta name="theme-color" content="#0B1622" />
+<meta name="description" content="How Divvy handles your data. Plain English." />
+<meta name="robots" content="index, follow" />
+<style>
+  :root {
+    --bg: #0B1622;
+    --card: #13212E;
+    --blue: #2775CA;
+    --mint: #3DE8C7;
+    --coral: #FF6B5E;
+    --text: #EAF1F7;
+    --muted: rgba(234, 241, 247, 0.62);
+    --faint: rgba(234, 241, 247, 0.40);
+    --line: rgba(234, 241, 247, 0.10);
+    --sans: 'General Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+    --display: 'Clash Display', var(--sans);
+    --mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  body {
+    font-family: var(--sans);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .banner {
+    background: rgba(255, 107, 94, 0.14);
+    border-bottom: 1px solid rgba(255, 107, 94, 0.45);
+    color: var(--coral);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    text-align: center;
+    padding: 10px 16px;
+    line-height: 1.4;
+  }
+  header.wm {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 20px 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .wordmark {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  }
+  .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--mint));
+    display: inline-block;
+    box-shadow: 0 0 0 4px rgba(39, 117, 202, 0.14);
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 12px 20px 64px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(28px, 7vw, 40px);
+    letter-spacing: -0.02em;
+    margin: 20px 0 6px;
+    line-height: 1.1;
+  }
+  .updated {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--faint);
+    letter-spacing: 0.02em;
+    margin: 0 0 8px;
+  }
+  .lede {
+    font-size: 17px;
+    color: var(--muted);
+    margin: 14px 0 26px;
+  }
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+    margin: 34px 0 10px;
+    color: var(--text);
+  }
+  h2 .num {
+    font-family: var(--mono);
+    color: var(--blue);
+    font-size: 14px;
+    margin-right: 8px;
+    vertical-align: 2px;
+  }
+  p { margin: 0 0 14px; }
+  a { color: var(--mint); text-decoration: none; border-bottom: 1px solid rgba(61, 232, 199, 0.35); }
+  a:hover { border-bottom-color: var(--mint); }
+  ul { margin: 0 0 14px; padding-left: 20px; }
+  li { margin: 0 0 8px; }
+  strong { color: var(--text); font-weight: 600; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin: 18px 0;
+  }
+  .card.mint { border-color: rgba(61, 232, 199, 0.30); }
+  .card.mint h2 { margin-top: 0; }
+  code, .mono { font-family: var(--mono); font-size: 0.92em; color: var(--mint); }
+  footer {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 20px 48px;
+    border-top: 1px solid var(--line);
+    color: var(--faint);
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  footer a { color: var(--muted); border: none; }
+  .contact {
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+  <div class="banner">TEMPLATE — not legal advice; review with counsel before publishing.</div>
+
+  <header class="wm">
+    <a class="wordmark" href="/"><span class="dot"></span>Divvy</a>
+  </header>
+
+  <main>
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: 2026-07-01</p>
+    <p class="lede">Divvy helps you split bills with friends and settle up in seconds. This page explains, in plain English, what we collect, what we don't, and what you can do about it. We tried to keep it human.</p>
+
+    <div class="card mint">
+      <h2>The short version</h2>
+      <ul>
+        <li>Divvy is <strong>non-custodial</strong> — you hold your own keys, and we never hold your money or your private keys.</li>
+        <li>We collect what we need to run the app: your login identity, your wallet's public address, and the bills you create.</li>
+        <li>Adding or cashing out dollars goes through <strong>licensed partners</strong> (MoonPay / Coinbase) who handle payments and identity checks under their own privacy policies.</li>
+        <li>Payments settle on the <strong>Solana public blockchain</strong>, which is public and permanent by design.</li>
+      </ul>
+    </div>
+
+    <h2><span class="num">01</span>Who we are</h2>
+    <p>Divvy ("Divvy," "we," "us") provides a bill-splitting app that lets you divide expenses with friends and settle in USDC, a US-dollar-backed stablecoin, on the Solana network. We present balances in plain dollars — "dollars, just faster" — but under the hood, transfers move USDC between wallets you control.</p>
+    <p>Questions about this policy or your data? Email <a href="mailto:support@divvy.app">support@divvy.app</a>.</p>
+
+    <h2><span class="num">02</span>What we collect</h2>
+    <p>We collect only what we need to make the app work:</p>
+    <ul>
+      <li><strong>Account &amp; login info.</strong> When you sign in, our login provider <strong>Privy</strong> handles authentication. Depending on how you log in, this includes your <strong>email address, phone number, or an OAuth identifier</strong> (for example, a Google or Apple sign-in). This is how we know it's you.</li>
+      <li><strong>Wallet public address.</strong> Privy creates an embedded wallet for you. We store your wallet's <strong>public address</strong> so we can show your balance and route payments. A public address is like an account number that others can send to — it is not a password and not your private key.</li>
+      <li><strong>Bill &amp; settlement data.</strong> The expenses, groups, splits, amounts, notes, who-owes-whom, and settlement records you create in the app.</li>
+      <li><strong>Device, usage &amp; analytics.</strong> Basic technical data such as device type, operating system, app version, general region, crash reports, and how you use core features. We use this to fix bugs and improve the app.</li>
+    </ul>
+
+    <h2><span class="num">03</span>What we do NOT collect or hold</h2>
+    <ul>
+      <li><strong>Your private keys.</strong> Divvy is non-custodial. Your keys live in your Privy embedded wallet, controlled by you. We cannot see them, move your funds, or transact on your behalf.</li>
+      <li><strong>Your money.</strong> We never take custody of your funds. Balances move directly between wallets on-chain.</li>
+      <li><strong>Card numbers or bank details.</strong> When you add cash or cash out, <strong>MoonPay or Coinbase</strong> process the payment and collect any card/bank and identity (KYC) information directly. Divvy does not receive or store your full card number or bank credentials. Their handling of your data is governed by <strong>their</strong> privacy policies, which we encourage you to read.</li>
+    </ul>
+
+    <h2><span class="num">04</span>How we use your data</h2>
+    <ul>
+      <li>To create your account and keep you signed in.</li>
+      <li>To calculate splits, show balances, and route settlements between wallets.</li>
+      <li>To let group members see shared bills and who has paid.</li>
+      <li>To detect abuse, keep the service secure, and prevent fraud.</li>
+      <li>To fix bugs, measure performance, and improve features.</li>
+      <li>To respond to your support requests and, where you agree or the law allows, send you service-related messages.</li>
+    </ul>
+    <p>We do <strong>not</strong> sell your personal information.</p>
+
+    <h2><span class="num">05</span>Who we share it with (third parties)</h2>
+    <p>We rely on a small set of service providers to run Divvy:</p>
+    <ul>
+      <li><strong>Privy</strong> — authentication and embedded wallet infrastructure (handles your email/phone/OAuth login and secures your wallet keys).</li>
+      <li><strong>MoonPay / Coinbase</strong> — licensed fiat on-ramp and off-ramp partners. When you buy or sell USDC with dollars, they process the transaction and perform identity verification (KYC) under their own policies.</li>
+      <li><strong>Supabase</strong> — database and hosting for your account and bill data.</li>
+      <li><strong>Solana public blockchain</strong> — the network your USDC settlements run on.</li>
+    </ul>
+    <div class="card">
+      <p style="margin:0;"><strong>Important — on-chain data is public and permanent.</strong> Any transaction you make settles on Solana, a <strong>public blockchain</strong>. Wallet addresses, amounts, and timestamps are visible to anyone and generally <strong>cannot be edited or deleted</strong>. Deleting your Divvy account does not, and cannot, erase transactions that are already on-chain. Please keep this in mind before you send.</p>
+    </div>
+    <p>We may also disclose data if required by law, to comply with a valid legal request, or to protect the rights, safety, and property of our users or Divvy.</p>
+
+    <h2><span class="num">06</span>Data retention</h2>
+    <p>We keep your account and bill data for as long as your account is active, and for a reasonable period afterward to meet legal, accounting, security, and dispute-resolution needs. When we no longer need it, we delete or anonymize it. Note again that <strong>on-chain transaction data lives on the public blockchain permanently</strong> and is outside our control.</p>
+
+    <h2><span class="num">07</span>Your rights &amp; choices</h2>
+    <p>You can:</p>
+    <ul>
+      <li><strong>Access</strong> the personal data we hold about you.</li>
+      <li><strong>Correct</strong> inaccurate information.</li>
+      <li><strong>Delete</strong> your account and associated off-chain data from within the app, or by emailing <a href="mailto:support@divvy.app">support@divvy.app</a>. (On-chain records cannot be deleted — see above.)</li>
+      <li><strong>Export</strong> a copy of your data on request.</li>
+    </ul>
+    <p>Depending on where you live (for example, California or the EU/UK), you may have additional rights. Contact us and we'll help. We won't discriminate against you for exercising your rights.</p>
+
+    <h2><span class="num">08</span>Children</h2>
+    <p>Divvy is for people <strong>13 and older</strong>. We do not knowingly collect data from children under 13. Some features and our fiat partners may require you to be older (for example, 18+) to move real funds — see our Terms. If you believe a child under 13 has given us personal information, email <a href="mailto:support@divvy.app">support@divvy.app</a> and we'll delete it.</p>
+
+    <h2><span class="num">09</span>Security</h2>
+    <p>We use industry-standard measures — encryption in transit, access controls, and reputable infrastructure providers — to protect your data. Your wallet keys are secured by Privy's embedded-wallet technology and controlled by you. No system is perfectly secure, so please protect your login and your device. If you lose access to your login methods, you may lose access to your wallet — keep your recovery options up to date.</p>
+
+    <h2><span class="num">10</span>Changes to this policy</h2>
+    <p>We may update this policy as the app evolves. When we make meaningful changes, we'll update the "last updated" date above and, where appropriate, notify you in the app. Continuing to use Divvy after an update means you accept the revised policy.</p>
+
+    <h2><span class="num">11</span>Contact</h2>
+    <p class="contact">📧 <a href="mailto:support@divvy.app">support@divvy.app</a></p>
+  </main>
+
+  <footer>
+    <a href="/">← Back to Divvy</a>
+    <span>© 2026 Divvy</span>
+  </footer>
+</body>
+</html>
