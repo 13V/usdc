@@ -22,6 +22,7 @@ import { db } from "./db";
 import { usingSupabase, supabase } from "./supabase";
 import { requireAuth } from "./auth";
 import { getUser, serializeUser } from "./users";
+import { sendPush } from "./push";
 
 // ---- Schema (idempotent) ---------------------------------------------------
 
@@ -274,6 +275,21 @@ nudgesRouter.post(
       created_at: new Date().toISOString(),
     };
     await insertNudge(row);
+
+    // Push the nudge to the target if they're a real user. Best-effort.
+    if (toUserId) {
+      let fromLabel = "Someone";
+      try {
+        const u = await getUser(fromUserId);
+        if (u) { const su = await serializeUser(u); fromLabel = su.displayName || su.handle || "Someone"; }
+      } catch { /* generic label */ }
+      void sendPush(toUserId, {
+        title: "Payment reminder 👋",
+        body: `${fromLabel} nudged you to settle up`,
+        url: "/#/activity",
+        tag: `nudge:${row.id}`,
+      });
+    }
 
     res.json({ ok: true, sent: !!toUserId, id: row.id });
   }

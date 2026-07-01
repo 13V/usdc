@@ -193,6 +193,18 @@ create table if not exists nudges (
 create index if not exists nudges_to_user_idx on nudges (to_user_id);
 create index if not exists nudges_from_user_idx on nudges (from_user_id);
 
+-- ---- push_subscriptions (src/push.ts) -------------------------------------
+-- Web Push (VAPID) endpoints + native (APNs/FCM) device tokens per user.
+create table if not exists push_subscriptions (
+  endpoint   text primary key,
+  user_id    text not null,
+  p256dh     text,
+  auth       text,
+  kind       text not null default 'web',
+  created_at text not null
+);
+create index if not exists push_subs_user_idx on push_subscriptions (user_id);
+
 -- ---- additive column patches ----------------------------------------------
 -- `create table if not exists` above will NOT add columns to a table that
 -- already exists, so these idempotent ALTERs bring an older Supabase project up

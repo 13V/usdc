@@ -79,6 +79,16 @@ async function main(): Promise<void> {
     const badAmt = await fetch(`${B}/api/me/onramp/0`, { headers: H(owner) });
     ok("rail: zero amount rejected (400)", badAmt.status === 400);
 
+    // --- push: vapid config endpoint + subscribe requires auth ---
+    const vapid = await fetch(`${B}/api/push/vapid`).then((r) => r.json());
+    ok("push: /api/push/vapid reports enabled flag", typeof vapid.enabled === "boolean");
+    const subUnauth = await fetch(`${B}/api/push/subscribe`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ endpoint: "https://example.com/x" }),
+    });
+    ok("push: subscribe requires auth (401)", subUnauth.status === 401);
+
     // --- Privy route inert without server-side config ---
     const privy = await fetch(`${B}/api/auth/privy/verify`, {
       method: "POST",

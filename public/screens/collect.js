@@ -316,10 +316,9 @@
   function doShare(bill) {
     var url = shareUrl(bill);
     var txt = "chip in for " + ((bill.title || "the tab").toLowerCase()) + " — " + (bill.totalFmt || "");
-    if (navigator.share) {
-      navigator.share({ title: "divvy", text: txt, url: url }).catch(function () {});
-      return;
-    }
+    // Native share (Capacitor) → Web Share API → clipboard, via the app shim.
+    if (app.share) { app.share({ title: "divvy", text: txt, url: url }); return; }
+    if (navigator.share) { navigator.share({ title: "divvy", text: txt, url: url }).catch(function () {}); return; }
     copyLink(url);
   }
 

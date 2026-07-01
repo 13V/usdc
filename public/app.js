@@ -138,8 +138,91 @@
   // browsers, so this is always safe to call. Pass a ms number or a pattern
   // array (e.g. [30,40,30] for a celebratory double-pulse).
   function haptic(pattern) {
+    // Native Capacitor haptics when wrapped; Web Vibration otherwise.
+    try {
+      var cap = window.Capacitor;
+      if (cap && cap.Plugins && cap.Plugins.Haptics) {
+        cap.Plugins.Haptics.impact({ style: "LIGHT" });
+        return;
+      }
+    } catch (_) {}
     try { if (navigator.vibrate) navigator.vibrate(pattern || 12); } catch (_) {}
   }
+
+  // ---- native share (Capacitor Share → Web Share API → clipboard) ----
+  function share(opts) {
+    opts = opts || {};
+    var url = opts.url || location.href;
+    var text = opts.text || "";
+    var title = opts.title || "Divvy";
+    try {
+      var cap = window.Capacitor;
+      if (cap && cap.Plugins && cap.Plugins.Share) {
+        return cap.Plugins.Share.share({ title: title, text: text, url: url }).catch(function () {});
+      }
+    } catch (_) {}
+    if (navigator.share) {
+      return navigator.share({ title: title, text: text, url: url }).catch(function () {});
+    }
+    // Fallback: copy the link.
+    return copy(url).then(function () { toast("link copied 📋"); }).catch(function () { toast(url); });
+  }
+
+  // ---- Web Push (with a Capacitor native hook) ----
+  function urlB64ToUint8Array(base64) {
+    var padding = "=".repeat((4 - (base64.length % 4)) % 4);
+    var b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+    var raw = atob(b64);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  var push = {
+    supported: function () {
+      return ("serviceWorker" in navigator) && ("PushManager" in window) && ("Notification" in window);
+    },
+    permission: function () {
+      try { return (window.Notification && Notification.permission) || "default"; } catch (_) { return "default"; }
+    },
+    // Turn on notifications: request permission, subscribe, register with server.
+    enable: function () {
+      // Native path: Capacitor PushNotifications plugin (APNs/FCM) if present.
+      try {
+        var cap = window.Capacitor;
+        if (cap && cap.Plugins && cap.Plugins.PushNotifications) {
+          var PN = cap.Plugins.PushNotifications;
+          return PN.requestPermissions().then(function (p) {
+            if (p && p.receive === "granted") {
+              PN.addListener("registration", function (t) {
+                api.post("/api/push/native-token", { token: t.value, platform: (cap.getPlatform && cap.getPlatform()) || "native" }).catch(function () {});
+              });
+              return PN.register().then(function () { return true; });
+            }
+            return false;
+          });
+        }
+      } catch (_) {}
+      // Web path.
+      if (!push.supported()) return Promise.resolve(false);
+      return Notification.requestPermission().then(function (perm) {
+        if (perm !== "granted") return false;
+        return api.get("/api/push/vapid").then(function (cfg) {
+          if (!cfg || !cfg.enabled || !cfg.publicKey) return false;
+          return navigator.serviceWorker.ready.then(function (reg) {
+            return reg.pushManager.getSubscription().then(function (existing) {
+              if (existing) return existing;
+              return reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlB64ToUint8Array(cfg.publicKey),
+              });
+            });
+          }).then(function (sub) {
+            return api.post("/api/push/subscribe", sub.toJSON ? sub.toJSON() : sub).then(function () { return true; });
+          });
+        });
+      }).catch(function () { return false; });
+    },
+  };
   function toast(msg) {
     var t = document.createElement("div");
     t.textContent = msg;
@@ -627,6 +710,7 @@
     api: api, esc: esc, money: money, avatar: avatar, colorFor: colorFor, mascot: mascot,
     toast: toast, sheet: sheet, closeSheet: closeSheet, go: go, render: render,
     depositSheet: depositSheet, copy: copy, haptic: haptic, pullToRefresh: pullToRefresh,
+    share: share, push: push,
     tripToken: tripToken, setTripToken: setTripToken,
     qrImg: qrImg, amountEntryHtml: amountEntryHtml, wireAmountEntry: wireAmountEntry,
     openProvider: openProvider, testModeNote: testModeNote, dollarsLabel: dollarsLabel,

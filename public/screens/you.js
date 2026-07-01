@@ -165,6 +165,7 @@
         // is patched in after render (best-effort, see wireNotifBadge). help isn't
         // wired yet — render it as "soon" so it reads as not-yet-available.
         row("yNotif", "🔔", "rgba(255,107,94,0.14)", "notifications") + divider() +
+        row("yPush", "📣", "rgba(139,92,246,0.16)", "push notifications", '<span id="yPushState" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(244,247,250,0.4); margin-right:2px;">off</span>') + divider() +
         row("yNet", "🌐", "rgba(39,117,202,0.16)", "network", netTag) + divider() +
         row("yHelp", "💁", "rgba(244,247,250,0.07)", "help", null, true) +
       '</div>';
@@ -395,6 +396,27 @@
     if (saved) saved.onclick = function () { app.go("groups"); };
     var notif = document.getElementById("yNotif");
     if (notif) notif.onclick = function () { location.hash = "#/activity"; };
+    // Push notifications toggle: reflect current permission, enable on tap.
+    var pushState = document.getElementById("yPushState");
+    function renderPushState() {
+      if (!pushState) return;
+      var p = app.push && app.push.permission ? app.push.permission() : "default";
+      var supported = app.push && app.push.supported && app.push.supported();
+      var label = !supported ? "n/a" : p === "granted" ? "on" : p === "denied" ? "blocked" : "off";
+      pushState.textContent = label;
+      pushState.style.color = label === "on" ? "#3DE8C7" : "rgba(244,247,250,0.4)";
+    }
+    renderPushState();
+    var pushRow = document.getElementById("yPush");
+    if (pushRow) pushRow.onclick = function () {
+      if (!app.push || !app.push.supported()) { app.toast("notifications aren't supported here"); return; }
+      if (app.push.permission() === "denied") { app.toast("notifications are blocked — enable them in settings"); return; }
+      app.toast("turning on notifications…");
+      app.push.enable().then(function (ok) {
+        renderPushState();
+        app.toast(ok ? "notifications on 🔔" : "couldn't turn on notifications");
+      });
+    };
     // help is a "soon" row — intentionally not wired (no no-op tap).
     var net = document.getElementById("yNet");
     if (net) net.onclick = function () { app.toast("devnet · usdc on solana 🌐"); };

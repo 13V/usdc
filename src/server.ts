@@ -96,6 +96,7 @@ import { friendsRouter } from "./friends";
 import { chatRouter } from "./chat";
 import { reactionsRouter } from "./reactions";
 import { nudgesRouter } from "./nudges";
+import { pushRouter, sendPush } from "./push";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
@@ -246,6 +247,7 @@ app.use(friendsRouter);
 app.use(chatRouter);
 app.use(reactionsRouter);
 app.use(nudgesRouter);
+app.use(pushRouter);
 
 // ---- Auth & identity (progressive, optional) ------------------------------
 
@@ -680,6 +682,13 @@ app.post("/api/bills/:id/verify", moneyRateLimit, requireAuth, async (req: Reque
         p.signature = valid.signature;
         usedSigs.add(valid.signature);
         updated.push(p.name);
+        // Notify the collector that a share just landed. Best-effort, never blocks.
+        void sendPush(bill.creatorUserId, {
+          title: "You got paid 💸",
+          body: `${p.name} paid you ${fmt(p.amountCents)} for ${bill.title}`,
+          url: `/#/collect/${bill.id}`,
+          tag: `bill:${bill.id}`,
+        });
       }
     }
     await store.put(bill);
@@ -1446,6 +1455,14 @@ app.post("/api/trips/:id/settle/verify", moneyRateLimit, async (req: Request, re
         t.paid = true;
         (t as any).signature = valid.signature; // record the on-chain sig for receipts/lookups
         usedSigs.add(valid.signature);
+        // Notify the payee that a settlement landed. Best-effort.
+        const payer = trip.members.find((m) => m.id === t.from);
+        void sendPush(recipient.userId, {
+          title: "You got paid 💸",
+          body: `${payer ? payer.name : "Someone"} settled up ${fmt(t.amountCents)} · ${trip.name}`,
+          url: `/#/group/${trip.id}`,
+          tag: `trip:${trip.id}`,
+        });
       }
     }
     await saveSettlement(trip.id, stored.signature, stored.transfers);
