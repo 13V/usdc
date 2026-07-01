@@ -143,6 +143,7 @@ const rpcProxyRateLimit = rateLimit(150, 60_000); // web3.js is chatty; per-IP c
 // per window, not per event.
 const verifyFailSpike = makeSpikeDetector(20, 60_000); // ≥20 verify errors / min
 const fundVolumeSpike = makeSpikeDetector(40, 60_000); // ≥40 faucet drips / min
+const serverErrorSpike = makeSpikeDetector(8, 60_000); // ≥8 unhandled 5xx / min → page
 
 // Faucet per-USER cap. The IP limiter alone lets one account rotate IPs to drain
 // the devnet treasury; key the cap on userId too. Devnet-only route, but cheap
@@ -604,10 +605,9 @@ app.post("/api/bills", moneyRateLimit, async (req: Request, res: Response) => {
 app.get("/api/me/bills", requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const myWallet = await getPrimaryWallet(userId);
-  const all = await store.all();
-  const mine = all.filter(
-    (b) => b.creatorUserId === userId || (!!myWallet && b.collector === myWallet)
-  );
+  // Targeted queries (server-side filtered on Supabase) instead of scanning every
+  // bill in the system — bounded by what this user actually created / owes.
+  const mine = await store.createdBy(userId, myWallet);
   // Backfill ownership on legacy bills created before creatorUserId existed:
   // a bill's collector is bound to its creator's primary wallet, so a match is
   // authoritative. Persist it best-effort so later queries are a clean id match.
@@ -617,10 +617,11 @@ app.get("/api/me/bills", requireAuth, async (req: Request, res: Response) => {
       try { await store.put(b); } catch { /* non-fatal */ }
     }
   }
+  const mineIds = new Set(mine.map((b) => b.id));
   // Tabs someone else created where a share is YOURS — by linked userId, or
   // (fallback) by your primary wallet. These auto-appear as "tabs to pay".
-  const incoming = all
-    .filter((b) => b.creatorUserId !== userId)
+  const incoming = (await store.sharedWith(userId, myWallet))
+    .filter((b) => b.creatorUserId !== userId && !mineIds.has(b.id))
     .map((b) => {
       const share = b.participants.find(
         (p) => p.userId === userId || (!!myWallet && p.wallet === myWallet)
@@ -1769,22 +1770,39 @@ function renderPayPage(
 // Maps known error shapes to status codes; everything else is a 500. Must be
 // registered AFTER all routes.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   if (res.headersSent) return;
   const message = (err as Error)?.message || "internal error";
   const status = err instanceof ValidationError ? 400 : isRpcFailure(err) ? 502 : 500;
   if (status >= 500) {
-    // eslint-disable-next-line no-console
-    console.error("unhandled route error:", err);
+    // Structured, greppable error record for every 5xx…
+    try {
+      console.error(JSON.stringify({
+        t: new Date().toISOString(), evt: "server_error", status,
+        method: req.method, path: req.path, message,
+        stack: (err as Error)?.stack,
+      }));
+    } catch { /* never let logging throw */ }
+    // …and page when they spike (a burst of 500s = something's broken).
+    const spike = serverErrorSpike.record();
+    if (spike.fired) alert("high", "server_error_spike", { count: spike.count, lastPath: req.path, lastMessage: message });
   }
   res.status(status).json({ error: message });
 });
 
 // Last-resort backstop: a stray rejection from a background task (e.g. the
-// recurring self-scheduler) must never take the whole server down. Log, stay up.
+// recurring self-scheduler) must never take the whole server down. Log + page,
+// stay up. An unhandled rejection means an un-awaited failure — worth knowing.
 process.on("unhandledRejection", (reason) => {
   // eslint-disable-next-line no-console
   console.error("unhandledRejection:", reason);
+  alert("high", "unhandled_rejection", { reason: reason instanceof Error ? reason.message : String(reason) });
+});
+process.on("uncaughtException", (err) => {
+  // eslint-disable-next-line no-console
+  console.error("uncaughtException:", err);
+  alert("critical", "uncaught_exception", { message: err?.message, stack: err?.stack });
+  // Stay up (money app — a crash is downtime); the alert makes it loud.
 });
 
 /**

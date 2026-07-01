@@ -71,6 +71,57 @@ export class BillStore {
     return this.delStmt.run(id).changes > 0;
   }
 
+  /**
+   * Bills this user CREATED (or collects to their wallet). On Supabase this
+   * filters server-side by the jsonb fields instead of pulling every bill into
+   * Node (the old store.all() scan); on SQLite (local dev) it filters in memory.
+   */
+  async createdBy(userId: string, wallet: string | null): Promise<Bill[]> {
+    if (usingSupabase) {
+      const ors = [`data->>creatorUserId.eq.${userId}`];
+      if (wallet) ors.push(`data->>collector.eq.${wallet}`);
+      const { data, error } = await supabase()
+        .from("bills")
+        .select("data")
+        .or(ors.join(","))
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(`bills.createdBy: ${error.message}`);
+      return (data || []).map((r) => r.data as Bill);
+    }
+    return (await this.all()).filter(
+      (b) => b.creatorUserId === userId || (!!wallet && b.collector === wallet)
+    );
+  }
+
+  /**
+   * Bills where this user is a PARTICIPANT (a share is theirs), by linked userId
+   * or primary wallet. Supabase uses jsonb containment (`data @> {...}`) so the
+   * DB filters; SQLite scans locally.
+   */
+  async sharedWith(userId: string, wallet: string | null): Promise<Bill[]> {
+    if (usingSupabase) {
+      const sb = supabase();
+      const byUser = await sb.from("bills").select("data").contains("data", { participants: [{ userId }] });
+      if (byUser.error) throw new Error(`bills.sharedWith(user): ${byUser.error.message}`);
+      let rows = byUser.data || [];
+      if (wallet) {
+        const byWallet = await sb.from("bills").select("data").contains("data", { participants: [{ wallet }] });
+        if (byWallet.error) throw new Error(`bills.sharedWith(wallet): ${byWallet.error.message}`);
+        rows = rows.concat(byWallet.data || []);
+      }
+      const seen = new Set<string>();
+      const out: Bill[] = [];
+      for (const r of rows) {
+        const b = r.data as Bill;
+        if (!seen.has(b.id)) { seen.add(b.id); out.push(b); }
+      }
+      return out;
+    }
+    return (await this.all()).filter((b) =>
+      b.participants.some((p) => p.userId === userId || (!!wallet && p.wallet === wallet))
+    );
+  }
+
   async all(): Promise<Bill[]> {
     if (usingSupabase) {
       const { data, error } = await supabase()
