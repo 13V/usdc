@@ -20,9 +20,11 @@ divvy.db-wal
 # Landing page (deployed to GitHub Pages) — keep its assets despite *.png above.
 !site/**
 
-# App icons, store screenshots, and social/OG images — committed, served in prod.
+# App icons, store screenshots, mascot art, and social/OG images — committed,
+# served in prod.
 !public/icons/**
 !public/screenshots/**
+!public/mascot/**
 !public/apple-touch-icon.png
 !public/og.png
 _itest.js

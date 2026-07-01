@@ -58,10 +58,11 @@
           '<div id="yGear" style="width:36px; height:36px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.75)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a1.8 1.8 0 0 0 .36 1.98l.07.07a2.2 2.2 0 1 1-3.11 3.11l-.07-.07a1.8 1.8 0 0 0-3.04 1.28V21a2.2 2.2 0 0 1-4.4 0v-.1A1.8 1.8 0 0 0 5.5 19.4l-.07.07a2.2 2.2 0 1 1-3.11-3.11l.07-.07a1.8 1.8 0 0 0-1.28-3.04H1a2.2 2.2 0 0 1 0-4.4h.1A1.8 1.8 0 0 0 2.6 5.5l-.07-.07a2.2 2.2 0 1 1 3.11-3.11l.07.07a1.8 1.8 0 0 0 1.98.36H8a1.8 1.8 0 0 0 1.1-1.65V1a2.2 2.2 0 0 1 4.4 0v.1a1.8 1.8 0 0 0 3.04 1.28l.07-.07a2.2 2.2 0 1 1 3.11 3.11l-.07.07A1.8 1.8 0 0 0 21.9 8H22a2.2 2.2 0 0 1 0 4.4h-.1a1.8 1.8 0 0 0-1.5 1.1z"/></svg></div>' +
         '</div>' +
         // full-body mascot companion (window.Mascot, wave mood), scaled into the
-        // 78px header slot the frame reserves; floats top-right with soft glow.
+        // 78px header slot the frame reserves. No glow: at this size against the
+        // screen edge the blurred halo clips into a visible hard rectangle.
         '<div style="position:relative; width:78px; height:78px; flex:none; display:flex; align-items:center; justify-content:flex-end;">' +
           '<div style="transform:scale(.62); transform-origin:right center;">' +
-            app.mascot({ size: 78, mood: "wave", glow: true }) +
+            app.mascot({ size: 78, mood: "wave", glow: false }) +
           '</div>' +
         '</div>' +
       '</div>';

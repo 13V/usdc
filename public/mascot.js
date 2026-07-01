@@ -24,11 +24,21 @@
       "@keyframes mWaveBig{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(-38deg)}}",
       "@keyframes mGlow{0%,100%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:.85}50%{transform:translate(-50%,-50%) scale(1.12) rotate(18deg);opacity:1}}",
       "@keyframes mSpark{0%,100%{opacity:.3;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}",
-      // Tier-1 life for the image mascot: a gentle breathe + a springy tap squash.
+      // Tier-1 life for the image mascot: a springy pop-in entrance, a gentle
+      // breathe idle, and a tap squash. Entrance → idle is a clean handoff: the
+      // idle animation is delayed by the entrance's duration, and both start/end
+      // on the identity transform.
+      "@keyframes mArrive{0%{opacity:0;transform:translateY(18px) scale(.55)}60%{opacity:1}100%{opacity:1;transform:translateY(0) scale(1)}}",
       "@keyframes mBreathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.025)}}",
+      // celebrate: a happier idle — quicker bounce with a tiny lean left/right.
+      "@keyframes mCheer{0%,100%{transform:translateY(0) scale(1) rotate(0)}25%{transform:translateY(-9px) scale(1.03) rotate(-2deg)}50%{transform:translateY(0) scale(1)}75%{transform:translateY(-9px) scale(1.03) rotate(2deg)}}",
       "@keyframes mPop{0%{transform:scale(1)}30%{transform:scale(.9,1.08)}60%{transform:scale(1.06,.94)}100%{transform:scale(1)}}",
-      ".dmascot-img{animation:mBreathe 4.6s ease-in-out infinite;transform-origin:50% 90%;will-change:transform}",
-      ".dmascot-img.mtap{animation:mPop .42s cubic-bezier(.34,1.56,.64,1)}",
+      ".dmascot-img{animation:mArrive .55s cubic-bezier(.34,1.56,.64,1) both,mBreathe 4.6s ease-in-out .55s infinite;transform-origin:50% 90%;will-change:transform}",
+      ".dmascot-img.mood-celebrate{animation:mArrive .55s cubic-bezier(.34,1.56,.64,1) both,mCheer 2.6s ease-in-out .55s infinite}",
+      // tap squash resumes the idle when it's done (a bare mPop would otherwise
+      // replace the idle animation permanently and freeze the breathing).
+      ".dmascot-img.mtap{animation:mPop .42s cubic-bezier(.34,1.56,.64,1),mBreathe 4.6s ease-in-out .42s infinite}",
+      ".dmascot-img.mood-celebrate.mtap{animation:mPop .42s cubic-bezier(.34,1.56,.64,1),mCheer 2.6s ease-in-out .42s infinite}",
       "@media (prefers-reduced-motion: reduce){.dmascot *{animation:none!important}}",
     ].join("");
     document.head.appendChild(s);
@@ -61,7 +71,8 @@
     sleepy: "sleepy", empty: "sleepy",
     hero: "hero", proud: "hero",
   };
-  function imgFor(mood) { return IMG_BASE + (MOOD_IMG[mood] || "happy") + ".png"; }
+  function resolvedMood(mood) { return MOOD_IMG[mood] || "happy"; }
+  function imgFor(mood) { return IMG_BASE + resolvedMood(mood) + ".png"; }
 
   function eyes(mood) {
     var blink = "animation:mBlink 5s ease-in-out infinite;";
@@ -135,8 +146,8 @@
           // Real mascot art (Gemini PNGs in /mascot/). On load it hides the drawn
           // fallback; on error (file missing) it hides itself so the fallback shows.
           '<div style="position:absolute;left:50%;top:50%;width:' + px(172) + 'px;height:' + px(172) + 'px;transform:translate(-50%,-52%);pointer-events:none;">' +
-            '<img class="dmascot-img" alt="" src="' + imgFor(mood) + '" style="width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 ' + px(10) + 'px ' + px(18) + 'px rgba(0,0,0,.35));" ' +
-            'onload="var w=this.closest(\'.dmascot\');var d=w&&w.querySelector(\'.dmascot-drawn\');if(d)d.style.display=\'none\';" ' +
+            '<img class="dmascot-img mood-' + resolvedMood(mood) + '" alt="" src="' + imgFor(mood) + '" style="width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 ' + px(10) + 'px ' + px(18) + 'px rgba(0,0,0,.35));" ' +
+            'onload="var w=this.closest(\'.dmascot\');var d=w&&w.querySelector(\'.dmascot-drawn\');if(d)d.style.display=\'none\';this.style.animation=\'none\';void this.offsetWidth;this.style.animation=\'\';" ' +
             'onerror="var w=this.parentElement;if(w)w.style.display=\'none\';">' +
           '</div>' +
         '</div>' +
