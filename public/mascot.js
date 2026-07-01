@@ -24,12 +24,44 @@
       "@keyframes mWaveBig{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(-38deg)}}",
       "@keyframes mGlow{0%,100%{transform:translate(-50%,-50%) scale(1) rotate(0);opacity:.85}50%{transform:translate(-50%,-50%) scale(1.12) rotate(18deg);opacity:1}}",
       "@keyframes mSpark{0%,100%{opacity:.3;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}",
+      // Tier-1 life for the image mascot: a gentle breathe + a springy tap squash.
+      "@keyframes mBreathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.025)}}",
+      "@keyframes mPop{0%{transform:scale(1)}30%{transform:scale(.9,1.08)}60%{transform:scale(1.06,.94)}100%{transform:scale(1)}}",
+      ".dmascot-img{animation:mBreathe 4.6s ease-in-out infinite;transform-origin:50% 90%;will-change:transform}",
+      ".dmascot-img.mtap{animation:mPop .42s cubic-bezier(.34,1.56,.64,1)}",
       "@media (prefers-reduced-motion: reduce){.dmascot *{animation:none!important}}",
     ].join("");
     document.head.appendChild(s);
   }
 
+  // One delegated tap→squash for every mascot on the page (image mascots only).
+  if (!window.__divvyMascotTap) {
+    window.__divvyMascotTap = true;
+    document.addEventListener("pointerdown", function (e) {
+      var host = e.target && e.target.closest && e.target.closest(".dmascot");
+      if (!host) return;
+      var img = host.querySelector(".dmascot-img");
+      if (!img || img.style.display === "none") return;
+      img.classList.remove("mtap");
+      // reflow so the animation can retrigger on rapid taps
+      void img.offsetWidth;
+      img.classList.add("mtap");
+    }, { passive: true });
+  }
+
   var INK = "#0B1622";
+
+  // Mood → mascot image (drop the Gemini PNGs into public/mascot/). Existing mood
+  // names used across the app are aliased onto the real art so nothing 404s.
+  var IMG_BASE = "/mascot/";
+  var MOOD_IMG = {
+    happy: "happy", wave: "happy", hello: "happy",
+    sparkle: "celebrate", celebrate: "celebrate", paid: "celebrate",
+    watching: "thinking", thinking: "thinking", worried: "thinking",
+    sleepy: "sleepy", empty: "sleepy",
+    hero: "hero", proud: "hero",
+  };
+  function imgFor(mood) { return IMG_BASE + (MOOD_IMG[mood] || "happy") + ".png"; }
 
   function eyes(mood) {
     var blink = "animation:mBlink 5s ease-in-out infinite;";
@@ -83,20 +115,30 @@
       '<div class="dmascot" style="position:relative;width:' + px(170) + 'px;height:' + px(150) + 'px;display:flex;align-items:center;justify-content:center;flex:none;">' +
         glowEl +
         '<div style="position:relative;animation:mFloat 5.5s ease-in-out infinite;">' +
-          // legs
-          '<div style="position:absolute;left:' + px(39) + 'px;bottom:-' + px(13) + 'px;width:' + px(17) + 'px;height:' + px(27) + 'px;border-radius:999px;background:linear-gradient(160deg,#3a8fe0,#1f5da3);"></div>' +
-          '<div style="position:absolute;right:' + px(39) + 'px;bottom:-' + px(13) + 'px;width:' + px(17) + 'px;height:' + px(27) + 'px;border-radius:999px;background:linear-gradient(160deg,#3a8fe0,#1f5da3);"></div>' +
-          // arms
-          '<div style="position:absolute;left:-' + px(9) + 'px;top:' + px(45) + 'px;width:' + px(19) + 'px;height:' + px(32) + 'px;border-radius:999px;background:linear-gradient(160deg,#3f93e4,#2061a8);transform-origin:' + px(14) + 'px ' + px(4) + 'px;animation:' + armAnimL + ';"></div>' +
-          '<div style="position:absolute;right:-' + px(9) + 'px;top:' + px(45) + 'px;width:' + px(19) + 'px;height:' + px(32) + 'px;border-radius:999px;background:linear-gradient(160deg,#3f93e4,#2061a8);transform-origin:' + px(5) + 'px ' + px(4) + 'px;animation:' + armAnimR + ';"></div>' +
-          // body
-          '<div style="position:relative;width:' + px(118) + 'px;height:' + px(118) + 'px;background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697);animation:mSquish 4.5s ease-in-out infinite;box-shadow:0 ' + px(16) + 'px ' + px(40) + 'px rgba(39,117,202,.5), inset 0 4px 8px rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;">' +
-            '<div style="display:flex;gap:' + px(15) + 'px;margin-top:-' + px(8) + 'px;">' + eyes(mood) + '</div>' +
-            mouth(mood) +
-            '<div style="position:absolute;top:' + px(30) + 'px;left:' + px(22) + 'px;width:' + px(13) + 'px;height:' + px(13) + 'px;border-radius:50%;background:rgba(255,255,255,.22);"></div>' +
-            sweat +
+          // Drawn fallback layer — shown until (and unless) the mood PNG loads.
+          '<div class="dmascot-drawn" style="position:relative;">' +
+            // legs
+            '<div style="position:absolute;left:' + px(39) + 'px;bottom:-' + px(13) + 'px;width:' + px(17) + 'px;height:' + px(27) + 'px;border-radius:999px;background:linear-gradient(160deg,#3a8fe0,#1f5da3);"></div>' +
+            '<div style="position:absolute;right:' + px(39) + 'px;bottom:-' + px(13) + 'px;width:' + px(17) + 'px;height:' + px(27) + 'px;border-radius:999px;background:linear-gradient(160deg,#3a8fe0,#1f5da3);"></div>' +
+            // arms
+            '<div style="position:absolute;left:-' + px(9) + 'px;top:' + px(45) + 'px;width:' + px(19) + 'px;height:' + px(32) + 'px;border-radius:999px;background:linear-gradient(160deg,#3f93e4,#2061a8);transform-origin:' + px(14) + 'px ' + px(4) + 'px;animation:' + armAnimL + ';"></div>' +
+            '<div style="position:absolute;right:-' + px(9) + 'px;top:' + px(45) + 'px;width:' + px(19) + 'px;height:' + px(32) + 'px;border-radius:999px;background:linear-gradient(160deg,#3f93e4,#2061a8);transform-origin:' + px(5) + 'px ' + px(4) + 'px;animation:' + armAnimR + ';"></div>' +
+            // body
+            '<div style="position:relative;width:' + px(118) + 'px;height:' + px(118) + 'px;background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697);animation:mSquish 4.5s ease-in-out infinite;box-shadow:0 ' + px(16) + 'px ' + px(40) + 'px rgba(39,117,202,.5), inset 0 4px 8px rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;">' +
+              '<div style="display:flex;gap:' + px(15) + 'px;margin-top:-' + px(8) + 'px;">' + eyes(mood) + '</div>' +
+              mouth(mood) +
+              '<div style="position:absolute;top:' + px(30) + 'px;left:' + px(22) + 'px;width:' + px(13) + 'px;height:' + px(13) + 'px;border-radius:50%;background:rgba(255,255,255,.22);"></div>' +
+              sweat +
+            '</div>' +
+            sparkles +
           '</div>' +
-          sparkles +
+          // Real mascot art (Gemini PNGs in /mascot/). On load it hides the drawn
+          // fallback; on error (file missing) it hides itself so the fallback shows.
+          '<div style="position:absolute;left:50%;top:50%;width:' + px(172) + 'px;height:' + px(172) + 'px;transform:translate(-50%,-52%);pointer-events:none;">' +
+            '<img class="dmascot-img" alt="" src="' + imgFor(mood) + '" style="width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 ' + px(10) + 'px ' + px(18) + 'px rgba(0,0,0,.35));" ' +
+            'onload="var w=this.closest(\'.dmascot\');var d=w&&w.querySelector(\'.dmascot-drawn\');if(d)d.style.display=\'none\';" ' +
+            'onerror="var w=this.parentElement;if(w)w.style.display=\'none\';">' +
+          '</div>' +
         '</div>' +
       '</div>';
   }
