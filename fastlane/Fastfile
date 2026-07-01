@@ -1,0 +1,77 @@
+# Fastfile — build & upload Divvy iOS to TestFlight from CI (no Mac needed).
+#
+# Runs on a GitHub Actions macOS runner via .github/workflows/ios-testflight.yml.
+# Auth is an App Store Connect API key (team-scoped, revocable) — never an Apple
+# ID password. Signing certs/profiles are created once via the ASC API and
+# stored encrypted (MATCH_PASSWORD) on the `ios-certificates` branch of this
+# repo, then reused by every subsequent run (fastlane match).
+#
+# Required env (GitHub Actions secrets):
+#   ASC_KEY_ID      — App Store Connect API key ID
+#   ASC_ISSUER_ID   — App Store Connect issuer ID
+#   ASC_KEY_P8      — full contents of the .p8 private key file
+#   MATCH_PASSWORD  — passphrase encrypting the stored certs (you invent this)
+#   APPLE_TEAM_ID   — 10-char team ID (developer.apple.com → Membership)
+# Provided by the workflow:
+#   GH_TOKEN, GITHUB_REPOSITORY, GITHUB_RUN_NUMBER
+
+APP_ID = "com.divvy.app"
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Build the Capacitor shell and push it to TestFlight"
+  lane :beta do
+    setup_ci # ephemeral keychain for the runner
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8"),
+      is_key_content_base64: false
+    )
+
+    # Register the bundle ID on first run (public ASC API; no-op if it exists).
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.from(hash: api_key)
+    if Spaceship::ConnectAPI::BundleId.all.none? { |b| b.identifier == APP_ID }
+      UI.message("Registering bundle id #{APP_ID}…")
+      Spaceship::ConnectAPI::BundleId.create(name: "Divvy", identifier: APP_ID, platform: "IOS")
+    end
+
+    # Distribution cert + App Store provisioning profile, created on first run
+    # and stored encrypted in this repo's ios-certificates branch thereafter.
+    match(
+      type: "appstore",
+      app_identifier: APP_ID,
+      api_key: api_key,
+      git_url: "https://x-access-token:#{ENV.fetch('GH_TOKEN')}@github.com/#{ENV.fetch('GITHUB_REPOSITORY')}.git",
+      git_branch: "ios-certificates",
+      storage_mode: "git",
+      readonly: false
+    )
+
+    update_code_signing_settings(
+      path: "ios/App/App.xcodeproj",
+      use_automatic_signing: false,
+      team_id: ENV.fetch("APPLE_TEAM_ID"),
+      bundle_identifier: APP_ID,
+      code_sign_identity: "Apple Distribution",
+      profile_name: lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING][APP_ID]
+    )
+
+    build_app(
+      project: "ios/App/App.xcodeproj",
+      scheme: "App",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      # Monotonic build number without touching the repo: the Actions run number.
+      xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('GITHUB_RUN_NUMBER', '1')}"
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true # processing finishes async; the build appears in TestFlight ~5-15 min later
+    )
+  end
+end

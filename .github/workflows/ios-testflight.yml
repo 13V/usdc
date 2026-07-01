@@ -1,0 +1,60 @@
+# Build the Divvy iOS shell and upload it to TestFlight — no Mac required.
+#
+# Trigger: manual (Actions tab → iOS TestFlight → Run workflow), or ask Claude
+# to trigger it. Each run archives the Capacitor shell against the production
+# origin, signs it with certs managed by fastlane match (stored encrypted on
+# the ios-certificates branch), and pushes the build to TestFlight.
+#
+# One-time setup (browser only) is documented in docs/TESTFLIGHT-NO-MAC.md.
+
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write # fastlane match stores/reads certs on the ios-certificates branch
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  build-and-upload:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync Capacitor iOS project
+        run: npx cap sync ios
+        env:
+          CAP_SERVER_URL: https://demo.wildfireonsol.com
+
+      - name: Build, sign, and upload to TestFlight
+        run: fastlane ios beta
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-logs
+          path: |
+            ~/Library/Logs/gym/*.log
+            build/*.log
+          if-no-files-found: ignore

@@ -1,5 +1,9 @@
 # Divvy — TestFlight in one sitting (Mac runbook)
 
+> **No Mac?** Use the cloud build instead: `docs/TESTFLIGHT-NO-MAC.md` — a
+> GitHub Actions macOS runner builds, signs, and uploads to TestFlight. This
+> file is the manual path for when a Mac is available.
+
 Everything below assumes: you have a Mac with **Xcode 15+**, you're signed into
 your **Apple Developer account** ($99/yr membership active), and you have this
 repo. Total time first run: ~60–90 min (most of it App Store Connect clicking).
