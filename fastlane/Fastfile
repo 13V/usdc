@@ -24,11 +24,16 @@ platform :ios do
   lane :beta do
     setup_ci # ephemeral keychain for the runner
 
+    # Key content arrives raw (ASC_KEY_P8 secret) or base64 (ASC_KEY_P8_B64
+    # secret / bootstrap dispatch input) — accept either.
+    p8_b64 = ENV["ASC_KEY_P8_B64"].to_s.strip
+    p8_raw = ENV["ASC_KEY_P8"].to_s.strip
+    UI.user_error!("No API key: set the ASC_KEY_P8(_B64) secret or the asc_key_p8_b64 dispatch input") if p8_b64.empty? && p8_raw.empty?
     api_key = app_store_connect_api_key(
       key_id: ENV.fetch("ASC_KEY_ID"),
       issuer_id: ENV.fetch("ASC_ISSUER_ID"),
-      key_content: ENV.fetch("ASC_KEY_P8"),
-      is_key_content_base64: false
+      key_content: p8_b64.empty? ? p8_raw : p8_b64,
+      is_key_content_base64: !p8_b64.empty?
     )
 
     # Register the bundle ID on first run (public ASC API; no-op if it exists).

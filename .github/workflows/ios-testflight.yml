@@ -11,6 +11,18 @@ name: iOS TestFlight
 
 on:
   workflow_dispatch:
+    inputs:
+      # BOOTSTRAP ONLY: lets the first builds run before repo secrets exist.
+      # Dispatch inputs are visible to anyone with read access to this repo
+      # (private, single-owner) and persist in the run history — so once things
+      # work, add the real secrets (docs/TESTFLIGHT-NO-MAC.md §4), re-run
+      # without inputs, and rotate the API key in App Store Connect.
+      asc_key_p8_b64:
+        description: "App Store Connect API .p8 key, base64-encoded (fallback: ASC_KEY_P8/ASC_KEY_P8_B64 secret)"
+        required: false
+      match_password:
+        description: "Cert-store passphrase (fallback: MATCH_PASSWORD secret)"
+        required: false
 
 permissions:
   contents: write # fastlane match stores/reads certs on the ios-certificates branch
@@ -42,11 +54,13 @@ jobs:
       - name: Build, sign, and upload to TestFlight
         run: fastlane ios beta
         env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          # Key/issuer/team are identifiers, not credentials — safe as defaults.
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID || '7U767ANJA2' }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID || '41f91417-38b0-41ba-b5e6-ce6d610a84ab' }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID || '77PA8XZNBD' }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_P8_B64: ${{ inputs.asc_key_p8_b64 || secrets.ASC_KEY_P8_B64 }}
+          MATCH_PASSWORD: ${{ inputs.match_password || secrets.MATCH_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload build log on failure

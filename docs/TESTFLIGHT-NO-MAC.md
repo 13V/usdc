@@ -35,12 +35,19 @@ GitHub → the `usdc` repo → **Settings** → **Secrets and variables** →
 |------------------|-----------------------------------------------------------|
 | `ASC_KEY_ID`     | the Key ID from step 2                                    |
 | `ASC_ISSUER_ID`  | the Issuer ID from step 2                                 |
-| `ASC_KEY_P8`     | the FULL text of the .p8 file (open it in a text editor, paste everything including the BEGIN/END lines) |
+| `ASC_KEY_P8`     | the FULL text of the .p8 file (open it in a text editor, paste everything including the BEGIN/END lines) — or add `ASC_KEY_P8_B64` with the base64-encoded file instead |
 | `MATCH_PASSWORD` | a passphrase you invent (encrypts the stored signing certs — save it in your password manager) |
 | `APPLE_TEAM_ID`  | the Team ID from step 3                                   |
 
 Adding them yourself in the GitHub UI means the key never transits chat,
 email, or anything else.
+
+> **Bootstrap mode:** the workflow also accepts `asc_key_p8_b64` and
+> `match_password` as manual run inputs (Key ID / Issuer ID / Team ID have
+> defaults baked in). This exists so the first builds can run before secrets
+> are configured — but run inputs are visible in the run history to anyone
+> with repo read access, so once TestFlight works: add the real secrets,
+> re-run without inputs, and rotate the API key in App Store Connect.
 
 ### 5. Create the app record (needed before the first upload)
 App Store Connect → **Apps** → **+** → **New App**:
