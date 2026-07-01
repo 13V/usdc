@@ -30,3 +30,13 @@ db.exec(`
     last_used_at TEXT NOT NULL
   );
 `);
+
+// Owner scoping for saved groups (additive; legacy rows have NULL owner and are
+// simply no longer listed/deletable, which is fine for reusable name lists).
+{
+  const cols = db.prepare("PRAGMA table_info(groups)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "user_id")) {
+    db.exec("ALTER TABLE groups ADD COLUMN user_id TEXT");
+    db.exec("CREATE INDEX IF NOT EXISTS groups_user_idx ON groups (user_id)");
+  }
+}

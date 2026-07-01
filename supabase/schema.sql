@@ -25,9 +25,12 @@ create table if not exists groups (
   name         text not null,
   members      jsonb not null,
   created_at   text not null,
-  last_used_at text not null
+  last_used_at text not null,
+  user_id      text
 );
+alter table groups add column if not exists user_id text;
 create index if not exists groups_last_used_idx on groups (last_used_at desc);
+create index if not exists groups_user_idx on groups (user_id);
 
 -- ---- trips + members + expenses + settlements (src/trips.ts) ---------------
 create table if not exists trips (

@@ -76,7 +76,7 @@
     return AV_GRADS[h % AV_GRADS.length];
   }
   function avatarTile(f, nm) {
-    var bg = f.color || gradFor(f.id || nm);
+    var bg = app.esc(f.color || gradFor(f.id || nm)); // esc: stored color never raw
     if (f.emoji) {
       return '<div style="width:46px; height:46px; border-radius:14px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none;">' + app.esc(f.emoji) + '</div>';
     }
@@ -383,7 +383,7 @@
   function requestRow(f) {
     var name = f.displayName || f.handle || (f.primaryWallet ? shortWallet(f.primaryWallet) : "someone");
     var emoji = f.emoji || "🙂";
-    var color = f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)";
+    var color = app.esc(f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)"); // esc: stored color never raw
     return '<div style="display:flex; align-items:center; gap:11px; background:#13212E; border:1px solid rgba(61,232,199,0.18); border-radius:18px; padding:11px 12px;">' +
       '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">' + app.esc(emoji) + '</div>' +
       '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#F4F7FA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div><div style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(244,247,250,0.4);">wants to be friends</div></div>' +
@@ -402,7 +402,7 @@
   function sentRow(f) {
     var name = f.displayName || f.handle || (f.primaryWallet ? shortWallet(f.primaryWallet) : "someone");
     var emoji = f.emoji || "🙂";
-    var color = f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)";
+    var color = app.esc(f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)"); // esc: stored color never raw
     return '<div style="display:flex; align-items:center; gap:11px; background:#13212E; border:1px solid rgba(244,247,250,0.07); border-radius:18px; padding:11px 12px;">' +
       '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none; opacity:.9;">' + app.esc(emoji) + '</div>' +
       '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#F4F7FA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div><div style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(244,247,250,0.4);">waiting for them to accept</div></div>' +

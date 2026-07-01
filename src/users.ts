@@ -370,15 +370,31 @@ export async function setIdentity(
 export async function deleteUser(userId: string): Promise<void> {
   if (usingSupabase) {
     const sb = supabase();
-    const w = await sb.from("user_wallets").delete().eq("user_id", userId);
-    if (w.error) throw new Error(`users.deleteUser(wallets): ${w.error.message}`);
-    const i = await sb.from("identities").delete().eq("user_id", userId);
-    if (i.error) throw new Error(`users.deleteUser(identities): ${i.error.message}`);
-    const u = await sb.from("users").delete().eq("id", userId);
-    if (u.error) throw new Error(`users.deleteUser(user): ${u.error.message}`);
+    // Remove every table that stores this user's login/PII or would keep acting
+    // on their behalf. push_subscriptions especially: a "deleted" account must
+    // stop receiving notifications. (ious/nudges/push_subscriptions/trip_members
+    // have no FK to users, so no cascade rescues them — delete explicitly.)
+    const chk = (label: string, error: { message?: string } | null) => {
+      if (error) throw new Error(`users.deleteUser(${label}): ${error.message}`);
+    };
+    chk("push", (await sb.from("push_subscriptions").delete().eq("user_id", userId)).error);
+    chk("ious", (await sb.from("ious").delete().eq("owner_user_id", userId)).error);
+    chk("nudges_from", (await sb.from("nudges").delete().eq("from_user_id", userId)).error);
+    chk("nudges_to", (await sb.from("nudges").delete().eq("to_user_id", userId)).error);
+    chk("friends_a", (await sb.from("friendships").delete().eq("user_id", userId)).error);
+    chk("friends_b", (await sb.from("friendships").delete().eq("friend_user_id", userId)).error);
+    chk("members", (await sb.from("trip_members").update({ user_id: null }).eq("user_id", userId)).error);
+    chk("wallets", (await sb.from("user_wallets").delete().eq("user_id", userId)).error);
+    chk("identities", (await sb.from("identities").delete().eq("user_id", userId)).error);
+    chk("user", (await sb.from("users").delete().eq("id", userId)).error);
     return;
   }
   const tx = db.transaction((id: string) => {
+    db.prepare("DELETE FROM push_subscriptions WHERE user_id = ?").run(id);
+    db.prepare("DELETE FROM ious WHERE owner_user_id = ?").run(id);
+    db.prepare("DELETE FROM nudges WHERE from_user_id = ? OR to_user_id = ?").run(id, id);
+    db.prepare("DELETE FROM friendships WHERE user_id = ? OR friend_user_id = ?").run(id, id);
+    db.prepare("UPDATE trip_members SET user_id = NULL WHERE user_id = ?").run(id);
     db.prepare("DELETE FROM user_wallets WHERE user_id = ?").run(id);
     db.prepare("DELETE FROM identities WHERE user_id = ?").run(id);
     db.prepare("DELETE FROM users WHERE id = ?").run(id);

@@ -214,8 +214,11 @@ async function addReaction(
     if (error) throw new Error(`reactions.addReaction: ${error.message}`);
     return;
   }
+  // INSERT OR IGNORE to match the Supabase upsert(ignoreDuplicates): a double-tap
+  // (or the reactionExists→addReaction check racing itself) is a no-op instead of
+  // a UNIQUE-constraint 500. PK is (trip_id, target, emoji, user_id).
   db.prepare(
-    "INSERT INTO trip_reactions (trip_id, target, emoji, user_id, created_at) VALUES (?, ?, ?, ?, ?)"
+    "INSERT OR IGNORE INTO trip_reactions (trip_id, target, emoji, user_id, created_at) VALUES (?, ?, ?, ?, ?)"
   ).run(tripId, target, emoji, userId, new Date().toISOString());
 }
 

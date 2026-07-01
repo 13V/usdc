@@ -281,6 +281,28 @@ async function setNextDue(id: string, nextDue: string): Promise<void> {
   db.prepare("UPDATE recurring SET next_due = ? WHERE id = ?").run(nextDue, id);
 }
 
+/**
+ * Atomically CLAIM one occurrence: advance next_due from `from` → `to` ONLY if it
+ * still equals `from`. Returns true iff this caller won the slot. This makes
+ * materialization at-most-once per period even when the self-scheduler and a
+ * lazy GET (or two GETs) run concurrently — otherwise both would append the same
+ * recurring expense, double-counting the debt.
+ */
+async function claimNextDue(id: string, from: string, to: string): Promise<boolean> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("recurring")
+      .update({ next_due: to })
+      .eq("id", id)
+      .eq("next_due", from)
+      .select("id");
+    if (error) throw new Error(`recurring.claimNextDue: ${error.message}`);
+    return !!data && data.length > 0;
+  }
+  const res = db.prepare("UPDATE recurring SET next_due = ? WHERE id = ? AND next_due = ?").run(to, id, from);
+  return res.changes > 0;
+}
+
 /** Soft-delete (deactivate) one rule, unconditionally. */
 async function deactivateRule(id: string): Promise<void> {
   if (usingSupabase) {
@@ -363,14 +385,18 @@ export async function materializeDue(ownerUserId?: string): Promise<number> {
       let nextDue = row.next_due;
       let iterations = 0;
       while (new Date(nextDue).getTime() <= now && iterations < MAX_CATCHUP) {
+        const advanced = advanceDue(nextDue, row.interval);
+        // Claim this period FIRST (atomic CAS). If we don't win it, another pass
+        // already materialized it — stop, do NOT append a duplicate.
+        const won = await claimNextDue(row.id, nextDue, advanced);
+        if (!won) break;
         await addExpense(row.trip_id, {
           title: row.title,
           amountCents: row.amount_cents,
           paidBy: row.paid_by,
           participants: JSON.parse(row.participants),
         });
-        nextDue = advanceDue(nextDue, row.interval);
-        await setNextDue(row.id, nextDue);
+        nextDue = advanced;
         materialized += 1;
         iterations += 1;
       }
@@ -642,12 +668,17 @@ recurringRouter.post("/api/recurring/run", requireAuth, async (req: Request, res
 // ---- Self-scheduler (belt-and-suspenders) ----------------------------------
 // Lazy materialize on GET covers the common case; this catches rules whose
 // owners are inactive. unref() so it never holds the process open.
+let schedulerRunning = false;
 const timer = setInterval(() => {
+  if (schedulerRunning) return; // don't let a slow pass overlap the next tick
+  schedulerRunning = true;
   void (async () => {
     try {
       await materializeDue();
     } catch {
       /* ignore */
+    } finally {
+      schedulerRunning = false;
     }
   })();
 }, 60000);

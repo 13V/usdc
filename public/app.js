@@ -91,7 +91,9 @@
     var emoji = person.emoji || (nm ? nm[0].toUpperCase() : "🙂");
     var bg = person.color || colorFor(person.id || nm || "?");
     var cls = "avatar" + (size === "sm" ? " sm" : "");
-    return '<span class="' + cls + '" style="background:' + bg + '">' + esc(emoji) + "</span>";
+    // esc(bg): defense-in-depth — the server validates color to hex, but never
+    // interpolate a stored value into a style attribute unescaped.
+    return '<span class="' + cls + '" style="background:' + esc(bg) + '">' + esc(emoji) + "</span>";
   }
   function mascot(opts) { return window.Mascot ? window.Mascot.html(opts) : ""; }
 

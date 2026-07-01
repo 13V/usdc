@@ -124,8 +124,8 @@
   }
   function avatarTile(emoji, bg, label, labelColor) {
     return '<div style="display:flex; flex-direction:column; align-items:center; gap:4px;">' +
-      '<div style="width:38px; height:38px; border-radius:50%; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:18px;">' + esc(emoji) + '</div>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:9px; color:' + labelColor + ';">' + esc(label) + '</span>' +
+      '<div style="width:38px; height:38px; border-radius:50%; background:' + esc(bg) + '; display:flex; align-items:center; justify-content:center; font-size:18px;">' + esc(emoji) + '</div>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:9px; color:' + esc(labelColor) + ';">' + esc(label) + '</span>' +
     '</div>';
   }
 

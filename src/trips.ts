@@ -325,17 +325,26 @@ export async function claimMember(
   if (member.userId && member.userId !== userId) {
     throw new Error("claimMember: this member is already claimed");
   }
+  // Atomic claim: only take the slot if it's still unclaimed (or already mine).
+  // The read-check above races with a concurrent claim of the SAME unclaimed
+  // slot; constraining the write to user_id IS NULL (or self) and checking a row
+  // actually changed closes that window — the winner sets the member's settle-up
+  // wallet, so a lost race would otherwise redirect that member's payout.
   if (usingSupabase) {
-    const { error } = await supabase()
+    const { data, error } = await supabase()
       .from("trip_members")
       .update({ user_id: userId, wallet })
       .eq("id", memberId)
-      .eq("trip_id", tripId);
+      .eq("trip_id", tripId)
+      .or(`user_id.is.null,user_id.eq.${userId}`)
+      .select("id");
     if (error) throw new Error(`claimMember: ${error.message}`);
+    if (!data || data.length === 0) throw new Error("claimMember: this member is already claimed");
   } else {
-    db.prepare(
-      "UPDATE trip_members SET user_id = ?, wallet = ? WHERE id = ? AND trip_id = ?"
-    ).run(userId, wallet, memberId, tripId);
+    const res = db.prepare(
+      "UPDATE trip_members SET user_id = ?, wallet = ? WHERE id = ? AND trip_id = ? AND (user_id IS NULL OR user_id = ?)"
+    ).run(userId, wallet, memberId, tripId, userId);
+    if (res.changes === 0) throw new Error("claimMember: this member is already claimed");
   }
   return (await getTrip(tripId)) as Trip;
 }

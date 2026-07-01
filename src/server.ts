@@ -113,13 +113,14 @@ function rateLimit(max: number, windowMs: number) {
     const now = Date.now();
     const ip = req.ip || "unknown";
     const recent = (hits.get(ip) || []).filter((t) => now - t < windowMs);
-    if (recent.length >= max) {
-      // Opportunistically prune stale IPs so the Map can't grow unbounded.
-      if (hits.size > 10000) {
-        for (const [k, v] of hits) {
-          if (v.every((t) => now - t >= windowMs)) hits.delete(k);
-        }
+    // Prune stale IPs on any insert once the Map gets large — NOT only in the 429
+    // branch, or a flood of distinct never-limited IPs would grow it unboundedly.
+    if (hits.size > 10000) {
+      for (const [k, v] of hits) {
+        if (v.every((t) => now - t >= windowMs)) hits.delete(k);
       }
+    }
+    if (recent.length >= max) {
       res.status(429).json({ error: "too many requests, slow down" });
       return;
     }
@@ -529,10 +530,11 @@ app.post("/api/bills", moneyRateLimit, async (req: Request, res: Response) => {
     }
 
     if (body.groupId) {
-      const group = await getGroup(body.groupId);
+      // Saved groups are owner-scoped; an anonymous caller can't own one.
+      const group = req.userId ? await getGroup(body.groupId, req.userId) : undefined;
       if (!group) return res.status(404).json({ error: "group not found" });
       names = group.members.map((m) => String(m).trim()).filter(Boolean);
-      await touchGroup(body.groupId);
+      await touchGroup(body.groupId, req.userId as string);
     } else if (names.length === 0 && Number.isInteger(body.count) && (body.count as number) > 0) {
       names = Array.from({ length: body.count as number }, (_v, i) => `Person ${i + 1}`);
     }
@@ -543,9 +545,9 @@ app.post("/api/bills", moneyRateLimit, async (req: Request, res: Response) => {
     // Best-effort: persist this set of names as a reusable group. Never let a
     // group-save failure block bill creation.
     const saveGroupName = body.saveGroupName && String(body.saveGroupName).trim();
-    if (saveGroupName) {
+    if (saveGroupName && req.userId) {
       try {
-        await createGroup(saveGroupName, names);
+        await createGroup(saveGroupName, names, req.userId);
       } catch {
         /* ignore — saving a group is a convenience, not a requirement */
       }
@@ -703,14 +705,14 @@ app.post("/api/bills/:id/verify", moneyRateLimit, requireAuth, async (req: Reque
 
 // ---- Saved groups ---------------------------------------------------------
 
-app.get("/api/groups", requireAuth, async (_req: Request, res: Response) => {
-  res.json(await listGroups());
+app.get("/api/groups", requireAuth, async (req: Request, res: Response) => {
+  res.json(await listGroups(req.userId as string));
 });
 
 app.post("/api/groups", requireAuth, async (req: Request, res: Response) => {
   const body = req.body as { name?: string; members?: string[] };
   try {
-    const group = await createGroup(body.name || "", body.members || []);
+    const group = await createGroup(body.name || "", body.members || [], req.userId as string);
     res.json(group);
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
@@ -718,7 +720,7 @@ app.post("/api/groups", requireAuth, async (req: Request, res: Response) => {
 });
 
 app.delete("/api/groups/:id", requireAuth, async (req: Request, res: Response) => {
-  if (await deleteGroup(req.params.id)) return res.json({ ok: true });
+  if (await deleteGroup(req.params.id, req.userId as string)) return res.json({ ok: true });
   res.status(404).json({ error: "not found" });
 });
 

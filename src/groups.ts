@@ -39,47 +39,53 @@ function rowToGroup(row: GroupRow): Group {
   };
 }
 
+// All saved-group access is scoped to the owning user — a group is that user's
+// private reusable name list. Without this, any signed-in user could read or
+// delete every other user's groups (there is no share model for groups).
 const listStmt = db.prepare(
-  "SELECT * FROM groups ORDER BY last_used_at DESC"
+  "SELECT * FROM groups WHERE user_id = ? ORDER BY last_used_at DESC"
 );
-const getStmt = db.prepare("SELECT * FROM groups WHERE id = ?");
+const getStmt = db.prepare("SELECT * FROM groups WHERE id = ? AND user_id = ?");
 const insertStmt = db.prepare(
-  "INSERT INTO groups (id, name, members, created_at, last_used_at) VALUES (?, ?, ?, ?, ?)"
+  "INSERT INTO groups (id, name, members, created_at, last_used_at, user_id) VALUES (?, ?, ?, ?, ?, ?)"
 );
-const deleteStmt = db.prepare("DELETE FROM groups WHERE id = ?");
+const deleteStmt = db.prepare("DELETE FROM groups WHERE id = ? AND user_id = ?");
 const touchStmt = db.prepare(
-  "UPDATE groups SET last_used_at = ? WHERE id = ?"
+  "UPDATE groups SET last_used_at = ? WHERE id = ? AND user_id = ?"
 );
 
-export async function listGroups(): Promise<Group[]> {
+export async function listGroups(ownerUserId: string): Promise<Group[]> {
   if (usingSupabase) {
     const { data, error } = await supabase()
       .from("groups")
       .select("*")
+      .eq("user_id", ownerUserId)
       .order("last_used_at", { ascending: false });
     if (error) throw new Error(`groups.listGroups: ${error.message}`);
     return (data as GroupRow[]).map(rowToGroup);
   }
-  return (listStmt.all() as GroupRow[]).map(rowToGroup);
+  return (listStmt.all(ownerUserId) as GroupRow[]).map(rowToGroup);
 }
 
-export async function getGroup(id: string): Promise<Group | undefined> {
+export async function getGroup(id: string, ownerUserId: string): Promise<Group | undefined> {
   if (usingSupabase) {
     const { data, error } = await supabase()
       .from("groups")
       .select("*")
       .eq("id", id)
+      .eq("user_id", ownerUserId)
       .maybeSingle();
     if (error) throw new Error(`groups.getGroup: ${error.message}`);
     return data ? rowToGroup(data as GroupRow) : undefined;
   }
-  const row = getStmt.get(id) as GroupRow | undefined;
+  const row = getStmt.get(id, ownerUserId) as GroupRow | undefined;
   return row ? rowToGroup(row) : undefined;
 }
 
 export async function createGroup(
   name: string,
-  members: string[]
+  members: string[],
+  ownerUserId: string
 ): Promise<Group> {
   const trimmedName = String(name || "").trim();
   if (!trimmedName) throw new Error("group name is required");
@@ -106,6 +112,7 @@ export async function createGroup(
       members: group.members,
       created_at: group.createdAt,
       last_used_at: group.lastUsedAt,
+      user_id: ownerUserId,
     });
     if (error) throw new Error(`groups.createGroup: ${error.message}`);
     return group;
@@ -116,31 +123,34 @@ export async function createGroup(
     group.name,
     JSON.stringify(group.members),
     group.createdAt,
-    group.lastUsedAt
+    group.lastUsedAt,
+    ownerUserId
   );
   return group;
 }
 
-export async function deleteGroup(id: string): Promise<boolean> {
+export async function deleteGroup(id: string, ownerUserId: string): Promise<boolean> {
   if (usingSupabase) {
     const { count, error } = await supabase()
       .from("groups")
       .delete({ count: "exact" })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", ownerUserId);
     if (error) throw new Error(`groups.deleteGroup: ${error.message}`);
     return (count ?? 0) > 0;
   }
-  return deleteStmt.run(id).changes > 0;
+  return deleteStmt.run(id, ownerUserId).changes > 0;
 }
 
-export async function touchGroup(id: string): Promise<void> {
+export async function touchGroup(id: string, ownerUserId: string): Promise<void> {
   if (usingSupabase) {
     const { error } = await supabase()
       .from("groups")
       .update({ last_used_at: new Date().toISOString() })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("user_id", ownerUserId);
     if (error) throw new Error(`groups.touchGroup: ${error.message}`);
     return;
   }
-  touchStmt.run(new Date().toISOString(), id);
+  touchStmt.run(new Date().toISOString(), id, ownerUserId);
 }

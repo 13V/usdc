@@ -29,6 +29,8 @@ import {
   Cluster,
 } from "./solanaPay";
 import { validatePayment } from "./verify";
+import { claimSignature } from "./consumedSignatures";
+import { alert } from "./alerts";
 import { fmt, toCents } from "./split";
 
 // ---- Config ----------------------------------------------------------------
@@ -358,12 +360,23 @@ iouRouter.post(
       amountCents: row.amount_cents,
     });
 
-    if (result.ok) {
-      await markIouPaid(row.id, userId, result.signature ?? null);
+    let verified = result.ok;
+    if (result.ok && result.signature) {
+      // Global guard: one on-chain signature settles at most ONE debt across the
+      // whole system (bills, trips, AND ious). Without this an IOU could be
+      // discharged by a signature already spent on a bill/trip to the same
+      // wallet+amount, shorting the creditor. Mark paid only after we claim it.
+      const claimed = await claimSignature(result.signature, `iou:${row.id}`);
+      if (!claimed) {
+        alert("high", "signature_reuse_blocked", { context: "iou", iouId: row.id, signature: result.signature });
+        verified = false; // already consumed elsewhere — do not double-discharge
+      } else {
+        await markIouPaid(row.id, userId, result.signature);
+      }
     }
 
     const updated = (await getOwnedIou(row.id, userId)) as IouRow;
-    return res.json({ ...serialize(updated), verified: result.ok, reason: result.reason });
+    return res.json({ ...serialize(updated), verified, reason: verified ? result.reason : (result.ok ? "payment already used to settle another debt" : result.reason) });
   }
 );
 

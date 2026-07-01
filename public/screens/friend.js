@@ -228,7 +228,7 @@
     var emoji = f.emoji || "🌸";
     var tabs = d.feed.length;
     var since = d.month ? " · since " + d.month + " 🍜" : "";
-    var bg = f.color || "linear-gradient(150deg,#3DE8C7,#2775CA)";
+    var bg = app.esc(f.color || "linear-gradient(150deg,#3DE8C7,#2775CA)"); // esc: stored color never raw
 
     // lifted centered header — big standalone 84px avatar (no mascot)
     return '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:8px 0 4px;">' +

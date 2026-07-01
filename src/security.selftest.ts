@@ -153,6 +153,18 @@ async function main(): Promise<void> {
       headers: { ...H(owner), "x-trip-token": share },
     });
     ok("trip: owner can delete the expense (200)", delOwner.status === 200);
+
+    // --- saved groups are owner-scoped (no cross-tenant read/delete) ---
+    const g = await fetch(`${B}/api/groups`, {
+      method: "POST", headers: H(owner),
+      body: JSON.stringify({ name: "Roomies", members: ["Alex", "Sam"] }),
+    }).then((r) => r.json());
+    const attackerSees = await fetch(`${B}/api/groups`, { headers: H(attacker) }).then((r) => r.json());
+    ok("groups: another user can't list your groups", Array.isArray(attackerSees) && !attackerSees.some((x: { id: string }) => x.id === g.id));
+    const gDelAtk = await fetch(`${B}/api/groups/${g.id}`, { method: "DELETE", headers: H(attacker) });
+    ok("groups: another user can't delete your group (404)", gDelAtk.status === 404);
+    const ownerSees = await fetch(`${B}/api/groups`, { headers: H(owner) }).then((r) => r.json());
+    ok("groups: owner sees their own group", Array.isArray(ownerSees) && ownerSees.some((x: { id: string }) => x.id === g.id));
   } finally {
     server.close();
   }

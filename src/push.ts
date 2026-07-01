@@ -82,7 +82,8 @@ async function saveSubscription(userId: string, sub: { endpoint: string; keys?: 
 
 async function deleteSubscription(endpoint: string): Promise<void> {
   if (usingSupabase) {
-    await supabase().from("push_subscriptions").delete().eq("endpoint", endpoint);
+    const { error } = await supabase().from("push_subscriptions").delete().eq("endpoint", endpoint);
+    if (error) throw new Error(`push.delete: ${error.message}`);
     return;
   }
   db.prepare("DELETE FROM push_subscriptions WHERE endpoint = ?").run(endpoint);

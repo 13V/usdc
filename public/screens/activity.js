@@ -130,7 +130,7 @@
 
   // round emoji-on-gradient avatar (people), matching the frame's 42px circles.
   function personAvatar(seed, emoji, color) {
-    var bg = color || pickGrad(seed);
+    var bg = app.esc(color || pickGrad(seed)); // esc: never inject a stored color raw
     return '<div style="width:42px; height:42px; border-radius:50%; background:' + bg + '; ' +
       'display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">' +
       app.esc(emoji || "🦊") + '</div>';
