@@ -282,6 +282,36 @@ app.get("/api/auth/nonce", authRateLimit, (_req: Request, res: Response) => {
   res.json(issueNonce());
 });
 
+// ---- Deep-link association (Capacitor universal / app links) ---------------
+// Served as application/json via explicit routes (Express static ignores the
+// .well-known dotdir). Values come from env so no code edit is needed once the
+// Apple Team ID / Android signing cert are known. Until then they're placeholders.
+app.get(
+  ["/.well-known/apple-app-site-association", "/apple-app-site-association"],
+  (_req: Request, res: Response) => {
+    const appID = `${process.env.APPLE_TEAM_ID || "TEAMID"}.com.divvy.app`;
+    res.type("application/json").json({
+      applinks: {
+        details: [{ appIDs: [appID], components: [{ "/": "/pay/*" }, { "/": "/t/*" }] }],
+      },
+      webcredentials: { apps: [appID] },
+    });
+  }
+);
+app.get("/.well-known/assetlinks.json", (_req: Request, res: Response) => {
+  const fingerprint = process.env.ANDROID_CERT_SHA256 || "REPLACE_WITH_SHA256_FINGERPRINT";
+  res.type("application/json").json([
+    {
+      relation: ["delegate_permission/common.handle_all_urls"],
+      target: {
+        namespace: "android_app",
+        package_name: "com.divvy.app",
+        sha256_cert_fingerprints: [fingerprint],
+      },
+    },
+  ]);
+});
+
 app.post("/api/auth/siws/verify", authRateLimit, async (req: Request, res: Response) => {
   try {
     const body = req.body as { pubkey?: string; signature?: string; message?: string };
