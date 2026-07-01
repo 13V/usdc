@@ -10,6 +10,12 @@
 name: iOS TestFlight
 
 on:
+  # Push a tag like testflight-1 to fire a build (works without Actions-write
+  # API permission; requires the ASC_KEY_P8(_B64) + MATCH_PASSWORD repo
+  # secrets since push events carry no inputs).
+  push:
+    tags:
+      - "testflight-*"
   workflow_dispatch:
     inputs:
       # BOOTSTRAP ONLY: lets the first builds run before repo secrets exist.
