@@ -403,6 +403,7 @@
       newGroupBtn() +
     '</div>';
     wireNew(view);
+    if (app.enter) app.enter(view.querySelector(".appscroll"));
     // pull down at the top to re-pull trips + balances and re-render.
     app.pullToRefresh(view.querySelector(".appscroll"), function () { return signedIn(view); });
   }

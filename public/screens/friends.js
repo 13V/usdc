@@ -368,6 +368,7 @@
     wireAdd(view, refresh);
     wireRows(view);
     wireRequests(view, refresh);
+    if (app.enter) app.enter(view.querySelector(".appscroll"));
     var sb = view.querySelector("#frSend");
     if (sb) sb.onclick = function () { sendSheet(); };
   }

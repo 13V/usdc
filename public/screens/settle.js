@@ -428,7 +428,8 @@
         ) +
       '</div>';
     ensureKeyframes();
-    if (window.app && app.haptic) app.haptic([28, 40, 28, 55, 110]); // squared-up fanfare
+    if (S.justSettled && window.app && app.celebrate) app.celebrate(); // squared-up fanfare + confetti burst
+    else if (window.app && app.haptic) app.haptic([28, 40, 28, 55, 110]);
     tickToZero();
     var sol = document.getElementById("stSolscan");
     if (sol) sol.onclick = function () {
@@ -496,6 +497,7 @@
     if (location.hash.indexOf("settle") < 0) return; // navigated away
     stopAutoPoll();
     ensureKeyframes();
+    S.justSettled = state === "settled" && S.state !== "settled"; // first entry into settled
     S.state = state;
     switch (state) {
       case "ready": renderReady(); break;

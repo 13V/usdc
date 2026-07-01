@@ -10,6 +10,7 @@
 
   var POLL_MS = 5000;
   var poll = null; // active interval id, cleared when we leave the screen
+  var celebratedId = null; // bill we've already fired the win-confetti for
 
   function stopPoll() { if (poll) { clearInterval(poll); poll = null; } }
 
@@ -311,6 +312,10 @@
     if (sd) sd.onclick = function () { doShare(bill); };
     var dn = view.querySelector(".tcDone");
     if (dn) dn.onclick = function () { app.go("home"); };
+    if (app.celebrate && celebratedId !== bill.id) { // everyone's-square confetti (once per bill)
+      celebratedId = bill.id;
+      app.celebrate();
+    }
   }
 
   function doShare(bill) {

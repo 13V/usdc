@@ -109,6 +109,15 @@
       '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.55);">' + label + '</span>' +
     '</div>';
   }
+  // Inner HTML for the big hero figure at a given (absolute) cents value — the
+  // $/−$ prefix and .xx suffix stay small; the whole-dollar part is the headline.
+  // Shared by first paint and app.countUp so the animated frames match exactly.
+  function heroBalanceInner(absCents, pos) {
+    return '<span style="font-size:34px; opacity:.5;">' + (pos ? "$" : "−$") + '</span>' +
+      Math.floor(absCents / 100).toLocaleString() +
+      '<span style="font-size:34px; opacity:.5;">' + (absCents % 100 / 100).toFixed(2).slice(1) + '</span>';
+  }
+
   function hero(net, owed, owe, ppl, walletCents, quick) {
     var pos = net >= 0;
     var col = pos ? "#3B92E8" : "#FF6B5E";
@@ -132,7 +141,7 @@
       '<div style="position:relative;">' +
         '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:12.5px; color:rgba(244,247,250,0.5);">' + (pos ? "you're owed" : "you're down") + ' · across ' + (window.__grpCount || 0) + ' groups</div>' +
         '<div style="display:flex; align-items:baseline; gap:9px; margin-top:10px;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:64px; line-height:.9; letter-spacing:-2.5px; color:' + col + '; text-shadow:0 0 36px ' + (pos ? "rgba(59,146,232,0.5)" : "rgba(255,107,94,0.45)") + ';"><span style="font-size:34px; opacity:.5;">' + (pos ? "$" : "−$") + '</span>' + Math.floor(Math.abs(net) / 100).toLocaleString() + '<span style="font-size:34px; opacity:.5;">' + (Math.abs(net) % 100 / 100).toFixed(2).slice(1) + '</span></div>' +
+          '<div id="hBalance" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:64px; line-height:.9; letter-spacing:-2.5px; color:' + col + '; text-shadow:0 0 36px ' + (pos ? "rgba(59,146,232,0.5)" : "rgba(255,107,94,0.45)") + ';">' + heroBalanceInner(Math.abs(net), pos) + '</div>' +
           '<span style="font-family:\'Space Mono\',monospace; font-weight:400; font-size:12px; letter-spacing:1px; color:rgba(244,247,250,0.4);">usdc</span>' +
         '</div>' +
         (owe > 0 && pos ? '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14px; color:rgba(244,247,250,0.55); margin-top:12px;">you owe <span style="font-family:\'Space Mono\',monospace; font-weight:700; color:#FF6B5E;">$' + (owe / 100).toFixed(2) + '</span> elsewhere</div>' : '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.55); margin-top:12px;">' + (net === 0 ? "you're all square ✨" : pos ? "everyone owes you 🤑" : "time to settle up 💸") + '</div>') +
@@ -354,6 +363,12 @@
       '<div class="empty" style="padding-top:30px;">' + app.mascot({ size: 96, mood: "happy" }) + '<div class="title lower">no tabs yet</div><div class="hint">start a group and split something 🎉</div><button class="btn" style="max-width:240px;margin-top:8px;" onclick="location.hash=\'#/new\'">new tab</button></div>';
 
     view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + hero(net, owed, owe, ppl, walletCents, quick) + incomingHtml + peopleHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
+    // count the hero balance up from zero, and stagger the card list in.
+    if (app.countUp) {
+      var balEl = document.getElementById("hBalance");
+      if (balEl) app.countUp(balEl, Math.abs(net), function (c) { return heroBalanceInner(c, net >= 0); });
+    }
+    if (app.enter) app.enter(view.querySelector(".appscroll"));
     var s = document.getElementById("hSettle"), rq = document.getElementById("hRequest");
     if (s) s.onclick = function () {
       if (quick) location.hash = "#/settle/" + encodeURIComponent(quick.tripId);

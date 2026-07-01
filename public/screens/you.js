@@ -97,7 +97,7 @@
         '<div style="position:relative; padding:20px 20px 8px;">' +
           '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45);">YOUR BALANCE</div>' +
           '<div style="display:flex; align-items:baseline; gap:10px; margin-top:11px;">' +
-            '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:54px; line-height:.9; letter-spacing:-2.4px; color:#3B92E8; text-shadow:0 0 34px rgba(59,146,232,0.45);">' + moneyBig(balanceCents) + '</div>' +
+            '<div id="yBalance" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:54px; line-height:.9; letter-spacing:-2.4px; color:#3B92E8; text-shadow:0 0 34px rgba(59,146,232,0.45);">' + moneyBig(balanceCents) + '</div>' +
             '<span style="font-family:\'Space Mono\',monospace; font-weight:400; font-size:12px; letter-spacing:1px; color:rgba(244,247,250,0.4);">usdc</span>' +
           '</div>' +
           '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid rgba(39,117,202,0.4); background:rgba(39,117,202,0.1); border-radius:999px; padding:4px 11px;">' +
@@ -226,6 +226,10 @@
     wireBalance();
     wireSettings();
     wireNotifBadge(); // non-blocking; patches an unread badge in after render
+    if (app.countUp && typeof balance === "number") {
+      var balEl = document.getElementById("yBalance");
+      if (balEl) app.countUp(balEl, Math.abs(balance), moneyBig);
+    }
   }
 
   // best-effort unread badge on the notifications row. the endpoint may not exist

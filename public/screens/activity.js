@@ -494,6 +494,7 @@
     if (!Array.isArray(items)) items = (items && Array.isArray(items.events)) ? items.events : [];
     if (!items.length) { emptyState(view); return; }
     feed(view, items);
+    if (app.enter) app.enter(view.querySelector(".ac-scroll"));
     // pull down at the top to re-pull the feed and re-render.
     app.pullToRefresh(view, function () { return signedIn(view); });
   }

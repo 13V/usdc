@@ -708,11 +708,84 @@
     };
   }
 
+  // ---- delight primitives ----
+  function prefersReduced() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
+  // celebrate(opts) — a brand-colored confetti burst + celebratory haptic for
+  // win moments (settled up, got paid, sent money). Pure canvas, auto-cleans up,
+  // no-op (still haptics) under reduced-motion. opts: {x, y, count}.
+  function celebrate(opts) {
+    opts = opts || {};
+    haptic([0, 35, 30, 45, 25, 70]);
+    if (prefersReduced()) return;
+    var COLORS = ["#2775CA", "#3DE8C7", "#FF6B5E", "#FFC65C", "#8B5CF6"];
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;inset:0;z-index:9998;pointer-events:none;";
+    canvas.width = window.innerWidth * dpr; canvas.height = window.innerHeight * dpr;
+    canvas.style.width = window.innerWidth + "px"; canvas.style.height = window.innerHeight + "px";
+    document.body.appendChild(canvas);
+    var ctx = canvas.getContext("2d");
+    var ox = (opts.x != null ? opts.x : window.innerWidth / 2) * dpr;
+    var oy = (opts.y != null ? opts.y : window.innerHeight * 0.38) * dpr;
+    var N = opts.count || 96, parts = [];
+    for (var i = 0; i < N; i++) {
+      var a = Math.random() * Math.PI * 2, sp = (4 + Math.random() * 9) * dpr;
+      parts.push({ x: ox, y: oy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 7 * dpr,
+        s: (5 + Math.random() * 7) * dpr, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.45,
+        c: COLORS[(Math.random() * COLORS.length) | 0] });
+    }
+    var g = 0.3 * dpr, drag = 0.986, DUR = 1600, start = performance.now();
+    function frame(t) {
+      var dt = t - start, life = 1 - dt / DUR;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        p.vy += g; p.vx *= drag; p.vy *= drag; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        ctx.save(); ctx.globalAlpha = Math.max(0, life); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6); ctx.restore();
+      }
+      if (dt < DUR) requestAnimationFrame(frame); else canvas.remove();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // countUp(el, toCents, render) — animate a money figure from 0 to toCents.
+  // `render(cents)` returns the HTML for the element (so each screen keeps its
+  // own styling). Snaps to final under reduced-motion.
+  function countUp(el, toCents, render) {
+    if (!el) return;
+    render = render || function (c) { return money(c); };
+    if (prefersReduced() || !(toCents > 0)) { el.innerHTML = render(toCents); return; }
+    var DUR = 620, start = performance.now();
+    function frame(t) {
+      var k = Math.min((t - start) / DUR, 1);
+      var eased = 1 - Math.pow(1 - k, 3); // easeOutCubic
+      el.innerHTML = render(Math.round(toCents * eased));
+      if (k < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // enter(container) — stagger the entrance of a container's direct children so a
+  // freshly-rendered list feels alive. No-op under reduced-motion.
+  function enter(container) {
+    if (!container || prefersReduced()) return;
+    var kids = container.children, n = Math.min(kids.length, 14);
+    for (var i = 0; i < n; i++) {
+      var el = kids[i];
+      el.style.animation = "dRise .42s cubic-bezier(.2,.7,.2,1) both";
+      el.style.animationDelay = (i * 42) + "ms";
+    }
+  }
+
   var app = {
     api: api, esc: esc, money: money, avatar: avatar, colorFor: colorFor, mascot: mascot,
     toast: toast, sheet: sheet, closeSheet: closeSheet, go: go, render: render,
     depositSheet: depositSheet, copy: copy, haptic: haptic, pullToRefresh: pullToRefresh,
-    share: share, push: push,
+    share: share, push: push, celebrate: celebrate, countUp: countUp, enter: enter,
     tripToken: tripToken, setTripToken: setTripToken,
     qrImg: qrImg, amountEntryHtml: amountEntryHtml, wireAmountEntry: wireAmountEntry,
     openProvider: openProvider, testModeNote: testModeNote, dollarsLabel: dollarsLabel,
