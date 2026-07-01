@@ -53,7 +53,7 @@ email, or anything else.
 App Store Connect → **Apps** → **+** → **New App**:
 - Platform **iOS** · Name **Divvy** (fallback: "Divvy — split bills") ·
   Language **English (U.S.)** · SKU `divvy-ios-1`
-- Bundle ID: pick **com.divvy.app** from the dropdown. If it isn't listed yet,
+- Bundle ID: pick **com.divvysol.app** from the dropdown. If it isn't listed yet,
   run the workflow once first — its first step registers the bundle ID via the
   API (the build will fail at the upload step because the app record doesn't
   exist yet; create the record, then re-run).

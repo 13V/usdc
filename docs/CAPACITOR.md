@@ -8,7 +8,7 @@ one origin), the shell loads that origin directly via `server.url` in
 capabilities to pass Apple review.
 
 ## What's already in place
-- `capacitor.config.ts` — appId `com.divvy.app`, appName `Divvy`, loads
+- `capacitor.config.ts` — appId `com.divvysol.app`, appName `Divvy`, loads
   `CAP_SERVER_URL` (defaults to the demo). HTTPS only.
 - Capacitor deps in `devDependencies` (`@capacitor/cli|core|ios|android`).
 - `npm run cap:sync` / `cap:open:ios` / `cap:open:android` scripts.

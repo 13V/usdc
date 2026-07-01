@@ -18,7 +18,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const SERVER_URL = process.env.CAP_SERVER_URL || "https://demo.wildfireonsol.com";
 
 const config: CapacitorConfig = {
-  appId: "com.divvy.app",
+  appId: "com.divvysol.app",
   appName: "Divvy",
   // Required even when loading a remote URL: `cap copy` stages this dir. It holds
   // the app shell / offline fallback.

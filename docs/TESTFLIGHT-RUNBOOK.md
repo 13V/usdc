@@ -18,11 +18,11 @@ Companion docs: `docs/CAPACITOR.md` (wrapper details), `docs/APP-STORE.md`
 
 1. **developer.apple.com → Certificates, IDs & Profiles → Identifiers → +**
    - Register an **App ID**: platform iOS, Bundle ID **explicit** →
-     `com.divvy.app` (must match `capacitor.config.ts`).
+     `com.divvysol.app` (must match `capacitor.config.ts`).
    - Capabilities: check **Push Notifications** and **Associated Domains**.
 2. **appstoreconnect.apple.com → Apps → +** → New App:
    - Platform iOS · Name **Divvy** · Language English · Bundle ID
-     `com.divvy.app` · SKU `divvy-ios-1`.
+     `com.divvysol.app` · SKU `divvy-ios-1`.
    - If "Divvy" is taken as an App Store name, fall back to **"Divvy — split
      bills"** (display name on the phone stays "Divvy").
 3. **Users and Access → Integrations → App Store Connect API** (optional but
@@ -55,7 +55,7 @@ In Xcode, select the **App** target:
 
 1. **Signing & Capabilities**
    - Team: your Apple Developer team. "Automatically manage signing" ON.
-   - Bundle Identifier: `com.divvy.app` (should already be set).
+   - Bundle Identifier: `com.divvysol.app` (should already be set).
    - + Capability → **Push Notifications**.
    - + Capability → **Associated Domains** → add
      `applinks:demo.wildfireonsol.com` (and `applinks:divvysol.com` when the

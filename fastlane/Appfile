@@ -1,4 +1,4 @@
 # Appfile — static app identity for fastlane. Auth comes from the App Store
 # Connect API key in the Fastfile (no Apple ID here, ever).
-app_identifier("com.divvy.app")
+app_identifier("com.divvysol.app")
 team_id(ENV["APPLE_TEAM_ID"])

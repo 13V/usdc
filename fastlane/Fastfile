@@ -15,7 +15,7 @@
 # Provided by the workflow:
 #   GH_TOKEN, GITHUB_REPOSITORY, GITHUB_RUN_NUMBER
 
-APP_ID = "com.divvy.app"
+APP_ID = "com.divvysol.app"
 
 default_platform(:ios)
 

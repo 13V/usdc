@@ -293,7 +293,7 @@ app.get("/api/auth/nonce", authRateLimit, (_req: Request, res: Response) => {
 app.get(
   ["/.well-known/apple-app-site-association", "/apple-app-site-association"],
   (_req: Request, res: Response) => {
-    const appID = `${process.env.APPLE_TEAM_ID || "TEAMID"}.com.divvy.app`;
+    const appID = `${process.env.APPLE_TEAM_ID || "TEAMID"}.com.divvysol.app`;
     res.type("application/json").json({
       applinks: {
         details: [{ appIDs: [appID], components: [{ "/": "/pay/*" }, { "/": "/t/*" }] }],
@@ -309,7 +309,7 @@ app.get("/.well-known/assetlinks.json", (_req: Request, res: Response) => {
       relation: ["delegate_permission/common.handle_all_urls"],
       target: {
         namespace: "android_app",
-        package_name: "com.divvy.app",
+        package_name: "com.divvysol.app",
         sha256_cert_fingerprints: [fingerprint],
       },
     },

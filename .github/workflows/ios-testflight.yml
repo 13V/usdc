@@ -55,7 +55,7 @@ jobs:
         run: fastlane ios beta
         env:
           # Key/issuer/team are identifiers, not credentials — safe as defaults.
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID || '7U767ANJA2' }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID || '3BMYG9X69S' }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID || '41f91417-38b0-41ba-b5e6-ce6d610a84ab' }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID || '77PA8XZNBD' }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
