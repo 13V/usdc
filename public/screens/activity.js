@@ -381,7 +381,7 @@
     if (lastDay !== null) html += '</div>';
 
     view.innerHTML =
-      '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
+      '<div class="vfill" style="position:relative; flex:1; display:flex; flex-direction:column;">' +
         ambient() +
         '<div style="position:relative; z-index:2;">' + header() + '</div>' +
         '<div class="ac-scroll" style="position:relative; z-index:2; padding:2px 18px 104px;">' + html + '</div>' +
@@ -416,7 +416,7 @@
         skeletonRow(true, "50%", "44%") +
       '</div>';
     view.innerHTML =
-      '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
+      '<div class="vfill" style="position:relative; flex:1; display:flex; flex-direction:column;">' +
         ambient() +
         '<div style="position:relative; z-index:2;">' + header() + '</div>' +
         '<div style="position:relative; z-index:2; padding:2px 18px 104px;">' + body + '</div>' +
@@ -426,7 +426,7 @@
   // ---- EMPTY (mascot + frame copy) ----
   function emptyState(view) {
     view.innerHTML =
-      '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
+      '<div class="vfill" style="position:relative; flex:1; display:flex; flex-direction:column;">' +
         ambient() +
         '<div style="position:relative; z-index:2;">' + header() + '</div>' +
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
@@ -447,7 +447,7 @@
   // ---- signed-out (connect wallet) ----
   function signedOut(view) {
     view.innerHTML =
-      '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
+      '<div class="vfill" style="position:relative; flex:1; display:flex; flex-direction:column;">' +
         ambient() +
         '<div style="position:relative; z-index:2;">' + header() + '</div>' +
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
@@ -469,7 +469,7 @@
 
   function errorState(view, msg) {
     view.innerHTML =
-      '<div style="position:relative; flex:1; display:flex; flex-direction:column; min-height:100%;">' +
+      '<div class="vfill" style="position:relative; flex:1; display:flex; flex-direction:column;">' +
         ambient() +
         '<div style="position:relative; z-index:2;">' + header() + '</div>' +
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +

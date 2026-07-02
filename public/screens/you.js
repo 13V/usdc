@@ -211,7 +211,7 @@
 
     var id = identity(user);
     view.innerHTML =
-      '<div style="position:relative; min-height:100%; display:flex; flex-direction:column;">' +
+      '<div class="vfill" style="position:relative; display:flex; flex-direction:column;">' +
         backdrop() +
         header() +
         '<div style="position:relative; z-index:2; flex:1; padding:8px 18px 104px;">' +
@@ -257,7 +257,7 @@
   // ── signed-out (mascot + connect) ────────────────────────────────────────────
   function signedOut(view) {
     view.innerHTML =
-      '<div style="position:relative; min-height:100%; display:flex; flex-direction:column;">' +
+      '<div class="vfill" style="position:relative; display:flex; flex-direction:column;">' +
         backdrop() +
         header() +
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; padding:30px 24px 104px;">' +

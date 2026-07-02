@@ -223,9 +223,13 @@
   function signedOut(view) {
     view.innerHTML = '' +
       // ambient glow + guilloché texture over the canvas
-      '<div style="position:relative; min-height:100%; display:flex; flex-direction:column; padding:0 26px; overflow:hidden;">' +
+      '<div class="vfill" style="position:relative; display:flex; flex-direction:column; padding:0 26px; overflow:hidden;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 22%, rgba(244,247,250,0.03) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
         '<div style="position:absolute; left:50%; top:24%; width:340px; height:340px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.22), transparent 70%); filter:blur(8px); pointer-events:none;"></div>' +
+
+        // flexible top spacer (capped): on tall phones the hero drifts down
+        // instead of hugging the notch; on short viewports it collapses to 12px.
+        '<div style="flex:1 1 0; min-height:12px; max-height:90px;"></div>' +
 
         // ── HERO ── (compact enough to fit short/desktop viewports without scroll)
         '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; padding-top:14px;">' +

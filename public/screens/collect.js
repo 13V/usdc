@@ -169,7 +169,7 @@
 
   // shared phone frame wrapper (390-wide column inside #view)
   function phone(inner, glowOpacity) {
-    return '<div style="position:relative; min-height:100%; display:flex; flex-direction:column; background:#0B1622; color:#F4F7FA; font-family:\'General Sans\',sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden;">' +
+    return '<div class="vfill" style="position:relative; display:flex; flex-direction:column; background:#0B1622; color:#F4F7FA; font-family:\'General Sans\',sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden;">' +
       backdrop(glowOpacity) + inner + '</div>';
   }
 
@@ -304,7 +304,7 @@
       '</div>';
 
     // success glow is centered/larger; reuse phone() backdrop then add the warm halo
-    view.innerHTML = '<div style="position:relative; min-height:100%; display:flex; flex-direction:column; background:#0B1622; color:#F4F7FA; font-family:\'General Sans\',sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden;">' +
+    view.innerHTML = '<div class="vfill" style="position:relative; display:flex; flex-direction:column; background:#0B1622; color:#F4F7FA; font-family:\'General Sans\',sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden;">' +
       '<div style="position:absolute; left:50%; top:42%; width:480px; height:480px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.20) 0%, rgba(39,117,202,0.13) 40%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>' +
       inner + '</div>';
 

@@ -54,7 +54,7 @@
     var rows = "";
     for (var i = 0; i < 4; i++) rows += '<div class="skeleton" style="height:54px;margin:9px 0;"></div>';
     view.innerHTML =
-      '<div style="position:relative; min-height:100%;">' +
+      '<div class="vfill" style="position:relative;">' +
       texture("rgba(39,117,202,0.20)") +
       topbar() +
       '<div style="position:relative; z-index:2; padding:4px 16px 24px;">' +
@@ -406,7 +406,7 @@
   function paint(view, d, friendId) {
     var v = variant(d.net);
     view.innerHTML =
-      '<div style="position:relative; min-height:100%; font-family:\'General Sans\',sans-serif; color:#F4F7FA;">' +
+      '<div class="vfill" style="position:relative; font-family:\'General Sans\',sans-serif; color:#F4F7FA;">' +
       texture(v.glowColor) +
       topbar() +
       '<div class="fd-scroll" style="position:relative; z-index:2; padding:4px 16px 24px;">' +
@@ -479,7 +479,7 @@
 
   function signedOut(view) {
     view.innerHTML =
-      '<div style="position:relative; min-height:100%;">' +
+      '<div class="vfill" style="position:relative;">' +
       texture("rgba(39,117,202,0.20)") +
       topbar() +
       '<div class="empty" style="position:relative; z-index:2; padding-top:60px;">' +
@@ -496,7 +496,7 @@
 
   function notFound(view, title, hint, mood) {
     view.innerHTML =
-      '<div style="position:relative; min-height:100%;">' +
+      '<div class="vfill" style="position:relative;">' +
       texture("rgba(39,117,202,0.20)") +
       topbar() +
       '<div class="empty" style="position:relative; z-index:2; padding-top:60px;">' +

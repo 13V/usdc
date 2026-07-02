@@ -90,7 +90,7 @@
   // exact status bar + top bar (back chevron) from the frame -------------
   function shell(inner) {
     return '' +
-    '<div style="position:relative; width:100%; min-height:100%; background:#0B1622; overflow:hidden; ' +
+    '<div class="vfill" style="position:relative; width:100%; background:#0B1622; overflow:hidden; ' +
       'font-family:' + F_SANS + '; color:#F4F7FA; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;">' +
       '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 18%, rgba(244,247,250,0.024) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>' +
       '<div style="position:absolute; left:50%; top:-40px; width:380px; height:300px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.18) 0%, rgba(39,117,202,0) 68%); pointer-events:none;"></div>' +

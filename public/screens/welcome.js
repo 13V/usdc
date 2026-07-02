@@ -70,7 +70,7 @@
     var reassure = connected ? "powered by phantom" : "secured by privy";
 
     view.innerHTML = '' +
-      '<div style="position:relative; min-height:100%; display:flex; flex-direction:column; background:#0B1622; overflow:hidden;">' +
+      '<div class="vfill" style="position:relative; display:flex; flex-direction:column; background:#0B1622; overflow:hidden;">' +
         // texture + ambient glow
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 4%, rgba(244,247,250,0.022) 0 1px, transparent 1px 9px); opacity:.6; pointer-events:none;"></div>' +
         '<div style="position:absolute; left:50%; top:300px; width:520px; height:520px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.13) 0%, rgba(39,117,202,0.08) 38%, rgba(39,117,202,0) 66%); pointer-events:none;"></div>' +
