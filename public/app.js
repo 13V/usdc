@@ -453,7 +453,7 @@
     function tab(name, label) {
       var on = act === name;
       return '<a data-go="' + name + '" role="link" tabindex="0" class="' + (on ? "active" : "") + '"' +
-        (on ? ' aria-current="page" style="background:rgba(39,117,202,0.18)"' : "") +
+        (on ? ' aria-current="page"' : "") +
         '>' + icon(name) + label + "</a>";
     }
     bar.innerHTML =

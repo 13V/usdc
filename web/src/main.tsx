@@ -50,7 +50,13 @@ function Root() {
           solana: { createOnLogin: "users-without-wallets" },
         },
         loginMethods: ["email", "google", "apple", "sms"],
-        appearance: { walletChainType: "solana-only" },
+        // Match the app: dark sheet, Divvy blue accent, our mark up top.
+        appearance: {
+          walletChainType: "solana-only",
+          theme: "dark",
+          accentColor: "#2775CA",
+          logo: `${window.location.origin}/icons/icon-192.png`,
+        },
       }}
     >
       <ActiveFlow />

@@ -24,17 +24,15 @@
   html, body { height: 100%; background: var(--ink-deep); }
   /* center a phone-width column on desktop */
   #app { position: relative; max-width: 430px; min-height: 100vh; margin: 0 auto; background: var(--ink);
-    display: flex; flex-direction: column; overflow: hidden; }
+    display: flex; flex-direction: column; overflow: hidden;
+    /* keep content clear of the notch / Dynamic Island on device (0 on web) */
+    padding-top: env(safe-area-inset-top); }
   #view { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   #view::-webkit-scrollbar { width: 0; }
 </style>
 </head>
 <body>
   <div id="app" class="paper">
-    <div class="statusbar">
-      <span>9:41</span>
-      <span class="mono" style="font-size:11px;color:var(--muted);letter-spacing:1px;">5G ▮</span>
-    </div>
     <div id="view"></div>
     <nav id="tabbar" class="tabbar"></nav>
   </div>
