@@ -83,8 +83,18 @@ jobs:
       - name: Resolve Swift packages (hang-hardened)
         run: |
           defaults write com.apple.dt.Xcode IDEPackageSupportUseBuiltinSCM YES
+          # plain-bash timeout: gtimeout/coreutils is NOT on the macos runners
+          run_with_timeout() {
+            local secs=$1; shift
+            "$@" & local cmd_pid=$!
+            ( sleep "$secs" && kill -TERM "$cmd_pid" 2>/dev/null ) & local killer_pid=$!
+            local rc=0; wait "$cmd_pid" || rc=$?
+            kill "$killer_pid" 2>/dev/null || true
+            wait "$killer_pid" 2>/dev/null || true
+            return $rc
+          }
           for i in 1 2 3; do
-            if gtimeout 360 xcodebuild -resolvePackageDependencies \
+            if run_with_timeout 360 xcodebuild -resolvePackageDependencies \
                  -project ios/App/App.xcodeproj -scheme App \
                  -skipMacroValidation -skipPackagePluginValidation; then
               exit 0
