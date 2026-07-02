@@ -70,9 +70,14 @@ platform :ios do
       configuration: "Release",
       export_method: "app-store",
       output_directory: "build",
+      # Packages are resolved by the hang-hardened workflow step; don't let
+      # gym re-resolve (run 1 hung forever inside that resolution).
+      skip_package_dependencies_resolution: true,
       # Monotonic build number without touching the repo (the Actions run
-      # number); index store off shaves CI compile time (no IDE needs it here).
-      xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('GITHUB_RUN_NUMBER', '1')} COMPILER_INDEX_STORE_ENABLE=NO"
+      # number); index store off shaves CI compile time (no IDE needs it);
+      # skip flags avoid the interactive macro/plugin trust prompts that
+      # deadlock headless builds.
+      xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('GITHUB_RUN_NUMBER', '1')} COMPILER_INDEX_STORE_ENABLE=NO -skipMacroValidation -skipPackagePluginValidation"
     )
 
     upload_to_testflight(

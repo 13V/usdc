@@ -73,6 +73,27 @@ jobs:
         env:
           CAP_SERVER_URL: https://demo.wildfireonsol.com
 
+      # Run 1 hung for 59 minutes inside xcodebuild's SPM resolution (right
+      # after "Checking out capacitor-swift-pm") until the job timeout killed
+      # it. Known runner failure mode: Xcode shells out to system git, which
+      # can wait on credentials forever. Force Xcode's built-in git, skip the
+      # interactive macro/plugin validation prompts, and cap+retry the resolve
+      # so a hang costs 6 minutes, not the whole job. gym then skips its own
+      # resolution (see Fastfile).
+      - name: Resolve Swift packages (hang-hardened)
+        run: |
+          defaults write com.apple.dt.Xcode IDEPackageSupportUseBuiltinSCM YES
+          for i in 1 2 3; do
+            if gtimeout 360 xcodebuild -resolvePackageDependencies \
+                 -project ios/App/App.xcodeproj -scheme App \
+                 -skipMacroValidation -skipPackagePluginValidation; then
+              exit 0
+            fi
+            echo "::warning::SPM resolve attempt $i hung or failed; clearing caches and retrying"
+            rm -rf ~/Library/Developer/Xcode/DerivedData ~/Library/Caches/org.swift.swiftpm
+          done
+          echo "::error::SPM resolution failed after 3 attempts"; exit 1
+
       - name: Build, sign, and upload to TestFlight
         run: fastlane ios beta
         env:
