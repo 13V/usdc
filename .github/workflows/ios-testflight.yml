@@ -42,10 +42,25 @@ concurrency:
 
 jobs:
   build-and-upload:
-    runs-on: macos-15
+    # macos-26: App Store Connect rejects uploads built with SDKs older than
+    # iOS 26 (run 3 failed exactly there on macos-15's default Xcode 16.4).
+    runs-on: macos-26
     timeout-minutes: 90 # cold first archives on shared 3-core runners can pass 60
     steps:
       - uses: actions/checkout@v4
+
+      # Pin the newest Xcode on the image so the SDK floor is explicit — and
+      # fail here (not at upload) if the image somehow lacks Xcode 26+.
+      - name: Select newest Xcode
+        run: |
+          XC=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          echo "Selecting $XC"
+          sudo xcode-select -s "$XC/Contents/Developer"
+          xcodebuild -version
+          MAJOR=$(xcodebuild -version | awk '/Xcode/ {print int($2)}')
+          if [ "$MAJOR" -lt 26 ]; then
+            echo "::error::Newest Xcode on this image is $MAJOR — App Store requires 26+"; exit 1
+          fi
 
       - uses: actions/setup-node@v4
         with:
