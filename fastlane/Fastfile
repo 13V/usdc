@@ -70,8 +70,9 @@ platform :ios do
       configuration: "Release",
       export_method: "app-store",
       output_directory: "build",
-      # Monotonic build number without touching the repo: the Actions run number.
-      xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('GITHUB_RUN_NUMBER', '1')}"
+      # Monotonic build number without touching the repo (the Actions run
+      # number); index store off shaves CI compile time (no IDE needs it here).
+      xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('GITHUB_RUN_NUMBER', '1')} COMPILER_INDEX_STORE_ENABLE=NO"
     )
 
     upload_to_testflight(

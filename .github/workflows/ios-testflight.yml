@@ -43,7 +43,7 @@ concurrency:
 jobs:
   build-and-upload:
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 90 # cold first archives on shared 3-core runners can pass 60
     steps:
       - uses: actions/checkout@v4
 
@@ -51,6 +51,19 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      # Warm rebuilds: reuse resolved Swift packages + Xcode's DerivedData so
+      # only changed sources recompile (a cold archive is ~45+ min; warm is a
+      # fraction of that). Keyed to the Capacitor deps that feed Package.swift.
+      - name: Cache Swift packages + DerivedData
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/Library/Caches/org.swift.swiftpm
+          key: ios-build-${{ runner.os }}-${{ hashFiles('package-lock.json', 'ios/App/CapApp-SPM/Package.swift') }}
+          restore-keys: |
+            ios-build-${{ runner.os }}-
 
       - name: Install dependencies
         run: npm ci
