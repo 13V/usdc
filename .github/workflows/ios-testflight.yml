@@ -10,12 +10,15 @@
 name: iOS TestFlight
 
 on:
-  # Push a tag like testflight-1 to fire a build (works without Actions-write
-  # API permission; requires the ASC_KEY_P8(_B64) + MATCH_PASSWORD repo
-  # secrets since push events carry no inputs).
+  # Committing a bump to .testflight-build fires a build (this session's git
+  # access can push only the working branch — no tags, no dispatch API).
+  # Push-triggered runs carry no inputs, so they need the ASC_KEY_P8(_B64) +
+  # MATCH_PASSWORD repo secrets.
   push:
-    tags:
-      - "testflight-*"
+    branches:
+      - "claude/divvy-repo-setup-61epmw"
+    paths:
+      - ".testflight-build"
   workflow_dispatch:
     inputs:
       # BOOTSTRAP ONLY: lets the first builds run before repo secrets exist.
