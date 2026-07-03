@@ -77,7 +77,7 @@
 
         // close
         '<div style="position:relative; z-index:6; padding:8px 16px 2px; flex:none;">' +
-          '<div id="wClose" style="width:36px; height:36px; border-radius:50%; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+          '<div id="wClose" role="button" aria-label="close" tabindex="0" style="width:36px; height:36px; border-radius:50%; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
         '</div>' +
 
         // main
@@ -96,10 +96,10 @@
                 '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(43,33,24,0.4);">SOLANA</div>' +
                 '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:.5px; color:#2B2118; margin-top:3px;">' + app.esc(trunc(wallet)) + '</div>' +
               '</div>' +
-              '<div id="wCopy" title="copy address" style="width:38px; height:38px; border-radius:11px; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></div>' +
+              '<div id="wCopy" role="button" aria-label="copy address" tabindex="0" title="copy address" style="width:38px; height:38px; border-radius:11px; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></div>' +
             '</div>' +
             '<div style="display:flex; align-items:center; justify-content:center; gap:7px; margin-top:12px;">' +
-              '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' +
+              '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' +
               '<span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(43,33,24,0.45);">' + reassure + '</span>' +
             '</div>' +
           '</div>' +

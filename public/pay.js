@@ -78,6 +78,7 @@
   }
 
   function showError(msg, onRetry) {
+    if (btn) btn.disabled = false; // re-enable the underlying pay button on failure
     render('<div class="err">' + msg + '</div><button class="primary retry" id="retryBtn">try again</button>');
     var r = el("retryBtn");
     if (r) r.onclick = onRetry;
@@ -265,6 +266,7 @@
   // ---- entry ---------------------------------------------------------------
   function start() {
     clearTimers();
+    if (btn) btn.disabled = true; // disable-on-flight so the pay button can't double-fire
     var tok = token();
     if (!tok) {
       // Brand-new friend with no divvy balance yet — create the invisible

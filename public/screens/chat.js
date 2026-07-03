@@ -393,7 +393,7 @@
 
     var chip = el('<button type="button" style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:rgba(39,117,202,0.14); border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:5px 12px;">' +
       '<span style="font-family:' + MONO + '; font-weight:700; font-size:11px; color:#2775CA;">chip in</span>' +
-      '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>');
+      '<svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>');
     chip.addEventListener("click", function () { location.hash = "#/settle/" + encodeURIComponent(tripId); });
     foot.appendChild(chip);
     inner.appendChild(foot);
@@ -440,7 +440,7 @@
 
     var view = el('<button type="button" style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; flex:none; background:rgba(61,232,199,0.12); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:6px 13px;">' +
       '<span style="font-family:' + MONO + '; font-weight:700; font-size:11px; color:#3DE8C7;">view</span>' +
-      '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>');
+      '<svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>');
     view.addEventListener("click", function () { location.hash = "#/settle/" + encodeURIComponent(tripId); });
     rowInner.appendChild(view);
 
@@ -832,7 +832,7 @@
         // top bar
         '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:11px; height:58px; padding:0 14px; flex:none; background:#F7F1E3; border-bottom:1.5px dashed rgba(43,33,24,0.22);">' +
           '<button class="gc-back" type="button" aria-label="back" style="appearance:none; width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;">' +
-            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+            '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
           '<div style="position:relative; width:40px; height:40px; flex:none;">' +
             '<div class="gc-gavatar-emoji" style="width:40px; height:40px; border-radius:13px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; font-size:19px; overflow:hidden;">👥</div>' +
             '<div style="position:absolute; right:-2px; bottom:-2px; width:14px; height:14px; border-radius:50%; background:#3DE8C7; border:2.5px solid #2B2118; box-shadow:0 0 8px rgba(61,232,199,0.7);"></div>' +
@@ -841,7 +841,7 @@
             '<div class="gc-name" style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">group</div>' +
             '<div class="gc-online" style="font-family:' + MONO + '; font-size:9.5px; letter-spacing:.5px; color:#17a98c; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">loading…</div>' +
           '</div>' +
-          '<div style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; flex:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
+          '<div style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; flex:none;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
         '</div>' +
 
         // feed (scroll)
@@ -860,11 +860,11 @@
           '<div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:0 6px 0 16px; min-height:44px;">' +
             '<input class="gc-input" type="text" placeholder="message…" aria-label="message" style="flex:1; min-width:0; border:0; outline:none; background:transparent; color:#2B2118; font-family:' + SANS + '; font-size:15px; padding:11px 0;" />' +
             '<button class="gc-tabbtn" type="button" aria-label="new tab" style="appearance:none; display:inline-flex; align-items:center; gap:5px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.4); border-radius:999px; padding:6px 11px; cursor:pointer; flex:none;">' +
-              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
+              '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
               '<span style="font-family:' + MONO + '; font-weight:700; font-size:10.5px; color:#2775CA;">tab</span></button>' +
           '</div>' +
           '<button class="gc-send" type="button" aria-label="send" style="appearance:none; width:46px; height:46px; border-radius:50%; border:2px solid #2B2118; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>' +
+            '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>' +
         '</div>' +
       '</div>');
     view.appendChild(screenEl);

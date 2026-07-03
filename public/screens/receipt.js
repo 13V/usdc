@@ -64,7 +64,7 @@
   }
 
   function copyIcon() {
-    return '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer; flex:none;"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+    return '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer; flex:none;"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
   }
 
   // map the GET /api/receipts/:ref payload (found:true) into the shape the card
@@ -140,8 +140,8 @@
     // ---- on-chain proof rows (mono, lowercase labels) ----
     var fromWallet = r.from.wallet ? shorten(r.from.wallet) : "—";
     var toWallet = r.to.wallet ? shorten(r.to.wallet) : "—";
-    var fromTag = r.from.name ? ' <span style="color:rgba(43,33,24,0.4);">(' + app.esc(String(r.from.name).toLowerCase()) + ')</span>' : "";
-    var toTag = r.to.name ? ' <span style="color:rgba(43,33,24,0.4);">(' + app.esc(String(r.to.name).toLowerCase()) + ')</span>' : "";
+    var fromTag = r.from.name ? ' <span style="color:rgba(43,33,24,0.6);">(' + app.esc(String(r.from.name).toLowerCase()) + ')</span>' : "";
+    var toTag = r.to.name ? ' <span style="color:rgba(43,33,24,0.6);">(' + app.esc(String(r.to.name).toLowerCase()) + ')</span>' : "";
 
     var proof =
       proofRow("from", app.esc(fromWallet) + fromTag) +
@@ -154,7 +154,7 @@
         '<span style="font-family:\'Space Mono\',monospace; font-size:11.5px; color:rgba(43,33,24,0.45);">signature</span>' +
         '<span style="display:inline-flex; align-items:center; gap:7px; min-width:0;">' +
           '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2B2118; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + app.esc(r.signature ? shorten(r.signature) : "—") + '</span>' +
-          (r.signature ? '<span id="rcCopy">' + copyIcon() + '</span>' : '') +
+          (r.signature ? '<span id="rcCopy" role="button" aria-label="copy" tabindex="0">' + copyIcon() + '</span>' : '') +
         '</span>' +
       '</div>';
 
@@ -163,15 +163,15 @@
     var solscanLink = '<a ' + (solscan ? 'href="' + app.esc(solscan) + '" target="_blank" rel="noopener"' : 'style="pointer-events:none; opacity:.4;"') +
       ' style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:18px; padding-top:16px; border-top:1px solid rgba(43,33,24,0.07); cursor:pointer; text-decoration:none;">' +
       '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2775CA;">view on solscan</span>' +
-      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>' +
+      '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>' +
     '</a>';
 
     // ---- top bar (lifted) — back circle, "receipt", close ✕. both go back. ----
     var topbar =
       '<div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 16px; flex:none;">' +
-        '<div id="rcBack" role="button" aria-label="back" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+        '<div id="rcBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118;">receipt</span>' +
-        '<div id="rcClose" role="button" aria-label="close" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></div>' +
+        '<div id="rcClose" role="button" aria-label="close" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></div>' +
       '</div>';
 
     // ---- peeking full-body mascot (real asset, scaled to ~62px over the top edge) ----
@@ -208,7 +208,7 @@
             '<div style="display:flex; align-items:center; gap:12px; margin-top:22px;">' +
               '<div style="display:flex; align-items:center;">' +
                 avatarTile(r.from, "linear-gradient(150deg,#3DE8C7,#2775CA)") +
-                '<svg width="20" height="14" viewBox="0 0 26 14" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin:0 -2px 0 6px;"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>' +
+                '<svg aria-hidden="true" width="20" height="14" viewBox="0 0 26 14" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin:0 -2px 0 6px;"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>' +
                 '<span style="margin-left:6px; display:inline-flex;">' + avatarTile(r.to, "linear-gradient(150deg,#FFC65C,#FF6B5E)") + '</span>' +
               '</div>' +
               '<div style="flex:1; min-width:0;">' +
@@ -249,7 +249,7 @@
       '<div style="flex:1; min-height:14px;"></div>' +
       placeholderNote +
       '<button id="rcShare" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>' +
+        '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">share proof</span>' +
         '<span style="font-size:15px;">✨</span>' +
       '</button>' +

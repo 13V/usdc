@@ -108,9 +108,9 @@
   // top bar lifted from the frame (back ‹ + centered "make it yours" + blue save)
   function topbar() {
     return '<div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 16px; flex:none;">' +
-      '<div id="cpBack" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<div id="cpBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
       '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118;">make it yours</span>' +
-      '<span id="cpSaveTop" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2775CA; cursor:pointer; padding:8px 6px;">save</span>' +
+      '<span id="cpSaveTop" role="button" aria-label="save" tabindex="0" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2775CA; cursor:pointer; padding:8px 6px;">save</span>' +
     '</div>';
   }
 
@@ -179,7 +179,7 @@
           '<div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 12px;">' +
             '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">YOUR EMOJI</span>' +
             '<div style="display:inline-flex; align-items:center; gap:7px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:5px 12px;">' +
-              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+              '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
               '<input id="cpSearch" placeholder="search" style="border:none; outline:none; background:transparent; color:#2B2118; font-family:\'Space Mono\',monospace; font-size:10.5px; width:62px; padding:0;" />' +
             '</div>' +
           '</div>' +
@@ -202,7 +202,7 @@
               '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin-bottom:8px;">NAME</div>' +
               '<div style="display:flex; align-items:center; gap:10px; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:15px 16px;">' +
                 '<input id="cpName" placeholder="your name" value="' + app.esc(state.name) + '" style="flex:1; border:none; outline:none; background:transparent; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; padding:0;" />' +
-                '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' +
+                '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' +
               '</div>' +
             '</div>' +
             '<div>' +
@@ -251,13 +251,15 @@
       }
       grid.innerHTML = list.map(function (e) {
         var sel = e.c === state.emoji;
-        return '<div data-emoji="' + app.esc(e.c) + '" style="position:relative; aspect-ratio:1; border-radius:14px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.06); display:flex; align-items:center; justify-content:center; font-size:23px; cursor:pointer;">' +
+        return '<div data-emoji="' + app.esc(e.c) + '" role="button" tabindex="0" aria-label="' + app.esc(e.t) + (sel ? ' (selected)' : '') + '" style="position:relative; aspect-ratio:1; border-radius:14px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.06); display:flex; align-items:center; justify-content:center; font-size:23px; cursor:pointer;">' +
           app.esc(e.c) +
           (sel ? '<div style="position:absolute; inset:-2px; border-radius:16px; border:2px solid #2775CA; box-shadow:0 0 14px rgba(39,117,202,0.6); pointer-events:none;"></div>' : '') +
           '</div>';
       }).join("");
       Array.prototype.forEach.call(grid.querySelectorAll("[data-emoji]"), function (el) {
-        el.onclick = function () { state.emoji = el.getAttribute("data-emoji"); refreshHero(); renderEmoji(); renderMemes(); };
+        var pick = function () { state.emoji = el.getAttribute("data-emoji"); refreshHero(); renderEmoji(); renderMemes(); };
+        el.onclick = pick;
+        el.onkeydown = function (e) { if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); pick(); } };
       });
     }
 
@@ -266,12 +268,14 @@
       if (!wrap) return;
       wrap.innerHTML = COLORS.map(function (c) {
         var sel = c.id === state.colorId;
-        return '<div data-color="' + c.id + '" style="position:relative; width:50px; height:50px; border-radius:16px; background:' + c.bg + '; cursor:pointer; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2), 0 6px 14px rgba(0,0,0,0.25);">' +
+        return '<div data-color="' + c.id + '" role="button" tabindex="0" aria-label="' + app.esc(c.id) + (sel ? ' (selected)' : '') + '" style="position:relative; width:50px; height:50px; border-radius:16px; background:' + c.bg + '; cursor:pointer; box-shadow:inset 0 1px 0 rgba(255,255,255,0.2), 0 6px 14px rgba(0,0,0,0.25);">' +
           (sel ? '<div style="position:absolute; inset:-3px; border-radius:19px; border:2.5px solid #fff; box-shadow:0 0 14px rgba(255,255,255,0.4); pointer-events:none;"></div>' : '') +
           '</div>';
       }).join("");
       Array.prototype.forEach.call(wrap.querySelectorAll("[data-color]"), function (el) {
-        el.onclick = function () { state.colorId = el.getAttribute("data-color"); refreshHero(); renderColors(); };
+        var pick = function () { state.colorId = el.getAttribute("data-color"); refreshHero(); renderColors(); };
+        el.onclick = pick;
+        el.onkeydown = function (e) { if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); pick(); } };
       });
     }
 
@@ -352,6 +356,7 @@
     if (saveBtn) saveBtn.onclick = save;
     var saveTop = document.getElementById("cpSaveTop");
     if (saveTop) saveTop.onclick = save;
+    if (saveTop) saveTop.onkeydown = function (e) { if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); save(); } };
     var back = document.getElementById("cpBack");
     if (back) back.onclick = function () { app.go("you"); };
   }

@@ -31,21 +31,21 @@
     return '<div style="position:relative; z-index:5; flex:none; margin:0 16px 4px;">' +
       '<div style="position:relative; background:#FFFDF7; border:1px solid rgba(39,117,202,0.28); border-radius:20px; padding:10px; display:flex; align-items:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.85);">' +
         '<div style="flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding-left:8px;">' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><circle cx="11" cy="8" r="4"/><path d="M4 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5"/></svg>' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><circle cx="11" cy="8" r="4"/><path d="M4 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5"/></svg>' +
           '<input id="frInput" placeholder="@handle or wallet…" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
             'style="flex:1; min-width:0; background:transparent; border:none; outline:none; font-family:\'Space Mono\',monospace; font-size:13px; color:#2B2118; padding:2px 0;" />' +
         '</div>' +
         // QR scan tile
-        '<div id="frQr" role="button" aria-label="scan a qr" style="width:40px; height:40px; border-radius:12px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;">' +
-          '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3M21 14v.01M21 21v-4M17 21h-3"/></svg>' +
+        '<div id="frQr" role="button" aria-label="scan a qr" tabindex="0" style="width:40px; height:40px; border-radius:12px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;">' +
+          '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3M21 14v.01M21 21v-4M17 21h-3"/></svg>' +
         '</div>' +
         // glowing blue + add
-        '<div id="frAdd" role="button" aria-label="add" style="width:46px; height:40px; border-radius:12px; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
+        '<div id="frAdd" role="button" aria-label="add" tabindex="0" style="width:46px; height:40px; border-radius:12px; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
         '</div>' +
       '</div>' +
       '<div style="display:flex; align-items:center; gap:6px; padding:8px 6px 2px;">' +
-        '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(39,117,202,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z"/></svg>' +
+        '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(39,117,202,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z"/></svg>' +
         '<span style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.4);">scan their qr — never hand-type a wallet</span>' +
       '</div>' +
       '<div id="frStatus" style="font-family:\'Space Mono\',monospace; font-size:11.5px; color:rgba(43,33,24,0.6); min-height:0; padding:0 6px;"></div>' +
@@ -166,8 +166,8 @@
     var walletBit = wallet
       ? '<div style="display:flex; align-items:center; gap:6px; margin-top:5px;">' +
           '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.45);">' + app.esc(shortWallet(wallet)) + '</span>' +
-          '<span class="frCopy" data-w="' + app.esc(wallet) + '" style="cursor:pointer; line-height:0; display:inline-flex;">' +
-            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
+          '<span class="frCopy" data-w="' + app.esc(wallet) + '" role="button" aria-label="copy wallet" tabindex="0" style="cursor:pointer; line-height:0; display:inline-flex;">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
           '</span>' +
         '</div>'
       : '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.45); margin-top:5px;">no wallet yet</div>';
@@ -175,8 +175,8 @@
     return '<a href="#/friend/' + encodeURIComponent(f.id) + '" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 14px;">' +
       avatarTile(f, nm) +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="display:flex; align-items:center; gap:7px;">' +
-          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc(nm.toLowerCase()) + '</span>' + handle +
+        '<div style="display:flex; align-items:center; gap:7px; min-width:0;">' +
+          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;">' + app.esc(nm.toLowerCase()) + '</span>' + handle +
         '</div>' +
         walletBit +
       '</div>' +
@@ -386,7 +386,7 @@
     return '<div style="display:flex; align-items:center; gap:11px; background:#FFFDF7; border:1px solid rgba(61,232,199,0.18); border-radius:18px; padding:11px 12px;">' +
       '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">' + app.face(emoji) + '</div>' +
       '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div><div style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.4);">wants to be friends</div></div>' +
-      '<button data-decline="' + app.esc(f.id) + '" title="dismiss" style="appearance:none; cursor:pointer; flex:none; width:36px; height:36px; border-radius:50%; background:transparent; border:1px solid rgba(43,33,24,0.14); color:rgba(43,33,24,0.55); font-size:15px;">✕</button>' +
+      '<button data-decline="' + app.esc(f.id) + '" title="dismiss" aria-label="dismiss request" style="appearance:none; cursor:pointer; flex:none; width:36px; height:36px; border-radius:50%; background:transparent; border:1px solid rgba(43,33,24,0.14); color:rgba(43,33,24,0.55); font-size:15px;">✕</button>' +
       '<button data-accept="' + app.esc(f.id) + '" style="appearance:none; border:none; cursor:pointer; flex:none; min-height:36px; padding:0 16px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; color:#fff; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px;">accept</button>' +
     '</div>';
   }
@@ -406,7 +406,7 @@
       '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none; opacity:.9;">' + app.face(emoji) + '</div>' +
       '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div><div style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.4);">waiting for them to accept</div></div>' +
       '<span style="display:inline-flex; align-items:center; gap:5px; flex:none; background:rgba(255,198,92,0.1); border:1px solid rgba(255,198,92,0.35); border-radius:999px; padding:5px 11px; font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; letter-spacing:.5px; color:#FFC65C;"><span style="width:5px; height:5px; border-radius:50%; background:#FFC65C;"></span>pending</span>' +
-      '<button data-cancel="' + app.esc(f.id) + '" title="cancel request" style="appearance:none; cursor:pointer; flex:none; width:34px; height:34px; border-radius:50%; background:transparent; border:1px solid rgba(43,33,24,0.12); color:rgba(43,33,24,0.5); font-size:14px;">✕</button>' +
+      '<button data-cancel="' + app.esc(f.id) + '" title="cancel request" aria-label="cancel request" style="appearance:none; cursor:pointer; flex:none; width:34px; height:34px; border-radius:50%; background:transparent; border:1px solid rgba(43,33,24,0.12); color:rgba(43,33,24,0.5); font-size:14px;">✕</button>' +
     '</div>';
   }
   function wireRequests(view, refresh) {
@@ -443,7 +443,7 @@
   function sendBar() {
     return '<div style="margin:2px 16px 0;">' +
       '<button id="frSend" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:15px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118;">send money</span>' +
       '</button></div>';
   }

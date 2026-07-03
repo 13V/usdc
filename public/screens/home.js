@@ -187,8 +187,8 @@
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>' +
         '<span style="position:relative;">' + emoji + '</span></div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc(b.title) + '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(43,33,24,0.42); margin-top:3px;">' + sub + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(b.title) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(43,33,24,0.6); margin-top:3px;">' + sub + '</div>' +
       '</div>' + right + '</a>';
   }
 
@@ -211,8 +211,8 @@
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>' +
         '<span style="position:relative;">' + emoji + '</span></div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc(b.title) + '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(43,33,24,0.42); margin-top:3px;">' + sub + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(b.title) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(43,33,24,0.6); margin-top:3px;">' + sub + '</div>' +
       '</div>' + right + '</div>';
   }
 
@@ -302,7 +302,7 @@
             // tertiary: demo account (burner wallet). Keeps the old fast path alive
             // for people who just want to look around — and is what e2e drives.
             '<div style="text-align:center; margin-top:2px;">' +
-              '<button id="hDemo" style="appearance:none; border:none; background:transparent; cursor:pointer; padding:5px 8px; font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.42); text-decoration:underline; text-underline-offset:2px;">just exploring? try a demo account</button>' +
+              '<button id="hDemo" style="appearance:none; border:none; background:transparent; cursor:pointer; padding:5px 8px; font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.6); text-decoration:underline; text-underline-offset:2px;">just exploring? try a demo account</button>' +
             '</div>' +
           '</div>';
         })() +
@@ -341,7 +341,7 @@
   }
   function howItWorksCard() {
     return '<div id="howCard" style="position:relative; background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:4px 5px 0 rgba(43,33,24,0.9); padding:18px 18px 16px; margin-top:14px;">' +
-      '<div id="howClose" style="position:absolute; top:11px; right:11px; width:28px; height:28px; border-radius:50%; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
+      '<div id="howClose" role="button" aria-label="close" tabindex="0" style="position:absolute; top:11px; right:11px; width:28px; height:28px; border-radius:50%; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
       '<div style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; letter-spacing:2px; color:#3DE8C7;">HOW IT WORKS</div>' +
       '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:19px; letter-spacing:-0.4px; color:#2B2118; margin:5px 0 15px;">three taps, you\'re square.</div>' +
       '<div style="display:flex; flex-direction:column; gap:12px;">' +
@@ -357,7 +357,7 @@
     if (!card) return;
     function dismiss() { markHowSeen(); if (card && card.parentNode) card.parentNode.removeChild(card); }
     var close = view.querySelector("#howClose"), got = view.querySelector("#howGot");
-    if (close) close.onclick = dismiss;
+    if (close) { close.onclick = dismiss; close.onkeydown = function (e) { if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); dismiss(); } }; }
     if (got) got.onclick = dismiss;
   }
 

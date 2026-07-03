@@ -60,6 +60,9 @@
   function onKeydown(e) {
     if (e.key === "Escape") closeModal();
   }
+  // Navigating away (back button / any hash route change) dismisses the modal —
+  // a fixed overlay must never outlive the screen it was opened from.
+  window.addEventListener("hashchange", closeModal);
 
   function buildOverlay(innerHtml) {
     closeModal();

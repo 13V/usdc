@@ -115,7 +115,7 @@
   // top bar — back chevron + "on autopilot" + mono subhead (frame-exact)
   function topbar(subhead) {
     return '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:12px; height:54px; padding:0 16px; flex:none;">' +
-      '<div id="rBack" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<div id="rBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
       '<div style="flex:1;">' +
         '<h1 style="font-family:' + DISPLAY + '; font-weight:600; font-size:23px; letter-spacing:-0.5px; margin:0; color:#2B2118;">on autopilot</h1>' +
         '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.45); margin-top:1px;">' + app.esc(subhead || "") + '</div>' +
@@ -163,7 +163,7 @@
         app.mascot({ size: 120, mood: "sleepy", glow: true }) +
         '<div style="font-family:' + SANS + '; font-size:16px; line-height:1.5; color:rgba(43,33,24,0.65);">set the bills you split every month<br>and forget them 🫡</div>' +
         '<button id="rNew" style="appearance:none; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-height:50px; padding:0 24px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-          '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
+          '<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
           '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:16px; color:#fff;">new recurring</span>' +
         '</button>' +
       '</div>';
@@ -211,7 +211,7 @@
             '<div style="width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;">' + app.face(emoji) + '</div>' +
             '<div style="min-width:0;">' +
               '<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:2px 9px; margin-bottom:5px;"><span style="font-family:' + MONO + '; font-weight:700; font-size:8.5px; letter-spacing:1px; color:#2775CA;">NEXT DUE</span></div>' +
-              '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118;" class="lower">' + app.esc(rule.title) + '</div>' +
+              '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(rule.title) + '</div>' +
               '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.45); margin-top:2px;" class="lower">' + app.esc(rule.tripName || "auto-tab") + '</div>' +
             '</div>' +
           '</div>' +
@@ -285,8 +285,8 @@
 
   // the dashed "set up a new one ＋" card (lifted)
   function addCard() {
-    return '<div id="rAddTile" style="grid-column:1 / -1; display:flex; align-items:center; justify-content:center; gap:9px; min-height:58px; border-radius:20px; border:1.5px dashed rgba(39,117,202,0.4); background:rgba(39,117,202,0.05); cursor:pointer;">' +
-      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
+    return '<div id="rAddTile" role="button" tabindex="0" style="grid-column:1 / -1; display:flex; align-items:center; justify-content:center; gap:9px; min-height:58px; border-radius:20px; border:1.5px dashed rgba(39,117,202,0.4); background:rgba(39,117,202,0.05); cursor:pointer;">' +
+      '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
       '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:15px; color:#2775CA;">set up a new one</span>' +
     '</div>';
   }
@@ -349,6 +349,7 @@
     });
     var add = document.getElementById("rAddTile");
     if (add) add.onclick = function () { openNewSheet(); };
+    if (add) add.onkeydown = function (e) { if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); openNewSheet(); } };
   }
 
   // ---- "+ new" sheet (the "well") — lifted hero amount + segmented + rows ----
@@ -663,7 +664,7 @@
             '<div style="display:flex; align-items:center; gap:11px;">' +
               '<div style="width:46px; height:46px; border-radius:14px; background:rgba(11,22,34,0.28); border:1px solid rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;">' + app.face(emoji) + '</div>' +
               '<div style="min-width:0;">' +
-                '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#fff;" class="lower">' + app.esc(rule.title) + '</div>' +
+                '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(rule.title) + '</div>' +
                 '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(255,255,255,0.72); margin-top:2px;" class="lower">' + app.esc(rule.tripName || "auto-tab") + ' · auto-tab</div>' +
               '</div>' +
             '</div>' +
@@ -823,7 +824,7 @@
     var bg = coral ? "rgba(255,107,94,0.08)" : "#FFFDF7";
     var bd = coral ? "rgba(255,107,94,0.28)" : "rgba(43,33,24,0.09)";
     return '<button id="' + id + '" style="appearance:none; cursor:pointer; flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; padding:14px 0; border-radius:16px; background:' + bg + '; border:1px solid ' + bd + ';">' +
-      '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>' +
+      '<svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>' +
       '<span style="font-family:' + SANS + '; font-weight:500; font-size:13px; color:' + color + ';">' + label + '</span></button>';
   }
 

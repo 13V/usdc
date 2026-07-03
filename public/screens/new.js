@@ -38,7 +38,7 @@
   function smallChoice(id, tint, line, stroke, svgPath, title, sub) {
     return '<button id="' + id + '" style="appearance:none; cursor:pointer; flex:1; min-width:0; border-radius:15px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.12); display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding:13px 13px; text-align:left;">' +
       '<div style="width:34px; height:34px; border-radius:10px; background:' + tint + '; border:1px solid ' + line + '; display:flex; align-items:center; justify-content:center; flex:none;">' +
-        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + svgPath + '</svg>' +
+        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + svgPath + '</svg>' +
       '</div>' +
       '<div style="min-width:0;">' +
         '<div style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:14.5px; color:#2B2118;">' + title + '</div>' +
@@ -102,8 +102,8 @@
   function topbar(eyebrow) {
     return '' +
     '<div style="position:relative; z-index:3; display:flex; align-items:center; justify-content:space-between; height:52px; padding:0 20px; flex:none;">' +
-      '<div id="nBack" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+      '<div id="nBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>' +
       '</div>' +
       '<span style="font-family:' + F_MONO + '; font-size:11px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">' + app.esc(eyebrow) + '</span>' +
       '<div style="width:38px;"></div>' +
@@ -295,7 +295,7 @@
       // scan hero — exact frame markup; swap the icon/labels while scanning
       var heroIcon = st.scanning
         ? '<span style="font-size:24px;">⏳</span>'
-        : '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M3 12h18"/></svg>';
+        : '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M3 12h18"/></svg>';
       var hero =
         '<div id="nScan" style="position:relative; border-radius:22px; overflow:hidden; border:1.5px dashed rgba(39,117,202,0.5); background:linear-gradient(160deg, rgba(39,117,202,0.14), rgba(39,117,202,0.04)); padding:22px 20px; display:flex; align-items:center; gap:16px; cursor:pointer; margin-top:16px;">' +
           (st.scanning ? '' : '<div style="position:absolute; left:14px; right:14px; height:2px; background:linear-gradient(90deg, transparent, #3DE8C7, transparent); border-radius:2px; box-shadow:0 0 10px rgba(61,232,199,0.8); animation:nsScanLine 2.6s ease-in-out infinite alternate;"></div>') +
@@ -304,7 +304,7 @@
             '<div style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:18px; color:#2B2118;">' + (st.scanning ? "reading receipt…" : "snap a receipt") + '</div>' +
             '<div style="font-family:' + F_SANS + '; font-size:13px; color:rgba(43,33,24,0.55); margin-top:2px;">take a photo, we\'ll read the total</div>' +
           '</div>' +
-          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>' +
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>' +
         '</div>' +
         // camera capture (the hero) + a separate gallery picker (the upload btn).
         '<input type="file" id="nCamera" accept="image/*" capture="environment" style="display:none;">' +
@@ -324,7 +324,7 @@
         '<div style="margin-top:22px;">' +
           '<label style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); display:block; margin:0;">WHAT\'S IT FOR?</label>' +
           '<div style="display:flex; align-items:center; gap:11px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:14px 16px; margin-top:9px;">' +
-            '<button id="nEmoji" style="appearance:none; border:none; background:transparent; font-size:22px; cursor:pointer; padding:0; line-height:1;">' + app.esc(st.titleEmoji) + '</button>' +
+            '<button id="nEmoji" aria-label="choose an emoji" style="appearance:none; border:none; background:transparent; font-size:22px; cursor:pointer; padding:0; line-height:1;">' + app.esc(st.titleEmoji) + '</button>' +
             '<input id="nTitle" enterkeyhint="next" value="' + app.esc(st.title) + '" placeholder="dinner" style="all:unset; flex:1; font-family:' + F_DISPLAY + '; font-weight:500; font-size:18px; color:#2B2118;">' +
             '<span style="width:1.5px; height:20px; background:#3DE8C7; margin-left:1px; border-radius:2px;"></span>' +
           '</div>' +
@@ -385,9 +385,9 @@
       var canStep = !inGroup && st.mode === "custom";
       var stepper = canStep ?
         '<div style="display:flex; align-items:center; gap:14px; background:#FFFDF7; border:2px solid #2B2118; border-radius:13px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:8px 10px; margin-top:9px; width:fit-content;">' +
-          '<button id="nMinus" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:10px; background:#F1E8D6; color:#2B2118; font-size:20px; font-family:' + F_MONO + ';">−</button>' +
+          '<button id="nMinus" aria-label="remove a person" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:10px; background:#F1E8D6; color:#2B2118; font-size:20px; font-family:' + F_MONO + ';">−</button>' +
           '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:18px; min-width:24px; text-align:center;">' + st.members.length + '</span>' +
-          '<button id="nPlus" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:10px; background:#F1E8D6; color:#2B2118; font-size:20px; font-family:' + F_MONO + ';">+</button>' +
+          '<button id="nPlus" aria-label="add a person" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:10px; background:#F1E8D6; color:#2B2118; font-size:20px; font-family:' + F_MONO + ';">+</button>' +
         '</div>' : '';
 
       var modeToggle = inGroup ? '' :
@@ -405,7 +405,7 @@
         '<div class="ns-row" style="display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; margin-top:13px; padding:2px;">' +
           st.members.map(function (m) {
             var inc = m.included;
-            var badge = inc ? '<span style="position:absolute; right:-3px; bottom:-3px; width:18px; height:18px; border-radius:50%; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>' : '';
+            var badge = inc ? '<span style="position:absolute; right:-3px; bottom:-3px; width:18px; height:18px; border-radius:50%; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>' : '';
             return '<button data-edit="' + app.esc(m.id) + '" style="appearance:none; cursor:pointer; flex:none; position:relative; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:none; padding:2px; opacity:' + (inc ? '1' : '0.42') + ';">' +
               '<div style="position:relative; width:46px; height:46px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:22px; border:2.5px solid ' + (inc ? '#2775CA' : 'rgba(43,33,24,0.12)') + '; filter:' + (inc ? 'none' : 'grayscale(0.4)') + ';">' + app.face(m.emoji) + badge + '</div>' +
               '<span style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:' + (inc ? '#2B2118' : 'rgba(43,33,24,0.45)') + ';">' + app.esc(m.you ? "you" : m.name) + '</span>' +
@@ -413,7 +413,7 @@
           }).join("") +
           // add a friend / named person
           '<button id="nAddPerson" style="appearance:none; cursor:pointer; flex:none; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:none; padding:2px;">' +
-            '<div style="width:46px; height:46px; border-radius:50%; background:rgba(43,33,24,0.04); border:2px dashed rgba(43,33,24,0.22); display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>' +
+            '<div style="width:46px; height:46px; border-radius:50%; background:rgba(43,33,24,0.04); border:2px dashed rgba(43,33,24,0.22); display:flex; align-items:center; justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></div>' +
             '<span style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">add</span>' +
           '</button>' +
         '</div>';
@@ -500,7 +500,7 @@
             ? '<span style="font-family:' + F_MONO + '; font-size:11px; color:rgba(43,33,24,0.42);">' + item.qty + '× </span>' : '';
           var chips = members.map(function (m) {
             var on = !!item.assigned[m.id];
-            return '<button data-item-idx="' + idx + '" data-item-member="' + app.esc(m.id) + '" ' +
+            return '<button data-item-idx="' + idx + '" data-item-member="' + app.esc(m.id) + '" aria-label="assign to ' + app.esc(m.you ? "you" : m.name) + '" ' +
               'style="appearance:none; cursor:pointer; flex:none; width:34px; height:34px; border-radius:50%; background:' + m.bg + '; ' +
               'display:flex; align-items:center; justify-content:center; font-size:16px; padding:0; ' +
               'border:2.5px solid ' + (on ? '#2775CA' : 'rgba(43,33,24,0.12)') + '; opacity:' + (on ? '1' : '0.42') + '; ' +
@@ -570,7 +570,7 @@
         '<div style="position:fixed; left:0; right:0; bottom:0; z-index:55; padding:14px 20px calc(14px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(247,241,227,0) 0%, #F7F1E3 24%);">' +
           '<button id="nSend" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
             '<span style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (editing ? "save changes" : inGroup ? "add to tab" : "send the tab") + '</span>' +
-            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>' +
           '</button>' +
           '<div style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.36); text-align:center; margin-top:10px;">no app needed to pay. dollars, just faster.</div>' +
         '</div>';
@@ -582,10 +582,14 @@
     // ---- event wiring (re-attached each render) ----
     function wire() {
       var back = document.getElementById("nBack");
-      if (back) back.onclick = function () {
+      var goBack = function () {
         if (groupId) location.hash = "#/group/" + encodeURIComponent(groupId);
         else app.go("home");
       };
+      if (back) {
+        back.onclick = goBack;
+        back.onkeydown = function (ev) { if (ev.key === "Enter" || ev.key === " " || ev.key === "Spacebar") { ev.preventDefault(); goBack(); } };
+      }
 
       var scan = document.getElementById("nScan");
       var camera = document.getElementById("nCamera");
@@ -728,7 +732,7 @@
             '<div style="font-family:' + F_MONO + '; font-size:11px; color:rgba(43,33,24,0.45); margin-top:5px;">' + (editing ? "rename, pick a friend, or remove" : "tap a friend, or add a guest") + '</div>' +
           '</div>' +
           '<div style="flex:none; margin:14px 0 6px;"><div style="display:flex; align-items:center; gap:10px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.08); border-radius:14px; padding:11px 14px;">' +
-            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
             '<input id="psSearch" type="text" placeholder="find a friend…" autocomplete="off" style="flex:1; background:transparent; border:none; outline:none; color:#2B2118; font-family:\'Space Mono\',monospace; font-size:12.5px;" /></div></div>' +
           '<div id="psList" class="appscroll" style="flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:64px; padding-top:6px;"><div style="font-family:' + F_MONO + '; font-size:11px; color:rgba(43,33,24,0.4); padding:8px 2px;">loading…</div></div>' +
           '<div style="flex:none;">' +
@@ -777,7 +781,7 @@
           'style="display:flex; align-items:center; gap:13px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.05); border-radius:14px; padding:11px 12px; cursor:pointer; margin-bottom:8px;">' +
           '<div style="width:44px; height:44px; border-radius:14px; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none; box-shadow:0 5px 14px rgba(43,33,24,0.13);">' + app.esc(em) + '</div>' +
           '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(nm) + '</div>' + (sub ? '<div style="font-family:' + F_MONO + '; font-size:10.5px; color:rgba(43,33,24,0.4); margin-top:2px;">' + app.esc(sub) + '</div>' : '') + '</div>' +
-          '<div style="display:inline-flex; align-items:center; gap:5px; background:rgba(39,117,202,0.14); border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:6px 13px 6px 10px; flex:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5BA6F0" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:#5BA6F0;">add</span></div>' +
+          '<div style="display:inline-flex; align-items:center; gap:5px; background:rgba(39,117,202,0.14); border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:6px 13px 6px 10px; flex:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5BA6F0" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:#5BA6F0;">add</span></div>' +
         '</div>';
       }
       var allFriends = [];

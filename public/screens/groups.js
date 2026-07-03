@@ -21,7 +21,7 @@
       '<div style="width:36px; height:36px; border-radius:11px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:24px; line-height:1; color:#fff; transform:translateY(-1px);">/</span>' +
       '</div>' +
-      '<a href="#/you" style="text-decoration:none; width:36px; height:36px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(43,33,24,0.13);">' + app.face(me.emoji) + '</a>' +
+      '<a href="#/you" aria-label="your profile" style="text-decoration:none; width:36px; height:36px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(43,33,24,0.13);">' + app.face(me.emoji) + '</a>' +
     '</div>';
   }
 
@@ -170,7 +170,7 @@
     var pos = t.netCents > 0;
     var col = pos ? "#2775CA" : "#FF6B5E";
     var label = pos ? "you're owed" : "you owe";
-    var labelCol = pos ? "rgba(43,33,24,0.45)" : "rgba(255,107,94,0.85)";
+    var labelCol = pos ? "rgba(43,33,24,0.6)" : "rgba(255,107,94,0.85)";
     var sign = pos ? "+$" : "−$";
     var amtFs = big ? "25px" : "21px";
     return '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:' + (big ? "11px" : "10.5px") + '; color:' + labelCol + '; margin-bottom:2px;">' + label + '</div>' +
@@ -189,7 +189,7 @@
       '</div>' +
       '<div style="padding:15px 18px 17px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px;">' +
         '<div style="min-width:0;">' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
           '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:13.5px; color:rgba(43,33,24,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + '</div>' +
         '</div>' +
         '<div style="text-align:right; flex:none;">' + netBlock(t, true) + '</div>' +
@@ -225,7 +225,7 @@
       '</div>' +
       '<div style="flex:1; min-width:0; padding:15px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;">' +
         '<div style="min-width:0;">' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
           '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + '</div>' +
         '</div>' +
         '<div style="text-align:right; flex:none;">' + netBlock(t, false) + '</div>' +
@@ -279,7 +279,7 @@
   // ---- "+ new group" button (lifted gradient pill from frame) -----------
   function newGroupBtn() {
     return '<button id="gNew" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; margin-top:18px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-      '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
+      '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
       '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">new group</span>' +
     '</button>';
   }
@@ -387,7 +387,7 @@
       pickerBox.style.cssText += "; margin-top:12px; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; padding:12px; box-shadow:3px 4px 0 rgba(43,33,24,0.85);";
       pickerBox.innerHTML =
         '<div style="display:flex; align-items:center; gap:9px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.1); border-radius:12px; padding:9px 12px;">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
           '<input id="gSearch" type="text" placeholder="find a friend…" autocomplete="off" style="flex:1; background:transparent; border:none; outline:none; color:#2B2118; font-family:\'Space Mono\',monospace; font-size:12px;">' +
         '</div>' +
         '<div id="gList" style="max-height:180px; overflow-y:auto; -webkit-overflow-scrolling:touch; margin-top:9px;"></div>' +
@@ -476,7 +476,7 @@
         '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:30px 0 0; color:#2B2118;">no tabs yet — start one 🎉</h2>' +
         '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(43,33,24,0.55);">split a trip, the rent, or last night\'s dinner. settle in dollars, just faster.</p>' +
         '<button id="gNew" style="appearance:none; border:none; cursor:pointer; min-height:54px; margin-top:26px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; padding:0 26px; display:flex; align-items:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16.5px; color:#fff;">start a tab</span>' +
         '</button>' +
       '</div></div>';
