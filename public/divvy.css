@@ -210,11 +210,11 @@ button, .tabbar a { transition: transform .13s ease; }
 button:active, .tabbar a:active { transform: scale(.96); }
 .tabbar .fab:active { transform: scale(.92); }
 
-/* Full-bleed screen root: fill the visible viewport (below the notch inset).
-   Percentage min-heights don't reliably resolve inside the flex/overflow #view
-   on WebKit — content collapsed and left dead space on tall phones. */
-.vfill { min-height: calc(100vh - env(safe-area-inset-top));
-         min-height: calc(100dvh - env(safe-area-inset-top)); }
+/* Full-bleed screen root: fill the scroll view exactly. The height chain is
+   fully definite now (html/body fixed inset:0 → #app height:100% → #view flex),
+   so a plain percentage resolves reliably — no viewport-unit math that can
+   drift from the real inset and leave a dead band at the bottom. */
+.vfill { min-height: 100%; }
 
 /* ---- app shell: top bar, bottom tab bar ---- */
 .topbar { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 20px; }
@@ -226,7 +226,8 @@ button:active, .tabbar a:active { transform: scale(.96); }
   background: rgba(11,22,34,0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--line);
   display: flex; align-items: flex-start; justify-content: space-around;
-  padding: 10px 10px calc(12px + env(safe-area-inset-bottom)); z-index: 50; }
+  /* labels sit just above the home indicator, like a native tab bar */
+  padding: 10px 10px calc(4px + env(safe-area-inset-bottom)); z-index: 50; }
 .tabbar a { display: flex; flex-direction: column; align-items: center; gap: 5px; text-decoration: none;
   color: var(--faint); font-family: var(--mono); font-size: 10px; letter-spacing: 0.5px; flex: 1; cursor: pointer;
   padding: 8px 0 7px; margin: 0 5px; border-radius: 15px; transition: color .18s, background .18s, transform .13s; }
