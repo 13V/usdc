@@ -140,6 +140,13 @@
       custom: {},               // id -> cents (only edited rows)
       scanning: false,
       editId: null,            // when set, we're editing an existing expense (PATCH)
+      // ---- itemized "who had what" (from a receipt scan) ----
+      itemized: false,         // are we in assign-items mode?
+      items: null,             // [{label,qty,cents,assigned:{memberId:true}}] once scanned
+      itemsConfidence: "ok",   // "ok" | "low" — hint when the scanned lines look off
+      scanTaxCents: 0,
+      scanTipCents: 0,
+      scanSubtotalCents: 0,
       _groupName: null,
       _groupEmoji: "🗼",
     };
@@ -181,6 +188,64 @@
       for (var i = 0; i < n; i++) out.push(base + (i < rem ? 1 : 0));
       return out;
     }
+    // Largest-remainder (Hamilton) split of `total` by weights — integer cents
+    // that sum EXACTLY to total, leftover pennies to the biggest fractional
+    // claims. Mirrors src/split.ts distributeWeighted so cents never leak.
+    function distByWeights(total, weights) {
+      var out = weights.map(function () { return 0; });
+      var tw = weights.reduce(function (a, b) { return a + b; }, 0);
+      if (total <= 0 || tw <= 0) return out;
+      var ideal = weights.map(function (w) { return (total * w) / tw; });
+      var floors = ideal.map(function (x) { return Math.floor(x); });
+      var assigned = floors.reduce(function (a, b) { return a + b; }, 0);
+      var leftover = total - assigned;
+      var order = ideal
+        .map(function (x, i) { return { i: i, frac: x - Math.floor(x) }; })
+        .sort(function (a, b) { return (b.frac - a.frac) || (a.i - b.i); });
+      out = floors.slice();
+      var k = 0;
+      while (leftover > 0) { out[order[k % order.length].i] += 1; leftover -= 1; k += 1; }
+      return out;
+    }
+
+    // The itemized split. Each item's cents is split EVENLY among the members it
+    // was assigned to (largest-remainder). Everything left over — tax, tip, and
+    // any unassigned item — is the "extras" bucket, distributed PROPORTIONALLY
+    // to each person's assigned subtotal. Nobody assigned anything → even split.
+    // Guarantee: sum(perPerson) === grandCents() exactly.
+    function computeItemized() {
+      var members = included();
+      var grand = grandCents();
+      var subtotals = {};
+      members.forEach(function (m) { subtotals[m.id] = 0; });
+      var assignedTotal = 0;
+      (st.items || []).forEach(function (item) {
+        var ids = members
+          .filter(function (m) { return item.assigned[m.id]; })
+          .map(function (m) { return m.id; });
+        if (!ids.length) return; // unassigned → falls into the extras bucket
+        var parts = equalShares(item.cents, ids.length);
+        ids.forEach(function (id, k) { subtotals[id] += parts[k]; assignedTotal += parts[k]; });
+      });
+      var anyAssigned = members.some(function (m) { return subtotals[m.id] > 0; });
+      var perPerson = {};
+      if (!anyAssigned) {
+        var even = equalShares(grand, members.length || 1);
+        members.forEach(function (m, i) { perPerson[m.id] = even[i] || 0; });
+        return { perPerson: perPerson, subtotals: subtotals, extras: grand, grand: grand, anyAssigned: false, members: members };
+      }
+      var weights = members.map(function (m) { return subtotals[m.id]; });
+      var extras = grand - assignedTotal;
+      if (extras >= 0) {
+        var alloc = distByWeights(extras, weights);
+        members.forEach(function (m, i) { perPerson[m.id] = subtotals[m.id] + alloc[i]; });
+      } else {
+        // Items exceed the (edited-down) total — scale everyone to fit exactly.
+        var scaled = distByWeights(grand, weights);
+        members.forEach(function (m, i) { perPerson[m.id] = scaled[i]; });
+      }
+      return { perPerson: perPerson, subtotals: subtotals, extras: extras, grand: grand, anyAssigned: true, members: members };
+    }
 
     function seedMembers(groupMembers) {
       if (groupMembers && groupMembers.length) {
@@ -211,6 +276,9 @@
       var shares = equalShares(grand, n);
       var eachCents = n > 0 ? shares[0] : 0; // top-of-list share (others within 1¢)
       var tipNote = tipPct() > 0 ? "incl. " + tipPct() + "% tip" : "no tip added";
+      // itemized "who had what" is standalone-only (trip expenses are even-split)
+      var itemized = !inGroup && st.itemized && st.items && st.items.length > 0;
+      var comp = itemized ? computeItemized() : null;
 
       // headline
       var headline =
@@ -423,10 +491,78 @@
           stepper + modeToggle + memberChips + body +
         '</div>';
 
+      // ---- itemized: journal of line items + tappable member chips ----
+      var itemizedSection = "";
+      if (itemized) {
+        var members = comp.members;
+        var itemRows = st.items.map(function (item, idx) {
+          var qtyBadge = item.qty > 1
+            ? '<span style="font-family:' + F_MONO + '; font-size:11px; color:rgba(43,33,24,0.42);">' + item.qty + '× </span>' : '';
+          var chips = members.map(function (m) {
+            var on = !!item.assigned[m.id];
+            return '<button data-item-idx="' + idx + '" data-item-member="' + app.esc(m.id) + '" ' +
+              'style="appearance:none; cursor:pointer; flex:none; width:34px; height:34px; border-radius:50%; background:' + m.bg + '; ' +
+              'display:flex; align-items:center; justify-content:center; font-size:16px; padding:0; ' +
+              'border:2.5px solid ' + (on ? '#2775CA' : 'rgba(43,33,24,0.12)') + '; opacity:' + (on ? '1' : '0.42') + '; ' +
+              'filter:' + (on ? 'none' : 'grayscale(0.35)') + ';">' + app.face(m.emoji) + '</button>';
+          }).join("");
+          return '<div style="padding:11px 2px;' + (idx ? ' border-top:1px dashed rgba(43,33,24,0.1);' : '') + '">' +
+            '<div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">' +
+              '<span style="font-family:' + F_DISPLAY + '; font-weight:500; font-size:15px; color:#2B2118;">' + qtyBadge + app.esc(item.label) + '</span>' +
+              '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:15px; color:#2B2118; flex:none;">$' + dollars(item.cents) + '</span>' +
+            '</div>' +
+            '<div class="ns-row" style="display:flex; gap:7px; overflow-x:auto; scrollbar-width:none; margin-top:9px; padding:1px;">' + chips + '</div>' +
+          '</div>';
+        }).join("");
+
+        var extrasNote = comp.anyAssigned
+          ? "tax, tip &amp; anything unassigned — split by what you had"
+          : "tap who had each item — for now it’s even";
+        var extrasRow =
+          '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 2px 2px; border-top:1px dashed rgba(43,33,24,0.14); margin-top:2px;">' +
+            '<span style="font-family:' + F_MONO + '; font-size:11px; letter-spacing:.3px; color:rgba(43,33,24,0.55);">everything else</span>' +
+            '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:14px; color:#2B2118;">$' + dollars(Math.max(0, comp.extras)) + '</span>' +
+          '</div>' +
+          '<div style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.4); padding:3px 2px 0;">' + extrasNote + '</div>';
+
+        var lowNote = st.itemsConfidence === "low"
+          ? '<div style="font-family:' + F_MONO + '; font-size:9.5px; color:#FF6B5E; margin-top:6px;">these lines might be off — give them a glance 👀</div>' : '';
+
+        var perRows = members.map(function (m) {
+          var cents = comp.perPerson[m.id] || 0;
+          return '<div style="display:flex; align-items:center; gap:10px; padding:8px 2px;">' +
+            '<div style="width:30px; height:30px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:15px; flex:none;">' + app.face(m.emoji) + '</div>' +
+            '<span style="flex:1; font-family:' + F_SANS + '; font-weight:500; font-size:14px; color:#2B2118;">' + app.esc(m.you ? "you" : m.name) + '</span>' +
+            '<span data-per="' + app.esc(m.id) + '" style="font-family:' + F_MONO + '; font-weight:700; font-size:15px; color:#2775CA;">$' + dollars(cents) + '</span>' +
+          '</div>';
+        }).join("");
+        var sumPer = members.reduce(function (a, m) { return a + (comp.perPerson[m.id] || 0); }, 0);
+
+        itemizedSection =
+          '<div style="margin-top:22px;">' +
+            '<div style="display:flex; align-items:center; justify-content:space-between;">' +
+              '<label style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); margin:0;">WHO HAD WHAT?</label>' +
+              '<button id="nSplitEven" style="appearance:none; border:none; cursor:pointer; background:transparent; font-family:' + F_MONO + '; font-size:10px; letter-spacing:.3px; color:#2775CA; text-decoration:underline; padding:0;">split evenly instead</button>' +
+            '</div>' + lowNote + memberChips +
+            '<div style="margin-top:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:4px 14px 12px;">' +
+              itemRows + extrasRow +
+            '</div>' +
+            '<div style="margin-top:13px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); border-radius:18px; padding:8px 14px 10px;">' +
+              '<div style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); padding:6px 2px 2px;">EACH PERSON OWES</div>' +
+              perRows +
+              '<div style="display:flex; align-items:center; justify-content:space-between; padding:9px 2px 4px; margin-top:4px; border-top:1.5px dashed rgba(43,33,24,0.14);">' +
+                '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">total</span>' +
+                '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:15px; color:#3DE8C7;">$' + dollars(sumPer) + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      }
+
       // scrollable content
+      var mainSplit = itemized ? itemizedSection : splitBetween;
       var scroll =
         '<div class="ns-scroll" style="position:relative; z-index:2; flex:1; overflow-y:auto; scrollbar-width:none; padding:6px 20px 150px;">' +
-          headline + grpPill + hero + whatFor + totalBlock + tipSeg + paidBy + splitBetween +
+          headline + grpPill + hero + whatFor + totalBlock + tipSeg + paidBy + mainSplit +
         '</div>';
 
       // send footer — exact frame button + dry mono subline
@@ -542,6 +678,23 @@
       if (plus) plus.onclick = function () {
         if (st.members.length >= 12) return;
         personSheet(null); // pick a friend or name them, instead of a generic "person N"
+      };
+
+      // itemized: tap a member on an item to toggle who had it
+      [].forEach.call(document.querySelectorAll("[data-item-idx]"), function (b) {
+        b.onclick = function () {
+          var idx = parseInt(b.getAttribute("data-item-idx"), 10);
+          var mid = b.getAttribute("data-item-member");
+          var item = st.items && st.items[idx];
+          if (!item) return;
+          if (item.assigned[mid]) delete item.assigned[mid];
+          else item.assigned[mid] = true;
+          render();
+        };
+      });
+      var splitEven = document.getElementById("nSplitEven");
+      if (splitEven) splitEven.onclick = function () {
+        st.itemized = false; st.mode = "equally"; render();
       };
 
       var send = document.getElementById("nSend");
@@ -670,15 +823,44 @@
       });
     }
 
+    // Fold a /api/scan response into state. Sets the total (and merchant/title),
+    // and — for standalone tabs — enters itemized "who had what" mode when the
+    // scan came back with line items. Defensive: clamps + drops junk lines.
+    function applyScanResult(r) {
+      if (!r) return;
+      if (r.total != null) st.totalCents = toCents(r.total);
+      st.tipKey = "none"; // scanned totals already include tip; don't double it
+      if (r.merchant && !st.title) st.title = String(r.merchant).toLowerCase();
+      st.scanTaxCents = (r.taxCents | 0) || 0;
+      st.scanTipCents = (r.tipCents | 0) || 0;
+      st.scanSubtotalCents = (r.subtotalCents | 0) || 0;
+      st.itemized = false; st.items = null;
+      // Itemized flow is standalone-only (trip expenses do even splits server-side).
+      if (!groupId && r.items && r.items.length) {
+        var items = [];
+        for (var i = 0; i < r.items.length && items.length < 40; i++) {
+          var it = r.items[i] || {};
+          var cents = it.cents | 0;
+          if (!(cents > 0)) continue; // drop junk / non-positive lines
+          var qty = (it.qty > 0) ? (it.qty | 0) : 1;
+          items.push({ label: String(it.label || "item"), qty: qty, cents: cents, assigned: {} });
+        }
+        if (items.length) {
+          st.items = items;
+          st.itemized = true;
+          st.itemsConfidence = r.itemsConfidence === "low" ? "low" : "ok";
+        }
+      }
+    }
+
     async function doScan(dataUrl) {
       st.scanning = true; render();
       try {
         var r = await app.api.post("/api/scan", { image: dataUrl });
         if (r && r.total != null) {
-          st.totalCents = toCents(r.total);
-          st.tipKey = "none"; // after a scan keep tip none
-          if (r.merchant && !st.title) st.title = String(r.merchant).toLowerCase();
-          app.toast("read " + (r.totalFmt || ("$" + dollars(st.totalCents))) + " ✨");
+          applyScanResult(r);
+          var note = st.itemized ? (" · " + st.items.length + " items 🧾") : "";
+          app.toast("read " + (r.totalFmt || ("$" + dollars(st.totalCents))) + note + " ✨");
         } else if (r && r.needsManualEntry) {
           app.toast("couldn't read it — enter manually");
         }
@@ -687,6 +869,18 @@
       }
       st.scanning = false; render();
     }
+
+    // Tiny, non-sensitive test hook: lets an automated check drive the itemized
+    // UI without a live scan provider (by stubbing the /api/scan payload). Guards
+    // nothing sensitive — it only mutates this screen's local form state.
+    window.__divvyItemTest = {
+      applyScan: function (r) { applyScanResult(r); render(); },
+      compute: function () { return computeItemized(); },
+      assign: function (idx, memberId) {
+        if (st.items && st.items[idx]) { st.items[idx].assigned[memberId] = true; render(); }
+      },
+      state: st,
+    };
 
     async function doSend() {
       if (st.totalCents <= 0) { app.toast("add a total first"); return; }
@@ -699,7 +893,21 @@
       // Standalone "by share": send the per-person amounts (the /api/bills path
       // honors customCents) and require they balance to the total first.
       var customCents = null;
-      if (!groupId && st.mode === "custom") {
+      var itemsPayload = null;
+      if (!groupId && st.itemized && st.items && st.items.length) {
+        // Itemized: per-person cents come from computeItemized() — they sum to
+        // grand by construction, so the server's custom-share check will pass.
+        var comp = computeItemized();
+        customCents = inc.map(function (m) { return comp.perPerson[m.id] || 0; });
+        var isum = customCents.reduce(function (a, b) { return a + b; }, 0);
+        if (isum !== grand) { app.toast("couldn't balance the split — try evenly"); return; }
+        // Persist the itemization (labels + who had each) on the bill.
+        itemsPayload = st.items.map(function (item) {
+          var names = inc.filter(function (m) { return item.assigned[m.id]; })
+            .map(function (m) { return m.you ? "you" : m.name; });
+          return { label: item.label, qty: item.qty, cents: item.cents, names: names };
+        });
+      } else if (!groupId && st.mode === "custom") {
         var evenly = equalShares(grand, inc.length);
         customCents = inc.map(function (m, i) {
           return st.custom[m.id] !== undefined ? st.custom[m.id] : evenly[i];
@@ -740,6 +948,7 @@
             members: inc.map(function (m) { return { name: m.you ? "you" : m.name, userId: m.userId, wallet: m.wallet }; }),
             mode: customCents ? "custom" : "equal",
             customCents: customCents || undefined,
+            items: itemsPayload || undefined,
           });
           var id = bill && (bill.id || bill.billId);
           if (!id) throw new Error("no bill id");

@@ -58,6 +58,20 @@ export interface BillFx {
   source: string;
 }
 
+/**
+ * A single line item from an itemized (receipt-scanned) split. `cents` is the
+ * line total (integer cents); `names` are the participants who shared it (empty
+ * = unassigned → folded into the proportional "extras" bucket). Purely a record
+ * of how the split was decided — the authoritative per-person amounts live on
+ * the participants. Stored inside the bill JSON blob (both SQLite + Supabase).
+ */
+export interface BillItem {
+  label: string;
+  qty: number;
+  cents: number;
+  names: string[];
+}
+
 export interface Bill {
   id: string;
   title: string;
@@ -75,6 +89,9 @@ export interface Bill {
   participants: BillParticipant[];
   /** Set when the total was converted from a foreign currency. */
   fx?: BillFx;
+  /** Itemized breakdown, when the bill was split by "who had what". Additive:
+   *  older bills simply don't have it. */
+  items?: BillItem[];
 }
 
 export interface CreateBillInput {
@@ -91,6 +108,8 @@ export interface CreateBillInput {
   weights?: number[];
   customCents?: number[];
   fx?: BillFx;
+  /** Optional itemized breakdown to persist alongside the split. */
+  items?: BillItem[];
 }
 
 export function createBill(input: CreateBillInput): Bill {
@@ -139,6 +158,7 @@ export function createBill(input: CreateBillInput): Bill {
     mode: input.mode,
     participants,
     ...(input.fx ? { fx: input.fx } : {}),
+    ...(input.items && input.items.length ? { items: input.items } : {}),
   };
 }
 

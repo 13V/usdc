@@ -21,6 +21,16 @@ export class NoScanProvider extends Error {
   }
 }
 
+/** One line item read off the receipt. Money is integer cents (line total for
+ *  the whole `qty`, after toCents conversion). Items are best-effort. */
+export interface ScannedItem {
+  label: string;
+  /** Units on this line (>=1). The `cents` is the total for all of them. */
+  qty: number;
+  /** Line total in integer cents (qty × unit price). */
+  cents: number;
+}
+
 export interface ScannedReceipt {
   /** Grand total actually due, integer cents. */
   totalCents: number;
@@ -31,6 +41,13 @@ export interface ScannedReceipt {
   merchant?: string;
   /** Model's own confidence: low | medium | high. */
   confidence: "low" | "medium" | "high";
+  /** Line items, when the receipt was legible enough to read them. Optional —
+   *  the model omits these on blurry receipts, and the whole itemized flow is a
+   *  progressive enhancement on top of the total. */
+  items?: ScannedItem[];
+  /** "ok" when the items roughly reconcile against the subtotal, "low" when the
+   *  sum is wildly off (still returned, but the UI should treat it as a hint). */
+  itemsConfidence?: "ok" | "low";
 }
 
 const MODEL = "claude-opus-4-8";
@@ -44,7 +61,21 @@ Return ONLY a single JSON object, no prose, no markdown fences, with these keys:
   "merchant"   string  — the venue name, or "" if unclear
   "currency"   string  — ISO code like "USD","AUD","EUR", best guess from symbols/context
   "confidence" string  — "high","medium", or "low" for how sure you are of the total
-If the image is not a readable receipt, set total to 0 and confidence to "low".`;
+  "items"      array   — the individual line items, so people can split "who had what".
+                         Each element is an object:
+                           "label" string — the dish/product name as printed, e.g. "cheeseburger"
+                           "qty"   number — how many of this line (default 1)
+                           "price" number — the LINE TOTAL for that row (qty × unit price), a decimal like 24.00
+                         Include every food/drink/product line. DO NOT include tax, tip,
+                         subtotal, total, or discount lines as items. If you cannot read the
+                         items clearly, return an empty array [] — never guess.
+If the image is not a readable receipt, set total to 0, confidence to "low", and items to [].`;
+
+interface RawItem {
+  label?: string;
+  qty?: number;
+  price?: number;
+}
 
 interface RawScan {
   total: number;
@@ -54,6 +85,7 @@ interface RawScan {
   merchant?: string;
   currency?: string;
   confidence?: string;
+  items?: RawItem[];
 }
 
 /** Pull the first JSON object out of a model text reply (tolerates stray text). */
@@ -70,6 +102,48 @@ function toCentsSafe(n: unknown): number {
   const v = typeof n === "number" ? n : Number(n);
   if (!Number.isFinite(v) || v < 0) return 0;
   return toCents(v);
+}
+
+/** Hard caps so a hostile/hallucinated payload can't produce junk items. */
+const MAX_ITEMS = 40;
+const MAX_ITEM_CENTS = 1_000_000_00; // $1,000,000 per line — absurd, drop above
+const MAX_ITEM_LABEL = 80;
+
+/**
+ * Clean the raw items array: convert prices to integer cents, drop empties /
+ * non-positive / absurd lines, clamp qty and label length, and cap the count.
+ * Returns undefined when nothing survives (so callers can omit the field).
+ */
+function cleanItems(raw: RawItem[] | undefined): ScannedItem[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const out: ScannedItem[] = [];
+  for (const it of raw) {
+    if (out.length >= MAX_ITEMS) break;
+    const cents = toCentsSafe(it && it.price);
+    if (cents <= 0 || cents > MAX_ITEM_CENTS) continue; // junk / absurd → drop
+    let qty = Number(it && it.qty);
+    if (!Number.isFinite(qty) || qty < 1) qty = 1;
+    qty = Math.min(Math.floor(qty), 99);
+    let label = String((it && it.label) || "item").trim();
+    if (!label) label = "item";
+    if (label.length > MAX_ITEM_LABEL) label = label.slice(0, MAX_ITEM_LABEL);
+    out.push({ label, qty, cents });
+  }
+  return out.length ? out : undefined;
+}
+
+/**
+ * Sanity-check the items against the subtotal. If they're wildly off, we still
+ * return them (they're useful) but flag low confidence so the UI can hint. When
+ * we have no subtotal to compare against, assume "ok".
+ */
+function reconcileItems(items: ScannedItem[], subtotalCents: number): "ok" | "low" {
+  if (!subtotalCents || subtotalCents <= 0) return "ok";
+  const sum = items.reduce((a, it) => a + it.cents, 0);
+  const drift = Math.abs(sum - subtotalCents);
+  // Tolerate the larger of 15% of subtotal or $5 (rounding, unread lines, etc.).
+  const tolerance = Math.max(Math.round(subtotalCents * 0.15), 500);
+  return drift > tolerance ? "low" : "ok";
 }
 
 /**
@@ -104,14 +178,17 @@ export async function scanReceipt(
   const raw = extractJson(text);
 
   const conf = raw.confidence === "high" || raw.confidence === "medium" ? raw.confidence : "low";
+  const subtotalCents = toCentsSafe(raw.subtotal);
+  const items = cleanItems(raw.items);
   return {
     totalCents: toCentsSafe(raw.total),
-    subtotalCents: toCentsSafe(raw.subtotal),
+    subtotalCents,
     taxCents: toCentsSafe(raw.tax),
     tipCents: toCentsSafe(raw.tip),
     currency: (raw.currency || "USD").toUpperCase(),
     merchant: raw.merchant || undefined,
     confidence: conf,
+    ...(items ? { items, itemsConfidence: reconcileItems(items, subtotalCents) } : {}),
   };
 }
 

@@ -96,12 +96,28 @@
 
   // a normal (non-highlighted) person row, lifted verbatim — squared rows are
   // full opacity, waiting rows dim to .5 in frame 1 (mirrors "tab sent")
-  function personRow(p, i, isYou, dimWaiting) {
+  // Short "what they had" line from the itemized breakdown, e.g. "fries · wine".
+  // Cheap: at most a handful of items, truncated. Empty when the bill wasn't
+  // itemized or this person had nothing specifically assigned.
+  function itemsLine(bill, name) {
+    var items = bill && bill.items;
+    if (!items || !items.length) return "";
+    var mine = [];
+    for (var k = 0; k < items.length && mine.length < 4; k++) {
+      var it = items[k];
+      if (it && it.names && it.names.indexOf(name) >= 0) mine.push(it.label);
+    }
+    if (!mine.length) return "";
+    return '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.2px; color:rgba(43,33,24,0.42); margin-top:2px;">' + app.esc(mine.join(" · ")) + '</div>';
+  }
+
+  function personRow(p, i, isYou, dimWaiting, bill) {
     var amtCol = p.paid ? "#2775CA" : "rgba(43,33,24,0.6)";
     var dim = (dimWaiting && !p.paid) ? " opacity:.5;" : "";
+    var sub = itemsLine(bill, p.name);
     return '<div style="display:flex; align-items:center; gap:11px; padding:9px 4px;' + dim + '">' +
       '<div style="width:34px; height:34px; border-radius:50%; background:' + avGrad(i) + '; display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">' + app.face(avFace(p, i)) + '</div>' +
-      '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + app.esc(p.name) + (isYou ? " (you)" : "") + '</span>' +
+      '<div style="flex:1; min-width:0;"><span style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + app.esc(p.name) + (isYou ? " (you)" : "") + '</span>' + sub + '</div>' +
       '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:14px; color:' + amtCol + ';">' + app.esc(p.amountFmt || "") + '</span>' +
       statusPill(p.paid) +
     '</div>';
@@ -195,7 +211,7 @@
     var rows = ps.map(function (p, i) {
       var isYou = i === 0;
       if (some && i === nudgeIdx) return nudgeRow(p, i);
-      return personRow(p, i, isYou, !some); // frame 1 dims waiting rows; frame 2 doesn't
+      return personRow(p, i, isYou, !some, bill); // frame 1 dims waiting rows; frame 2 doesn't
     }).join("");
 
     // actions differ: tab sent → share + copy; collecting → re-share + dry note

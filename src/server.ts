@@ -21,7 +21,7 @@ import express, { Request, Response, NextFunction } from "express";
 // that crashes the process. Must be imported before routes are registered.
 import "express-async-errors";
 import { Connection, clusterApiUrl, PublicKey } from "@solana/web3.js";
-import { createBill, Bill, BillFx, collectedCents, outstandingCents } from "./bill";
+import { createBill, Bill, BillFx, BillItem, collectedCents, outstandingCents } from "./bill";
 import { store } from "./store";
 import {
   listGroups,
@@ -506,6 +506,43 @@ interface CreateBillBody {
   count?: number;
   saveGroupName?: string;
   fx?: BillFx;
+  /** Itemized "who had what" breakdown, when the split was built from a scan. */
+  items?: { label?: string; qty?: number; cents?: number; names?: string[] }[];
+}
+
+/** Same caps as scan.ts so a hostile bill payload can't smuggle megabytes of
+ *  items past the scanner's own limits. */
+const MAX_BILL_ITEMS = 40;
+const MAX_ITEM_LABEL = 80;
+
+/**
+ * Sanitize a client-supplied items array into stored BillItems. Defensive: drops
+ * junk lines, clamps counts/lengths, integer cents only. Returns undefined when
+ * nothing valid remains. Names are intersected with the real participant set so
+ * a payload can't attach phantom people to a line.
+ */
+function sanitizeBillItems(
+  raw: CreateBillBody["items"],
+  validNames: string[]
+): BillItem[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const nameSet = new Set(validNames);
+  const out: BillItem[] = [];
+  for (const it of raw) {
+    if (out.length >= MAX_BILL_ITEMS) break;
+    const cents = Number(it && it.cents);
+    if (!Number.isInteger(cents) || cents <= 0 || cents > MAX_AMOUNT_CENTS) continue;
+    let qty = Number(it && it.qty);
+    if (!Number.isInteger(qty) || qty < 1) qty = 1;
+    qty = Math.min(qty, 99);
+    let label = String((it && it.label) || "item").trim().slice(0, MAX_ITEM_LABEL) || "item";
+    const rawNames = it && it.names;
+    const names = Array.isArray(rawNames)
+      ? rawNames.map((n) => String(n)).filter((n) => nameSet.has(n))
+      : [];
+    out.push({ label, qty, cents, names });
+  }
+  return out.length ? out : undefined;
 }
 
 app.post("/api/bills", moneyRateLimit, async (req: Request, res: Response) => {
@@ -609,6 +646,7 @@ app.post("/api/bills", moneyRateLimit, async (req: Request, res: Response) => {
       weights: body.weights,
       customCents: body.customCents,
       fx: body.fx,
+      items: sanitizeBillItems(body.items, names),
     });
     await store.put(bill);
     res.json(serializeBill(bill));
