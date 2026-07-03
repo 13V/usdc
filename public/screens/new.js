@@ -561,18 +561,7 @@
       document.head.appendChild(s);
     }
     function swMascot() {
-      return '<div style="position:relative; width:96px; height:96px; margin:0 auto; animation:swFloat 4.6s ease-in-out infinite;">' +
-        '<div style="position:absolute; left:50%; top:50%; width:120px; height:120px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.3) 0%, rgba(39,117,202,0) 68%);"></div>' +
-        '<div style="position:absolute; left:8px; top:38px; width:17px; height:33px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f); transform:rotate(15deg);"></div>' +
-        '<div style="position:absolute; right:8px; top:38px; width:17px; height:33px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f); transform:rotate(-15deg);"></div>' +
-        '<div style="position:absolute; left:32px; bottom:2px; width:16px; height:25px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f);"></div>' +
-        '<div style="position:absolute; right:32px; bottom:2px; width:16px; height:25px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f);"></div>' +
-        '<div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:84px; height:84px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:swSquish 5s ease-in-out infinite; box-shadow:0 12px 24px rgba(6,14,24,0.5), inset 0 4px 9px rgba(255,255,255,0.32), inset 0 -6px 12px rgba(13,40,72,0.5); display:flex; align-items:center; justify-content:center;">' +
-          '<div style="position:absolute; top:12px; left:18px; width:34px; height:22px; border-radius:50%; background:radial-gradient(closest-side, rgba(255,255,255,0.4), rgba(255,255,255,0));"></div>' +
-          '<div style="display:flex; gap:13px; margin-top:-4px;"><div style="width:9px; height:12px; border-radius:50%; background:#F7F1E3; animation:swBlink 5s infinite;"></div><div style="width:9px; height:12px; border-radius:50%; background:#F7F1E3; animation:swBlink 5s infinite;"></div></div>' +
-          '<div style="position:absolute; bottom:24px; width:20px; height:10px; border:4px solid #2B2118; border-top:none; border-radius:0 0 13px 13px;"></div>' +
-        '</div>' +
-      '</div>';
+      return app.mascot({ size: 88, mood: "watching", glow: false });
     }
 
     // The "split with" sheet (v7 frame): search + tappable friend list + guest row.

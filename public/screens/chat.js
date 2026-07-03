@@ -418,13 +418,11 @@
 
     var rowInner = el('<div style="position:relative; display:flex; align-items:center; gap:13px; padding:14px 16px;"></div>');
 
-    // mascot blob — lifted exactly (mint-tinted squish blob with pulsing glow).
+    // mini mochi rides the money card, pulsing glow behind him.
     var blob = el('<div style="position:relative; width:42px; height:42px; flex:none; display:flex; align-items:center; justify-content:center;">' +
       '<div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.4) 0%, rgba(61,232,199,0) 68%); animation:gcPulse 3s ease-in-out infinite;"></div>' +
-      '<div style="position:relative; width:30px; height:30px; background:linear-gradient(155deg,#5cf0d4,#2775CA); animation:gcSquish 4s ease-in-out infinite; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-        '<div style="position:absolute; top:9px; left:7px; width:4px; height:5px; border-radius:50%; background:#F7F1E3; animation:gcBlink 4.6s infinite;"></div>' +
-        '<div style="position:absolute; top:9px; right:7px; width:4px; height:5px; border-radius:50%; background:#F7F1E3; animation:gcBlink 4.6s infinite;"></div>' +
-      '</div></div>');
+      '<div style="position:relative; animation:gcSquish 4s ease-in-out infinite;">' + (window.Mascot ? window.Mascot.mini(30) : "") + '</div>' +
+    '</div>');
     rowInner.appendChild(blob);
 
     var mid = el('<div style="flex:1; min-width:0;"></div>');
@@ -552,12 +550,9 @@
     if (!feedEl) return;
     feedEl.innerHTML = "";
     var box = el('<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:0 40px; text-align:center; margin:auto 0;">' +
-      '<div style="position:relative; width:80px; height:80px; display:flex; align-items:center; justify-content:center;">' +
-        '<div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.32) 0%, rgba(39,117,202,0) 68%); animation:gcPulse 3s ease-in-out infinite;"></div>' +
-        '<div style="position:relative; width:54px; height:54px; background:linear-gradient(155deg,#4a9ff0,#2775CA); animation:gcSquish 4s ease-in-out infinite; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-          '<div style="position:absolute; top:18px; left:13px; width:7px; height:9px; border-radius:50%; background:#F7F1E3; animation:gcBlink 4.6s infinite;"></div>' +
-          '<div style="position:absolute; top:18px; right:13px; width:7px; height:9px; border-radius:50%; background:#F7F1E3; animation:gcBlink 4.6s infinite;"></div>' +
-        '</div>' +
+      '<div style="position:relative; width:96px; height:86px; display:flex; align-items:center; justify-content:center;">' +
+        '<div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.35) 0%, rgba(61,232,199,0) 68%); animation:gcPulse 3s ease-in-out infinite;"></div>' +
+        '<div style="position:relative; animation:gcSquish 4s ease-in-out infinite;">' + (window.Mascot ? window.Mascot.mini(72) : "") + '</div>' +
       '</div>' +
       '<div style="font-family:' + SANS + '; font-size:16px; line-height:1.45; color:rgba(43,33,24,0.65);">no messages yet — say hi<br>or drop a receipt 📷</div>' +
     '</div>');

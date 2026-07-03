@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mochi — animation reference</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 26px 18px 60px;
+    background: #F7F1E3;
+    background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(39,117,202,0.10) 27px 28px);
+    font-family: -apple-system, "General Sans", system-ui, sans-serif; color: #2B2118;
+  }
+  h1 { font-size: 27px; letter-spacing: -0.5px; margin: 0 0 4px; }
+  .sub { font-family: ui-monospace, monospace; font-size: 11px; color: #FF6B5E; font-weight: 700; margin-bottom: 22px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .cell {
+    background: #FFFDF7; border: 2px solid #2B2118; border-radius: 16px;
+    box-shadow: 3px 4px 0 rgba(43,33,24,0.85); padding: 14px 10px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .cell b { font-size: 13.5px; }
+  .cell span { font-family: ui-monospace, monospace; font-size: 9.5px; color: rgba(43,33,24,0.5); text-align: center; line-height: 1.5; }
+  .stage { width: 140px; height: 132px; filter: drop-shadow(3px 4px 0 rgba(43,33,24,0.45)); }
+  .stage svg { overflow: visible; display: block; width: 100%; height: 100%; }
+
+  /* ---- rig targets (same classes the app uses) ---- */
+  .mq-bodygroup { transform-box: fill-box; transform-origin: 50% 100%; }
+  .mq-eye-l, .mq-eye-r { transform-box: fill-box; transform-origin: 50% 100%; }
+  .mq-pupil { transform-box: fill-box; transform-origin: center; }
+  .mq-arm-l { transform-box: fill-box; transform-origin: 100% 0%; }
+  .mq-arm-r { transform-box: fill-box; transform-origin: 0% 0%; }
+  .mq-sweat { transform-box: fill-box; }
+
+  /* idle: float + breathe + peek + blink */
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-7px) rotate(1.5deg); } }
+  @keyframes squish { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.035,.96); } }
+  @keyframes blink { 0%,90%,100% { transform: scaleY(1); } 95% { transform: scaleY(.08); } }
+  @keyframes peekL { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-2.5px); } 60% { transform: translateY(0); } }
+  @keyframes peekR { 0%,100% { transform: translateY(0); } 45% { transform: translateY(-2.5px); } 75% { transform: translateY(0); } }
+  .anim-idle { animation: float 5.5s ease-in-out infinite; }
+  .anim-idle .mq-bodygroup { animation: squish 4.5s ease-in-out infinite; }
+  .anim-idle .mq-pupil { animation: blink 5s ease-in-out infinite; }
+  .anim-idle .mq-eye-l { animation: peekL 6s ease-in-out infinite; }
+  .anim-idle .mq-eye-r { animation: peekR 6s ease-in-out infinite .4s; }
+
+  /* hop: anticipate → leap → land (marketing hero move) */
+  @keyframes hopBody {
+    0%, 100% { transform: translateY(0) scale(1,1); }
+    18% { transform: translateY(2px) scale(1.12,.82); }   /* squash down */
+    38% { transform: translateY(-26px) scale(.94,1.1); }  /* stretch up */
+    58% { transform: translateY(-30px) scale(1,1); }      /* hang */
+    78% { transform: translateY(0) scale(1.1,.86); }      /* land squash */
+    90% { transform: translateY(-3px) scale(.98,1.03); }  /* settle */
+  }
+  .anim-hop { animation: hopBody 1.6s cubic-bezier(.4,0,.35,1) infinite; }
+  .anim-hop .mq-pupil { animation: blink 5s ease-in-out infinite; }
+
+  /* wave: big hello */
+  @keyframes wave { 0%,100% { transform: rotate(0); } 50% { transform: rotate(-42deg); } }
+  .anim-wave { animation: float 5.5s ease-in-out infinite; }
+  .anim-wave .mq-arm-r { animation: wave 1.4s ease-in-out infinite; }
+  .anim-wave .mq-pupil { animation: blink 5s ease-in-out infinite; }
+
+  /* worried: wobble + sweat drip */
+  @keyframes fret { 0%,100% { transform: rotate(0); } 25% { transform: rotate(2deg); } 75% { transform: rotate(-2deg); } }
+  @keyframes drip { 0% { opacity: 0; transform: translateY(-2px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(8px); } }
+  .anim-worried { animation: fret 1.1s ease-in-out infinite; }
+  .anim-worried .mq-sweat { animation: drip 2s ease-in-out infinite; }
+
+  /* party: bounce + confetti */
+  @keyframes bounce { 0%,100% { transform: translateY(0) scale(1.04,.94); } 50% { transform: translateY(-14px) scale(.96,1.06); } }
+  @keyframes confetti { 0% { opacity: 1; transform: translateY(-4px) rotate(0); } 100% { opacity: 0; transform: translateY(26px) rotate(160deg); } }
+  .anim-party { animation: bounce .7s ease-in-out infinite; }
+  .anim-party .cf { animation: confetti 1.4s linear infinite; }
+  .anim-party .cf:nth-child(2) { animation-delay: .3s; }
+  .anim-party .cf:nth-child(3) { animation-delay: .7s; }
+  .anim-party .cf:nth-child(4) { animation-delay: 1s; }
+
+  /* watching: eyes track left-right */
+  @keyframes track { 0%,20% { transform: translateX(-4px); } 50%,70% { transform: translateX(4px); } 100% { transform: translateX(-4px); } }
+  .anim-watching { animation: float 5.5s ease-in-out infinite; }
+  .anim-watching .mq-pupil { animation: track 3.4s ease-in-out infinite; }
+</style>
+</head>
+<body>
+<h1>mochi — motion reference</h1>
+<div class="sub">same rig the app ships · loop specs for marketing</div>
+<div class="grid" id="grid"></div>
+
+<script>
+const INK = "#2B2118", MINT = "#3DE8C7", CORAL = "#FF6B5E", BLUE = "#2775CA", SUN = "#FFC65C";
+const S = `stroke="${INK}" stroke-linecap="round" stroke-linejoin="round"`;
+
+function frog({ mood = "happy", waving = false, hat = false, confetti = false } = {}) {
+  const pupil = (cx) => `<circle class="mq-pupil" cx="${cx}" cy="34" r="5.6" fill="${INK}"/><circle cx="${cx+2}" cy="32" r="1.8" fill="#fff"/>`;
+  const eye = (cls, cx, brow) => `<g class="${cls}">
+    <circle cx="${cx}" cy="34" r="17" fill="${MINT}" ${S} stroke-width="4"/>
+    ${pupil(cx)}
+    ${brow ? `<path d="M${cx-8},18 q8,-4 15,-1" fill="none" ${S} stroke-width="3"/>` : ""}
+  </g>`;
+  const mouth = mood === "worried"
+    ? `<path d="M75,98 q5,-5 10,0 q5,5 10,0" fill="none" ${S} stroke-width="3.6"/>`
+    : mood === "party"
+    ? `<path d="M74,90 q11,13 22,0 z" fill="${INK}"/>`
+    : `<path d="M63,92 q11,10 22,0 q11,10 22,0" fill="none" ${S} stroke-width="3.6"/>`;
+  return `<svg viewBox="0 0 170 158">
+    ${confetti ? `
+      <rect class="cf" x="20" y="8" width="7" height="7" rx="1.5" fill="${CORAL}"/>
+      <circle class="cf" cx="86" cy="2" r="4" fill="${BLUE}"/>
+      <rect class="cf" x="140" y="10" width="7" height="7" rx="1.5" fill="${SUN}"/>
+      <circle class="cf" cx="120" cy="4" r="3.4" fill="${MINT}" stroke="${INK}" stroke-width="1.4"/>` : ""}
+    <g class="mq-leg-l"><path d="M60,132 v9 M51,141 h15" fill="none" ${S} stroke-width="4"/></g>
+    <g class="mq-leg-r"><path d="M110,132 v9 M104,141 h15" fill="none" ${S} stroke-width="4"/></g>
+    <g class="mq-bodygroup">
+      <g class="mq-arm-l"><path d="M27,98 q-11,3 -13,13" fill="none" ${S} stroke-width="4"/></g>
+      <g class="mq-arm-r"><path d="${waving ? "M143,94 q13,-7 15,-18" : "M143,98 q11,3 13,13"}" fill="none" ${S} stroke-width="4"/></g>
+      ${eye("mq-eye-l", 60, mood === "worried")}
+      ${eye("mq-eye-r", 110, mood === "worried")}
+      <path class="mq-body" d="M25,96 Q25,50 85,50 Q145,50 145,96 L145,102 Q145,132 85,132 Q25,132 25,102 Z" fill="${MINT}" ${S} stroke-width="4"/>
+      <path d="M42,64 q16,-9 32,-7" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="4.6" stroke-linecap="round"/>
+      ${mouth}
+      <ellipse cx="44" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>
+      <ellipse cx="126" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>
+      <path class="mq-sweat" d="M36,50 q7,9 0,14 q-8,-5 0,-14" fill="${BLUE}" opacity="${mood === "worried" ? 1 : 0}"/>
+      ${hat ? `<path d="M76,16 l9,-19 l9,19 z" fill="${SUN}" ${S} stroke-width="2.4"/><circle cx="85" cy="-4" r="3" fill="${CORAL}" ${S} stroke-width="2"/>` : ""}
+    </g>
+  </svg>`;
+}
+
+const LOOPS = [
+  { cls: "anim-idle", name: "idle", note: "float 5.5s · breathe 4.5s · blink 5s · eyes peek offset — app default", opts: {} },
+  { cls: "anim-hop", name: "hop", note: "squash → leap → land, 1.6s. the hero move for launch videos", opts: {} },
+  { cls: "anim-wave", name: "wave", note: "arm 1.4s ease. onboarding + invite screens", opts: { waving: true } },
+  { cls: "anim-worried", name: "worried", note: "2° fret wobble + sweat drip 2s. someone owes money", opts: { mood: "worried" } },
+  { cls: "anim-party", name: "party", note: "bounce .7s + confetti rain. settle-up success", opts: { mood: "party", hat: true, confetti: true } },
+  { cls: "anim-watching", name: "watching", note: "pupils track 3.4s. waiting for payment to confirm", opts: {} },
+];
+
+document.getElementById("grid").innerHTML = LOOPS.map(l => `
+  <div class="cell">
+    <div class="stage ${l.cls}">${frog(l.opts)}</div>
+    <b>${l.name}</b>
+    <span>${l.note}</span>
+  </div>`).join("");
+</script>
+</body>
+</html>

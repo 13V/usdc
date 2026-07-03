@@ -342,14 +342,11 @@
     ind.style.cssText = "position:absolute; left:50%; top:0; z-index:30; transform:translate(-50%,-44px); " +
       "width:30px; height:30px; border-radius:50%; pointer-events:none; opacity:0; " +
       "transition:opacity .15s; display:flex; align-items:center; justify-content:center;";
-    // The indicator is a mini mascot blob: it stretches like taffy as you pull
+    // The indicator is a mini mochi: he stretches like taffy as you pull
     // and boings while the refresh runs.
-    ind.innerHTML = '<div style="width:26px;height:26px;border-radius:47% 53% 52% 48%/55% 48% 52% 45%;' +
-      'background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697);' +
-      'box-shadow:3px 3px 0 rgba(43,33,24,0.9);' +
-      'display:flex;align-items:center;justify-content:center;gap:4px;">' +
-      '<span style="width:4px;height:6px;border-radius:50%;background:#F7F1E3;"></span>' +
-      '<span style="width:4px;height:6px;border-radius:50%;background:#F7F1E3;"></span></div>';
+    ind.innerHTML = window.Mascot && window.Mascot.mini
+      ? window.Mascot.mini(30)
+      : '<div style="width:26px;height:26px;border-radius:50%;background:#3DE8C7;border:2px solid #2B2118;"></div>';
     if (!document.getElementById("divvy-ptr-css")) {
       var s = document.createElement("style");
       s.id = "divvy-ptr-css";

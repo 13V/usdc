@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 158" width="340" height="316">
+  <!-- Mochi the frog — Divvy mascot master rig.
+       Every part is a named group so this file drops into Figma / After
+       Effects / Lottie pipelines with a ready-made layer structure.
+       Palette: mint #3DE8C7 · ink #2B2118 · coral #FF6B5E · blue #2775CA.
+       Rig notes:
+         #body-group   squash/stretch from bottom-center (sitting)
+         #eye-left/right  bob independently (periscope idle), pivot bottom-center
+         #pupil-left/right  blink = scaleY→0.08, pivot center
+         #arm-left/right  rotate at the shoulder (path start)
+         #mouth        swap per mood (happy/worried/watching/sleepy)
+         #sweat        worried only; slides down and fades
+  -->
+  <g id="mochi">
+    <g id="leg-left"><path d="M60,132 v9 M51,141 h15" fill="none" stroke="#2B2118" stroke-width="4" stroke-linecap="round"/></g>
+    <g id="leg-right"><path d="M110,132 v9 M104,141 h15" fill="none" stroke="#2B2118" stroke-width="4" stroke-linecap="round"/></g>
+    <g id="body-group">
+      <g id="arm-left"><path d="M27,98 q-11,3 -13,13" fill="none" stroke="#2B2118" stroke-width="4" stroke-linecap="round"/></g>
+      <g id="arm-right"><path d="M143,98 q11,3 13,13" fill="none" stroke="#2B2118" stroke-width="4" stroke-linecap="round"/></g>
+      <g id="eye-left">
+        <circle cx="60" cy="34" r="17" fill="#3DE8C7" stroke="#2B2118" stroke-width="4"/>
+        <circle id="pupil-left" cx="60" cy="34" r="5.6" fill="#2B2118"/>
+        <circle cx="62" cy="32" r="1.8" fill="#fff"/>
+      </g>
+      <g id="eye-right">
+        <circle cx="110" cy="34" r="17" fill="#3DE8C7" stroke="#2B2118" stroke-width="4"/>
+        <circle id="pupil-right" cx="110" cy="34" r="5.6" fill="#2B2118"/>
+        <circle cx="112" cy="32" r="1.8" fill="#fff"/>
+      </g>
+      <path id="body" d="M25,96 Q25,50 85,50 Q145,50 145,96 L145,102 Q145,132 85,132 Q25,132 25,102 Z"
+            fill="#3DE8C7" stroke="#2B2118" stroke-width="4" stroke-linejoin="round"/>
+      <path id="highlight" d="M42,64 q16,-9 32,-7" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="4.6" stroke-linecap="round"/>
+      <g id="face">
+        <path id="mouth" d="M63,92 q11,10 22,0 q11,10 22,0" fill="none" stroke="#2B2118" stroke-width="3.6" stroke-linecap="round"/>
+        <ellipse id="blush-left" cx="44" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>
+        <ellipse id="blush-right" cx="126" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>
+      </g>
+      <path id="sweat" d="M36,50 q7,9 0,14 q-8,-5 0,-14" fill="#2775CA" opacity="0"/>
+    </g>
+  </g>
+</svg>
