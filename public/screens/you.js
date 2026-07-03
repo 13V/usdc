@@ -273,6 +273,8 @@
         // export a CSV of the user's history (built client-side from /api/activity)
         // and help & support (FAQs + contact + links to /terms and /privacy).
         row("yExport", "📄", "rgba(255,198,92,0.16)", "export my history (csv)") + divider() +
+        // fun / growth: opens the public Mochi meme generator (/memes) in a new tab.
+        row("yMeme", "🐸", "rgba(61,232,199,0.14)", "make a mochi meme") + divider() +
         row("yHelp", "💁", "rgba(43,33,24,0.07)", "help & support") +
       '</div>';
   }
@@ -669,6 +671,9 @@
     // export my history → client-side CSV download from /api/activity.
     var exp = document.getElementById("yExport");
     if (exp) exp.onclick = exportHistoryCsv;
+    // make a mochi meme → opens the public meme generator (/memes) in a new tab.
+    var meme = document.getElementById("yMeme");
+    if (meme) meme.onclick = function () { window.open("/memes", "_blank", "noopener"); };
     // help & support → journal-styled FAQ sheet (+ mailto, /terms, /privacy).
     var help = document.getElementById("yHelp");
     if (help) help.onclick = openHelpSheet;

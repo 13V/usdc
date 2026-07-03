@@ -497,6 +497,67 @@
     view.classList.add(transition);
     lastScreenName = r.name;
     renderTabbar(r.name);
+    renderDemoBanner();
+  }
+
+  // ---- demo-mode banner ----
+  // A cold visitor who tapped "try it first" is in a disposable burner account
+  // seeded with a sample world. This slim journal banner rides ABOVE #view (a
+  // persistent element, so it survives per-screen re-renders) to keep that
+  // context present everywhere, and offers a one-tap upgrade to a real account.
+  // Gated on the localStorage flag divvy.demoMode (set by the try-it flow) + an
+  // actual signed-in user; dismissible, and the dismissal sticks.
+  var DEMO_MODE_KEY = "divvy.demoMode";
+  var DEMO_DISMISS_KEY = "divvy.demoDismissed";
+  function demoBannerActive() {
+    try {
+      return localStorage.getItem(DEMO_MODE_KEY) === "1" &&
+        localStorage.getItem(DEMO_DISMISS_KEY) !== "1" &&
+        !!(window.Auth && window.Auth.user);
+    } catch (_) { return false; }
+  }
+  function renderDemoBanner() {
+    var appEl = document.getElementById("app");
+    var view = document.getElementById("view");
+    if (!appEl || !view) return;
+    var existing = document.getElementById("demoBanner");
+    if (!demoBannerActive()) { if (existing) existing.remove(); return; }
+    if (existing) return; // persist across screens — build once
+    var bar = document.createElement("div");
+    bar.id = "demoBanner";
+    bar.style.cssText = "position:relative; z-index:5; flex:none; display:flex; align-items:center; gap:10px; " +
+      "padding:9px 12px 9px 14px; margin:8px 10px 0; border:2px solid #2B2118; border-radius:14px; " +
+      "background:#FFC65C; box-shadow:3px 3px 0 rgba(43,33,24,0.85);";
+    bar.innerHTML =
+      '<span style="font-size:17px; flex:none;">✨</span>' +
+      '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:12.5px; line-height:1.3; color:#2B2118;">' +
+        "you're in demo mode — money here isn't real. " +
+        '<span style="opacity:.75;">sign in with apple when you\'re ready</span></span>' +
+      '<button id="demoSignIn" style="appearance:none; border:2px solid #2B2118; cursor:pointer; flex:none; background:#2775CA; color:#fff; border-radius:999px; padding:7px 12px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12px; box-shadow:2px 2px 0 rgba(43,33,24,0.85);">sign in</button>' +
+      '<button id="demoDismiss" aria-label="dismiss" style="appearance:none; border:none; cursor:pointer; flex:none; background:transparent; padding:4px; display:flex; align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.6)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
+    // Sits above the scroll area so it's pinned regardless of screen.
+    appEl.insertBefore(bar, view);
+    var signInBtn = bar.querySelector("#demoSignIn");
+    var dismissBtn = bar.querySelector("#demoDismiss");
+    // Upgrade path: the real Privy flow. The demo account is disposable — account
+    // migration is out of scope, which the "money here isn't real" copy conveys.
+    if (signInBtn) signInBtn.onclick = function () {
+      track("demo_upgrade");
+      // Leaving the disposable demo for a real account: clear the demo flags so
+      // the banner doesn't follow them onto their real session, and a future demo
+      // re-seeds cleanly. (Account migration is out of scope — demo data is
+      // disposable, as the banner copy says.)
+      try {
+        localStorage.removeItem(DEMO_MODE_KEY);
+        localStorage.removeItem(DEMO_DISMISS_KEY);
+        localStorage.removeItem("divvy.demoSeeded");
+      } catch (_) {}
+      signIn();
+    };
+    if (dismissBtn) dismissBtn.onclick = function () {
+      try { localStorage.setItem(DEMO_DISMISS_KEY, "1"); } catch (_) {}
+      if (bar.parentNode) bar.parentNode.removeChild(bar);
+    };
   }
   // Only the five top-level destinations show the bottom tab bar; everything else
   // (group, new, settle, collect, chat, receipt, friend, recurring, customize,
@@ -1203,8 +1264,10 @@
   if (window.Auth && window.Auth.onChange) window.Auth.onChange(function () {
     syncIdentity();
     // Auth resolving (or signing in/out) flips whether the signed-out-home tab
-    // bar should show — re-evaluate it for the current route.
+    // bar should show — re-evaluate it for the current route. Same trigger keeps
+    // the demo banner in sync when a burner session resolves after first paint.
     try { renderTabbar(parseHash().name); } catch (_) {}
+    try { renderDemoBanner(); } catch (_) {}
   });
 
   // ---- share-link boot (/t/<shareToken>) ----

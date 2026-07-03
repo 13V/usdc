@@ -15,6 +15,7 @@
 
 import "dotenv/config";
 import * as path from "path";
+import * as zlib from "node:zlib";
 import express, { Request, Response, NextFunction } from "express";
 // Patches Express 4 so a rejected promise from an async route handler is routed
 // to the error-handling middleware instead of becoming an unhandled rejection
@@ -101,13 +102,16 @@ import { reactionsRouter } from "./reactions";
 import { nudgesRouter } from "./nudges";
 import { pushRouter, sendPush } from "./push";
 // Growth loops: OG share cards (og.ts) + invite attribution (referrals.ts).
-import { ogMeta, tripShareHtml, OG_CARD_PATH } from "./og";
+import { ogMeta, tripShareHtml, rootShellHtml, OG_CARD_PATH } from "./og";
 import { referralsRouter, setRefCookie, readRefCookie, recordReferral } from "./referrals";
 import { rateLimit, moneyRateLimit, writeRateLimit, spamRateLimit } from "./ratelimit";
 import { telemetryRouter } from "./telemetry";
 // Server-rendered legal + support pages (GET /terms, /privacy, /support). Static,
 // no SPA. See src/legal.ts.
 import { legalRouter } from "./legal";
+// Public Mochi meme generator (GET /memes). Standalone shell + public/memes.js,
+// no auth, pure client after load. See src/memes.ts.
+import { memesRouter } from "./memes";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
@@ -209,6 +213,120 @@ function rpcUrl(cluster: Cluster): string {
   return clusterApiUrl(cluster);
 }
 
+// ---- Static caching + compression -----------------------------------------
+
+/**
+ * Cache-Control policy for everything served out of public/ via express.static.
+ * Runs once per file, keyed on the resolved path:
+ *   - /embedded/assets/*   content-hashed build output → immutable, 1 year
+ *   - /fonts/*             content-addressed woff2 filenames → immutable, 1 year
+ *   - images (png/svg/…)   og cards + icons → 1 day
+ *   - index.html           the shell changes every deploy → no-store
+ *   - sw.js                the service worker must always revalidate → no-cache
+ *   - app-shell js/css      app.js, divvy.css, screens/*, … are NOT hashed and
+ *                          ship every deploy, but the SW fetches same-origin
+ *                          network-first, so a short 5 min TTL + must-revalidate
+ *                          is safe and still spares repeat cold hits the round trip.
+ *   - manifest/json        1 hour
+ */
+function setStaticCacheHeaders(res: Response, filePath: string): void {
+  const p = filePath.replace(/\\/g, "/");
+  const YEAR = "public, max-age=31536000, immutable";
+  if (p.includes("/embedded/assets/") || p.includes("/fonts/")) {
+    res.setHeader("Cache-Control", YEAR);
+    return;
+  }
+  if (p.endsWith("/index.html")) {
+    res.setHeader("Cache-Control", "no-store");
+    return;
+  }
+  if (p.endsWith("/sw.js")) {
+    res.setHeader("Cache-Control", "no-cache");
+    return;
+  }
+  if (/\.(png|jpe?g|gif|webp|svg|ico|avif)$/i.test(p)) {
+    res.setHeader("Cache-Control", "public, max-age=86400"); // 1 day
+    return;
+  }
+  if (/\.(js|css)$/i.test(p)) {
+    res.setHeader("Cache-Control", "public, max-age=300, must-revalidate"); // 5 min
+    return;
+  }
+  if (/\.(webmanifest|json)$/i.test(p)) {
+    res.setHeader("Cache-Control", "public, max-age=3600"); // 1 hour
+    return;
+  }
+  res.setHeader("Cache-Control", "public, max-age=300, must-revalidate");
+}
+
+// Content types worth gzipping. woff2/png/jpeg are already compressed, so they're
+// deliberately excluded (re-gzipping wastes CPU for ~0 bytes saved).
+const COMPRESSIBLE_TYPE = /^(?:text\/|application\/(?:javascript|json|manifest\+json|xml|xhtml\+xml)|image\/svg\+xml)/i;
+const GZIP_MIN_BYTES = 1024;
+
+/**
+ * Minimal gzip middleware (no new dependency). Buffers the response body, and if
+ * the client sent `Accept-Encoding: gzip`, the type is compressible, and the body
+ * clears 1 KB, gzips it asynchronously (never blocks the event loop) and rewrites
+ * Content-Encoding / Content-Length / Vary. Everything else passes straight
+ * through untouched — including already-encoded bodies and small responses.
+ */
+function gzipCompression(req: Request, res: Response, next: NextFunction): void {
+  const accept = String(req.headers["accept-encoding"] || "");
+  if (!/\bgzip\b/.test(accept)) return next();
+
+  const chunks: Buffer[] = [];
+  let buffering = true;
+  const origWrite = res.write.bind(res);
+  const origEnd = res.end.bind(res);
+
+  const push = (chunk: unknown, encoding?: BufferEncoding): void => {
+    if (chunk == null) return;
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string, encoding));
+  };
+
+  res.write = function (chunk: any, encoding?: any, cb?: any): boolean {
+    if (!buffering) return origWrite(chunk, encoding, cb);
+    if (typeof encoding === "function") { cb = encoding; encoding = undefined; }
+    push(chunk, encoding);
+    if (typeof cb === "function") cb();
+    return true;
+  } as typeof res.write;
+
+  res.end = function (chunk?: any, encoding?: any, cb?: any): Response {
+    if (typeof chunk === "function") { cb = chunk; chunk = undefined; encoding = undefined; }
+    else if (typeof encoding === "function") { cb = encoding; encoding = undefined; }
+    if (!buffering) return origEnd(chunk, encoding, cb) as unknown as Response;
+    buffering = false;
+    if (chunk != null) push(chunk, encoding);
+    const body = Buffer.concat(chunks);
+
+    const type = String(res.getHeader("Content-Type") || "");
+    const alreadyEncoded = !!res.getHeader("Content-Encoding");
+    res.write = origWrite;
+    res.end = origEnd;
+    if (alreadyEncoded || body.length < GZIP_MIN_BYTES || !COMPRESSIBLE_TYPE.test(type)) {
+      // Not worth (or not safe) to compress — flush the buffered body verbatim.
+      const vary = res.getHeader("Vary");
+      if (!vary) res.setHeader("Vary", "Accept-Encoding");
+      else if (!/accept-encoding/i.test(String(vary))) res.setHeader("Vary", `${vary}, Accept-Encoding`);
+      return origEnd(body, cb) as unknown as Response;
+    }
+    zlib.gzip(body, (err, zipped) => {
+      if (err) { origEnd(body, cb); return; }
+      res.setHeader("Content-Encoding", "gzip");
+      res.setHeader("Content-Length", String(zipped.length));
+      const vary = res.getHeader("Vary");
+      if (!vary) res.setHeader("Vary", "Accept-Encoding");
+      else if (!/accept-encoding/i.test(String(vary))) res.setHeader("Vary", `${vary}, Accept-Encoding`);
+      origEnd(zipped, cb);
+    });
+    return res;
+  } as typeof res.end;
+
+  next();
+}
+
 const app = express();
 // Behind Railway's (single) reverse proxy, trust exactly one hop so req.ip is the
 // real client X-Forwarded-For address — NOT the shared proxy IP (which would make
@@ -217,10 +335,29 @@ const app = express();
 app.set("trust proxy", 1);
 // Receipt images arrive as base64 in the JSON body, so allow a larger payload.
 app.use(express.json({ limit: "12mb" }));
+// gzip for compressible payloads. Express ships no compression and Railway's
+// proxy doesn't add it, so a cold 4G visitor otherwise pulls the full ~740 KB of
+// shell JS/CSS uncompressed. This tiny middleware (node:zlib, no new dep) buffers
+// each response and gzips text-ish bodies over 1 KB when the client asked for it.
+app.use(gzipCompression);
 // Optional auth: populates req.userId from a Bearer session token when present.
 // NEVER blocks — anonymous/capability-link flows stay fully usable.
 app.use(authOptional);
-app.use(express.static(path.resolve(process.cwd(), "public")));
+// Root landing (GET /): serve the SPA shell with a branded OG card injected, so
+// a cold link tapped on X unfurls into the journal share card instead of
+// index.html's generic defaults. Registered BEFORE express.static so it wins
+// over static's automatic index.html for "/". Hash routes (#/home, …) still load
+// this same shell. Kept lean (no DB) so cold visitors get the landing instantly.
+app.get("/", (req: Request, res: Response) => {
+  const base = `${req.protocol}://${req.get("host")}`;
+  // The shell changes every deploy and the SW re-fetches it network-first, so it
+  // must never be held stale by an intermediary or the browser HTTP cache.
+  res.setHeader("Cache-Control", "no-store");
+  res.type("html").send(rootShellHtml(base));
+});
+app.use(
+  express.static(path.resolve(process.cwd(), "public"), { setHeaders: setStaticCacheHeaders })
+);
 
 // Hub feature routers (cross-trip balances, one-off IOUs, activity feed).
 // Each defines absolute /api paths and guards its own routes with requireAuth.
@@ -236,6 +373,8 @@ app.use(pushRouter);
 app.use(referralsRouter);
 // Legal + support pages: /terms, /privacy, /support (server-rendered, static).
 app.use(legalRouter);
+// Public Mochi meme generator page: /memes (server-rendered shell, no auth).
+app.use(memesRouter);
 // First-party error + analytics ingest. Reuses the shared IP rate limiter
 // (12/min per IP). authOptional (above) sets req.userId; telemetry stores only
 // a hash of it, never the id. See src/telemetry.ts.
@@ -1739,6 +1878,31 @@ app.get("/api/receipts/:ref", moneyRateLimit, requireAuth, async (req: Request, 
   res.json({ found: false });
 });
 
+// 5s micro-cache for the OG-injected share page's trip lookup. A link that goes
+// viral on X gets hammered by human taps AND every platform's link-unfurl crawler
+// at once; without this, each hit is a fresh trip-by-token read (plus member +
+// expense hydration). Collapsing them into one read per token per 5s takes the
+// store out of the spike's hot path. Bounded to 100 entries; 5s staleness on a
+// share card's total is inconsequential.
+const SHARE_CACHE_TTL_MS = 5000;
+const SHARE_CACHE_MAX = 100;
+const shareTripCache = new Map<string, { at: number; trip: Trip | undefined }>();
+async function getTripByTokenCached(token: string): Promise<Trip | undefined> {
+  const now = Date.now();
+  const hit = shareTripCache.get(token);
+  if (hit && now - hit.at < SHARE_CACHE_TTL_MS) return hit.trip;
+  const trip = await getTripByToken(token);
+  shareTripCache.set(token, { at: now, trip });
+  if (shareTripCache.size > SHARE_CACHE_MAX) {
+    // Evict the oldest insertion (Map preserves insertion order) until bounded.
+    for (const k of shareTripCache.keys()) {
+      if (shareTripCache.size <= SHARE_CACHE_MAX) break;
+      shareTripCache.delete(k);
+    }
+  }
+  return trip;
+}
+
 // Shareable SPA link: the frontend reads the token from the path. Declared
 // before any catch-all; it doesn't shadow /api or static assets.
 app.get("/t/:token", async (req: Request, res: Response) => {
@@ -1746,10 +1910,12 @@ app.get("/t/:token", async (req: Request, res: Response) => {
   // so a signup/claim from this device credits the inviter.
   if (req.query.ref) setRefCookie(res, req.query.ref);
   const base = `${req.protocol}://${req.get("host")}`;
+  // The share shell reflects the latest deploy + must re-check per visit.
+  res.setHeader("Cache-Control", "no-store");
   // Server-render a trip-specific OG card into the SPA shell so the link unfurls
   // beautifully in iMessage/WhatsApp/Slack/Twitter. Falls back to the plain shell
   // if the token is unknown (the SPA renders its own not-found state).
-  const trip = await getTripByToken(req.params.token);
+  const trip = await getTripByTokenCached(req.params.token);
   if (!trip) {
     return res.sendFile(path.resolve(process.cwd(), "public/index.html"));
   }

@@ -19,6 +19,14 @@
 <link rel="icon" href="/icons/icon-192.png" sizes="192x192" type="image/png" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 <link rel="manifest" href="/manifest.webmanifest" />
+<!-- Warm the render-blocking critical path on a cold 4G first paint. Without these
+     the fonts are a 3-hop wait (html → divvy.css → @import fonts.css → woff2); the
+     stylesheet preload lets the CSS fetch start with the HTML, and the two most-used
+     faces (General Sans 400 body, Clash Display 600 display) download in parallel
+     instead of after the @import resolves. All @font-face already use font-display:swap. -->
+<link rel="preload" href="/divvy.css" as="style" />
+<link rel="preload" href="/fonts/7YY3ZAAE3TRV2LANYOLXNHTPHLXVWTKH.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/Z3MGHFHX6DCTLQ55LJYRJ5MDCZPMFZU6.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="/divvy.css" />
 <style>
   /* Lock the document: the page itself must never scroll or rubber-band (the
@@ -45,27 +53,33 @@
     <nav id="tabbar" class="tabbar"></nav>
   </div>
 
-  <script src="/faces.js"></script>
-  <script src="/mascot.js"></script>
-  <script src="/auth.js"></script>
-  <script src="/app.js"></script>
+  <!-- All app scripts are `defer`: they download in parallel without blocking the
+       parser and execute in DOM order after parse (before DOMContentLoaded). Order
+       is load-bearing and preserved exactly — faces.js/mascot.js provide globals the
+       screens use to render avatars, auth.js + app.js bootstrap the runtime, then the
+       screen modules register window.Screens[name], then recap.js. defer keeps that
+       ordering guarantee while making the whole set non-render-blocking. -->
+  <script defer src="/faces.js"></script>
+  <script defer src="/mascot.js"></script>
+  <script defer src="/auth.js"></script>
+  <script defer src="/app.js"></script>
   <!-- screen modules (each registers window.Screens[name]) -->
-  <script src="/screens/home.js"></script>
-  <script src="/screens/welcome.js"></script>
-  <script src="/screens/groups.js"></script>
-  <script src="/screens/group.js"></script>
-  <script src="/screens/new.js"></script>
-  <script src="/screens/settle.js"></script>
-  <script src="/screens/collect.js"></script>
-  <script src="/screens/activity.js"></script>
-  <script src="/screens/friends.js"></script>
-  <script src="/screens/friend.js"></script>
-  <script src="/screens/recurring.js"></script>
-  <script src="/screens/you.js"></script>
-  <script src="/screens/customize.js"></script>
-  <script src="/screens/chat.js"></script>
-  <script src="/screens/receipt.js"></script>
-  <script src="/recap.js"></script>
+  <script defer src="/screens/home.js"></script>
+  <script defer src="/screens/welcome.js"></script>
+  <script defer src="/screens/groups.js"></script>
+  <script defer src="/screens/group.js"></script>
+  <script defer src="/screens/new.js"></script>
+  <script defer src="/screens/settle.js"></script>
+  <script defer src="/screens/collect.js"></script>
+  <script defer src="/screens/activity.js"></script>
+  <script defer src="/screens/friends.js"></script>
+  <script defer src="/screens/friend.js"></script>
+  <script defer src="/screens/recurring.js"></script>
+  <script defer src="/screens/you.js"></script>
+  <script defer src="/screens/customize.js"></script>
+  <script defer src="/screens/chat.js"></script>
+  <script defer src="/screens/receipt.js"></script>
+  <script defer src="/recap.js"></script>
   <script>
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(function(){});
   </script>

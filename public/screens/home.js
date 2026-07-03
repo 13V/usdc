@@ -222,104 +222,259 @@
       '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; color:#FF6B5E;">' + count + ' going!!</span></div>';
   }
 
-  // Onboarding (signed-out): EXACT markup lifted from
-  // design/handoff/Onboarding Playful.dc.html — full-bleed welcome with ambient
-  // glow + guilloché, the featured mascot, the "divvy" wordmark, a mono kicker,
-  // a lowercase value headline, then the action stack. This screen has no
-  // bottom tab bar (router hides it for non-toplevel; home stays toplevel so we
-  // build a self-contained full-bleed welcome and skip the topbar/tabbar here).
+  // ── DEMO PLAYGROUND ─────────────────────────────────────────────────────────
+  // "try it first": one tap → burner wallet (Auth.createWallet) → seed a lively
+  // sample world VIA THE REAL API so every screen has life → land on a signed-in
+  // home with the dismissible demo banner (managed by app.js render()).
+  //
+  // Seeding is idempotent-ish (localStorage flag divvy.demoSeeded) and resilient:
+  // any API hiccup toasts once and we STILL land on home. Money stays integer
+  // cents throughout. This never runs for a plain Auth.createWallet() (e2e path)
+  // — only via the try-it button below.
+  var DEMO_MODE_KEY = "divvy.demoMode";
+  var DEMO_SEEDED_KEY = "divvy.demoSeeded";
+  function demoModeOn() {
+    try { return localStorage.getItem(DEMO_MODE_KEY) === "1"; } catch (_) { return false; }
+  }
+
+  async function seedDemoWorld() {
+    // idempotent-ish: if a previous tap already seeded on this device, skip.
+    try { if (localStorage.getItem(DEMO_SEEDED_KEY) === "1") return; } catch (_) {}
+
+    // 1) a group with 3 guest friends + 4 fun expenses. members[0] ("you") is
+    //    auto-linked to the demo account server-side, so home's hero picks it up.
+    var trip = await app.api.post("/api/trips", {
+      name: "tokyo trip 🗼",
+      members: [{ name: "you" }, { name: "kenji" }, { name: "mei" }, { name: "leo" }],
+    });
+    var idOf = {};
+    (trip.members || []).forEach(function (m) { idOf[m.name] = m.id; });
+    var everyone = (trip.members || []).map(function (m) { return m.id; });
+    // integer-dollar totals (server converts to cents); "you" fronts the big ones
+    // so the demo home shows a healthy "owed to you" hero.
+    var expenses = [
+      { title: "sushi omakase 🍣", total: 240, paidBy: idOf["you"], participants: everyone },
+      { title: "shibuya karaoke 🎤", total: 88, paidBy: idOf["kenji"], participants: everyone },
+      { title: "shinkansen tickets 🚅", total: 520, paidBy: idOf["you"], participants: everyone },
+      { title: "convini snacks 🍙", total: 36, paidBy: idOf["mei"], participants: everyone },
+    ];
+    for (var i = 0; i < expenses.length; i++) {
+      await app.api.post("/api/trips/" + encodeURIComponent(trip.id) + "/expenses", expenses[i]);
+    }
+
+    // 2) one standalone itemized tab (bills API supports `items` — "who had what").
+    //    The demo account's wallet is bound as collector automatically.
+    await app.api.post("/api/bills", {
+      title: "izakaya night 🏮",
+      total: 96,
+      names: ["kenji", "mei", "leo"],
+      items: [
+        { label: "yakitori skewers", qty: 3, cents: 2700, names: ["kenji", "mei", "leo"] },
+        { label: "highballs", qty: 4, cents: 3200, names: ["kenji", "leo"] },
+        { label: "gyoza", qty: 1, cents: 900, names: ["mei"] },
+        { label: "tako wasabi", qty: 1, cents: 800, names: ["kenji"] },
+      ],
+    });
+
+    try { localStorage.setItem(DEMO_SEEDED_KEY, "1"); } catch (_) {}
+  }
+
+  async function startDemo(btn) {
+    if (btn) {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.dataset.label = btn.textContent;
+      btn.textContent = "setting up your demo…";
+    }
+    app.track("try_demo");
+    // burner wallet + SIWS. If even this fails there's nothing to explore, so bail.
+    try {
+      await Auth.createWallet();
+    } catch (e) {
+      app.toast((e && e.message) || "couldn't start the demo");
+      if (btn) { btn.disabled = false; if (btn.dataset.label) btn.textContent = btn.dataset.label; }
+      return;
+    }
+    // Flag demo mode BEFORE the final render so app.js paints the demo banner.
+    try { localStorage.setItem(DEMO_MODE_KEY, "1"); } catch (_) {}
+    // Seed the sample world. Resilient: a failure toasts but we still land home.
+    try {
+      await seedDemoWorld();
+    } catch (e) {
+      app.toast("demo data hiccup — you're still in ✨");
+    }
+    // Re-render through the router so the signed-in home shows the seeded world
+    // AND the demo banner gets injected.
+    try { location.hash = "#/home"; } catch (_) {}
+    app.render();
+  }
+
+  // A hand-built mini UI vignette (not a screenshot): a small journal card with a
+  // kicker, a bespoke mock, and a caption. Used for the below-the-fold story.
+  function vignette(kicker, mock, caption) {
+    return '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:16px 16px 15px;">' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; letter-spacing:2px; color:#3DE8C7; margin-bottom:11px;">' + kicker + '</div>' +
+      mock +
+      '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; line-height:1.35; color:#2B2118; margin-top:13px;">' + caption + '</div>' +
+    '</div>';
+  }
+  // person chip: soft-tinted avatar + name, for the "who had what" mock.
+  function tag(emoji, name) {
+    return '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(39,117,202,0.10); border:1px solid rgba(39,117,202,0.28); border-radius:999px; padding:3px 9px 3px 5px;">' +
+      '<span style="width:18px; height:18px; border-radius:50%; background:rgba(39,117,202,0.18); display:inline-flex; align-items:center; justify-content:center; font-size:11px;">' + app.face(emoji) + '</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.7);">' + app.esc(name) + '</span></span>';
+  }
+  // vignette 1 — a receipt with two item rows, each tagged to who had it.
+  function mockReceipt() {
+    function row(label, price, tags) {
+      return '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1.5px dashed rgba(43,33,24,0.14);">' +
+        '<div style="min-width:0;">' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; color:#2B2118;">' + label + '</div>' +
+          '<div style="display:flex; gap:5px; margin-top:5px;">' + tags + '</div>' +
+        '</div>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:12.5px; color:#2B2118; flex:none;">' + price + '</span>' +
+      '</div>';
+    }
+    return '<div style="background:#F7F1E3; border:2px solid #2B2118; border-radius:12px; padding:12px 13px 10px; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.4);">' +
+      '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(43,33,24,0.45);">RECEIPT · 3 items</span>' +
+        '<span style="font-size:13px;">🧾</span>' +
+      '</div>' +
+      row("sushi omakase", "$48", tag("🦊", "you") + tag("🐹", "mei")) +
+      row("karaoke room", "$22", tag("🐢", "leo") + tag("🐼", "kenji")) +
+    '</div>';
+  }
+  // vignette 2 — an iMessage-style bubble with a pay-your-share link, no app.
+  function mockText() {
+    return '<div style="display:flex; flex-direction:column; gap:8px;">' +
+      '<div style="align-self:flex-start; max-width:82%; background:#EDE7D8; border:1.5px solid rgba(43,33,24,0.14); border-radius:15px 15px 15px 4px; padding:9px 12px;">' +
+        '<span style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:#2B2118;">you owe $24 for karaoke 🎤</span>' +
+      '</div>' +
+      '<div style="align-self:flex-end; max-width:88%; background:#2775CA; border:2px solid #2B2118; border-radius:15px 15px 4px 15px; padding:10px 13px; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(255,255,255,0.7);">divvy.app/pay ↗</div>' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:5px;">' +
+          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#fff;">pay $24</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:9px; color:rgba(255,255,255,0.85); background:rgba(255,255,255,0.18); border-radius:999px; padding:3px 8px;">tap to pay →</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  // vignette 3 — a mini balance card + a cash-out chip.
+  function mockBalance() {
+    return '<div style="background:linear-gradient(150deg,#3286db,#2775CA 65%,#1f5fa8); border:2px solid #2B2118; border-radius:14px; padding:14px 15px; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(255,255,255,0.7);">YOUR BALANCE</div>' +
+      '<div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-top:4px;">' +
+        '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:30px; letter-spacing:-1.5px; color:#fff;"><span style="opacity:.55; font-size:18px;">$</span>128<span style="opacity:.55; font-size:18px;">.00</span></div>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12px; color:#2B2118; background:#3DE8C7; border:1.5px solid #2B2118; border-radius:999px; padding:5px 11px;">cash out →</span>' +
+      '</div>' +
+    '</div>';
+  }
+  // The small trust chip row. "built on solana" appears here ONCE (this audience
+  // loves it) and stays subtle.
+  function trustChip(label) {
+    return '<span style="display:inline-flex; align-items:center; gap:6px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6); border:1px solid rgba(43,33,24,0.14); border-radius:999px; padding:5px 11px;">' +
+      '<span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7;"></span>' + label + '</span>';
+  }
+
+  // Onboarding (signed-out): a mobile-first MINI-LANDING for cold traffic.
+  // Above the fold: waving Mochi, the value headline, a one-line subhead, the
+  // primary sign-in CTA (unchanged), and a high-visibility "try it first" button.
+  // Below the fold (scrollable): three hand-built UI vignettes telling the
+  // product story, a trust-chip row, then footer links. The router hides the tab
+  // bar on the signed-out home, so this is a self-contained full-bleed screen.
   function signedOut(view) {
+    var ios = app.isIOS && app.isIOS();
+    var primaryLabel = ios ? "continue with apple" : "sign in";
+    var appleIcon = ios
+      ? '<svg width="19" height="19" viewBox="0 0 24 24" fill="#fff" aria-hidden="true" style="margin-top:-1px;"><path d="M17.05 12.54c-.02-2.13 1.74-3.15 1.82-3.2-1-1.45-2.54-1.65-3.09-1.67-1.31-.13-2.57.77-3.24.77-.67 0-1.7-.75-2.8-.73-1.44.02-2.77.84-3.51 2.12-1.5 2.6-.38 6.44 1.07 8.55.71 1.03 1.55 2.19 2.66 2.15 1.07-.04 1.47-.69 2.76-.69s1.65.69 2.78.67c1.15-.02 1.87-1.05 2.57-2.09.81-1.2 1.14-2.36 1.16-2.42-.03-.01-2.22-.85-2.24-3.38zM14.94 5.69c.59-.72.99-1.71.88-2.69-.85.03-1.88.57-2.49 1.28-.55.63-1.03 1.64-.9 2.6.95.07 1.92-.48 2.51-1.19z"/></svg>'
+      : "";
+
     view.innerHTML = '' +
-      // ambient glow + guilloché texture over the canvas
-      '<div class="vfill" style="position:relative; display:flex; flex-direction:column; padding:0 26px; overflow:hidden;">' +
-        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 22%, rgba(43,33,24,0.03) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
-        '<div style="position:absolute; left:50%; top:24%; width:340px; height:340px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.22), transparent 70%); filter:blur(8px); pointer-events:none;"></div>' +
+      // ── ABOVE THE FOLD ── a full-viewport hero (min-height:100% resolves
+      // against #view). Direct child of #view so the % height works.
+      '<section style="position:relative; box-sizing:border-box; min-height:100%; display:flex; flex-direction:column; align-items:center; padding:0 24px; overflow:hidden;">' +
+        // ambient glow + guilloché texture
+        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 20%, rgba(43,33,24,0.03) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
+        '<div style="position:absolute; left:50%; top:22%; width:340px; height:340px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.22), transparent 70%); filter:blur(8px); pointer-events:none;"></div>' +
 
-        // flexible top spacer (capped): on tall phones the hero drifts down
-        // instead of hugging the notch; on short viewports it collapses to 12px.
-        '<div style="flex:1 1 0; min-height:12px; max-height:90px;"></div>' +
+        '<div style="flex:1 1 0; min-height:12px; max-height:80px;"></div>' +
 
-        // ── HERO ── (compact enough to fit short/desktop viewports without scroll)
-        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; padding-top:14px;">' +
-          // featured mascot (glow) — canonical asset
-          app.mascot({ size: 96, mood: "happy", glow: true }) +
+        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; padding-top:12px;">' +
+          // waving mascot
+          app.mascot({ size: 96, mood: "wave", glow: true }) +
 
           // wordmark: div [slash] vy
-          '<div style="display:flex; align-items:center; gap:1px; margin-top:10px;">' +
+          '<div style="display:flex; align-items:center; gap:1px; margin-top:8px;">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:40px; line-height:1; letter-spacing:-1.5px; color:#2B2118;">div</span>' +
             '<span style="display:inline-block; width:11px; height:38px; background:#2775CA; border-radius:2px; transform:skewX(-13deg); margin:0 6px; box-shadow:0 0 16px rgba(39,117,202,0.5);"></span>' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:40px; line-height:1; letter-spacing:-1.5px; color:#2B2118;">vy</span>' +
           '</div>' +
 
-          // mono kicker
-          '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin-top:12px;">split bills · settle in seconds</span>' +
+          // value headline
+          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:25px; line-height:1.14; letter-spacing:-0.6px; text-align:center; text-wrap:pretty; max-width:320px; margin:14px 0 0; color:#2B2118;">split bills. settle in dollars. instantly.</h1>' +
 
-          // lowercase value headline
-          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; line-height:1.16; letter-spacing:-0.6px; text-align:center; text-wrap:pretty; max-width:320px; margin:8px 0 0; color:#2B2118;">split bills. settle in dollars. instantly.</h1>' +
+          // one-liner subhead
+          '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; text-align:center; text-wrap:pretty; max-width:300px; margin:10px 0 0; color:rgba(43,33,24,0.6);">scan the receipt, tap who had what, and your friends pay from a text — no app needed.</p>' +
+        '</div>' +
 
-          // 3-step strip
-          '<div style="display:flex; align-items:center; gap:9px; margin-top:16px;">' +
-            '<span style="width:7px; height:7px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 8px rgba(61,232,199,0.7);"></span>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(43,33,24,0.62);">scan</span>' +
-            '<span style="width:24px; height:1.5px; background:rgba(43,33,24,0.16);"></span>' +
-            '<span style="width:7px; height:7px; border-radius:50%; background:rgba(43,33,24,0.4);"></span>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(43,33,24,0.62);">split</span>' +
-            '<span style="width:24px; height:1.5px; background:rgba(43,33,24,0.16);"></span>' +
-            '<span style="width:7px; height:7px; border-radius:50%; background:rgba(43,33,24,0.4);"></span>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(43,33,24,0.62);">settle</span>' +
+        '<div style="flex:1 1 0; min-height:16px;"></div>' +
+
+        // ── ACTIONS ──
+        '<div style="position:relative; z-index:2; width:100%; display:flex; flex-direction:column; gap:11px; padding-bottom:14px;">' +
+          // primary: sign in (unchanged flow)
+          '<button id="hSignIn" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+            appleIcon +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">' + primaryLabel + '</span>' +
+          '</button>' +
+
+          // high-visibility secondary: try it first — no sign up
+          '<button id="hTry" style="appearance:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#FFFDF7; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(43,33,24,0.85);">' +
+            '<span style="font-size:17px;">👀</span>' +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">try it first — no sign up</span>' +
+          '</button>' +
+
+          // tertiary: phone or email → same sign-in flow
+          '<div style="text-align:center; margin-top:2px;">' +
+            '<button id="hPhone" style="appearance:none; border:none; background:transparent; cursor:pointer; padding:5px 8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; color:rgba(43,33,24,0.6); text-decoration:underline; text-underline-offset:2px;">or continue with phone or email</button>' +
           '</div>' +
         '</div>' +
 
-        '<div style="flex:1; min-height:14px;"></div>' +
+        // scroll cue
+        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:3px; padding-bottom:10px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.35);">how it works</span>' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.35)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>' +
+        '</div>' +
+      '</section>' +
 
-        // ── ACTIONS ──
-        // One happy path: sign in (Apple leads on iOS). No custody decision, no
-        // "wallet" word — the account (and its wallet) is provisioned under the
-        // hood by the embedded flow.
-        (function () {
-          var ios = app.isIOS && app.isIOS();
-          var primaryLabel = ios ? "continue with apple" : "sign in";
-          var appleIcon = ios
-            ? '<svg width="19" height="19" viewBox="0 0 24 24" fill="#fff" aria-hidden="true" style="margin-top:-1px;"><path d="M17.05 12.54c-.02-2.13 1.74-3.15 1.82-3.2-1-1.45-2.54-1.65-3.09-1.67-1.31-.13-2.57.77-3.24.77-.67 0-1.7-.75-2.8-.73-1.44.02-2.77.84-3.51 2.12-1.5 2.6-.38 6.44 1.07 8.55.71 1.03 1.55 2.19 2.66 2.15 1.07-.04 1.47-.69 2.76-.69s1.65.69 2.78.67c1.15-.02 1.87-1.05 2.57-2.09.81-1.2 1.14-2.36 1.16-2.42-.03-.01-2.22-.85-2.24-3.38zM14.94 5.69c.59-.72.99-1.71.88-2.69-.85.03-1.88.57-2.49 1.28-.55.63-1.03 1.64-.9 2.6.95.07 1.92-.48 2.51-1.19z"/></svg>'
-            : "";
-          return '<div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:11px; padding-bottom:calc(14px + env(safe-area-inset-bottom));">' +
-            // primary: continue with apple (iOS) / sign in (elsewhere)
-            '<button id="hSignIn" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-              appleIcon +
-              '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">' + primaryLabel + '</span>' +
-            '</button>' +
+      // ── BELOW THE FOLD ── (scrolls into view)
+      '<section style="position:relative; padding:6px 20px calc(30px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:13px;">' +
+        vignette("STEP ONE", mockReceipt(), "scan the receipt → tap who had what. no math, no spreadsheet.") +
+        vignette("STEP TWO", mockText(), "friends pay from a text — no app, no sign-up, just a link.") +
+        vignette("STEP THREE", mockBalance(), "money lands in your balance. cash out to your bank anytime.") +
 
-            // secondary: phone or email → same flow, straight to phone/email entry
-            '<button id="hPhone" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' +
-              'continue with phone or email' +
-            '</button>' +
+        // trust chips (built on solana appears once, subtle)
+        '<div style="display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin-top:6px;">' +
+          trustChip("instant") + trustChip("~$0.001 fee") + trustChip("built on solana") + trustChip("non-custodial") +
+        '</div>' +
 
-            // reassurance — dollars, just faster (never crypto / seed phrase)
-            '<div style="text-align:center; margin-top:2px;">' +
-              '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:1px; color:rgba(43,33,24,0.38);">dollars, just faster · settles in seconds</span>' +
-            '</div>' +
-
-            // tertiary: demo account (burner wallet). Keeps the old fast path alive
-            // for people who just want to look around — and is what e2e drives.
-            '<div style="text-align:center; margin-top:2px;">' +
-              '<button id="hDemo" style="appearance:none; border:none; background:transparent; cursor:pointer; padding:5px 8px; font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.6); text-decoration:underline; text-underline-offset:2px;">just exploring? try a demo account</button>' +
-            '</div>' +
-          '</div>';
-        })() +
-      '</div>';
+        // footer links (server-rendered pages)
+        '<div style="text-align:center; margin-top:14px; font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.45);">' +
+          '<a href="/terms" style="color:rgba(43,33,24,0.5); text-decoration:none;">terms</a>' +
+          '<span style="opacity:.4;"> · </span>' +
+          '<a href="/privacy" style="color:rgba(43,33,24,0.5); text-decoration:none;">privacy</a>' +
+          '<span style="opacity:.4;"> · </span>' +
+          '<a href="/support" style="color:rgba(43,33,24,0.5); text-decoration:none;">support</a>' +
+        '</div>' +
+      '</section>';
 
     var si = document.getElementById("hSignIn"),
         ph = document.getElementById("hPhone"),
-        demo = document.getElementById("hDemo");
-    // Onboarding goes through the Privy embedded-wallet flow at /embedded: sign in
-    // with apple/google/phone/email, get an auto-provisioned Solana wallet, and
-    // come back signed in (the flow stashes the session token in localStorage).
+        tryBtn = document.getElementById("hTry");
+    // Onboarding goes through the Privy embedded-wallet flow at /embedded.
     if (si) si.onclick = function () { app.signIn(); };
     if (ph) ph.onclick = function () { app.signIn("phone"); };
-    // Demo account: a local burner wallet + SIWS — no sign-up, instant look-around.
-    if (demo) demo.onclick = function () {
-      Auth.createWallet().catch(function (e) { app.toast(e.message); });
-    };
+    // "try it first": instant burner + seeded demo world (see startDemo).
+    if (tryBtn) tryBtn.onclick = function () { startDemo(tryBtn.querySelector("span:last-child") || tryBtn); };
   }
 
   // First-run "how it works" journal card — shown once, right after the first
@@ -406,7 +561,10 @@
     var emptyHtml = (orderedBills.length || grp.length || orderedIncoming.length) ? "" :
       '<div class="empty" style="padding-top:30px;">' + app.mascot({ size: 96, mood: "happy" }) + '<div class="title lower">no tabs yet</div><div class="hint">start a group and split something 🎉</div><button class="btn" style="max-width:240px;margin-top:8px;" onclick="location.hash=\'#/new\'">new tab</button></div>';
 
-    var howHtml = seenHow() ? "" : howItWorksCard();
+    // Suppress the first-run "how it works" card for demo-mode users — the demo
+    // banner (injected by app.js) already carries the orientation, and stacking
+    // both reads as clutter.
+    var howHtml = (seenHow() || demoModeOn()) ? "" : howItWorksCard();
     view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + howHtml + hero(net, owed, owe, ppl, walletCents, quick) + incomingHtml + peopleHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
     wireHowCard(view);
     // count the hero balance up from zero, and stagger the card list in.

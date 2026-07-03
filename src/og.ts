@@ -89,6 +89,24 @@ function injectHead(html: string, meta: string): string {
   return `${html.slice(0, end)}\n${meta}\n${html.slice(end)}`;
 }
 
+/**
+ * The ROOT landing shell (GET /): the SPA served with a static-yet-branded OG
+ * card injected, so a cold link tapped on X/iMessage unfurls into the journal
+ * card instead of index.html's generic defaults. Text is fixed (no per-request
+ * data) but goes through the same injectHead path so it wins the unfurl over the
+ * static fallback tags. Image is the committed share card (public/og/card.png).
+ */
+export function rootShellHtml(base: string): string {
+  const meta = ogMeta({
+    title: "divvy — split bills, settle in dollars",
+    description:
+      "scan the receipt, tap who had what, friends pay from a text. instant, on solana.",
+    imageUrl: `${base}${OG_CARD_PATH}`,
+    url: `${base}/`,
+  });
+  return injectHead(indexHtml(), meta);
+}
+
 export interface TripShareCard {
   name: string;
   token: string;

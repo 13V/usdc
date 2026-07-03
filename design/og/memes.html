@@ -1,0 +1,117 @@
+<!doctype html>
+<!--
+  design/og/memes.html — source for the /memes share card.
+
+  Render to public/og/memes.png (1200x630) with:
+    node design/og/generate-memes.mjs
+  (screenshots this file at 1200x630 via playwright-core). Journal aesthetic:
+  warm paper, ruled lines, washi tape, a framed SAMPLE MEME on the left (Mochi in
+  the "party" pose with a caption) + the call to action on the right. Self-
+  contained — no external fonts/images — so it renders the same everywhere and
+  commits as one PNG.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; }
+  #card {
+    position: relative; width: 1200px; height: 630px; overflow: hidden;
+    background: #F4ECD8; color: #2B2118;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+  }
+  #rules { position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 47px, rgba(43,33,24,0.06) 47px 48px);
+    opacity: .85; }
+  #margin { position: absolute; top: 0; bottom: 0; left: 96px; width: 2px; background: rgba(255,107,94,0.35); }
+  .tape { position: absolute; width: 150px; height: 42px; opacity: .82; box-shadow: 0 6px 16px rgba(43,33,24,0.12); }
+  .tape.a { top: 34px; left: 132px; transform: rotate(-6deg); background: rgba(255,198,92,0.75); }
+  .tape.b { bottom: 40px; right: 90px; transform: rotate(5deg); background: rgba(61,232,199,0.65); }
+  .tape::after { content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(90deg, rgba(255,255,255,0.28) 0 8px, rgba(255,255,255,0) 8px 16px); }
+
+  /* the framed sample meme, left */
+  #meme {
+    position: absolute; left: 150px; top: 96px; width: 438px; height: 438px;
+    background: #F7F1E3; border: 5px solid #2B2118; border-radius: 22px;
+    box-shadow: 8px 10px 0 rgba(43,33,24,0.85); transform: rotate(-2.2deg); overflow: hidden;
+  }
+  #meme .mrules { position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 26px, rgba(43,33,24,0.06) 26px 27px); }
+  #meme .cap { position: absolute; left: 0; right: 0; text-align: center;
+    font-family: "Courier New", monospace; font-weight: 800; color: #2B2118; letter-spacing: -0.5px;
+    line-height: 1.05; padding: 0 20px; }
+  #meme .cap.top { top: 22px; font-size: 34px; }
+  #meme .cap.bot { bottom: 26px; font-size: 30px; }
+  #meme .wm { position: absolute; right: 16px; bottom: 8px; font-family: "Courier New", monospace;
+    font-weight: 700; font-size: 13px; color: rgba(43,33,24,0.6); }
+  #frog { position: absolute; left: 50%; top: 52%; width: 300px; height: 280px; transform: translate(-50%,-50%); }
+  /* confetti dots */
+  .conf { position: absolute; border: 2px solid #2B2118; }
+  .c1 { left: 40px; top: 70px; width: 20px; height: 14px; background: #2775CA; transform: rotate(18deg); }
+  .c2 { right: 44px; top: 92px; width: 16px; height: 16px; border-radius: 50%; background: #FF6B5E; }
+  .c3 { left: 60px; bottom: 96px; width: 18px; height: 12px; background: #FFC65C; transform: rotate(-22deg); }
+  .c4 { right: 56px; bottom: 120px; width: 16px; height: 16px; border-radius: 50%; background: #3DE8C7; }
+
+  /* CTA, right */
+  #content { position: absolute; left: 636px; top: 128px; right: 84px; }
+  .brand { display: flex; align-items: center; gap: 16px; margin-bottom: 30px; }
+  .mark { width: 68px; height: 68px; border-radius: 18px; background: #FFC65C;
+    display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 44px; color: #2B2118;
+    box-shadow: 5px 6px 0 rgba(43,33,24,0.85); border: 3px solid #2B2118; transform: rotate(-3deg); }
+  .word { font-weight: 800; font-size: 56px; letter-spacing: -2px; color: #2B2118; }
+  h1 { font-weight: 800; font-size: 62px; line-height: 1.02; letter-spacing: -2px; margin-bottom: 22px; }
+  h1 .hl { color: #2775CA; }
+  .tagline { font-family: "Courier New", monospace; font-weight: 700; font-size: 22px; letter-spacing: 0.3px;
+    color: rgba(43,33,24,0.62); background: #FFFDF7; border: 2px solid #2B2118; border-radius: 999px;
+    box-shadow: 4px 5px 0 rgba(43,33,24,0.85); padding: 12px 20px; display: inline-block; transform: rotate(-0.6deg); }
+</style>
+</head>
+<body>
+  <div id="card">
+    <div id="rules"></div>
+    <div id="margin"></div>
+    <div class="tape a"></div>
+    <div class="tape b"></div>
+
+    <div id="meme">
+      <div class="mrules"></div>
+      <span class="conf c1"></span><span class="conf c2"></span>
+      <span class="conf c3"></span><span class="conf c4"></span>
+      <div class="cap top">me waiting</div>
+      <svg id="frog" viewBox="0 0 170 158" xmlns="http://www.w3.org/2000/svg">
+        <!-- Mochi, party pose (geometry mirrors mascot.js) -->
+        <g><path d="M60,132 v9 M51,141 h15" fill="none" stroke="#2B2118" stroke-width="4" stroke-linecap="round"/></g>
+        <g><path d="M110,132 v9 M104,141 h15" fill="none" stroke="#2B2118" stroke-width="4" stroke-linecap="round"/></g>
+        <g>
+          <path d="M27,98 q-11,3 -13,13" fill="none" stroke="#2B2118" stroke-width="4" stroke-linecap="round"/>
+          <path d="M143,98 q11,3 13,13" fill="none" stroke="#2B2118" stroke-width="4" stroke-linecap="round"/>
+          <g><circle cx="60" cy="34" r="17" fill="#3DE8C7" stroke="#2B2118" stroke-width="4"/>
+             <circle cx="60" cy="34" r="5.6" fill="#2B2118"/><circle cx="62" cy="32" r="1.8" fill="#fff"/></g>
+          <g><circle cx="110" cy="34" r="17" fill="#3DE8C7" stroke="#2B2118" stroke-width="4"/>
+             <circle cx="110" cy="34" r="5.6" fill="#2B2118"/><circle cx="112" cy="32" r="1.8" fill="#fff"/></g>
+          <path d="M25,96 Q25,50 85,50 Q145,50 145,96 L145,102 Q145,132 85,132 Q25,132 25,102 Z" fill="#3DE8C7" stroke="#2B2118" stroke-width="4" stroke-linejoin="round"/>
+          <path d="M42,64 q16,-9 32,-7" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="4.6" stroke-linecap="round"/>
+          <path d="M63,92 q11,10 22,0 q11,10 22,0" fill="none" stroke="#2B2118" stroke-width="3.6" stroke-linecap="round"/>
+          <ellipse cx="44" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>
+          <ellipse cx="126" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>
+        </g>
+        <!-- party hat -->
+        <g transform="rotate(6 85 20)">
+          <path d="M63,26 L107,26 L85,-20 Z" fill="#FFC65C" stroke="#2B2118" stroke-width="4" stroke-linejoin="round"/>
+          <circle cx="85" cy="-20" r="7" fill="#3DE8C7" stroke="#2B2118" stroke-width="3"/>
+        </g>
+      </svg>
+      <div class="cap bot">for my $12</div>
+      <div class="wm">divvy · app.divvysol.com</div>
+    </div>
+
+    <div id="content">
+      <div class="brand"><div class="mark">/</div><div class="word">divvy</div></div>
+      <h1>make a <span class="hl">mochi meme</span> 🐸</h1>
+      <div class="tagline">pick a pose · add a caption · share in 10s</div>
+    </div>
+  </div>
+</body>
+</html>
