@@ -601,9 +601,7 @@
       // big number! any mascot on screen does a double-take (once per crossing)
       var big = c >= 50000;
       if (big && !wasBig) {
-        document.querySelectorAll(".dmascot-drawn").forEach(function (m) {
-          m.classList.remove("mtap"); void m.offsetWidth; m.classList.add("mtap");
-        });
+        if (window.Mascot && window.Mascot.react) window.Mascot.react("pop");
         haptic([12, 28, 22]);
       }
       wasBig = big;

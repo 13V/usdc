@@ -1,168 +1,555 @@
-/* mascot.js — Mochi the frog, Divvy's mascot, locked as ONE reusable asset.
-   A smol mint journal-frog with periscope eyes, hand-inked outlines and an
-   offset paper shadow. Drawn as inline SVG with STABLE part classes
-   (.mq-body, .mq-eye-l, .mq-pupil-l, .mq-mouth, .mq-arm-r, …) so the same
-   rig can be animated in-app today and exported for marketing later
-   (see design/mascot/ for the master SVG + animation reference).
+/* mascot.js — Mochi the frog, Divvy's mascot: a real-time RIGGED character.
+   Not keyframe loops — a spring-physics engine drives every part each frame:
 
-   Usage:
-     window.Mascot.html({ size: 120, mood: 'happy', glow: true })  -> HTML string
-     window.Mascot.el({ ... })                                     -> DOM element
-     window.Mascot.mini(px)                                        -> tiny head-only frog (spinners, chips)
-   Moods: 'happy' (default) · 'wave' · 'sparkle' · 'watching' · 'worried' · 'sleepy'
-*/
+     · jelly body: the body path is re-generated per frame from a squash
+       spring + lean spring, so weight ripples through him like gelatin
+     · velocity-based squash & stretch: stretch is derived from his actual
+       vertical velocity, landings kick the squash spring (impact wobble)
+     · real eyelids that slide over the eyes (clipped), randomized blinks
+     · pupils are springs — they track taps, glances and the fly
+     · mouth MORPHS between expression shapes (lerped bezier control points)
+     · the fly actually flies (wander steering); the tongue aims at its live
+       position, sticks, and drags it back into an open mouth. gulp.
+
+   Public API (unchanged):
+     window.Mascot.html({ size, mood, glow })  -> HTML string (auto-rigs itself)
+     window.Mascot.el({ ... })                 -> DOM element
+     window.Mascot.mini(px)                    -> tiny static frog for chips
+     window.Mascot.cheer()                     -> every frog celebrates
+     window.Mascot.react("pop")                -> quick squash reaction
+   Moods: happy · wave · sparkle · watching · worried · sleepy
+   prefers-reduced-motion -> static art, no engine. Hidden tab -> paused. */
 (function () {
   "use strict";
 
-  // Inject the keyframes + base styles once.
+  var INK = "#2B2118", MINT = "#3DE8C7", CORAL = "#FF6B5E", BLUE = "#2775CA";
+  var STROKE = 'stroke="' + INK + '" stroke-linecap="round" stroke-linejoin="round"';
+  var REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  // ---- static css (glow, sparkles, zzz, fly shell) ---------------------------
   if (!document.getElementById("divvy-mascot-css")) {
     var s = document.createElement("style");
     s.id = "divvy-mascot-css";
     s.textContent = [
-      /* ---- easing vocabulary ----------------------------------------------
-         sine   cubic-bezier(.445,.05,.55,.95)  breathing, floats
-         back   cubic-bezier(.34,1.56,.64,1)    overshoot pop-out
-         swift  cubic-bezier(.55,0,.1,1)        fast-out settle
-         Per-segment curves live INSIDE keyframes via animation-timing-function
-         so each phase (anticipate → action → settle) gets its own physics. */
-
-      // whole-frog idle float: slow sine bob with a lazy tilt
-      "@keyframes mFloat{0%,100%{transform:translate3d(0,0,0) rotate(-1deg)}50%{transform:translate3d(0,-6px,0) rotate(1deg)}}",
-      // body breathes from the feet, volume conserved (wider as it settles)
-      "@keyframes mqSquish{0%,100%{transform:scale(1,1)}50%{transform:scale(1.03,.965)}}",
-      // blink: snap shut, micro-hold, overshoot open (real lids do this)
-      "@keyframes mBlink{0%,91%,100%{transform:scaleY(1)}93%{transform:scaleY(.06);animation-timing-function:cubic-bezier(.55,0,.1,1)}95%{transform:scaleY(.06)}97.5%{transform:scaleY(1.08)}}",
-      // periscope eyes bob out of phase, with a hair of tilt (overlapping action)
-      "@keyframes mqPeekL{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-2.5px) rotate(-1.6deg)}60%{transform:translateY(0) rotate(0)}}",
-      "@keyframes mqPeekR{0%,100%{transform:translateY(0) rotate(0)}45%{transform:translateY(-2.5px) rotate(1.6deg)}75%{transform:translateY(0) rotate(0)}}",
-      // arms: resting sway / big hello wave with overshoot at each end
-      "@keyframes mqArm{0%,100%{transform:rotate(0)}50%{transform:rotate(-7deg)}}",
-      "@keyframes mqWave{0%,100%{transform:rotate(0)}12%{transform:rotate(6deg);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}55%{transform:rotate(-46deg);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}88%{transform:rotate(3deg)}}",
-      // soft paper glow
       "@keyframes mGlow{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.7}50%{transform:translate(-50%,-50%) scale(1.1);opacity:1}}",
       "@keyframes mSpark{0%,100%{opacity:.3;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}",
-      // worried sweat: bead grows, clings, drops
-      "@keyframes mqSweat{0%{opacity:0;transform:translateY(-2px) scale(.55)}28%{opacity:1;transform:translateY(0) scale(1)}62%{opacity:1;transform:translateY(4px) scale(1.04)}100%{opacity:0;transform:translateY(10px) scale(.85)}}",
-      // poke pop: springy squash with two-step recovery
-      "@keyframes mPop{0%{transform:scale(1)}25%{transform:scale(.86,1.12);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}52%{transform:scale(1.12,.88);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}74%{transform:scale(.96,1.04)}88%{transform:scale(1.02,.99)}100%{transform:scale(1)}}",
-      ".dmascot-drawn{transform-origin:50% 90%}",
-      ".dmascot-drawn.mtap{animation:mPop .5s cubic-bezier(.445,.05,.55,.95)}",
-      // poke games: 5 quick pokes → dizzy wobble; rare lucky poke → backflip
-      "@keyframes mDizzy{0%,100%{transform:rotate(0)}18%{transform:rotate(12deg)}42%{transform:rotate(-10deg) scale(.97)}64%{transform:rotate(6deg)}82%{transform:rotate(-3deg)}93%{transform:rotate(1deg)}}",
-      ".dmascot-drawn.mdizzy{animation:mDizzy .95s cubic-bezier(.445,.05,.55,.95) 2}",
-      "@keyframes mFlip{0%{transform:rotate(0) scale(1)}40%{transform:rotate(200deg) scale(.92)}100%{transform:rotate(360deg) scale(1)}}",
-      ".dmascot-drawn.mflip{animation:mFlip .75s cubic-bezier(.34,1.56,.64,1)}",
-      // idle: after ~40s of stillness mochi nods off (floating z z)
       "@keyframes mZz{0%{opacity:0;transform:translateY(4px) scale(.8)}25%{opacity:1}100%{opacity:0;transform:translateY(-16px) scale(1.1)}}",
       ".mzz{position:absolute;right:6%;top:2%;font-family:'Space Mono',monospace;font-weight:700;font-size:13px;color:#17a98c;animation:mZz 2.4s ease-in-out infinite;pointer-events:none;z-index:5}",
-      // SVG rig part animations (transform-box so origins are per-part)
-      ".mq-bodygroup{transform-box:fill-box;transform-origin:50% 100%;animation:mqSquish 4.5s cubic-bezier(.445,.05,.55,.95) infinite}",
-      ".mq-eye-l{transform-box:fill-box;transform-origin:50% 100%;animation:mqPeekL 6s cubic-bezier(.445,.05,.55,.95) infinite}",
-      ".mq-eye-r{transform-box:fill-box;transform-origin:50% 100%;animation:mqPeekR 6s cubic-bezier(.445,.05,.55,.95) infinite .4s}",
-      ".mq-pupil{transform-box:fill-box;transform-origin:center;animation:mBlink 5s linear infinite}",
-      ".mq-arm-l{transform-box:fill-box;transform-origin:100% 0%;animation:mqArm 4.2s cubic-bezier(.445,.05,.55,.95) infinite}",
-      ".mq-arm-r{transform-box:fill-box;transform-origin:0% 0%;animation:mqArm 4.2s cubic-bezier(.445,.05,.55,.95) infinite .3s}",
-      ".mq-arm-r.mq-waving{animation:mqWave 1.6s linear infinite}",
-      ".mq-sweat{transform-box:fill-box;animation:mqSweat 2.2s cubic-bezier(.445,.05,.55,.95) infinite}",
-
-      // ---- life engine: random micro-behaviors ----
-      // pupils glance with a springy settle (composes with blink)
-      ".mq-pupilbox{transform-box:fill-box;transform-origin:center;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}",
-      ".mlook-l .mq-pupilbox{transform:translateX(-4.5px)}",
-      ".mlook-r .mq-pupilbox{transform:translateX(4.5px)}",
-      // quick double-blink (surprise beat)
-      "@keyframes mBlink2{0%,100%{transform:scaleY(1)}20%{transform:scaleY(.06)}38%{transform:scaleY(1.06)}58%{transform:scaleY(.06)}80%{transform:scaleY(1.08)}}",
-      ".mblink2 .mq-pupil{animation:mBlink2 .6s cubic-bezier(.55,0,.1,1)}",
-      // the hop: anticipation crouch → launch stretch → apex → landing squash →
-      // rebound → settle. Per-segment curves: ease-in down, ease-out up.
-      "@keyframes mHop{" +
-        "0%{transform:translateY(0) scale(1,1);animation-timing-function:cubic-bezier(.5,0,.7,.3)}" +
-        "16%{transform:translateY(2px) scale(1.13,.83);animation-timing-function:cubic-bezier(.2,.7,.35,1)}" +      // crouch (anticipation)
-        "34%{transform:translateY(-17px) scale(.93,1.11);animation-timing-function:cubic-bezier(.4,0,.8,.6)}" +     // launch, stretched
-        "48%{transform:translateY(-21px) scale(.99,1.02);animation-timing-function:cubic-bezier(.5,0,.75,.45)}" +   // hang at apex
-        "64%{transform:translateY(0) scale(1.14,.84);animation-timing-function:cubic-bezier(.2,.8,.3,1)}" +          // land, big squash
-        "78%{transform:translateY(-3.5px) scale(.965,1.05);animation-timing-function:cubic-bezier(.4,0,.6,1)}" +     // rebound
-        "89%{transform:translateY(0) scale(1.03,.98)}" +
-        "100%{transform:translateY(0) scale(1,1)}}",
-      ".mhop{animation:mHop .9s linear}",
-      // eyes drag behind the hop (follow-through)
-      "@keyframes mHopEyes{0%,100%{transform:translateY(0)}18%{transform:translateY(2.5px)}36%{transform:translateY(-3.5px)}52%{transform:translateY(1px)}66%{transform:translateY(3.5px)}80%{transform:translateY(-1.5px)}}",
-      ".mhop .mq-eye-l,.mhop .mq-eye-r{animation:mHopEyes .9s cubic-bezier(.445,.05,.55,.95)}",
-      // landing dust puff, timed to the touchdown frame
-      ".mq-dust{transform-box:fill-box;transform-origin:center;opacity:0}",
-      "@keyframes mDust{0%{opacity:.7;transform:scaleX(.5) translateY(0)}100%{opacity:0;transform:scaleX(1.5) translateY(-3px)}}",
-      ".mhop .mq-dust{animation:mDust .32s cubic-bezier(.2,.8,.3,1) .56s}",
-      // croak: throat sac with elastic double-pump; body inflates in sympathy
-      ".mq-throat{transform-box:fill-box;transform-origin:center}",
-      "@keyframes mCroak{0%{opacity:0;transform:scale(.5);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}16%{opacity:1;transform:scale(1.22)}32%{transform:scale(.88);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}48%{transform:scale(1.18)}64%{transform:scale(.92)}78%{transform:scale(1.05)}100%{opacity:0;transform:scale(.6)}}",
-      ".mcroak .mq-throat{animation:mCroak 1.2s linear}",
-      "@keyframes mCroakBody{0%,100%{transform:scale(1,1)}18%{transform:scale(1.025,.98)}34%{transform:scale(.99,1.012)}50%{transform:scale(1.02,.985)}68%{transform:scale(.995,1.006)}}",
-      ".mcroak .mq-bodygroup{animation:mCroakBody 1.2s cubic-bezier(.445,.05,.55,.95)}",
-      // tongue zap: lash out with overshoot, hold a beat, snap back
-      ".mq-tongue{opacity:0;transform-box:fill-box;transform-origin:0% 100%}",
-      "@keyframes mTongue{0%{opacity:1;transform:scale(.04);animation-timing-function:cubic-bezier(.2,.9,.25,1.25)}30%{opacity:1;transform:scale(1.07)}42%{opacity:1;transform:scale(1)}62%{opacity:1;transform:scale(1);animation-timing-function:cubic-bezier(.7,0,.9,.4)}100%{opacity:0;transform:scale(.06)}}",
-      ".mzap .mq-tongue{animation:mTongue .46s linear}",
-      // …and the whole body lunges toward the fly (weight behind the action)
-      "@keyframes mZapLunge{0%{transform:rotate(0) translate(0,0);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}28%{transform:rotate(3.5deg) translate(2px,-2px)}58%{transform:rotate(3.5deg) translate(2px,-2px)}100%{transform:rotate(0) translate(0,0)}}",
-      ".mzap .mq-bodygroup{animation:mZapLunge .46s linear}",
-      // the fly: quick erratic jitter, never repeating visually
-      ".mfly{position:absolute;right:7%;top:4%;z-index:4;pointer-events:none;animation:mFlyBuzz .46s linear infinite}",
-      "@keyframes mFlyBuzz{0%,100%{transform:translate(0,0)}18%{transform:translate(-2.2px,1.4px)}37%{transform:translate(1.6px,-2px)}58%{transform:translate(-1.2px,-1px)}79%{transform:translate(2px,1.2px)}}",
-      "@keyframes mFlyPop{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.2)}}",
-      ".mfly.mgone{animation:mFlyPop .18s ease-out forwards}",
-      // settle-up cheer: one choreographed run — three diminishing bounces with
-      // alternating tilt, big first hit, soft landing
-      "@keyframes mCheer{" +
-        "0%{transform:translateY(0) rotate(0) scale(1);animation-timing-function:cubic-bezier(.5,0,.7,.3)}" +
-        "9%{transform:translateY(2px) rotate(0) scale(1.1,.86);animation-timing-function:cubic-bezier(.2,.7,.35,1)}" +
-        "23%{transform:translateY(-15px) rotate(-3deg) scale(.94,1.08);animation-timing-function:cubic-bezier(.5,0,.75,.45)}" +
-        "36%{transform:translateY(0) rotate(0) scale(1.1,.88);animation-timing-function:cubic-bezier(.2,.7,.35,1)}" +
-        "48%{transform:translateY(-9px) rotate(2.5deg) scale(.96,1.05);animation-timing-function:cubic-bezier(.5,0,.75,.45)}" +
-        "60%{transform:translateY(0) rotate(0) scale(1.07,.92);animation-timing-function:cubic-bezier(.2,.7,.35,1)}" +
-        "71%{transform:translateY(-4px) rotate(-1.5deg) scale(.98,1.02);animation-timing-function:cubic-bezier(.5,0,.75,.45)}" +
-        "81%{transform:translateY(0) rotate(0) scale(1.03,.975)}" +
-        "91%{transform:translateY(-1px) rotate(0) scale(.995,1.005)}" +
-        "100%{transform:translateY(0) rotate(0) scale(1)}}",
-      ".mcheer{animation:mCheer 1.6s linear}",
-      "@media (prefers-reduced-motion: reduce){.dmascot *{animation:none!important}.mzz{animation:none!important}.mfly{display:none!important}}",
+      ".mfly{position:absolute;left:0;top:0;z-index:4;pointer-events:none;will-change:transform}",
+      ".dmascot-drawn{will-change:transform}",
+      "@media (prefers-reduced-motion: reduce){.dmascot *{animation:none!important}.mzz,.mfly{display:none!important}}",
     ].join("");
     document.head.appendChild(s);
   }
 
-  // One delegated tap handler for every mascot on the page: squash on poke,
-  // dizzy after 5 quick pokes, and a rare 1-in-50 backflip.
+  // ---- tiny spring library ----------------------------------------------------
+  // Damped spring toward .t; .kick(v) injects velocity. step(dt) integrates.
+  function Spring(k, d, x) {
+    this.k = k; this.d = d; this.x = x || 0; this.v = 0; this.t = x || 0;
+  }
+  Spring.prototype.step = function (dt) {
+    var a = (this.t - this.x) * this.k - this.v * this.d;
+    this.v += a * dt;
+    this.x += this.v * dt;
+    return this.x;
+  };
+  Spring.prototype.kick = function (v) { this.v += v; };
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function lerp(a, b, m) { return a + (b - a) * m; }
+  function n2(x) { return Math.round(x * 100) / 100; }
+
+  // ---- expression shapes -------------------------------------------------------
+  // Mouths share one structure (M + 2 quads => 10 numbers) so they lerp cleanly.
+  var MOUTHS = {
+    happy:   [63, 92, 74, 102, 85, 92, 96, 102, 107, 92],
+    soft:    [72, 94, 78.5, 99, 85, 94, 91.5, 99, 98, 94],
+    worried: [75, 98, 80, 93, 85, 98, 90, 103, 95, 98],
+    flat:    [73, 95, 79, 95, 85, 95, 91, 95, 97, 95],
+    sleepy:  [78, 95, 81.5, 98, 85, 95, 88.5, 98, 92, 95],
+  };
+  function mouthPath(m) {
+    return "M" + n2(m[0]) + "," + n2(m[1]) +
+      " Q" + n2(m[2]) + "," + n2(m[3]) + " " + n2(m[4]) + "," + n2(m[5]) +
+      " Q" + n2(m[6]) + "," + n2(m[7]) + " " + n2(m[8]) + "," + n2(m[9]);
+  }
+  function lerpMouth(a, b, m, out) {
+    for (var i = 0; i < 10; i++) out[i] = lerp(a[i], b[i], m);
+    return out;
+  }
+
+  // Jelly body: regenerate the blob path from squash s (+down/-up) and lean.
+  // Bottom edge stays planted (feet); top drops and sides widen under squash.
+  function bodyPath(s, leanX) {
+    var top = 50 + s * 15;
+    var side = 25 - s * 9;
+    var right = 170 - side;
+    var apex = 85 + leanX;
+    return "M" + n2(side) + ",96" +
+      " Q" + n2(side + leanX * 0.4) + "," + n2(top) + " " + n2(apex) + "," + n2(top) +
+      " Q" + n2(right + leanX * 0.4) + "," + n2(top) + " " + n2(right) + ",96" +
+      " L" + n2(right) + ",102 Q" + n2(right) + ",132 85,132 Q" + n2(side) + ",132 " + n2(side) + ",102 Z";
+  }
+
+  // ---- rig markup ---------------------------------------------------------------
+  var UID = 0;
+  function frogSvg(mood, id) {
+    function eye(side, cx) {
+      return '' +
+      '<g class="mq-eye-' + side + '">' +
+        '<clipPath id="mqclip' + id + side + '"><circle cx="' + cx + '" cy="34" r="15.4"/></clipPath>' +
+        '<circle cx="' + cx + '" cy="34" r="17" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/>' +
+        '<g clip-path="url(#mqclip' + id + side + ')">' +
+          '<g class="mq-pupilbox-' + side + '"><circle class="mq-pupil" cx="' + cx + '" cy="34" r="5.6" fill="' + INK + '"/>' +
+          '<circle cx="' + (cx + 2) + '" cy="32" r="1.8" fill="#fff"/></g>' +
+          '<circle class="mq-lid-' + side + '" cx="' + cx + '" cy="0" r="16.5" fill="' + MINT + '"/>' +
+        '</g>' +
+        '<path class="mq-shut-' + side + '" d="M' + (cx - 9) + ',34 q9,8 18,0" fill="none" ' + STROKE + ' stroke-width="3.4" opacity="0"/>' +
+        '<path class="mq-brow-' + side + '" d="M' + (cx - 8) + ',16 q8,-4 15,-1" fill="none" ' + STROKE + ' stroke-width="3" opacity="0"/>' +
+      '</g>';
+    }
+    return '' +
+    '<svg class="mq-rig" viewBox="0 0 170 158" width="100%" height="100%" style="overflow:visible; display:block;">' +
+      '<g class="mq-leg-l"><path d="M60,132 v9 M51,141 h15" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
+      '<g class="mq-leg-r"><path d="M110,132 v9 M104,141 h15" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
+      '<g class="mq-dust" opacity="0"><path d="M38,143 q-7,2 -12,-1 M132,143 q7,2 12,-1" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="3" stroke-linecap="round"/></g>' +
+      '<g class="mq-bodygroup">' +
+        '<g class="mq-arm-l"><path d="M27,98 q-11,3 -13,13" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
+        '<g class="mq-arm-r"><path d="M143,98 q11,3 13,13" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
+        '<g class="mq-eyes">' + eye("l", 60) + eye("r", 110) + '</g>' +
+        '<path class="mq-body" d="' + bodyPath(0, 0) + '" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/>' +
+        '<path class="mq-hl" d="M42,64 q16,-9 32,-7" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="4.6" stroke-linecap="round"/>' +
+        '<ellipse class="mq-throat" cx="85" cy="112" rx="15" ry="9" fill="#8bf2dd" ' + STROKE + ' stroke-width="3" opacity="0"/>' +
+        '<g class="mq-face">' +
+          '<path class="mq-mouth" d="' + mouthPath(MOUTHS.happy) + '" fill="none" ' + STROKE + ' stroke-width="3.6"/>' +
+          '<ellipse class="mq-moutho" cx="85" cy="96" rx="7.5" ry="9" fill="' + INK + '" opacity="0"/>' +
+          '<ellipse class="mq-blush-l" cx="44" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>' +
+          '<ellipse class="mq-blush-r" cx="126" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>' +
+        '</g>' +
+        '<path class="mq-sweat" d="M36,50 q7,9 0,14 q-8,-5 0,-14" fill="' + BLUE + '" opacity="0"/>' +
+        '<path class="mq-tongue" d="" fill="none" stroke="' + CORAL + '" stroke-width="5.5" stroke-linecap="round" opacity="0"/>' +
+        '<circle class="mq-tip" r="4.5" fill="' + CORAL + '" opacity="0"/>' +
+      '</g>' +
+    '</svg>';
+  }
+
+  // ---- the engine ---------------------------------------------------------------
+  var rigs = [];
+  var running = false;
+  var lastT = 0;
+
+  function q(el, cls) { return el.querySelector("." + cls); }
+  function T(el, str) { el.style.transform = str; }
+
+  function makeRig(host) {
+    var drawn = host.querySelector(".dmascot-drawn");
+    var svg = host.querySelector(".mq-rig");
+    if (!drawn || !svg) return null;
+    var mood = host.getAttribute("data-mood") || "happy";
+
+    var r = {
+      host: host, drawn: drawn, svg: svg, mood: mood,
+      // parts
+      body: q(svg, "mq-body"), bodyG: q(svg, "mq-bodygroup"),
+      eyeL: q(svg, "mq-eye-l"), eyeR: q(svg, "mq-eye-r"),
+      pupL: q(svg, "mq-pupilbox-l"), pupR: q(svg, "mq-pupilbox-r"),
+      lidL: q(svg, "mq-lid-l"), lidR: q(svg, "mq-lid-r"),
+      shutL: q(svg, "mq-shut-l"), shutR: q(svg, "mq-shut-r"),
+      browL: q(svg, "mq-brow-l"), browR: q(svg, "mq-brow-r"),
+      armL: q(svg, "mq-arm-l"), armR: q(svg, "mq-arm-r"),
+      mouth: q(svg, "mq-mouth"), mouthO: q(svg, "mq-moutho"),
+      throat: q(svg, "mq-throat"), sweat: q(svg, "mq-sweat"),
+      tongue: q(svg, "mq-tongue"), tip: q(svg, "mq-tip"),
+      dust: q(svg, "mq-dust"),
+      blushL: q(svg, "mq-blush-l"), blushR: q(svg, "mq-blush-r"),
+      // springs
+      bounce: new Spring(90, 9, 0),      // vertical (px, +down = below ground)
+      squash: new Spring(140, 10, 0),    // body deformation (+squat)
+      lean: new Spring(60, 8, 0),        // weight shift
+      rot: new Spring(120, 10, 0),       // body tilt impulse channel (deg*16)
+      px: new Spring(160, 16, 0),        // pupil x
+      py: new Spring(160, 16, 0),        // pupil y
+      blink: new Spring(260, 22, 0),     // 0 open → 1 closed
+      armLs: new Spring(120, 11, 0),     // arm rotation deg
+      armRs: new Spring(120, 11, 0),
+      throatS: new Spring(180, 12, 0),   // throat sac 0..1.2
+      open: new Spring(170, 14, 0),      // mouth-open amount 0..1
+      spin: 0,                            // backflip degrees remaining
+      // state
+      t: Math.random() * 10, phase: Math.random() * 6.28,
+      mouthA: MOUTHS.happy, mouthBuf: MOUTHS.happy.slice(),
+      blinkBase: 0, nextBlink: 1 + Math.random() * 3, nextShift: 3 + Math.random() * 4,
+      nextAct: 4 + Math.random() * 5, lookUntil: 0, busyUntil: 0,
+      pokes: 0, pokeAt: 0, pxBase: 0, pyBase: 0, sweatT: 0, dustFade: null,
+      fly: null,
+      onScreen: true, visW: 999, visCheck: 0, cx: 0, cy: 0, rectW: 170, rectH: 150,
+    };
+
+    // engine owns all motion — kill the css idle float html() set inline
+    if (drawn.parentElement) drawn.parentElement.style.animation = "none";
+
+    // mood presets
+    if (mood === "worried") {
+      r.mouthA = MOUTHS.worried;
+      r.browL.setAttribute("opacity", "1"); r.browR.setAttribute("opacity", "1");
+    } else if (mood === "sleepy") {
+      r.blinkBase = 0.88; r.blink.x = 0.88; r.blink.t = 0.88; r.mouthA = MOUTHS.sleepy;
+    } else if (mood === "watching") {
+      r.pxBase = 4.2; r.pyBase = 0.6; r.px.t = 4.2; r.py.t = 0.6; r.mouthA = MOUTHS.soft;
+    }
+    r.mouth.setAttribute("d", mouthPath(r.mouthA));
+    return r;
+  }
+
+  // one visible-rect check every ~500ms (rect reads are not free)
+  function rigVisible(r, now) {
+    if (now > r.visCheck) {
+      r.visCheck = now + 0.5;
+      var rect = r.host.getBoundingClientRect();
+      r.visW = rect.width;
+      r.onScreen = rect.width > 0 && rect.bottom > -40 && rect.top < window.innerHeight + 40;
+      r.cx = rect.left + rect.width / 2; r.cy = rect.top + rect.height / 2;
+      r.rectW = rect.width || 170; r.rectH = rect.height || 150;
+    }
+    return r.onScreen;
+  }
+
+  // ---- behaviors: impulses into the physics, not canned frames ------------------
+  function doHop(r, big) {
+    r.busyUntil = r.t + 1.2;
+    r.squash.kick(4.5);                                   // anticipation crouch
+    setTimeout(function () {
+      r.bounce.kick(big ? -330 : -240);                   // launch
+      r.squash.kick(-6);
+    }, 110);
+  }
+  function doCroak(r) {
+    r.busyUntil = r.t + 1.4;
+    r.throatS.t = 1; r.throatS.kick(6);
+    r.squash.kick(1.6);
+    setTimeout(function () { r.throatS.kick(5); r.squash.kick(1.2); }, 380);
+    setTimeout(function () { r.throatS.t = 0; }, 760);
+  }
+  function doGlance(r, dir) {
+    r.px.t = dir * 4.4;
+    r.lookUntil = r.t + 0.9 + Math.random() * 0.5;
+  }
+  function doStretch(r) {
+    r.busyUntil = r.t + 1.3;
+    r.squash.t = -1.4; r.armLs.t = -26; r.armRs.t = -26;
+    setTimeout(function () { r.squash.t = 0; r.armLs.t = 0; r.armRs.t = 0; }, 850);
+  }
+  function doBlink(r, dbl) {
+    r.blink.t = 1;
+    setTimeout(function () { r.blink.t = r.blinkBase; }, 90);
+    if (dbl) setTimeout(function () {
+      r.blink.t = 1;
+      setTimeout(function () { r.blink.t = r.blinkBase; }, 90);
+    }, 210);
+  }
+  function spawnFly(r) {
+    if (r.fly || r.visW < 90) return;
+    r.busyUntil = r.t + 3.6;
+    var el = document.createElement("span");
+    el.className = "mfly";
+    el.innerHTML = '<svg width="13" height="11" viewBox="0 0 13 11"><ellipse cx="6.5" cy="7" rx="3.4" ry="2.6" fill="#2B2118"/><path d="M4,4 q-3,-3 -1,-4 M9,4 q3,-3 1,-4" stroke="rgba(39,117,202,.75)" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
+    r.host.appendChild(el);
+    r.fly = { el: el, x: 175, y: 6, vx: -46, vy: 14, state: "wander", until: r.t + 1.3 + Math.random() * 0.7, zap: new Spring(150, 13, 0), caught: false };
+  }
+  function doDizzy(r) {
+    r.busyUntil = r.t + 1.8;
+    var i = 0;
+    var iv = setInterval(function () {
+      r.rot.kick(i % 2 ? -160 : 160);
+      if (++i >= 5) clearInterval(iv);
+    }, 190);
+    if (window.app && app.haptic) app.haptic([15, 25, 15, 25, 15, 25, 40]);
+  }
+  function doFlip(r) {
+    r.busyUntil = r.t + 1;
+    r.spin = 359.9;
+    r.bounce.kick(-230);
+    if (window.app && app.haptic) app.haptic([10, 20, 10, 20, 60]);
+  }
+  function doCheer(r) {
+    r.busyUntil = r.t + 1.9;
+    [-300, -230, -160].forEach(function (k, i) {
+      setTimeout(function () {
+        r.squash.kick(3.4);
+        setTimeout(function () { r.bounce.kick(k); }, 90);
+      }, i * 420);
+    });
+    r.open.t = 0.9;
+    setTimeout(function () { r.open.t = 0; }, 1500);
+  }
+  function doPoke(r, sideSign) {
+    r.squash.kick(5.5);
+    r.rot.kick(sideSign * 90);
+    r.bounce.kick(-70);
+    var now = Date.now();
+    r.pokes = now - r.pokeAt < 1600 ? r.pokes + 1 : 1;
+    r.pokeAt = now;
+    if (r.pokes >= 5) { r.pokes = 0; doDizzy(r); }
+    else if (Math.random() < 0.02) doFlip(r);
+  }
+
+  // ---- per-frame update ----------------------------------------------------------
+  function stepRig(r, dt) {
+    r.t += dt;
+    var t = r.t;
+
+    // ---- brain ----
+    if (t > r.nextBlink && r.blinkBase < 0.5) {
+      doBlink(r, Math.random() < 0.14);
+      r.nextBlink = t + 2.2 + Math.random() * 3.6;
+    }
+    if (t > r.nextShift) {
+      r.lean.t = (Math.random() * 2 - 1) * 1.15;
+      r.nextShift = t + 3.5 + Math.random() * 4.5;
+    }
+    if (t > r.nextAct && t > r.busyUntil && !r.fly) {
+      r.nextAct = t + 6 + Math.random() * 7;
+      var m = Math.random();
+      if (m < 0.13) spawnFly(r);
+      else if (m < 0.30) doHop(r, false);
+      else if (m < 0.46) doCroak(r);
+      else if (m < 0.60) doStretch(r);
+      else if (m < 0.80) doGlance(r, Math.random() < 0.5 ? -1 : 1);
+      else doBlink(r, true);
+    }
+    if (r.lookUntil && t > r.lookUntil && !r.fly) {
+      r.px.t = r.pxBase; r.py.t = r.pyBase; r.lookUntil = 0;
+    }
+
+    // worried sweat loop
+    if (r.mood === "worried") {
+      r.sweatT += dt;
+      var sw = (r.sweatT % 2.2) / 2.2;
+      var so = sw < 0.28 ? sw / 0.28 : sw > 0.6 ? Math.max(0, 1 - (sw - 0.6) / 0.4) : 1;
+      r.sweat.setAttribute("opacity", n2(so * 0.95));
+      T(r.sweat, "translate(0," + n2(sw * 9 - 2) + "px)");
+    }
+    // wave mood: continuous friendly wave
+    if (r.mood === "wave") r.armRs.t = -26 + Math.sin(t * 4.4) * 22;
+
+    // ---- fly + tongue ----
+    if (r.fly) stepFly(r, dt);
+
+    // ---- physics ----
+    var bounce = r.bounce.step(dt);
+    // ground contact: reflect with energy loss; hard landings kick the squash
+    if (bounce > 0) {
+      r.bounce.x = 0;
+      if (r.bounce.v > 60) {
+        r.squash.kick(clamp(r.bounce.v * 0.045, 2, 9));
+        if (r.bounce.v > 190) {                            // landing dust
+          r.dust.setAttribute("opacity", "0.7");
+          r.dustFade = 0.32;
+        }
+        r.bounce.v = -r.bounce.v * 0.22;
+      } else r.bounce.v = 0;
+      bounce = 0;
+    }
+    if (r.dustFade != null) {
+      r.dustFade -= dt;
+      if (r.dustFade <= 0) { r.dust.setAttribute("opacity", "0"); r.dustFade = null; }
+      else r.dust.setAttribute("opacity", n2(r.dustFade / 0.32 * 0.7));
+    }
+    var squash = r.squash.step(dt);
+    var lean = r.lean.step(dt);
+    var rot = r.rot.step(dt);
+    var blink = clamp(r.blink.step(dt), 0, 1.05);
+    var px = r.px.step(dt), py = r.py.step(dt);
+    var armL = r.armLs.step(dt), armR = r.armRs.step(dt);
+    var throat = Math.max(0, r.throatS.step(dt));
+    var open = clamp(r.open.step(dt), 0, 1);
+    if (r.spin > 0) r.spin = Math.max(0, r.spin - dt * 560);
+
+    // idle breathing baked into the jelly; gentle float + tilt
+    var breath = Math.sin(t * 1.35 + r.phase) * 0.22;
+    var floatY = Math.sin(t * 1.05 + r.phase) * 2.6;
+    var baseTilt = Math.sin(t * 0.85 + r.phase) * 0.9;
+
+    // velocity-based stretch: he elongates while moving fast (the pro trick)
+    var vStretch = clamp(-r.bounce.v * 0.00085, -0.16, 0.2);
+    var s = clamp(squash * 0.1 + breath * 0.06, -0.45, 0.5);
+    var sy = 1 - squash * 0.028 + vStretch;
+    var sx = 1 + squash * 0.032 - vStretch * 0.75;
+
+    // ---- write the frame ----
+    T(r.drawn, "translate3d(0," + n2(bounce + floatY) + "px,0) rotate(" + n2(rot * 0.06 + baseTilt + lean * 1.1 - r.spin) + "deg)");
+    r.bodyG.style.transformOrigin = "85px 132px";
+    T(r.bodyG, "scale(" + n2(sx) + "," + n2(sy) + ")");
+    r.body.setAttribute("d", bodyPath(s, lean * 5));
+    // eyes ride the jelly top + peek independently (overlapping action)
+    var topDrop = s * 15;
+    var peekL = Math.sin(t * 0.9 + r.phase) * 1.4;
+    var peekR = Math.sin(t * 0.9 + r.phase + 2.1) * 1.4;
+    T(r.eyeL, "translate(" + n2(lean * 3.2) + "px," + n2(topDrop * 0.86 + peekL) + "px)");
+    T(r.eyeR, "translate(" + n2(lean * 3.2) + "px," + n2(topDrop * 0.86 + peekR) + "px)");
+    T(r.pupL, "translate(" + n2(px) + "px," + n2(py) + "px)");
+    T(r.pupR, "translate(" + n2(px) + "px," + n2(py) + "px)");
+    // lids slide down over the clipped eye; near-shut shows the happy-shut arc
+    var lidY = -2 + blink * 36.5;
+    T(r.lidL, "translate(0," + n2(lidY) + "px)");
+    T(r.lidR, "translate(0," + n2(lidY) + "px)");
+    var shut = blink > 0.93 ? 1 : 0;
+    r.shutL.setAttribute("opacity", shut); r.shutR.setAttribute("opacity", shut);
+    r.armL.style.transformOrigin = "27px 98px";
+    T(r.armL, "rotate(" + n2(armL + lean * 2) + "deg)");
+    r.armR.style.transformOrigin = "143px 98px";
+    T(r.armR, "rotate(" + n2(armR - lean * 2) + "deg)");
+    // throat
+    r.throat.setAttribute("opacity", n2(clamp(throat, 0, 1)));
+    r.throat.style.transformOrigin = "85px 112px";
+    T(r.throat, "scale(" + n2(0.6 + throat * 0.55) + ")");
+    // mouth: expression path crossfades to the open "O"
+    r.mouth.setAttribute("opacity", n2(1 - open * 0.95));
+    r.mouthO.setAttribute("opacity", n2(open));
+    r.mouthO.style.transformOrigin = "85px 96px";
+    T(r.mouthO, "scale(" + n2(0.3 + open * 0.7) + ")");
+    // blush pops a touch with impact energy (secondary action)
+    var bs = 1 + clamp(Math.abs(r.squash.v) * 0.004, 0, 0.18);
+    r.blushL.style.transformOrigin = "44px 90px"; T(r.blushL, "scale(" + n2(bs) + ")");
+    r.blushR.style.transformOrigin = "126px 90px"; T(r.blushR, "scale(" + n2(bs) + ")");
+  }
+
+  function stepFly(r, dt) {
+    var f = r.fly;
+    var mouthX = 95, mouthY = 88;
+    if (f.state === "wander") {
+      // wander steering, soft-bounded to the air above his head
+      f.vx += (Math.random() * 2 - 1) * 320 * dt + (110 - f.x) * 0.9 * dt;
+      f.vy += (Math.random() * 2 - 1) * 300 * dt + (16 - f.y) * 1.1 * dt;
+      f.vx = clamp(f.vx, -70, 70); f.vy = clamp(f.vy, -55, 55);
+      f.x += f.vx * dt; f.y += f.vy * dt;
+      // eyes lock on
+      r.px.t = clamp((f.x - 85) * 0.08, -4.4, 4.4);
+      r.py.t = clamp((f.y - 34) * 0.08, -3, 2.4);
+      r.lookUntil = r.t + 9;
+      if (r.t > f.until) {
+        f.state = "zap";
+        f.zap.t = 1; f.zap.kick(9);
+        r.rot.kick(120); r.squash.kick(1.8);               // lunge
+        r.open.t = 0.85;
+        if (window.app && app.haptic) setTimeout(function () { app.haptic(12); }, 90);
+      }
+    }
+    var e = clamp(f.zap.step(dt), 0, 1.06);
+    if (f.state === "zap" || f.state === "reel") {
+      if (f.state === "zap" && e > 0.96) { f.state = "reel"; f.caught = true; f.zap.t = 0; }
+      var tipX = lerp(mouthX, f.x, e), tipY = lerp(mouthY, f.y, e);
+      var sag = (1 - e) * 10 + 4;
+      r.tongue.setAttribute("d", "M" + mouthX + "," + mouthY +
+        " Q" + n2((mouthX + tipX) / 2 + 6) + "," + n2((mouthY + tipY) / 2 + sag) +
+        " " + n2(tipX) + "," + n2(tipY));
+      r.tongue.setAttribute("opacity", "1");
+      r.tip.setAttribute("opacity", "1");
+      r.tip.setAttribute("cx", n2(tipX)); r.tip.setAttribute("cy", n2(tipY));
+      if (f.caught) { f.x = tipX; f.y = tipY; }
+      if (f.state === "reel" && e < 0.07) {
+        // gulp!
+        f.el.remove(); r.fly = null;
+        r.tongue.setAttribute("opacity", "0"); r.tip.setAttribute("opacity", "0");
+        r.open.t = 0;
+        r.throatS.t = 1; r.throatS.kick(7);
+        setTimeout(function () { r.throatS.t = 0; }, 300);
+        r.squash.kick(2);
+        r.px.t = r.pxBase; r.py.t = r.pyBase; r.lookUntil = 0;
+        r.blink.t = 0.62;                                  // content squint
+        setTimeout(function () { r.blink.t = r.blinkBase; }, 520);
+        return;
+      }
+    }
+    // place the fly (svg coords -> host px)
+    var kx = r.rectW / 170, ky = r.rectH / 150;
+    T(f.el, "translate(" + n2(f.x * kx) + "px," + n2(f.y * ky) + "px)");
+  }
+
+  // ---- main loop -------------------------------------------------------------------
+  function loop(ts) {
+    if (!rigs.length) { running = false; return; }
+    requestAnimationFrame(loop);
+    var dt = clamp((ts - lastT) / 1000, 0.001, 0.034);
+    lastT = ts;
+    if (document.hidden) return;
+    var now = ts / 1000;
+    for (var i = rigs.length - 1; i >= 0; i--) {
+      var r = rigs[i];
+      if (!r.host.isConnected) {
+        if (r.fly) r.fly.el.remove();
+        rigs.splice(i, 1);
+        continue;
+      }
+      if (!rigVisible(r, now)) continue;
+      stepRig(r, dt);
+    }
+  }
+  function ensureLoop() {
+    if (!running && rigs.length) {
+      running = true;
+      lastT = performance.now();
+      requestAnimationFrame(loop);
+    }
+  }
+
+  // Boot rigs for any mascot that lands in the DOM. html() returns a string
+  // (screens insert markup with innerHTML), so a MutationObserver wires the
+  // physics automatically the moment a frog appears.
+  function boot(host) {
+    if (host.dataset.mqRigged) return;
+    if ((parseInt(host.style.width, 10) || 999) < 80) return; // tiny frogs stay static
+    host.dataset.mqRigged = "1";
+    var r = makeRig(host);
+    if (r) {
+      rigs.push(r);
+      if (rigs.length > 6) rigs.shift();                   // hard cap
+      ensureLoop();
+    }
+  }
+  function bootAll(root) {
+    if (root.nodeType !== 1) return;
+    if (root.classList && root.classList.contains("dmascot")) boot(root);
+    if (root.querySelectorAll) root.querySelectorAll(".dmascot").forEach(boot);
+  }
+  if (!REDUCED) {
+    new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var added = muts[i].addedNodes;
+        for (var j = 0; j < added.length; j++) bootAll(added[j]);
+      }
+    }).observe(document.documentElement, { childList: true, subtree: true });
+    if (document.body) bootAll(document.body);
+  }
+
+  // ---- global interactions -----------------------------------------------------------
   if (!window.__divvyMascotTap) {
     window.__divvyMascotTap = true;
-    var pokes = 0, pokeAt = 0;
     document.addEventListener("pointerdown", function (e) {
-      var host = e.target && e.target.closest && e.target.closest(".dmascot");
-      if (!host) return;
-      var blob = host.querySelector(".dmascot-drawn");
-      if (!blob) return;
-      var now = Date.now();
-      pokes = now - pokeAt < 1600 ? pokes + 1 : 1;
-      pokeAt = now;
-      blob.classList.remove("mtap", "mdizzy", "mflip");
-      void blob.offsetWidth; // reflow so animations retrigger on rapid taps
-      if (pokes >= 5) {
-        pokes = 0;
-        blob.classList.add("mdizzy");
-        if (window.app && app.haptic) app.haptic([15, 25, 15, 25, 15, 25, 40]);
-      } else if (Math.random() < 0.02) {
-        blob.classList.add("mflip");
-        if (window.app && app.haptic) app.haptic([10, 20, 10, 20, 60]);
-      } else {
-        blob.classList.add("mtap");
+      if (REDUCED) return;
+      var pokedHost = e.target && e.target.closest && e.target.closest(".dmascot");
+      for (var i = 0; i < rigs.length; i++) {
+        var r = rigs[i];
+        if (!r.host.isConnected || !r.onScreen) continue;
+        if (r.host === pokedHost) {
+          doPoke(r, e.clientX < r.cx ? -1 : 1);
+          if (window.app && app.haptic) app.haptic(12);
+        } else if (!r.fly) {
+          // glance toward the tap
+          r.px.t = clamp((e.clientX - r.cx) * 0.03, -4.4, 4.4);
+          r.py.t = clamp((e.clientY - r.cy) * 0.02, -3, 2.4);
+          r.lookUntil = r.t + 0.9;
+        }
       }
     }, { passive: true });
   }
 
-  // Idle life: after 40s without any interaction, mascots on screen doze off
-  // (a floating "z z"); any touch/scroll/keypress wakes them.
+  // Idle life: after 40s without any interaction, mascots doze off ("z z").
   if (!window.__divvyMascotIdle) {
     window.__divvyMascotIdle = true;
     var idleTimer = null;
-    function sleep() {
+    var dozing = false;
+    function sleepAll() {
+      dozing = true;
       document.querySelectorAll(".dmascot").forEach(function (m) {
         if (m.querySelector(".mzz")) return;
         var z = document.createElement("span");
@@ -170,216 +557,59 @@
         z.textContent = "z z";
         m.appendChild(z);
       });
+      rigs.forEach(function (r) { if (r.mood !== "sleepy") { r.blinkBase = 0.85; r.blink.t = 0.85; } });
     }
-    function wake() {
-      document.querySelectorAll(".mzz").forEach(function (z) { z.remove(); });
+    function wakeAll() {
+      if (dozing) {
+        dozing = false;
+        document.querySelectorAll(".mzz").forEach(function (z) { z.remove(); });
+        rigs.forEach(function (r) { if (r.mood !== "sleepy") { r.blinkBase = 0; r.blink.t = 0; } });
+      }
       clearTimeout(idleTimer);
-      idleTimer = setTimeout(sleep, 40000);
+      idleTimer = setTimeout(sleepAll, 40000);
     }
     ["pointerdown", "pointermove", "keydown", "scroll", "touchstart"].forEach(function (ev) {
-      document.addEventListener(ev, wake, { passive: true, capture: true });
+      document.addEventListener(ev, wakeAll, { passive: true, capture: true });
     });
-    wake();
+    wakeAll();
   }
 
-  // ---- life engine: every 6-13s one visible mochi does something small ------
-  // (double-blink, glance, hop, croak — and, rarely, catches a fly with a
-  // tongue zap). Mascots also glance toward taps. Paused when the tab is
-  // hidden; disabled entirely under prefers-reduced-motion.
-  if (!window.__divvyMascotLife) {
-    window.__divvyMascotLife = true;
-    var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    var visibleMascots = function () {
-      var out = [];
-      document.querySelectorAll(".dmascot").forEach(function (m) {
-        var r = m.getBoundingClientRect();
-        if (r.width > 44 && r.bottom > 0 && r.top < window.innerHeight) out.push(m);
-      });
-      return out;
-    };
-    var timed = function (el, cls, ms) {
-      el.classList.remove(cls);
-      void el.offsetWidth;
-      el.classList.add(cls);
-      setTimeout(function () { el.classList.remove(cls); }, ms);
-    };
-
-    var flyCatch = function (host) {
-      var drawn = host.querySelector(".dmascot-drawn");
-      if (!drawn || host.querySelector(".mfly")) return;
-      var fly = document.createElement("span");
-      fly.className = "mfly";
-      fly.innerHTML = '<svg width="13" height="11" viewBox="0 0 13 11"><ellipse cx="6.5" cy="7" rx="3.4" ry="2.6" fill="#2B2118"/><path d="M4,4 q-3,-3 -1,-4 M9,4 q3,-3 1,-4" stroke="rgba(39,117,202,.75)" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
-      host.appendChild(fly);
-      timed(drawn, "mlook-r", 1400);                                     // spot it…
-      setTimeout(function () { timed(drawn, "mzap", 520); }, 850);       // …zap!
-      setTimeout(function () { fly.classList.add("mgone"); }, 1060);
-      setTimeout(function () { fly.remove(); }, 1400);
-      setTimeout(function () { if (window.app && app.haptic) app.haptic(12); }, 1000);
-    };
-
-    var tick = function () {
-      setTimeout(tick, 6000 + Math.random() * 7000);
-      if (reducedMotion || document.hidden) return;
-      var ms = visibleMascots();
-      if (!ms.length) return;
-      var host = ms[Math.floor(Math.random() * ms.length)];
-      var drawn = host.querySelector(".dmascot-drawn");
-      if (!drawn) return;
-      var r = Math.random();
-      if (r < 0.13) flyCatch(host);
-      else if (r < 0.30) timed(drawn, "mhop", 950);
-      else if (r < 0.48) timed(drawn, "mcroak", 1200);
-      else if (r < 0.66) timed(drawn, "mblink2", 600);
-      else if (r < 0.83) timed(drawn, "mlook-l", 1100);
-      else timed(drawn, "mlook-r", 1100);
-    };
-    setTimeout(tick, 3500);
-
-    // Glance toward taps elsewhere on the page (poking the mascot itself is
-    // handled by the tap-squash handler above).
-    document.addEventListener("pointerdown", function (e) {
-      if (reducedMotion) return;
-      if (e.target && e.target.closest && e.target.closest(".dmascot")) return;
-      visibleMascots().forEach(function (m) {
-        var drawn = m.querySelector(".dmascot-drawn");
-        if (!drawn) return;
-        var r = m.getBoundingClientRect();
-        var cx = r.left + r.width / 2;
-        drawn.classList.remove("mlook-l", "mlook-r");
-        timed(drawn, e.clientX < cx - 20 ? "mlook-l" : e.clientX > cx + 20 ? "mlook-r" : "mblink2", 900);
-      });
-    }, { passive: true });
-  }
-
-  // Every mochi on screen does three happy bounces — app.celebrate calls this
-  // on settle-up success so the mascot parties with the confetti.
-  function cheer() {
-    document.querySelectorAll(".dmascot-drawn").forEach(function (m) {
-      m.classList.remove("mcheer");
-      void m.offsetWidth;
-      m.classList.add("mcheer");
-      setTimeout(function () { m.classList.remove("mcheer"); }, 1700);
-    });
-  }
-
-  var INK = "#2B2118", MINT = "#3DE8C7", CORAL = "#FF6B5E", BLUE = "#2775CA";
-  var STROKE = 'stroke="' + INK + '" stroke-linecap="round" stroke-linejoin="round"';
-
-  // ---- the rig ---------------------------------------------------------------
-  // One 170x150 SVG. Every part carries a stable class so CSS (in-app) or a
-  // motion tool (marketing) can grab it: mq-eye-l/r, mq-pupil-l/r, mq-body,
-  // mq-mouth, mq-blush-l/r, mq-arm-l/r, mq-leg-l/r, mq-sweat, mq-lid-l/r.
-
-  function eyeStalks(mood) {
-    var sw = 4;
-    function stalk(side, cx) {
-      var cls = side === "l" ? "mq-eye-l" : "mq-eye-r";
-      var inner;
-      if (mood === "sleepy") {
-        // closed, content lids
-        inner = '<path class="mq-lid-' + side + '" d="M' + (cx - 9) + ',34 q9,8 18,0" fill="none" ' + STROKE + ' stroke-width="3.4"/>';
-      } else if (mood === "watching") {
-        // pupils track something off to the side
-        inner = '<g class="mq-pupilbox"><circle class="mq-pupil mq-pupil-' + side + '" cx="' + (cx + 5.5) + '" cy="35" r="5.6" fill="' + INK + '"/>' +
-          '<circle cx="' + (cx + 7.5) + '" cy="33" r="1.8" fill="#fff"/></g>';
-      } else {
-        inner = '<g class="mq-pupilbox"><circle class="mq-pupil mq-pupil-' + side + '" cx="' + cx + '" cy="34" r="5.6" fill="' + INK + '"/>' +
-          '<circle cx="' + (cx + 2) + '" cy="32" r="1.8" fill="#fff"/></g>';
-      }
-      var brow = mood === "worried"
-        ? '<path d="M' + (cx - 8) + ',18 q8,-4 15,-1" fill="none" ' + STROKE + ' stroke-width="3"/>'
-        : "";
-      return '<g class="' + cls + '">' +
-        '<circle cx="' + cx + '" cy="34" r="17" fill="' + MINT + '" ' + STROKE + ' stroke-width="' + sw + '"/>' +
-        inner + brow +
-      '</g>';
-    }
-    return stalk("l", 60) + stalk("r", 110);
-  }
-
-  function mouthFor(mood) {
-    if (mood === "worried")
-      return '<path class="mq-mouth" d="M75,98 q5,-5 10,0 q5,5 10,0" fill="none" ' + STROKE + ' stroke-width="3.6"/>';
-    if (mood === "watching")
-      return '<circle class="mq-mouth" cx="85" cy="97" r="4.6" fill="none" ' + STROKE + ' stroke-width="3.4"/>';
-    if (mood === "sleepy")
-      return '<path class="mq-mouth" d="M79,96 q6,4 12,0" fill="none" ' + STROKE + ' stroke-width="3.4"/>';
-    // happy: the wide double-arc frog smile
-    return '<path class="mq-mouth" d="M63,92 q11,10 22,0 q11,10 22,0" fill="none" ' + STROKE + ' stroke-width="3.6"/>';
-  }
-
-  function frogSvg(mood, waving) {
-    var sweat = mood === "worried"
-      ? '<path class="mq-sweat" d="M36,50 q7,9 0,14 q-8,-5 0,-14" fill="' + BLUE + '"/>'
-      : "";
-    return '' +
-    '<svg class="mq-rig" viewBox="0 0 170 158" width="100%" height="100%" style="overflow:visible; display:block;">' +
-      // legs (behind body)
-      '<g class="mq-leg-l"><path d="M60,132 v9 M51,141 h15" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
-      '<g class="mq-leg-r"><path d="M110,132 v9 M104,141 h15" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
-      // landing dust (visible only during the hop's touchdown)
-      '<g class="mq-dust"><path d="M38,143 q-7,2 -12,-1 M132,143 q7,2 12,-1" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="3" stroke-linecap="round"/></g>' +
-      '<g class="mq-bodygroup">' +
-        // arms (attach at the body sides)
-        '<g class="mq-arm-l"><path d="M27,98 q-11,3 -13,13" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
-        '<g class="mq-arm-r' + (waving ? " mq-waving" : "") + '"><path d="' + (waving ? "M143,94 q13,-7 15,-18" : "M143,98 q11,3 13,13") + '" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
-        // periscope eyes (overlap the body top)
-        eyeStalks(mood) +
-        // body
-        '<path class="mq-body" d="M25,96 Q25,50 85,50 Q145,50 145,96 L145,102 Q145,132 85,132 Q25,132 25,102 Z" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/>' +
-        '<path d="M42,64 q16,-9 32,-7" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="4.6" stroke-linecap="round"/>' +
-        // face
-        '<ellipse class="mq-throat" cx="85" cy="112" rx="15" ry="9" fill="#8bf2dd" ' + STROKE + ' stroke-width="3" opacity="0"/>' +
-        '<g class="mq-face">' +
-          mouthFor(mood) +
-          '<ellipse class="mq-blush-l" cx="44" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>' +
-          '<ellipse class="mq-blush-r" cx="126" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>' +
-        '</g>' +
-        sweat +
-        '<g class="mq-tongue"><path d="M95,90 Q120,60 146,28" fill="none" stroke="' + CORAL + '" stroke-width="5.5" stroke-linecap="round"/><circle cx="146" cy="28" r="4.5" fill="' + CORAL + '"/></g>' +
-      '</g>' +
-    '</svg>';
-  }
-
+  // ---- public API ----------------------------------------------------------------------
   function html(opts) {
     opts = opts || {};
-    var size = opts.size || 120;        // body width in px (same scale as the old blob)
+    var size = opts.size || 120;
     var mood = opts.mood || "happy";
     var glow = opts.glow !== false;
-    var k = size / 118;                 // scale factor off the 118px base
+    var k = size / 118;
     function px(n) { return Math.round(n * k); }
 
     var sparkles = mood === "sparkle"
       ? '<span style="position:absolute;left:-6px;top:2px;font-size:' + px(20) + 'px;animation:mSpark 1.4s ease-in-out infinite;">✨</span>' +
         '<span style="position:absolute;right:-4px;top:18px;font-size:' + px(15) + 'px;animation:mSpark 1.8s ease-in-out infinite .3s;">✨</span>'
       : "";
-
     var glowEl = glow
       ? '<div style="position:absolute;left:50%;top:55%;width:' + px(190) + 'px;height:' + px(190) + 'px;border-radius:50%;background:radial-gradient(circle, rgba(61,232,199,.4) 0%, rgba(61,232,199,0) 66%);animation:mGlow 7s ease-in-out infinite;pointer-events:none;"></div>'
       : "";
 
     return '' +
-      '<div class="dmascot" style="position:relative;width:' + px(170) + 'px;height:' + px(150) + 'px;display:flex;align-items:center;justify-content:center;flex:none;">' +
+      '<div class="dmascot" data-mood="' + mood + '" style="position:relative;width:' + px(170) + 'px;height:' + px(150) + 'px;display:flex;align-items:center;justify-content:center;flex:none;">' +
         glowEl +
-        '<div style="position:relative;width:100%;height:100%;animation:mFloat 5.5s ease-in-out infinite;">' +
-          '<div class="dmascot-drawn" style="position:relative;width:100%;height:100%;filter:drop-shadow(' + Math.max(2, px(3)) + 'px ' + Math.max(3, px(4)) + 'px 0 rgba(43,33,24,0.45));">' +
-            frogSvg(mood, mood === "wave") +
+        '<div style="position:relative;width:100%;height:100%;">' +
+          '<div class="dmascot-drawn" style="position:relative;width:100%;height:100%;transform-origin:50% 90%;filter:drop-shadow(' + Math.max(2, px(3)) + 'px ' + Math.max(3, px(4)) + 'px 0 rgba(43,33,24,0.45));">' +
+            frogSvg(mood, ++UID) +
             sparkles +
           '</div>' +
         '</div>' +
       '</div>';
   }
 
-  // Tiny head-only mochi for spinners / chips / inline moments. Pure SVG,
-  // inherits the same idle blink so even the smallest frog feels alive.
+  // Tiny head-only mochi for spinners / chips (static — rigs are for the big guy).
   function mini(pxSize) {
     pxSize = pxSize || 28;
     return '' +
     '<svg viewBox="0 0 120 100" width="' + pxSize + '" height="' + Math.round(pxSize * 0.83) + '" style="overflow:visible; display:block; filter:drop-shadow(2px 3px 0 rgba(43,33,24,0.55));">' +
-      '<g class="mq-eye-l"><circle cx="38" cy="26" r="14" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/><circle class="mq-pupil" cx="38" cy="26" r="4.6" fill="' + INK + '"/></g>' +
-      '<g class="mq-eye-r"><circle cx="82" cy="26" r="14" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/><circle class="mq-pupil" cx="82" cy="26" r="4.6" fill="' + INK + '"/></g>' +
+      '<g><circle cx="38" cy="26" r="14" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/><circle cx="38" cy="26" r="4.6" fill="' + INK + '"/></g>' +
+      '<g><circle cx="82" cy="26" r="14" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/><circle cx="82" cy="26" r="4.6" fill="' + INK + '"/></g>' +
       '<path d="M14,64 Q14,38 60,38 Q106,38 106,64 Q106,88 60,88 Q14,88 14,64 Z" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/>' +
       '<path d="M43,64 q8.5,8 17,0 q8.5,8 17,0" fill="none" ' + STROKE + ' stroke-width="3.4"/>' +
       '<ellipse cx="28" cy="66" rx="7" ry="4.4" fill="#FF9C8F"/>' +
@@ -393,5 +623,15 @@
     return d.firstElementChild;
   }
 
-  window.Mascot = { html: html, el: el, mini: mini, cheer: cheer };
+  function cheer() {
+    rigs.forEach(function (r) { if (r.host.isConnected && r.onScreen) doCheer(r); });
+  }
+  function react(kind) {
+    rigs.forEach(function (r) {
+      if (!r.host.isConnected) return;
+      if (kind === "pop") { r.squash.kick(5); r.bounce.kick(-70); }
+    });
+  }
+
+  window.Mascot = { html: html, el: el, mini: mini, cheer: cheer, react: react };
 })();
