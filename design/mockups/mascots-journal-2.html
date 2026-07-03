@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Divvy — journal mascot candidates, round 2</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 26px 18px 60px;
+    background: #F7F1E3;
+    background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(39,117,202,0.10) 27px 28px);
+    font-family: -apple-system, "General Sans", system-ui, sans-serif;
+    color: #2B2118;
+  }
+  h1 { font-size: 27px; letter-spacing: -0.5px; margin: 0 0 4px; }
+  .sub { font-family: ui-monospace, monospace; font-size: 11px; color: #FF6B5E; font-weight: 700; margin-bottom: 22px; }
+  .card {
+    position: relative; background: #FFFDF7; border: 2px solid #2B2118; border-radius: 18px;
+    box-shadow: 3px 4px 0 rgba(43,33,24,0.85); padding: 16px 16px 14px; margin-bottom: 24px;
+  }
+  .card:nth-child(odd) { transform: rotate(-0.5deg); }
+  .card:nth-child(even) { transform: rotate(0.4deg); }
+  .tape { position: absolute; top: -11px; left: 50%; width: 74px; height: 20px; transform: translateX(-50%) rotate(-2deg);
+    opacity: .85; border-left: 1.5px dashed rgba(43,33,24,0.25); border-right: 1.5px dashed rgba(43,33,24,0.25); }
+  .tag { position: absolute; top: -12px; left: 12px; width: 30px; height: 30px; border-radius: 10px; background: #FF6B5E;
+    border: 2px solid #2B2118; box-shadow: 2px 3px 0 rgba(43,33,24,0.85); color: #fff; font-weight: 800; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; transform: rotate(-4deg); }
+  .row { display: flex; align-items: center; gap: 14px; }
+  .big { flex: none; filter: drop-shadow(3px 4px 0 rgba(43,33,24,0.5)); }
+  .info { flex: 1; min-width: 0; }
+  .name { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
+  .pitch { font-size: 13px; line-height: 1.45; color: rgba(43,33,24,0.62); margin-top: 4px; }
+  .moods { display: flex; align-items: flex-end; gap: 12px; margin-top: 11px; }
+  .mood { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .mood span { font-family: ui-monospace, monospace; font-size: 9px; color: rgba(43,33,24,0.45); }
+</style>
+</head>
+<body>
+<h1>round two!!</h1>
+<div class="sub">six more — hand-inked, lives on paper</div>
+<div id="cards"></div>
+
+<script>
+const INK = "#2B2118", BLUE = "#2775CA", MINT = "#3DE8C7", CORAL = "#FF6B5E", SUN = "#FFC65C", CARD = "#FFFDF7";
+const S = `stroke="${INK}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
+
+function face(cx, cy, mood, scale = 1) {
+  const g = 11 * scale;
+  let eyes, mouth = "";
+  if (mood === "worried") {
+    eyes = `<circle cx="${cx-g}" cy="${cy}" r="${2.6*scale}" fill="${INK}"/><circle cx="${cx+g}" cy="${cy}" r="${2.6*scale}" fill="${INK}"/>
+      <path d="M${cx-g-5*scale},${cy-8*scale} q${5*scale},${-4*scale} ${9*scale},${-1*scale}" fill="none" ${S} stroke-width="${2.2*scale}"/>
+      <path d="M${cx+g+5*scale},${cy-8*scale} q${-5*scale},${-4*scale} ${-9*scale},${-1*scale}" fill="none" ${S} stroke-width="${2.2*scale}"/>`;
+    mouth = `<path d="M${cx-6*scale},${cy+10*scale} q${3*scale},${-3*scale} ${6*scale},0 q${3*scale},${3*scale} ${6*scale},0" fill="none" ${S} stroke-width="${2.4*scale}"/>`;
+  } else if (mood === "party") {
+    eyes = `<path d="M${cx-g-4*scale},${cy} q${4*scale},${-5*scale} ${8*scale},0" fill="none" ${S} stroke-width="${2.6*scale}"/>
+      <path d="M${cx+g-4*scale},${cy} q${4*scale},${-5*scale} ${8*scale},0" fill="none" ${S} stroke-width="${2.6*scale}"/>`;
+    mouth = `<path d="M${cx-7*scale},${cy+7*scale} q${7*scale},${9*scale} ${14*scale},0 z" fill="${INK}"/>`;
+  } else {
+    eyes = `<circle cx="${cx-g}" cy="${cy}" r="${2.8*scale}" fill="${INK}"/><circle cx="${cx+g}" cy="${cy}" r="${2.8*scale}" fill="${INK}"/>`;
+    mouth = `<path d="M${cx-6*scale},${cy+8*scale} q${6*scale},${6*scale} ${12*scale},0" fill="none" ${S} stroke-width="${2.6*scale}"/>`;
+  }
+  const blush = `<circle cx="${cx-g-7*scale}" cy="${cy+7*scale}" r="${3*scale}" fill="${CORAL}" opacity=".35"/>
+    <circle cx="${cx+g+7*scale}" cy="${cy+7*scale}" r="${3*scale}" fill="${CORAL}" opacity=".35"/>`;
+  return eyes + mouth + blush;
+}
+const hat = (x, y) => `<path d="M${x},${y} l9,-19 l9,19 z" fill="${SUN}" ${S} stroke-width="2.4"/>
+  <circle cx="${x+9}" cy="${y-20}" r="3" fill="${CORAL}" ${S} stroke-width="2"/>`;
+const confetti = `<circle cx="14" cy="18" r="3" fill="${MINT}"/><rect x="98" y="12" width="6" height="6" rx="1" fill="${CORAL}" transform="rotate(20 101 15)"/>
+  <path d="M20,40 q4,-4 8,0" fill="none" stroke="${SUN}" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="106" cy="42" r="2.6" fill="${BLUE}"/>`;
+
+// G — Splitz: a pizza slice (the original split)
+function splitz(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M24,34 Q60,16 96,34 L66,102 Q60,110 54,102 Z" fill="${SUN}" ${S}/>
+    <path d="M22,34 Q60,14 98,34 L94,46 Q60,28 26,46 Z" fill="${CORAL}" ${S}/>
+    <circle cx="48" cy="58" r="5.5" fill="${CORAL}" stroke="rgba(43,33,24,0.5)" stroke-width="2"/>
+    <circle cx="72" cy="62" r="5" fill="${CORAL}" stroke="rgba(43,33,24,0.5)" stroke-width="2"/>
+    <circle cx="59" cy="82" r="4.5" fill="${CORAL}" stroke="rgba(43,33,24,0.5)" stroke-width="2"/>
+    <path d="M30,62 q-8,1 -10,8 M90,62 q8,1 10,8" fill="none" ${S} stroke-width="2.8"/>
+    ${mood === "party" ? hat(51, 16) : ""}
+    ${face(60, 62, mood, 0.7)}
+  </svg>`;
+}
+
+// H — Tabby: the cat that keeps tabs
+function tabby(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M28,44 L24,20 L44,32 Q60,26 76,32 L96,20 L92,44 Q102,58 100,74 Q98,100 60,102 Q22,100 20,74 Q18,58 28,44 Z" fill="${SUN}" ${S}/>
+    <path d="M30,26 L42,33 L32,40 Z M90,26 L78,33 L88,40 Z" fill="${CORAL}" stroke="none" opacity=".55"/>
+    <path d="M36,46 q6,8 0,15 M84,46 q-6,8 0,15" fill="none" stroke="rgba(43,33,24,0.5)" stroke-width="2.6"/>
+    <path d="M14,64 q-6,2 -6,8 M13,74 q-5,1 -6,6" fill="none" ${S} stroke-width="2.2"/>
+    <path d="M106,64 q6,2 6,8 M107,74 q5,1 6,6" fill="none" ${S} stroke-width="2.2"/>
+    <path d="M100,88 q14,2 12,-12" fill="none" ${S} stroke-width="3"/>
+    <path d="M54,72 l6,5 l6,-5" fill="none" ${S} stroke-width="2.4"/>
+    ${mood === "party" ? hat(51, 24) : ""}
+    ${face(60, 62, mood, 0.85)}
+  </svg>`;
+}
+
+// I — Boo: the ghost of unpaid bills
+function boo(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M60,16 C86,16 98,38 98,60 L98,96 L88,88 L78,98 L68,88 L60,98 L52,88 L42,98 L32,88 L22,96 L22,60 C22,38 34,16 60,16 Z" fill="${CARD}" ${S}/>
+    <path d="M30,52 q-8,6 -6,14 M90,52 q8,6 6,14" fill="none" ${S} stroke-width="2.8"/>
+    <rect x="70" y="64" width="20" height="26" rx="3" fill="${CARD}" stroke="rgba(43,33,24,0.55)" stroke-width="2" transform="rotate(8 80 77)"/>
+    <path d="M75,72 h10 M75,78 h7" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round" transform="rotate(8 80 77)"/>
+    <path d="M75,84 h9" stroke="${CORAL}" stroke-width="2.4" stroke-linecap="round" transform="rotate(8 80 77)"/>
+    ${mood === "party" ? hat(51, 16) : ""}
+    ${face(56, 46, mood, 0.9)}
+  </svg>`;
+}
+
+// J — Inky: the pen that writes the journal
+function inky(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M46,26 Q46,14 60,14 Q74,14 74,26 L74,78 Q74,84 60,84 Q46,84 46,78 Z" fill="${BLUE}" ${S}/>
+    <path d="M46,30 Q60,24 74,30" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2.4"/>
+    <path d="M52,84 L60,104 L68,84" fill="${SUN}" ${S} stroke-width="2.6"/>
+    <circle cx="60" cy="93" r="2.2" fill="${INK}"/>
+    <path d="M60,104 q-2,7 3,10" fill="none" stroke="${BLUE}" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="66" cy="116" r="3" fill="${BLUE}"/>
+    <path d="M46,52 q-9,2 -10,10 M74,52 q9,2 10,10" fill="none" ${S} stroke-width="2.8"/>
+    ${mood === "party" ? hat(51, 14) : ""}
+    ${face(60, 44, mood, 0.72)}
+  </svg>`;
+}
+
+// K — Oink: the piggy bank
+function oink(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <ellipse cx="60" cy="64" rx="42" ry="34" fill="#ffagac" ${S}/>
+    <ellipse cx="60" cy="64" rx="42" ry="34" fill="${CORAL}" opacity=".85" ${S}/>
+    <path d="M40,32 h18" fill="none" ${S} stroke-width="3"/>
+    <rect x="44" y="27" width="12" height="7" rx="3" fill="${INK}"/>
+    <ellipse cx="88" cy="66" rx="9" ry="7.5" fill="#e0493c" ${S} stroke-width="2.6"/>
+    <circle cx="85" cy="66" r="1.8" fill="${INK}"/><circle cx="91" cy="66" r="1.8" fill="${INK}"/>
+    <path d="M22,50 q-8,-2 -8,6 q0,6 7,4" fill="none" ${S} stroke-width="2.6"/>
+    <path d="M34,94 v8 M78,94 v8" ${S} stroke-width="3" fill="none"/>
+    <path d="M18,72 q-7,0 -8,6" fill="none" ${S} stroke-width="2.4"/>
+    ${mood === "party" ? hat(43, 20) : ""}
+    ${face(52, 56, mood, 0.8)}
+  </svg>`;
+}
+
+// L — Jet: the paper plane your money rides on
+function jet(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M14,58 L104,30 L74,92 L56,72 Z" fill="${CARD}" ${S}/>
+    <path d="M56,72 L60,94 L68,80" fill="#efe7d3" ${S} stroke-width="2.6"/>
+    <path d="M14,58 L74,92 L104,30" fill="none" stroke="rgba(43,33,24,0.35)" stroke-width="2"/>
+    <path d="M10,78 q8,-3 14,1 M6,90 q7,-3 12,0 M20,100 q6,-3 11,0" fill="none" stroke="${BLUE}" stroke-width="2.6" stroke-linecap="round" opacity=".6"/>
+    ${mood === "party" ? hat(60, 24) : ""}
+    ${face(68, 50, mood, 0.68)}
+  </svg>`;
+}
+
+const CANDIDATES = [
+  { tag: "G", fn: splitz, tape: "rgba(255,107,94,0.6)", name: "splitz the slice",
+    pitch: "a pizza slice — the original thing friends split. crust hat, pepperoni freckles. food splits are half your tabs anyway." },
+  { tag: "H", fn: tabby, tape: "rgba(255,198,92,0.75)", name: "tabby — keeps tabs",
+    pitch: "a cat named tabby, because she literally keeps tabs. cats win the internet, and the pun does the marketing for you." },
+  { tag: "I", fn: boo, tape: "rgba(61,232,199,0.7)", name: "boo — ghost of unpaid bills",
+    pitch: "the friend who ghosts when the bill comes, as a mascot. holds the receipt they never paid. peak nudge energy — “don't get boo'd.”" },
+  { tag: "J", fn: inky, tape: "rgba(39,117,202,0.4)", name: "inky the pen",
+    pitch: "the pen that draws the whole journal. writes new tabs into the book, drips a little ink when nervous. most on-theme pick." },
+  { tag: "K", fn: oink, tape: "rgba(255,107,94,0.6)", name: "oink the piggy bank",
+    pitch: "the classic money friend, hand-inked coral. rattles when someone owes you, coin-slot smile when you get paid." },
+  { tag: "L", fn: jet, tape: "rgba(61,232,199,0.7)", name: "jet the paper plane",
+    pitch: "your money rides a paper plane to friends — the send button come alive. folds itself out of a receipt, loops on every settle." },
+];
+
+document.getElementById("cards").innerHTML = CANDIDATES.map(c => `
+  <div class="card">
+    <div class="tape" style="background:${c.tape}"></div>
+    <div class="tag">${c.tag}</div>
+    <div class="row">
+      <div class="big">${c.fn("happy", 116)}</div>
+      <div class="info">
+        <div class="name">${c.name}</div>
+        <div class="pitch">${c.pitch}</div>
+      </div>
+    </div>
+    <div class="moods">
+      <div class="mood">${c.fn("happy", 52)}<span>happy</span></div>
+      <div class="mood">${c.fn("worried", 52)}<span>worried</span></div>
+      <div class="mood">${c.fn("party", 52)}<span>party</span></div>
+    </div>
+  </div>`).join("");
+</script>
+</body>
+</html>
