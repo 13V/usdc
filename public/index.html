@@ -21,13 +21,15 @@
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="stylesheet" href="/divvy.css" />
 <style>
-  html, body { height: 100%; background: var(--ink-deep); }
+  /* Lock the document: the page itself must never scroll or rubber-band (the
+     native drag-the-whole-app bounce reads as "webview"). Only #view scrolls. */
+  html, body { position: fixed; inset: 0; overflow: hidden; background: var(--ink-deep); }
   /* center a phone-width column on desktop */
-  #app { position: relative; max-width: 430px; min-height: 100vh; margin: 0 auto; background: var(--ink);
+  #app { position: relative; max-width: 430px; height: 100%; margin: 0 auto; background: var(--ink);
     display: flex; flex-direction: column; overflow: hidden;
     /* keep content clear of the notch / Dynamic Island on device (0 on web) */
     padding-top: env(safe-area-inset-top); }
-  #view { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #view { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
   #view::-webkit-scrollbar { width: 0; }
 </style>
 </head>

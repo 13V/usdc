@@ -203,7 +203,7 @@ label { display: block; font-family: var(--mono); font-size: 11px; letter-spacin
   padding: 8px 0 7px; margin: 0 5px; border-radius: 15px; transition: color .18s, background .18s; }
 .tabbar a.active { color: var(--blue-bright); background: rgba(39,117,202,0.16); }
 .tabbar a svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
-.tabbar .fab { margin-top: -24px; width: 56px; height: 56px; border-radius: 18px; background: var(--blue-grad);
+.tabbar .fab { margin-top: -6px; width: 56px; height: 56px; border-radius: 18px; background: var(--blue-grad);
   display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 22px rgba(39,117,202,0.5);
   color: #fff; flex: none; padding: 0; }
 .tabbar .fab svg { width: 26px; height: 26px; stroke: #fff; stroke-width: 2.4; }

@@ -33,7 +33,12 @@ const config: CapacitorConfig = {
   },
   ios: {
     backgroundColor: "#0B1622",
-    contentInset: "always",
+    // The SPA handles safe areas itself (env() insets) and the document never
+    // scrolls (#view scrolls internally) — no automatic content insets, and
+    // disable the WKWebView scroll view so the whole app can't be dragged /
+    // rubber-banded. Takes effect on the next native build.
+    contentInset: "never",
+    scrollEnabled: false,
   },
   android: {
     backgroundColor: "#0B1622",
