@@ -181,6 +181,35 @@ label { display: block; font-family: var(--mono); font-size: 11px; letter-spacin
 @keyframes dRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { @keyframes dRise { from { opacity: 1; } to { opacity: 1; } } }
 
+/* ---- ambient aurora: a barely-perceptible drifting glow behind every screen
+   (screens with their own opaque backgrounds simply cover it) ---- */
+#aurora { position: absolute; inset: -22%; z-index: 0; pointer-events: none; opacity: .55;
+  background:
+    radial-gradient(38% 30% at 22% 16%, rgba(39,117,202,0.15), transparent 70%),
+    radial-gradient(30% 26% at 80% 72%, rgba(61,232,199,0.09), transparent 70%),
+    radial-gradient(26% 22% at 68% 26%, rgba(139,92,246,0.09), transparent 70%);
+  animation: auroraDrift 48s ease-in-out infinite alternate; will-change: transform; }
+@keyframes auroraDrift {
+  from { transform: translate3d(-2%, -1.5%, 0) rotate(0deg) scale(1); }
+  to   { transform: translate3d(2.5%, 2%, 0) rotate(5deg) scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { #aurora { animation: none; } }
+
+/* ---- screen transitions (router adds s-* to #view on navigation) ---- */
+@keyframes sFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes sPush { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes sPop  { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: none; } }
+#view.s-fade > * { animation: sFade .22s ease both; }
+#view.s-push > * { animation: sPush .26s cubic-bezier(.2,.7,.2,1) both; }
+#view.s-pop  > * { animation: sPop  .24s cubic-bezier(.2,.7,.2,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  #view.s-fade > *, #view.s-push > *, #view.s-pop > * { animation: none; }
+}
+
+/* ---- press states: everything tappable squishes under the finger ---- */
+button, .tabbar a { transition: transform .13s ease; }
+button:active, .tabbar a:active { transform: scale(.96); }
+.tabbar .fab:active { transform: scale(.92); }
+
 /* Full-bleed screen root: fill the visible viewport (below the notch inset).
    Percentage min-heights don't reliably resolve inside the flex/overflow #view
    on WebKit — content collapsed and left dead space on tall phones. */
@@ -200,7 +229,7 @@ label { display: block; font-family: var(--mono); font-size: 11px; letter-spacin
   padding: 10px 10px calc(12px + env(safe-area-inset-bottom)); z-index: 50; }
 .tabbar a { display: flex; flex-direction: column; align-items: center; gap: 5px; text-decoration: none;
   color: var(--faint); font-family: var(--mono); font-size: 10px; letter-spacing: 0.5px; flex: 1; cursor: pointer;
-  padding: 8px 0 7px; margin: 0 5px; border-radius: 15px; transition: color .18s, background .18s; }
+  padding: 8px 0 7px; margin: 0 5px; border-radius: 15px; transition: color .18s, background .18s, transform .13s; }
 .tabbar a.active { color: var(--blue-bright); background: rgba(39,117,202,0.16); }
 .tabbar a svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
 .tabbar .fab { margin-top: -6px; width: 56px; height: 56px; border-radius: 18px; background: var(--blue-grad);

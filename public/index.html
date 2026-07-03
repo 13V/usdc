@@ -29,12 +29,13 @@
     display: flex; flex-direction: column; overflow: hidden;
     /* keep content clear of the notch / Dynamic Island on device (0 on web) */
     padding-top: env(safe-area-inset-top); }
-  #view { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+  #view { position: relative; z-index: 1; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
   #view::-webkit-scrollbar { width: 0; }
 </style>
 </head>
 <body>
   <div id="app" class="paper">
+    <div id="aurora" aria-hidden="true"></div>
     <div id="view"></div>
     <nav id="tabbar" class="tabbar"></nav>
   </div>

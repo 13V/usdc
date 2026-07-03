@@ -213,6 +213,7 @@
     var inapp = document.getElementById("stInApp");
     if (inapp) inapp.onclick = function () {
       tap();
+      if (app.sound) app.sound("send"); // money leaving: soft rising whoosh
       busy(inapp, "opening wallet…"); // navigating away — no restore needed
       // hand off to the embedded Privy wallet to sign + send the USDC transfer.
       var mint = (/[?&]spl-token=([^&]+)/.exec(solUrl || "") || [])[1] || "";
@@ -428,7 +429,7 @@
         ) +
       '</div>';
     ensureKeyframes();
-    if (S.justSettled && window.app && app.celebrate) app.celebrate(); // squared-up fanfare + confetti burst
+    if (S.justSettled && window.app && app.celebrate) app.celebrate({ coins: true }); // squared-up fanfare: confetti + coins
     else if (window.app && app.haptic) app.haptic([28, 40, 28, 55, 110]);
     tickToZero();
     var sol = document.getElementById("stSolscan");

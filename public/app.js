@@ -334,14 +334,19 @@
     ind.style.cssText = "position:absolute; left:50%; top:0; z-index:30; transform:translate(-50%,-44px); " +
       "width:30px; height:30px; border-radius:50%; pointer-events:none; opacity:0; " +
       "transition:opacity .15s; display:flex; align-items:center; justify-content:center;";
-    ind.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none">' +
-      '<circle cx="12" cy="12" r="9" stroke="rgba(244,247,250,0.12)" stroke-width="3"/>' +
-      '<path d="M12 3a9 9 0 0 1 9 9" stroke="#3DE8C7" stroke-width="3" stroke-linecap="round"/></svg>';
+    // The indicator is a mini mascot blob: it stretches like taffy as you pull
+    // and boings while the refresh runs.
+    ind.innerHTML = '<div style="width:26px;height:26px;border-radius:47% 53% 52% 48%/55% 48% 52% 45%;' +
+      'background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697);' +
+      'box-shadow:0 4px 12px rgba(39,117,202,.5), inset 0 2px 4px rgba(255,255,255,.28);' +
+      'display:flex;align-items:center;justify-content:center;gap:4px;">' +
+      '<span style="width:4px;height:6px;border-radius:50%;background:#0B1622;"></span>' +
+      '<span style="width:4px;height:6px;border-radius:50%;background:#0B1622;"></span></div>';
     if (!document.getElementById("divvy-ptr-css")) {
       var s = document.createElement("style");
       s.id = "divvy-ptr-css";
-      s.textContent = "@keyframes divvyPtrSpin{to{transform:rotate(360deg)}}" +
-        "@media (prefers-reduced-motion: reduce){.divvy-ptr-spin svg{animation:none!important}}";
+      s.textContent = "@keyframes ptrBoing{0%,100%{transform:scale(1)}50%{transform:scale(1.18,.82)}}" +
+        "@media (prefers-reduced-motion: reduce){.divvy-ptr-spin div{animation:none!important}}";
       document.head.appendChild(s);
     }
     // Pin the indicator to the top of the scroller's viewport. Append it into
@@ -357,13 +362,15 @@
       var y = Math.min(pull, MAX);
       ind.style.transform = "translate(-50%," + (y - 44) + "px)";
       ind.style.opacity = pull > 6 ? "1" : "0";
-      var svg = ind.firstChild;
-      if (svg) svg.style.transform = "rotate(" + (pull * 3) + "deg)";
+      var blob = ind.firstChild;
+      // taffy stretch: the further the pull, the longer (and thinner) the blob
+      var k = Math.min(pull / MAX, 1);
+      if (blob) blob.style.transform = "scaleY(" + (1 + k * 0.4) + ") scaleX(" + (1 - k * 0.18) + ") rotate(" + (pull * 1.2) + "deg)";
     }
     function reset() {
       tracking = false; pull = 0;
       ind.classList.remove("divvy-ptr-spin");
-      var svg = ind.firstChild; if (svg) svg.style.animation = "";
+      var blob = ind.firstChild; if (blob) { blob.style.animation = ""; blob.style.transform = ""; }
       ind.style.transition = "opacity .15s, transform .2s";
       ind.style.transform = "translate(-50%,-44px)";
       ind.style.opacity = "0";
@@ -374,8 +381,8 @@
       ind.style.transform = "translate(-50%,8px)";
       ind.style.opacity = "1";
       ind.classList.add("divvy-ptr-spin");
-      var svg = ind.firstChild;
-      if (svg) svg.style.animation = "divvyPtrSpin .8s linear infinite";
+      var blob = ind.firstChild;
+      if (blob) { blob.style.transform = ""; blob.style.animation = "ptrBoing .55s ease-in-out infinite"; }
       var done = function () { refreshing = false; reset(); };
       try {
         Promise.resolve(onRefresh()).then(done, done);
@@ -411,6 +418,16 @@
     var parts = h.split("/");
     return { name: parts[0] || "home", params: parts.slice(1) };
   }
+  // Every tappable thing gives a tiny haptic tick on touch (native feel).
+  if (!window.__divvyPressTick) {
+    window.__divvyPressTick = true;
+    document.addEventListener("pointerdown", function (e) {
+      var b = e.target && e.target.closest && e.target.closest("button, .tabbar a");
+      if (b) haptic(6);
+    }, { passive: true });
+  }
+
+  var lastScreenName = null;
   async function render() {
     var r = parseHash();
     var screen = window.Screens && window.Screens[r.name];
@@ -418,8 +435,17 @@
     if (!view) return;
     if (!screen) { view.innerHTML = '<div class="empty"><div class="title">screen not found</div></div>'; return; }
     view.scrollTop = 0;
+    // Direction-aware entrance: tab→tab fades up, tab→sub-screen pushes in from
+    // the right, sub→tab settles back from the left (see divvy.css s-* rules).
+    var toTop = !!TOPLEVEL[r.name];
+    var fromTop = lastScreenName == null ? true : !!TOPLEVEL[lastScreenName];
+    var transition = !toTop ? "s-push" : fromTop ? "s-fade" : "s-pop";
     try { await screen.render(view, r.params); }
     catch (e) { view.innerHTML = '<div class="empty"><div class="title lower">something broke</div><div class="hint">' + esc(e.message) + "</div></div>"; }
+    view.classList.remove("s-fade", "s-push", "s-pop");
+    void view.offsetWidth; // restart the entrance animation
+    view.classList.add(transition);
+    lastScreenName = r.name;
     renderTabbar(r.name);
   }
   // Only the five top-level destinations show the bottom tab bar; everything else
@@ -563,7 +589,20 @@
         haptic(8);
       };
     });
-    if (input) input.oninput = function () { highlight(readCents()); };
+    var wasBig = false;
+    if (input) input.oninput = function () {
+      var c = readCents();
+      highlight(c);
+      // big number! any mascot on screen does a double-take (once per crossing)
+      var big = c >= 50000;
+      if (big && !wasBig) {
+        document.querySelectorAll(".dmascot-drawn").forEach(function (m) {
+          m.classList.remove("mtap"); void m.offsetWidth; m.classList.add("mtap");
+        });
+        haptic([12, 28, 22]);
+      }
+      wasBig = big;
+    };
     return { getCents: readCents, input: input };
   }
 
@@ -709,6 +748,55 @@
   }
 
   // ---- delight primitives ----
+  // ---- sound language (synthesized in WebAudio — no assets, ~Cash-App-style
+  // tiny chimes). Gated by the "sounds" setting; iOS unlocks audio on first tap.
+  var _ac = null, _soundOn = null;
+  function soundsEnabled() {
+    if (_soundOn === null) {
+      try { _soundOn = localStorage.getItem("divvy.sounds") !== "off"; } catch (_) { _soundOn = true; }
+    }
+    return _soundOn;
+  }
+  function setSounds(on) {
+    _soundOn = !!on;
+    try { localStorage.setItem("divvy.sounds", on ? "on" : "off"); } catch (_) {}
+  }
+  function audioCtx() {
+    var C = window.AudioContext || window.webkitAudioContext;
+    if (!C) return null;
+    if (!_ac) { try { _ac = new C(); } catch (_) { return null; } }
+    if (_ac.state === "suspended") { try { _ac.resume(); } catch (_) {} }
+    return _ac;
+  }
+  function _tone(ac, t0, freq, dur, type, gain, sweepTo) {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = type || "sine";
+    o.frequency.setValueAtTime(freq, t0);
+    if (sweepTo) o.frequency.exponentialRampToValueAtTime(sweepTo, t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain || 0.05, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+  }
+  function sound(name) {
+    if (!soundsEnabled()) return;
+    var ac = audioCtx(); if (!ac) return;
+    try {
+      var t = ac.currentTime + 0.01;
+      if (name === "send") {          // soft rising whoosh: money leaving
+        _tone(ac, t, 320, 0.2, "sine", 0.05, 760);
+      } else if (name === "paid") {   // two-tone cha-ching: money arriving
+        _tone(ac, t, 880, 0.12, "triangle", 0.055);
+        _tone(ac, t + 0.09, 1318, 0.22, "triangle", 0.055);
+      } else if (name === "win") {    // little arpeggio: everyone's square
+        _tone(ac, t, 659, 0.12, "triangle", 0.05);
+        _tone(ac, t + 0.08, 880, 0.12, "triangle", 0.05);
+        _tone(ac, t + 0.16, 1108, 0.26, "triangle", 0.06);
+      }
+    } catch (_) { /* audio is a garnish — never break a flow over it */ }
+  }
+
   function prefersReduced() {
     return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }
@@ -719,6 +807,7 @@
   function celebrate(opts) {
     opts = opts || {};
     haptic([0, 35, 30, 45, 25, 70]);
+    sound("win");
     if (prefersReduced()) return;
     var COLORS = ["#2775CA", "#3DE8C7", "#FF6B5E", "#FFC65C", "#8B5CF6"];
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -731,11 +820,16 @@
     var ox = (opts.x != null ? opts.x : window.innerWidth / 2) * dpr;
     var oy = (opts.y != null ? opts.y : window.innerHeight * 0.38) * dpr;
     var N = opts.count || 96, parts = [];
+    // opts.coins mixes spinning gold coins in with the confetti (money moments).
+    var coinCount = opts.coins ? Math.round(N * 0.28) : 0;
     for (var i = 0; i < N; i++) {
       var a = Math.random() * Math.PI * 2, sp = (4 + Math.random() * 9) * dpr;
+      var coin = i < coinCount;
       parts.push({ x: ox, y: oy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 7 * dpr,
-        s: (5 + Math.random() * 7) * dpr, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.45,
-        c: COLORS[(Math.random() * COLORS.length) | 0] });
+        s: (coin ? 7 + Math.random() * 4 : 5 + Math.random() * 7) * dpr,
+        rot: Math.random() * 6, vr: (Math.random() - 0.5) * (coin ? 0.6 : 0.45),
+        coin: coin,
+        c: coin ? (Math.random() < 0.5 ? "#FFC65C" : "#FFD98A") : COLORS[(Math.random() * COLORS.length) | 0] });
     }
     var g = 0.3 * dpr, drag = 0.986, DUR = 1600, start = performance.now();
     function frame(t) {
@@ -744,8 +838,19 @@
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i];
         p.vy += g; p.vx *= drag; p.vy *= drag; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
-        ctx.save(); ctx.globalAlpha = Math.max(0, life); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-        ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6); ctx.restore();
+        ctx.save(); ctx.globalAlpha = Math.max(0, life); ctx.translate(p.x, p.y);
+        if (p.coin) {
+          // spinning coin: an ellipse whose width oscillates with rotation
+          var w = Math.max(Math.abs(Math.cos(p.rot)) * p.s, p.s * 0.16);
+          ctx.fillStyle = p.c;
+          ctx.beginPath(); ctx.ellipse(0, 0, w, p.s, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = "rgba(11,22,34,0.35)"; ctx.lineWidth = dpr;
+          ctx.beginPath(); ctx.ellipse(0, 0, w * 0.62, p.s * 0.62, 0, 0, Math.PI * 2); ctx.stroke();
+        } else {
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+        }
+        ctx.restore();
       }
       if (dt < DUR) requestAnimationFrame(frame); else canvas.remove();
     }
@@ -786,6 +891,7 @@
     toast: toast, sheet: sheet, closeSheet: closeSheet, go: go, render: render,
     depositSheet: depositSheet, copy: copy, haptic: haptic, pullToRefresh: pullToRefresh,
     share: share, push: push, celebrate: celebrate, countUp: countUp, enter: enter,
+    sound: sound, soundsEnabled: soundsEnabled, setSounds: setSounds,
     tripToken: tripToken, setTripToken: setTripToken,
     qrImg: qrImg, amountEntryHtml: amountEntryHtml, wireAmountEntry: wireAmountEntry,
     openProvider: openProvider, testModeNote: testModeNote, dollarsLabel: dollarsLabel,

@@ -167,6 +167,7 @@
         // wired yet — render it as "soon" so it reads as not-yet-available.
         row("yNotif", "🔔", "rgba(255,107,94,0.14)", "notifications") + divider() +
         row("yPush", "📣", "rgba(139,92,246,0.16)", "push notifications", '<span id="yPushState" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(244,247,250,0.4); margin-right:2px;">off</span>') + divider() +
+        row("ySound", "🔊", "rgba(61,232,199,0.14)", "sounds", '<span id="ySoundState" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(244,247,250,0.4); margin-right:2px;">on</span>') + divider() +
         row("yNet", "🌐", "rgba(39,117,202,0.16)", "network", netTag) + divider() +
         row("yHelp", "💁", "rgba(244,247,250,0.07)", "help", null, true) +
       '</div>';
@@ -401,6 +402,23 @@
     if (saved) saved.onclick = function () { app.go("groups"); };
     var notif = document.getElementById("yNotif");
     if (notif) notif.onclick = function () { location.hash = "#/activity"; };
+    // Sounds toggle: little synth chimes on money moments.
+    var soundRow = document.getElementById("ySound"),
+        soundState = document.getElementById("ySoundState");
+    function renderSoundState() {
+      if (!soundState) return;
+      var on = app.soundsEnabled ? app.soundsEnabled() : false;
+      soundState.textContent = on ? "on" : "off";
+      soundState.style.color = on ? "#3DE8C7" : "rgba(244,247,250,0.4)";
+    }
+    renderSoundState();
+    if (soundRow) soundRow.onclick = function () {
+      var on = !(app.soundsEnabled && app.soundsEnabled());
+      if (app.setSounds) app.setSounds(on);
+      renderSoundState();
+      if (on && app.sound) app.sound("paid"); // audible confirmation
+      app.haptic(10);
+    };
     // Push notifications toggle: reflect current permission, enable on tap.
     var pushState = document.getElementById("yPushState");
     function renderPushState() {

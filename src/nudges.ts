@@ -90,6 +90,32 @@ async function insertNudge(row: NudgeRow): Promise<void> {
   );
 }
 
+/** How many nudges `from` has already sent `to` (drives escalating copy). */
+async function priorNudgeCount(from: string, to: string): Promise<number> {
+  if (usingSupabase) {
+    const { count, error } = await supabase()
+      .from("nudges")
+      .select("id", { count: "exact", head: true })
+      .eq("from_user_id", from)
+      .eq("to_user_id", to);
+    if (error) return 0; // copy flourish only — never block on it
+    return count || 0;
+  }
+  const row = db
+    .prepare("SELECT COUNT(*) AS n FROM nudges WHERE from_user_id = ? AND to_user_id = ?")
+    .get(from, to) as { n: number } | undefined;
+  return (row && row.n) || 0;
+}
+
+/** Escalating reminder copy: polite → pointed → the duck. */
+function nudgeBody(fromLabel: string, nudgeNumber: number): string {
+  if (nudgeNumber <= 1) return `${fromLabel} nudged you to settle up`;
+  if (nudgeNumber === 2) return `${fromLabel} nudged you again 👀`;
+  if (nudgeNumber === 3) return `third nudge. ${fromLabel} remembers 🧾`;
+  if (nudgeNumber === 4) return `${fromLabel} sent the duck 🦆 pay up`;
+  return `🦆🦆🦆 the ducks are multiplying. settle up with ${fromLabel}`;
+}
+
 /** Nudges RECEIVED by a user (to_user_id = me), newest first. */
 async function receivedNudges(userId: string): Promise<NudgeRow[]> {
   if (usingSupabase) {
@@ -315,22 +341,25 @@ nudgesRouter.post(
     };
     await insertNudge(row);
 
-    // Push the nudge to the target if they're a real user. Best-effort.
+    // Push the nudge to the target if they're a real user. Best-effort, with
+    // copy that escalates the more times this sender has nudged this target.
+    let nudgeNumber = 1;
     if (toUserId) {
       let fromLabel = "Someone";
       try {
         const u = await getUser(fromUserId);
         if (u) { const su = await serializeUser(u); fromLabel = su.displayName || su.handle || "Someone"; }
       } catch { /* generic label */ }
+      try { nudgeNumber = await priorNudgeCount(fromUserId, toUserId); } catch { /* stays 1 */ }
       void sendPush(toUserId, {
-        title: "Payment reminder 👋",
-        body: `${fromLabel} nudged you to settle up`,
+        title: nudgeNumber >= 4 ? "🦆 Payment reminder" : "Payment reminder 👋",
+        body: nudgeBody(fromLabel, nudgeNumber),
         url: "/#/activity",
         tag: `nudge:${row.id}`,
       });
     }
 
-    res.json({ ok: true, sent: !!toUserId, id: row.id });
+    res.json({ ok: true, sent: !!toUserId, id: row.id, nudgeNumber });
   }
 );
 

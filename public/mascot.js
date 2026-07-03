@@ -30,24 +30,70 @@
       "@keyframes mPop{0%{transform:scale(1)}30%{transform:scale(.9,1.08)}60%{transform:scale(1.06,.94)}100%{transform:scale(1)}}",
       ".dmascot-drawn{transform-origin:50% 90%}",
       ".dmascot-drawn.mtap{animation:mPop .42s cubic-bezier(.34,1.56,.64,1)}",
-      "@media (prefers-reduced-motion: reduce){.dmascot *{animation:none!important}}",
+      // poke games: 5 quick pokes → dizzy wobble; rare lucky poke → backflip
+      "@keyframes mDizzy{0%,100%{transform:rotate(0)}20%{transform:rotate(13deg)}45%{transform:rotate(-11deg) scale(.96)}70%{transform:rotate(7deg)}88%{transform:rotate(-4deg)}}",
+      ".dmascot-drawn.mdizzy{animation:mDizzy .9s ease-in-out 2}",
+      "@keyframes mFlip{to{transform:rotate(360deg)}}",
+      ".dmascot-drawn.mflip{animation:mFlip .7s cubic-bezier(.34,1.56,.64,1)}",
+      // idle: after ~40s of stillness the blob nods off (floating z z)
+      "@keyframes mZz{0%{opacity:0;transform:translateY(4px) scale(.8)}25%{opacity:1}100%{opacity:0;transform:translateY(-16px) scale(1.1)}}",
+      ".mzz{position:absolute;right:6%;top:2%;font-family:'Space Mono',monospace;font-weight:700;font-size:13px;color:rgba(127,192,255,0.85);animation:mZz 2.4s ease-in-out infinite;pointer-events:none;z-index:5}",
+      "@media (prefers-reduced-motion: reduce){.dmascot *{animation:none!important}.mzz{animation:none!important}}",
     ].join("");
     document.head.appendChild(s);
   }
 
-  // One delegated tap→squash for every mascot on the page.
+  // One delegated tap handler for every mascot on the page: squash on poke,
+  // dizzy after 5 quick pokes, and a rare 1-in-50 backflip.
   if (!window.__divvyMascotTap) {
     window.__divvyMascotTap = true;
+    var pokes = 0, pokeAt = 0;
     document.addEventListener("pointerdown", function (e) {
       var host = e.target && e.target.closest && e.target.closest(".dmascot");
       if (!host) return;
       var blob = host.querySelector(".dmascot-drawn");
       if (!blob) return;
-      blob.classList.remove("mtap");
-      // reflow so the animation can retrigger on rapid taps
-      void blob.offsetWidth;
-      blob.classList.add("mtap");
+      var now = Date.now();
+      pokes = now - pokeAt < 1600 ? pokes + 1 : 1;
+      pokeAt = now;
+      blob.classList.remove("mtap", "mdizzy", "mflip");
+      void blob.offsetWidth; // reflow so animations retrigger on rapid taps
+      if (pokes >= 5) {
+        pokes = 0;
+        blob.classList.add("mdizzy");
+        if (window.app && app.haptic) app.haptic([15, 25, 15, 25, 15, 25, 40]);
+      } else if (Math.random() < 0.02) {
+        blob.classList.add("mflip");
+        if (window.app && app.haptic) app.haptic([10, 20, 10, 20, 60]);
+      } else {
+        blob.classList.add("mtap");
+      }
     }, { passive: true });
+  }
+
+  // Idle life: after 40s without any interaction, mascots on screen doze off
+  // (a floating "z z"); any touch/scroll/keypress wakes them.
+  if (!window.__divvyMascotIdle) {
+    window.__divvyMascotIdle = true;
+    var idleTimer = null;
+    function sleep() {
+      document.querySelectorAll(".dmascot").forEach(function (m) {
+        if (m.querySelector(".mzz")) return;
+        var z = document.createElement("span");
+        z.className = "mzz";
+        z.textContent = "z z";
+        m.appendChild(z);
+      });
+    }
+    function wake() {
+      document.querySelectorAll(".mzz").forEach(function (z) { z.remove(); });
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(sleep, 40000);
+    }
+    ["pointerdown", "pointermove", "keydown", "scroll", "touchstart"].forEach(function (ev) {
+      document.addEventListener(ev, wake, { passive: true, capture: true });
+    });
+    wake();
   }
 
   var INK = "#0B1622";

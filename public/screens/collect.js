@@ -314,7 +314,7 @@
     if (dn) dn.onclick = function () { app.go("home"); };
     if (app.celebrate && celebratedId !== bill.id) { // everyone's-square confetti (once per bill)
       celebratedId = bill.id;
-      app.celebrate();
+      app.celebrate({ coins: true });
     }
   }
 
@@ -339,7 +339,31 @@
     if (c) c.onclick = function () { copyLink(shareUrl(bill)); };
   }
 
+  // Live collect drama: when the poll sees someone new flip to paid, thunk the
+  // haptics, toast their name, and pop a mini coin burst. First paint of a bill
+  // baselines silently so opening the screen never false-fires.
+  var paidMap = {}; // billId -> "0,2,3" (indexes already seen as paid)
+  function trackPays(bill) {
+    var ps = bill.participants || [];
+    var now = [];
+    for (var i = 0; i < ps.length; i++) if (ps[i].paid) now.push(i);
+    var key = now.join(",");
+    var prev = paidMap[bill.id];
+    paidMap[bill.id] = key;
+    if (prev === undefined || prev === key) return;
+    var seen = {};
+    prev.split(",").forEach(function (x) { if (x !== "") seen[x] = 1; });
+    var fresh = [];
+    for (var j = 0; j < now.length; j++) if (!seen[now[j]]) fresh.push(ps[now[j]]);
+    if (!fresh.length) return;
+    app.haptic([18, 30, 44]);
+    if (app.sound) app.sound("paid");
+    app.toast(app.esc(fresh[0].name || "someone") + (fresh.length > 1 ? " +" + (fresh.length - 1) : "") + " squared up 🎉");
+    if (app.celebrate && !bill.settled) app.celebrate({ count: 44, coins: true, y: window.innerHeight * 0.42 });
+  }
+
   function paint(view, bill) {
+    trackPays(bill);
     if (bill.settled || (bill.participants && bill.participants.length &&
         bill.participants.every(function (p) { return p.paid; }))) {
       stopPoll();

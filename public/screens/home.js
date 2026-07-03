@@ -396,7 +396,7 @@
       // pass the wallet too so the nudge can resolve to a real user and land in
       // their notifications (name alone usually can't be resolved).
       app.api.post("/api/nudge", { name: c.name, wallet: c.wallet || undefined, kind: "owed" }).then(function (r) {
-        app.toast(r && r.sent ? "nudge sent ✨" : "reminder saved 📌");
+        app.toast(r && r.sent ? (r.nudgeNumber >= 4 ? "🦆 deployed" : "nudge sent ✨") : "reminder saved 📌");
         app.haptic(20);
       }).catch(function (e) {
         app.toast((e && e.message) || "couldn't nudge");

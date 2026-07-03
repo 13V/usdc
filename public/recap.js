@@ -12,19 +12,19 @@
 (function () {
   "use strict";
 
-  // Brand tokens mirrored from the styleguide :root (canvas can't read CSS vars).
-  const GREEN = "#2775ca";          // --accent (USDC blue); name kept for API/back-compat
-  const INK = "#04121a";            // --ink (app background)
-  const SURFACE = "#0a1f2b";        // --surface (cards)
-  const SURFACE_2 = "#0e2734";      // --surface-2 (raised rows)
-  const CREAM = "#f6f1e7";          // --cream (primary text)
-  const MUTED = "#a9b0a8";          // ~ --muted on dark (secondary text)
-  const FAINT = "#727a74";          // ~ --faint (tertiary / hints)
-  const TERRA = "#e0a892";          // --terra (you-owe / debit)
-  const ACCENT_SOFT = "rgba(39,117,202,0.14)"; // --accent-soft
-  const LINE = "rgba(246,241,231,0.10)";        // --line (hairline borders)
-  const SANS = "'Space Grotesk', -apple-system, system-ui, sans-serif";
-  const MONO = "'JetBrains Mono', ui-monospace, monospace";
+  // Brand tokens mirrored from divvy.css :root (canvas can't read CSS vars).
+  const GREEN = "#2775CA";          // USDC blue; name kept for API/back-compat
+  const INK = "#0B1622";            // app background
+  const SURFACE = "#13212E";        // cards
+  const SURFACE_2 = "#182838";      // raised rows
+  const CREAM = "#F4F7FA";          // primary text; name kept for back-compat
+  const MUTED = "rgba(244,247,250,0.55)";
+  const FAINT = "rgba(244,247,250,0.38)";
+  const TERRA = "#FF6B5E";          // you-owe / debit (coral)
+  const ACCENT_SOFT = "rgba(39,117,202,0.14)";
+  const LINE = "rgba(244,247,250,0.10)";
+  const SANS = "'Clash Display', 'General Sans', -apple-system, system-ui, sans-serif";
+  const MONO = "'Space Mono', ui-monospace, monospace";
 
   function authFetchFn() {
     return (window.Auth && window.Auth.authFetch) ? window.Auth.authFetch : fetch;
