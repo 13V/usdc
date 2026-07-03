@@ -133,7 +133,7 @@
     var bg = app.esc(color || pickGrad(seed)); // esc: never inject a stored color raw
     return '<div style="width:42px; height:42px; border-radius:50%; background:' + bg + '; ' +
       'display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">' +
-      app.esc(emoji || "🦊") + '</div>';
+      app.face(emoji || "🦊") + '</div>';
   }
   // rounded-square emoji tile (a tab/trip), 42px / radius 14, frame-style.
   function tripTile(seed, emoji, tint) {
@@ -204,7 +204,7 @@
     var push = function (emoji, count) {
       chips.push('<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; ' +
         'border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:2px 8px;">' +
-        '<span style="font-size:11px;">' + app.esc(emoji) + '</span>' +
+        '<span style="font-size:11px;">' + app.face(emoji) + '</span>' +
         '<span style="font-family:\'Space Mono\',monospace; font-size:9px; color:rgba(43,33,24,0.6);">' +
         app.esc(String(count)) + '</span></div>');
     };

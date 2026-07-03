@@ -165,7 +165,7 @@
               '<div style="position:relative; width:132px; height:132px; border-radius:36px; overflow:hidden; box-shadow:0 18px 40px rgba(43,33,24,0.13), inset 0 2px 0 rgba(255,255,255,0.18);">' +
                 '<div id="cpHeroBg" style="position:absolute; inset:0; background:' + colorBg(state.colorId) + ';"></div>' +
                 '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 80% 110%, rgba(255,255,255,0.1) 0 1px, transparent 1px 7px); opacity:.5;"></div>' +
-                '<div id="cpHeroEmoji" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:68px;">' + app.esc(state.emoji) + '</div>' +
+                '<div id="cpHeroEmoji" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:68px;">' + app.face(state.emoji) + '</div>' +
               '</div>' +
             '</div>' +
 
@@ -186,6 +186,13 @@
             '</div>' +
           '</div>' +
           '<div id="cpEmojiGrid" style="display:grid; grid-template-columns:repeat(6, 1fr); gap:9px;"></div>' +
+
+          // ===== MEME PFPS (hand-drawn Faces pack) =====
+          '<div style="display:flex; align-items:baseline; gap:8px; margin:24px 2px 12px;">' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">MEME PFPS</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; color:#FF6B5E;">hand-drawn, obviously</span>' +
+          '</div>' +
+          '<div id="cpMemeGrid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:9px;"></div>' +
 
           // ===== YOUR COLOR =====
           '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin:24px 2px 12px;">YOUR COLOR</div>' +
@@ -230,7 +237,7 @@
       var bg = document.getElementById("cpHeroBg");
       var em = document.getElementById("cpHeroEmoji");
       if (bg) bg.style.background = colorBg(state.colorId);
-      if (em) em.innerHTML = app.esc(state.emoji);
+      if (em) em.innerHTML = app.face(state.emoji);
     }
 
     function renderEmoji() {
@@ -252,7 +259,7 @@
           '</div>';
       }).join("");
       Array.prototype.forEach.call(grid.querySelectorAll("[data-emoji]"), function (el) {
-        el.onclick = function () { state.emoji = el.getAttribute("data-emoji"); refreshHero(); renderEmoji(); };
+        el.onclick = function () { state.emoji = el.getAttribute("data-emoji"); refreshHero(); renderEmoji(); renderMemes(); };
       });
     }
 
@@ -270,7 +277,29 @@
       });
     }
 
+    function renderMemes() {
+      var grid = document.getElementById("cpMemeGrid");
+      if (!grid || !window.Faces) return;
+      grid.innerHTML = window.Faces.list.map(function (m) {
+        var token = "m:" + m.id;
+        var sel = token === state.emoji;
+        return '<div data-meme="' + token + '" style="position:relative; border-radius:14px; background:#FFFDF7; border:2px solid ' + (sel ? "#2775CA" : "#2B2118") + '; box-shadow:2.5px 3px 0 rgba(43,33,24,0.85); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:10px 4px 8px; cursor:pointer;' + (sel ? "" : " transform:rotate(" + ((m.id.length % 3) - 1) * 1.2 + "deg);") + '">' +
+          '<span style="font-size:30px; line-height:1;">' + window.Faces.svg(token, "30px") + '</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:8.5px; letter-spacing:.3px; color:rgba(43,33,24,0.55); white-space:nowrap;">' + app.esc(m.name) + '</span>' +
+          (sel ? '<div style="position:absolute; top:-7px; right:-6px; width:18px; height:18px; border-radius:50%; background:#3DE8C7; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' : '') +
+          '</div>';
+      }).join("");
+      Array.prototype.forEach.call(grid.querySelectorAll("[data-meme]"), function (el) {
+        el.onclick = function () {
+          state.emoji = el.getAttribute("data-meme");
+          app.haptic(12);
+          refreshHero(); renderEmoji(); renderMemes();
+        };
+      });
+    }
+
     renderEmoji();
+    renderMemes();
     renderColors();
 
     var search = document.getElementById("cpSearch");

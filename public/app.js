@@ -85,6 +85,14 @@
     for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
     return PALETTE[h % PALETTE.length];
   }
+  // face(value) — render an avatar face: a meme token ("m:doge" → the drawn
+  // Faces SVG) or a plain emoji/initial (escaped text). Drop-in wherever an
+  // emoji glyph was printed: the svg is em-sized so it follows font-size.
+  function face(value) {
+    if (window.Faces && window.Faces.has(value)) return window.Faces.svg(value);
+    return esc(value);
+  }
+
   function avatar(person, size) {
     person = person || {};
     var nm = (person.name == null ? "" : String(person.name)).trim();
@@ -93,7 +101,7 @@
     var cls = "avatar" + (size === "sm" ? " sm" : "");
     // esc(bg): defense-in-depth — the server validates color to hex, but never
     // interpolate a stored value into a style attribute unescaped.
-    return '<span class="' + cls + '" style="background:' + esc(bg) + '">' + esc(emoji) + "</span>";
+    return '<span class="' + cls + '" style="background:' + esc(bg) + '">' + face(emoji) + "</span>";
   }
   function mascot(opts) { return window.Mascot ? window.Mascot.html(opts) : ""; }
 
@@ -887,7 +895,7 @@
   }
 
   var app = {
-    api: api, esc: esc, money: money, avatar: avatar, colorFor: colorFor, mascot: mascot,
+    api: api, esc: esc, money: money, avatar: avatar, face: face, colorFor: colorFor, mascot: mascot,
     toast: toast, sheet: sheet, closeSheet: closeSheet, go: go, render: render,
     depositSheet: depositSheet, copy: copy, haptic: haptic, pullToRefresh: pullToRefresh,
     share: share, push: push, celebrate: celebrate, countUp: countUp, enter: enter,

@@ -21,7 +21,7 @@
       '<div style="width:36px; height:36px; border-radius:11px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:24px; line-height:1; color:#fff; transform:translateY(-1px);">/</span>' +
       '</div>' +
-      '<a href="#/you" style="text-decoration:none; width:36px; height:36px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(43,33,24,0.13);">' + app.esc(me.emoji) + '</a>' +
+      '<a href="#/you" style="text-decoration:none; width:36px; height:36px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(43,33,24,0.13);">' + app.face(me.emoji) + '</a>' +
     '</div>';
   }
 

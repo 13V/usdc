@@ -100,7 +100,7 @@
     var amtCol = p.paid ? "#2775CA" : "rgba(43,33,24,0.6)";
     var dim = (dimWaiting && !p.paid) ? " opacity:.5;" : "";
     return '<div style="display:flex; align-items:center; gap:11px; padding:9px 4px;' + dim + '">' +
-      '<div style="width:34px; height:34px; border-radius:50%; background:' + avGrad(i) + '; display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">' + app.esc(avFace(p, i)) + '</div>' +
+      '<div style="width:34px; height:34px; border-radius:50%; background:' + avGrad(i) + '; display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">' + app.face(avFace(p, i)) + '</div>' +
       '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + app.esc(p.name) + (isYou ? " (you)" : "") + '</span>' +
       '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:14px; color:' + amtCol + ';">' + app.esc(p.amountFmt || "") + '</span>' +
       statusPill(p.paid) +
@@ -112,7 +112,7 @@
   // people sharing a display name don't get conflated (dup-name bug).
   function nudgeRow(p, i) {
     return '<div style="display:flex; align-items:center; gap:11px; padding:11px 10px; margin:4px -6px 0; border-radius:14px; background:rgba(255,198,92,0.08); border:1px solid rgba(255,198,92,0.28);">' +
-      '<div style="width:34px; height:34px; border-radius:50%; background:' + avGrad(i) + '; display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">' + app.esc(avFace(p, i)) + '</div>' +
+      '<div style="width:34px; height:34px; border-radius:50%; background:' + avGrad(i) + '; display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">' + app.face(avFace(p, i)) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
         '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + app.esc(p.name) + '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(255,198,92,0.85); margin-top:1px;">' + app.esc(p.amountFmt || "") + ' · still waiting</div>' +
@@ -259,7 +259,7 @@
     var ps = bill.participants || [];
     var n = ps.length;
     var avatars = ps.map(function (p, i) {
-      return '<div style="width:32px; height:32px; border-radius:50%; background:' + avGrad(i) + '; border:2px solid #2aa0d0;' + (i ? " margin-left:-9px;" : "") + ' display:flex; align-items:center; justify-content:center; font-size:15px;">' + app.esc(avFace(p, i)) + '</div>';
+      return '<div style="width:32px; height:32px; border-radius:50%; background:' + avGrad(i) + '; border:2px solid #2aa0d0;' + (i ? " margin-left:-9px;" : "") + ' display:flex; align-items:center; justify-content:center; font-size:15px;">' + app.face(avFace(p, i)) + '</div>';
     }).join("");
 
     var confetti =

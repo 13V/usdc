@@ -78,7 +78,7 @@
   function avatarTile(f, nm) {
     var bg = app.esc(f.color || gradFor(f.id || nm)); // esc: stored color never raw
     if (f.emoji) {
-      return '<div style="width:46px; height:46px; border-radius:14px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none;">' + app.esc(f.emoji) + '</div>';
+      return '<div style="width:46px; height:46px; border-radius:14px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none;">' + app.face(f.emoji) + '</div>';
     }
     var initial = (nm || "?").trim()[0] || "?";
     return '<div style="width:46px; height:46px; border-radius:14px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:19px; color:#fff; flex:none;">' + app.esc(initial.toUpperCase()) + '</div>';
@@ -386,7 +386,7 @@
     var emoji = f.emoji || "🙂";
     var color = app.esc(f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)"); // esc: stored color never raw
     return '<div style="display:flex; align-items:center; gap:11px; background:#FFFDF7; border:1px solid rgba(61,232,199,0.18); border-radius:18px; padding:11px 12px;">' +
-      '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">' + app.esc(emoji) + '</div>' +
+      '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">' + app.face(emoji) + '</div>' +
       '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div><div style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.4);">wants to be friends</div></div>' +
       '<button data-decline="' + app.esc(f.id) + '" title="dismiss" style="appearance:none; cursor:pointer; flex:none; width:36px; height:36px; border-radius:50%; background:transparent; border:1px solid rgba(43,33,24,0.14); color:rgba(43,33,24,0.55); font-size:15px;">✕</button>' +
       '<button data-accept="' + app.esc(f.id) + '" style="appearance:none; border:none; cursor:pointer; flex:none; min-height:36px; padding:0 16px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; color:#fff; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px;">accept</button>' +
@@ -405,7 +405,7 @@
     var emoji = f.emoji || "🙂";
     var color = app.esc(f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)"); // esc: stored color never raw
     return '<div style="display:flex; align-items:center; gap:11px; background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 12px;">' +
-      '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none; opacity:.9;">' + app.esc(emoji) + '</div>' +
+      '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none; opacity:.9;">' + app.face(emoji) + '</div>' +
       '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div><div style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.4);">waiting for them to accept</div></div>' +
       '<span style="display:inline-flex; align-items:center; gap:5px; flex:none; background:rgba(255,198,92,0.1); border:1px solid rgba(255,198,92,0.35); border-radius:999px; padding:5px 11px; font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; letter-spacing:.5px; color:#FFC65C;"><span style="width:5px; height:5px; border-radius:50%; background:#FFC65C;"></span>pending</span>' +
       '<button data-cancel="' + app.esc(f.id) + '" title="cancel request" style="appearance:none; cursor:pointer; flex:none; width:34px; height:34px; border-radius:50%; background:transparent; border:1px solid rgba(43,33,24,0.12); color:rgba(43,33,24,0.5); font-size:14px;">✕</button>' +
@@ -471,7 +471,7 @@
             friends.map(function (f) {
               var nm = (f.displayName || f.handle || "friend");
               return '<button class="snFriend" data-w="' + app.esc(f.primaryWallet) + '" data-n="' + app.esc(nm) + '" style="appearance:none; cursor:pointer; flex:none; display:flex; align-items:center; gap:7px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:6px 12px 6px 7px;">' +
-                '<span style="width:24px; height:24px; border-radius:50%; background:' + (f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)") + '; display:flex; align-items:center; justify-content:center; font-size:13px;">' + app.esc(f.emoji || "🙂") + '</span>' +
+                '<span style="width:24px; height:24px; border-radius:50%; background:' + (f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)") + '; display:flex; align-items:center; justify-content:center; font-size:13px;">' + app.face(f.emoji || "🙂") + '</span>' +
                 '<span style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:#2B2118;">' + app.esc(nm.toLowerCase()) + '</span></button>';
             }).join("") +
           '</div>'

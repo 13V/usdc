@@ -303,7 +303,7 @@
             st.members.map(function (m) {
               var sel = st.paidBy === m.id;
               return '<button data-paid="' + app.esc(m.id) + '" style="appearance:none; cursor:pointer; flex:none; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:none; padding:2px; opacity:' + (sel ? '1' : '0.5') + ';">' +
-                '<div style="width:46px; height:46px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:22px; border:2.5px solid ' + (sel ? '#3DE8C7' : 'transparent') + '; box-shadow:' + (sel ? '0 0 0 3px rgba(61,232,199,0.18)' : 'none') + ';">' + app.esc(m.emoji) + '</div>' +
+                '<div style="width:46px; height:46px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:22px; border:2.5px solid ' + (sel ? '#3DE8C7' : 'transparent') + '; box-shadow:' + (sel ? '0 0 0 3px rgba(61,232,199,0.18)' : 'none') + ';">' + app.face(m.emoji) + '</div>' +
                 '<span style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:' + (sel ? '#2B2118' : 'rgba(43,33,24,0.5)') + ';">' + app.esc(m.you ? "you" : m.name) + '</span>' +
               '</button>';
             }).join("") +
@@ -339,7 +339,7 @@
             var inc = m.included;
             var badge = inc ? '<span style="position:absolute; right:-3px; bottom:-3px; width:18px; height:18px; border-radius:50%; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>' : '';
             return '<button data-edit="' + app.esc(m.id) + '" style="appearance:none; cursor:pointer; flex:none; position:relative; display:flex; flex-direction:column; align-items:center; gap:5px; background:transparent; border:none; padding:2px; opacity:' + (inc ? '1' : '0.42') + ';">' +
-              '<div style="position:relative; width:46px; height:46px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:22px; border:2.5px solid ' + (inc ? '#2775CA' : 'rgba(43,33,24,0.12)') + '; filter:' + (inc ? 'none' : 'grayscale(0.4)') + ';">' + app.esc(m.emoji) + badge + '</div>' +
+              '<div style="position:relative; width:46px; height:46px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:22px; border:2.5px solid ' + (inc ? '#2775CA' : 'rgba(43,33,24,0.12)') + '; filter:' + (inc ? 'none' : 'grayscale(0.4)') + ';">' + app.face(m.emoji) + badge + '</div>' +
               '<span style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:' + (inc ? '#2B2118' : 'rgba(43,33,24,0.45)') + ';">' + app.esc(m.you ? "you" : m.name) + '</span>' +
             '</button>';
           }).join("") +
@@ -375,7 +375,7 @@
           '<div style="margin-top:16px; background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:8px 8px;">' +
             included().map(function (m) {
               return '<div style="display:flex; align-items:center; gap:12px; padding:9px 10px;">' +
-                '<div style="width:36px; height:36px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;">' + app.esc(m.emoji) + '</div>' +
+                '<div style="width:36px; height:36px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;">' + app.face(m.emoji) + '</div>' +
                 '<span style="flex:1; font-family:' + F_DISPLAY + '; font-weight:500; font-size:16px; color:#2B2118;">' + app.esc(m.you ? "you" : m.name) + '</span>' +
                 '<div style="display:flex; align-items:center; gap:2px; background:#F7F1E3; border:1px solid rgba(43,33,24,0.12); border-radius:11px; padding:8px 12px; min-width:96px; justify-content:flex-end;">' +
                   '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:16px; color:rgba(43,33,24,0.4);">$</span>' +

@@ -1,9 +1,9 @@
 // Divvy service worker — minimal app-shell cache.
-const CACHE = "divvy-v35";
+const CACHE = "divvy-v36";
 const SHELL = [
   "/", "/divvy.css", "/manifest.webmanifest", "/icon.svg",
   // Core runtime scripts.
-  "/mascot.js", "/auth.js", "/app.js", "/recap.js",
+  "/faces.js", "/mascot.js", "/auth.js", "/app.js", "/recap.js",
   // All screens — keep these in sync with index.html so a stale screen is never
   // served against a freshly-cached app.js.
   "/screens/home.js", "/screens/welcome.js", "/screens/groups.js", "/screens/group.js",

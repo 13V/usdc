@@ -75,7 +75,7 @@
       : '';
     return '' +
       '<div style="display:flex; align-items:center; gap:15px; padding:6px 2px 2px;">' +
-        '<div id="yAvatar" style="width:72px; height:72px; border-radius:22px; background:' + id.color + '; display:flex; align-items:center; justify-content:center; font-size:36px; box-shadow:0 12px 28px rgba(43,33,24,0.13); flex:none; cursor:pointer;">' + app.esc(id.emoji) + '</div>' +
+        '<div id="yAvatar" style="width:72px; height:72px; border-radius:22px; background:' + id.color + '; display:flex; align-items:center; justify-content:center; font-size:36px; box-shadow:0 12px 28px rgba(43,33,24,0.13); flex:none; cursor:pointer;">' + app.face(id.emoji) + '</div>' +
         '<div style="flex:1; min-width:0;">' +
           '<div style="display:flex; align-items:center; gap:8px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.4px; color:#2B2118;">' + app.esc((id.name || "you").toLowerCase()) + '</span><span style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(39,117,202,0.75);">' + app.esc(id.handle.toLowerCase()) + '</span><span id="yEdit" style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.4); cursor:pointer;">edit</span></div>' +
           '<div id="yWalletChip" style="display:inline-flex; align-items:center; gap:8px; margin-top:9px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:5px 11px;' + (id.wallet ? ' cursor:pointer;' : '') + '">' +

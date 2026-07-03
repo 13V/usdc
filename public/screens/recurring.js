@@ -210,7 +210,7 @@
         // top row
         '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">' +
           '<div style="display:flex; align-items:center; gap:12px; min-width:0;">' +
-            '<div style="width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;">' + app.esc(emoji) + '</div>' +
+            '<div style="width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;">' + app.face(emoji) + '</div>' +
             '<div style="min-width:0;">' +
               '<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:2px 9px; margin-bottom:5px;"><span style="font-family:' + MONO + '; font-weight:700; font-size:8.5px; letter-spacing:1px; color:#2775CA;">NEXT DUE</span></div>' +
               '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118;" class="lower">' + app.esc(rule.title) + '</div>' +
@@ -264,7 +264,7 @@
     if (paused) {
       return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:#FFFDF7; border-radius:20px; border:1px solid rgba(43,33,24,0.05); padding:14px; overflow:hidden; opacity:.72; cursor:pointer;">' +
         '<div style="position:relative; display:flex; align-items:center; justify-content:space-between;">' +
-          '<div style="width:38px; height:38px; border-radius:12px; background:rgba(255,198,92,0.12); display:flex; align-items:center; justify-content:center; font-size:18px; filter:grayscale(.3);">' + app.esc(emoji) + '</div>' +
+          '<div style="width:38px; height:38px; border-radius:12px; background:rgba(255,198,92,0.12); display:flex; align-items:center; justify-content:center; font-size:18px; filter:grayscale(.3);">' + app.face(emoji) + '</div>' +
           '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(255,198,92,0.1); border:1px solid rgba(255,198,92,0.3); border-radius:999px; padding:2px 8px;"><svg width="8" height="8" viewBox="0 0 24 24" fill="#FFC65C"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:#FFC65C;">PAUSED</span></span>' +
         '</div>' +
         '<div style="position:relative; font-family:' + DISPLAY + '; font-weight:500; font-size:14.5px; color:rgba(43,33,24,0.75); margin-top:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(rule.title) + '</div>' +
@@ -276,7 +276,7 @@
     return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:#FFFDF7; border-radius:20px; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:14px; overflow:hidden; cursor:pointer;">' +
       '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 6%, rgba(255,255,255,0.03) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>' +
       '<div style="position:relative; display:flex; align-items:center; justify-content:space-between;">' +
-        '<div style="width:38px; height:38px; border-radius:12px; background:' + tileTint(emoji) + '; display:flex; align-items:center; justify-content:center; font-size:18px;">' + app.esc(emoji) + '</div>' +
+        '<div style="width:38px; height:38px; border-radius:12px; background:' + tileTint(emoji) + '; display:flex; align-items:center; justify-content:center; font-size:18px;">' + app.face(emoji) + '</div>' +
         '<span style="width:6px; height:6px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 6px rgba(61,232,199,0.8);"></span>' +
       '</div>' +
       '<div style="position:relative; font-family:' + DISPLAY + '; font-weight:500; font-size:14.5px; color:#2B2118; margin-top:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(rule.title) + '</div>' +
@@ -663,7 +663,7 @@
         '<div style="position:relative; display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">' +
           '<div style="min-width:0;">' +
             '<div style="display:flex; align-items:center; gap:11px;">' +
-              '<div style="width:46px; height:46px; border-radius:14px; background:rgba(11,22,34,0.28); border:1px solid rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;">' + app.esc(emoji) + '</div>' +
+              '<div style="width:46px; height:46px; border-radius:14px; background:rgba(11,22,34,0.28); border:1px solid rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;">' + app.face(emoji) + '</div>' +
               '<div style="min-width:0;">' +
                 '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#fff;" class="lower">' + app.esc(rule.title) + '</div>' +
                 '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(255,255,255,0.72); margin-top:2px;" class="lower">' + app.esc(rule.tripName || "auto-tab") + ' · auto-tab</div>' +

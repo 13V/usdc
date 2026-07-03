@@ -52,7 +52,7 @@
     var emoji = (p && p.emoji) || (nm ? nm[0].toUpperCase() : "🙂");
     return '<div style="width:42px; height:42px; border-radius:50%; background:' + bg +
       '; border:2px solid #FFFDF7; display:flex; align-items:center; justify-content:center; font-size:20px;">' +
-      app.esc(emoji) + '</div>';
+      app.face(emoji) + '</div>';
   }
 
   // one mono label/value row from the on-chain proof block (lifted).

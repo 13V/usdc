@@ -91,7 +91,7 @@
           '<div style="width:100%; max-width:320px; margin-top:26px;">' +
             '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); text-align:left; margin:0 4px 9px;">YOUR WALLET</div>' +
             '<div style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:14px 15px; box-shadow:0 14px 32px rgba(43,33,24,0.13);">' +
-              '<div style="width:46px; height:46px; border-radius:15px; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + app.esc(emoji) + '</div>' +
+              '<div style="width:46px; height:46px; border-radius:15px; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + app.face(emoji) + '</div>' +
               '<div style="flex:1; text-align:left; min-width:0;">' +
                 '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(43,33,24,0.4);">SOLANA</div>' +
                 '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:.5px; color:#2B2118; margin-top:3px;">' + app.esc(trunc(wallet)) + '</div>' +

@@ -232,7 +232,7 @@
 
     // lifted centered header — big standalone 84px avatar (no mascot)
     return '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:8px 0 4px;">' +
-      '<div style="position:relative; width:84px; height:84px; border-radius:26px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:42px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + app.esc(emoji) + '</div>' +
+      '<div style="position:relative; width:84px; height:84px; border-radius:26px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:42px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + app.face(emoji) + '</div>' +
       '<div style="display:flex; align-items:center; gap:8px; margin-top:14px;">' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.4px; color:#2B2118;">' + app.esc(name) + '</span>' +
         (handle ? '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(39,117,202,0.75);">' + app.esc(handle) + '</span>' : '') +

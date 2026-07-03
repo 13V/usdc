@@ -21,7 +21,7 @@
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:21px; color:#fff; transform:translateY(-1px);">/</span></div>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.5px; color:#2B2118;">divvy</span>' +
       '</div>' +
-      '<a href="#/you" style="text-decoration:none; width:34px; height:34px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:17px; border:2px solid #2B2118;">' + app.esc(me.emoji) + '</a>' +
+      '<a href="#/you" style="text-decoration:none; width:34px; height:34px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:17px; border:2px solid #2B2118;">' + app.face(me.emoji) + '</a>' +
     '</div>';
   }
 
@@ -47,7 +47,7 @@
       ? ' type="button" data-person="' + i + '" style="appearance:none; border:none; text-align:left; width:100%; background:transparent; cursor:pointer;'
       : ' style="';
     return '<' + tag + tapAttrs + ' display:flex; align-items:center; gap:13px; padding:11px 4px;">' +
-      '<div style="width:40px;height:40px;border-radius:50%;background:rgba(39,117,202,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;">' + (c.emoji || app.esc((c.name||"?")[0])) + '</div>' +
+      '<div style="width:40px;height:40px;border-radius:50%;background:rgba(39,117,202,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;">' + app.face(c.emoji || (c.name||"?")[0]) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
         '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118;">' + app.esc(c.name) + '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + subcol + '; margin-top:2px;">' + sub + '</div>' +
@@ -125,7 +125,7 @@
     // avatars riding the bar (those who owe you on blue, you-owe on coral)
     function av(list) {
       return list.slice(0, 3).map(function (c, i) {
-        return '<div style="width:23px;height:23px;border-radius:50%;background:rgba(11,22,34,0.5);border:2px solid rgba(255,255,255,0.85);' + (i ? "margin-left:-8px;" : "") + 'display:flex;align-items:center;justify-content:center;font-size:12px;">' + (c.emoji || (c.name || "?")[0]) + '</div>';
+        return '<div style="width:23px;height:23px;border-radius:50%;background:rgba(11,22,34,0.5);border:2px solid rgba(255,255,255,0.85);' + (i ? "margin-left:-8px;" : "") + 'display:flex;align-items:center;justify-content:center;font-size:12px;">' + app.face(c.emoji || (c.name || "?")[0]) + '</div>';
       }).join("");
     }
     var owers = ppl.filter(function (c) { return c.direction === "owed"; });
