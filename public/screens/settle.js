@@ -404,10 +404,12 @@
     // The API doesn't expose a wallet balance, so we render the breakdown only
     // when we actually know it (S.balanceCents) — never invent numbers.
     var amt = '<span style="font-family:\'Space Mono\',monospace; font-weight:700; color:#FF6B5E;">' + esc(t.amountFmt || "") + '</span>';
+    // How much they're short — the exact amount the add-money sheet pre-fills.
+    var shortBy = (typeof S.balanceCents === "number")
+      ? Math.max(0, Math.abs(t.amountCents) - S.balanceCents) : 0;
     var breakdown = "";
     if (typeof S.balanceCents === "number") {
       var have = "$" + (S.balanceCents / 100).toFixed(2);
-      var shortBy = Math.max(0, Math.abs(t.amountCents) - S.balanceCents);
       breakdown =
         '<div style="display:flex; align-items:center; gap:8px; margin-top:14px;">' +
           '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">balance</span>' +
@@ -438,7 +440,15 @@
       '</div>';
     wireCancel();
     var add = document.getElementById("stAdd");
-    if (add) add.onclick = function () { app.depositSheet(); watchDepositClose(); };
+    if (add) add.onclick = function () {
+      // Default the sheet to exactly the shortfall (or the full amount owed if we
+      // don't know the balance). onCredited advances to "ready" once it lands.
+      app.depositSheet({
+        defaultCents: shortBy > 0 ? shortBy : Math.abs(t.amountCents),
+        onCredited: function () { recheckBalance(); },
+      });
+      watchDepositClose();
+    };
     var oth = document.getElementById("stOther");
     if (oth) oth.onclick = function () { go("ready"); };
   }

@@ -491,6 +491,28 @@
   var TOPLEVEL = { home: 1, groups: 1, activity: 1, you: 1, friends: 1 };
   function go(name) { location.hash = "#/" + name; }
 
+  // isIOS() — best-effort platform check so onboarding can lead with Apple
+  // sign-in on iPhone/iPad (native expectation) and a generic label elsewhere.
+  function isIOS() {
+    try {
+      var cap = window.Capacitor;
+      if (cap && cap.getPlatform && cap.getPlatform() === "ios") return true;
+      var ua = navigator.userAgent || "";
+      if (/iPad|iPhone|iPod/.test(ua)) return true;
+      // iPadOS 13+ reports as Mac; disambiguate with touch points.
+      if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  // signIn(method) — the single onboarding/sign-in entry point. Hands off to the
+  // embedded Privy app (email/social → auto-provisioned wallet under the hood),
+  // which stashes the session token in shared localStorage and bounces back
+  // signed in. `method` is an optional initial-screen hint ("phone").
+  function signIn(method) {
+    window.location.href = "/embedded/?" + (method ? "method=" + encodeURIComponent(method) : "");
+  }
+
   function icon(name) {
     var p = {
       home: '<path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/>',
@@ -666,16 +688,116 @@
       '</div>';
   }
 
+  // Is this an Apple client where the MoonPay widget can offer Apple Pay?
+  // iOS/iPadOS Safari + webviews, and desktop Safari on a Mac. iPadOS ≥13 lies
+  // about its UA (reports "Macintosh"), so a Mac UA with touch points counts too.
+  function isAppleClient() {
+    try {
+      var ua = navigator.userAgent || "";
+      if (/iP(hone|od|ad)/.test(ua)) return true;
+      if (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1) return true; // iPadOS
+      return false;
+    } catch (_) { return false; }
+  }
+
+  // Degraded state: no provider keys in this environment. Rather than open a
+  // broken widget link, the money buttons show a soft "coming soon" line.
+  function comingSoonNote() {
+    return '<div style="text-align:center; margin-top:12px;">' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">coming soon in your region ✨</span>' +
+      '</div>';
+  }
+  // Visually disable a primary money button (used when the rails aren't live).
+  function disableMoneyBtn(btn, label) {
+    if (!btn) return;
+    btn.disabled = true;
+    btn.style.opacity = "0.45";
+    btn.style.cursor = "not-allowed";
+    btn.style.boxShadow = "none";
+    if (label) {
+      var span = btn.querySelector("span:last-child") || btn.querySelector("span");
+      if (span) span.textContent = label;
+    }
+  }
+
+  // ---- BALANCE WATCHER --------------------------------------------------------
+  // After the user leaves for the MoonPay widget, watch for the money to land.
+  // Each time the app regains foreground (visibilitychange/focus) we poll
+  // GET /api/me/wallet every 5s for up to 3 min; the first time usdcCents rises
+  // above the baseline we celebrate, toast "money's in", and hand the new
+  // balance to onIncrease() so the caller can refresh its screen. Cancels itself
+  // politely on navigation (hashchange) or when the caller calls .cancel().
+  //   opts.baseline   : known starting cents (else we fetch one to seed it)
+  //   opts.onIncrease : fn(newCents, prevCents) — refresh the screen
+  //   opts.silent     : skip the built-in celebrate/toast (caller handles it)
+  function watchBalance(opts) {
+    opts = opts || {};
+    var baseline = typeof opts.baseline === "number" ? opts.baseline : null;
+    var onIncrease = typeof opts.onIncrease === "function" ? opts.onIncrease : function () {};
+    var POLL_MS = 5000, MAX_MS = 180000;
+    var pollTimer = null, deadline = 0, done = false, cancelled = false;
+
+    function readCents() {
+      return api.get("/api/me/wallet").then(function (w) {
+        return (w && typeof w.usdcCents === "number") ? w.usdcCents : null;
+      }).catch(function () { return null; });
+    }
+    // Seed the baseline if the caller didn't give us one.
+    if (baseline === null) { readCents().then(function (c) { if (c !== null && baseline === null) baseline = c; }); }
+
+    function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+    function cancel() {
+      cancelled = true; stopPolling();
+      document.removeEventListener("visibilitychange", onFocus);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("hashchange", cancel);
+    }
+    function tick() {
+      if (done || cancelled) return Promise.resolve();
+      if (Date.now() > deadline) { stopPolling(); return Promise.resolve(); }
+      return readCents().then(function (c) {
+        if (done || cancelled || c === null) return;
+        if (baseline === null) { baseline = c; return; } // seed late if needed
+        if (c > baseline) {
+          done = true; stopPolling();
+          var delta = c - baseline;
+          if (!opts.silent) {
+            try { celebrate({ coins: true }); } catch (_) {}
+            toast("money's in 🎉 " + dollarsLabel(delta) + " ready");
+          }
+          try { onIncrease(c, baseline); } catch (_) {}
+          cancel();
+        }
+      });
+    }
+    function onFocus() {
+      if (done || cancelled || document.visibilityState === "hidden") return;
+      deadline = Date.now() + MAX_MS;          // fresh 3-min window on each return
+      if (!pollTimer) pollTimer = setInterval(tick, POLL_MS);
+      tick();                                   // immediate check on return
+    }
+    document.addEventListener("visibilitychange", onFocus);
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("hashchange", cancel);
+    // Expose the internals so screens (and tests) can nudge a check manually.
+    return { cancel: cancel, tick: tick, onFocus: onFocus };
+  }
+
   // ---- ADD MONEY (on-ramp) ----------------------------------------------------
   // Lead with a card / Apple Pay path (plain dollars). Step 1 is a clean amount
   // entry + "add with card"; tapping fetches /api/me/onramp/<cents> and navigates
   // to the provider. A lower-emphasis "or receive USDC directly" reveals the
   // original QR + address block for crypto-native users.
-  async function depositSheet() {
-    var wallet = null, cluster = "devnet";
+  async function depositSheet(opts) {
+    opts = opts || {};
+    var wallet = null, cluster = "devnet", baselineCents = null;
     try {
       var w = await api.get("/api/me/wallet");
-      if (w) { wallet = w.wallet || null; if (w.cluster) cluster = w.cluster; }
+      if (w) {
+        wallet = w.wallet || null;
+        if (w.cluster) cluster = w.cluster;
+        if (typeof w.usdcCents === "number") baselineCents = w.usdcCents;
+      }
     } catch (_) {}
     if (!wallet) {
       sheet('<div style="padding:8px 20px 26px; text-align:center;">' +
@@ -685,9 +807,17 @@
       return;
     }
 
-    var DEFAULT = 5000;
+    // On settle we default to exactly what they're short; elsewhere a round $50.
+    var DEFAULT = (typeof opts.defaultCents === "number" && opts.defaultCents > 0) ? opts.defaultCents : 5000;
+    var apple = isAppleClient();
     var solUrl = "solana:" + wallet;
     var short = wallet.length > 12 ? (wallet.slice(0, 6) + "…" + wallet.slice(-6)) : wallet;
+
+    // Apple-mark glyph for the primary button on iOS/Safari; a card glyph else.
+    var payGlyph = apple
+      ? '<svg width="17" height="20" viewBox="0 0 384 512" fill="#fff" aria-hidden="true"><path d="M318.7 268c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.6zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>'
+      : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>';
+    var payLabel = apple ? "add with apple pay" : "add money";
 
     sheet(
       '<div style="padding:4px 20px 26px;">' +
@@ -697,11 +827,11 @@
         '</div>' +
         amountEntryHtml({ idp: "dep", default: DEFAULT }) +
         '<button id="depCard" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>' +
-          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">add with card</span>' +
+          payGlyph +
+          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">' + payLabel + '</span>' +
         '</button>' +
         '<div style="text-align:center; margin-top:9px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">apple pay · debit · credit</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">takes ~1 min · card fees may apply</span>' +
         '</div>' +
         '<div id="depTestNote"></div>' +
         '<button id="depMore" type="button" style="appearance:none; border:none; cursor:pointer; background:transparent; display:block; width:100%; text-align:center; margin-top:16px; padding:6px; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(39,117,202,0.75);">or receive usdc directly ▾</button>' +
@@ -725,27 +855,44 @@
     );
 
     var entry = wireAmountEntry("dep");
+    var railsLive = true; // assume live until the prefetch says otherwise
+    var card = document.getElementById("depCard");
 
-    // Prefetch the live flag so the test-mode note appears without waiting for a
-    // tap. Best-effort; the note simply stays absent if the call fails.
+    // Prefetch the live flag. When no provider keys are configured we degrade to
+    // a soft "coming soon in your region" state instead of opening a broken link.
     api.get("/api/me/onramp/" + DEFAULT).then(function (r) {
       if (r && r.live === false) {
+        railsLive = false;
+        disableMoneyBtn(card, "coming soon");
         var note = document.getElementById("depTestNote");
-        if (note) note.innerHTML = testModeNote();
+        if (note) note.innerHTML = comingSoonNote();
       }
     }).catch(function () {});
 
-    var card = document.getElementById("depCard");
     if (card) card.onclick = function () {
+      if (!railsLive) { toast("coming soon in your region ✨"); return; }
       var cents = entry.getCents();
       if (!(cents > 0)) { toast("enter an amount first"); return; }
       var prev = card.innerHTML;
       card.disabled = true;
       card.innerHTML = '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">opening…</span>';
-      api.get("/api/me/onramp/" + cents).then(function (r) {
+      // Hint apple_pay when the client is iOS/Safari so the widget lands on the
+      // Apple Pay sheet.
+      var path = "/api/me/onramp/" + cents + (apple ? "?applePay=1" : "");
+      api.get(path).then(function (r) {
         var url = r && (r.moonpay || r.coinbase);
         if (!url) throw new Error("couldn't start checkout");
         openProvider(url);
+        // Arm the balance watcher, then close the sheet so the return lands on
+        // the screen. It celebrates + refreshes when the money shows up.
+        watchBalance({
+          baseline: baselineCents,
+          onIncrease: function (newCents) {
+            if (typeof opts.onCredited === "function") { try { opts.onCredited(newCents); } catch (_) {} }
+            else { try { render(); } catch (_) {} } // default: refresh current screen
+          },
+        });
+        closeSheet();
       }).catch(function (e) {
         card.disabled = false;
         card.innerHTML = prev;
@@ -1014,7 +1161,8 @@
     tripToken: tripToken, setTripToken: setTripToken,
     qrImg: qrImg, amountEntryHtml: amountEntryHtml, wireAmountEntry: wireAmountEntry,
     openProvider: openProvider, testModeNote: testModeNote, dollarsLabel: dollarsLabel,
-    track: track,
+    isAppleClient: isAppleClient, watchBalance: watchBalance,
+    track: track, signIn: signIn, isIOS: isIOS,
     _sheet: null, _sheetKey: null,
   };
   window.app = app;

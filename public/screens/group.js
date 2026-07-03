@@ -20,7 +20,7 @@
     var covers = walletCents >= oweCents;
     var col = covers ? "#3DE8C7" : "#FF6B5E";
     var dollars = "$" + (walletCents / 100).toFixed(2);
-    var label = covers ? "in your wallet · ready to settle" : "in your wallet · top up to settle";
+    var label = covers ? "your balance · ready to settle" : "your balance · top up to settle";
     return '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid ' + col + '55; background:' + col + '1f; border-radius:999px; padding:5px 12px;">' +
       '<span style="width:6px; height:6px; border-radius:50%; background:' + col + '; box-shadow:0 0 7px ' + col + 'cc;"></span>' +
       '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; color:' + col + ';">' + dollars + '</span>' +
@@ -235,7 +235,7 @@
         '<span style="font-size:20px;">✨</span>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.3px; color:#2B2118;">is one of these you?</span>' +
       '</div>' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(43,33,24,0.65); margin-top:6px;">claim your spot so the group can settle up to your wallet.</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(43,33,24,0.65); margin-top:6px;">claim your spot so the group can settle up to you.</div>' +
       '<div style="display:flex; flex-direction:column; gap:9px; margin-top:14px;">' + rows + '</div>' +
     '</div>';
 
@@ -259,11 +259,11 @@
     var u = window.Auth && window.Auth.user;
     if (!u) {
       if (retried) { app.toast("sign in to claim your spot"); return; }
-      app.toast("creating your wallet…");
+      app.toast("setting up your account…");
       if (!(window.Auth && window.Auth.createWallet)) { app.toast("sign in to claim your spot"); return; }
       window.Auth.createWallet()
         .then(function () { claimSlot(trip, memberId, true); })
-        .catch(function () { app.toast("couldn't set up a wallet — try again"); });
+        .catch(function () { app.toast("couldn't set up your account — try again"); });
       return;
     }
     app.api.post("/api/trips/" + encodeURIComponent(trip.id) + "/members/" + encodeURIComponent(memberId) + "/claim")
@@ -280,7 +280,7 @@
           if (window.Auth && window.Auth.createWallet) {
             window.Auth.createWallet()
               .then(function () { claimSlot(trip, memberId, true); })
-              .catch(function () { app.toast("couldn't set up a wallet — try again"); });
+              .catch(function () { app.toast("couldn't set up your account — try again"); });
           }
           return;
         }

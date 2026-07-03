@@ -459,14 +459,12 @@
       brandRow() + header(0) +
       '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:50px 30px 0;">' +
         app.mascot({ size: 116, mood: "happy", glow: true }) +
-        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:24px 0 0; color:#2B2118;">connect to see your groups</h2>' +
+        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:24px 0 0; color:#2B2118;">sign in to see your groups</h2>' +
         '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(43,33,24,0.55);">your tabs, trips and roommates live here — split now, settle later.</p>' +
-        '<button class="btn" id="gConnect" style="max-width:300px; margin-top:24px;">connect a wallet</button>' +
+        '<button class="btn" id="gConnect" style="max-width:300px; margin-top:24px;">sign in</button>' +
       '</div></div>';
     var c = document.getElementById("gConnect");
-    if (c) c.onclick = function () {
-      if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); });
-    };
+    if (c) c.onclick = function () { app.signIn(); };
   }
 
   // ---- empty state (lifted from frame) ----------------------------------

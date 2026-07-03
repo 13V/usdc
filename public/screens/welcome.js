@@ -62,11 +62,11 @@
     try { via = sessionStorage.getItem("divvy.onboardVia") || ""; } catch (_) {}
     var connected = via === "phantom";
 
-    var kicker = connected ? "WALLET CONNECTED" : "WALLET READY";
+    var kicker = connected ? "YOU'RE CONNECTED" : "YOU'RE ALL SET";
     var headline = connected ? "you're connected." : "you're in.";
     var sub = connected
-      ? "your wallet's linked — you're in control. settle up straight from divvy."
-      : "your solana wallet's ready — no seed phrase, no app. recover anytime with your email.";
+      ? "you're all linked up — settle up straight from divvy, in dollars."
+      : "your account's ready — no passwords, no seed phrase. recover anytime with your email.";
     var reassure = connected ? "powered by phantom" : "secured by privy";
 
     view.innerHTML = '' +
@@ -89,7 +89,7 @@
 
           // wallet identity card
           '<div style="width:100%; max-width:320px; margin-top:26px;">' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); text-align:left; margin:0 4px 9px;">YOUR WALLET</div>' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); text-align:left; margin:0 4px 9px;">YOUR ACCOUNT</div>' +
             '<div style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:14px 15px; box-shadow:0 14px 32px rgba(43,33,24,0.13);">' +
               '<div style="width:46px; height:46px; border-radius:15px; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + app.face(emoji) + '</div>' +
               '<div style="flex:1; text-align:left; min-width:0;">' +
@@ -110,7 +110,7 @@
           '<button id="wStart" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:58px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">start splitting</span><span style="font-size:15px;">✨</span>' +
           '</button>' +
-          '<div style="text-align:center; margin-top:14px;"><span id="wView" style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">view my wallet</span></div>' +
+          '<div style="text-align:center; margin-top:14px;"><span id="wView" style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">view my account</span></div>' +
         '</div>' +
       '</div>';
 

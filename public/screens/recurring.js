@@ -133,14 +133,12 @@
       '<div class="appscroll" style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:40px;">' +
         '<div style="margin:6px 0 4px;">' + app.mascot({ size: 124, mood: "sleepy", glow: true }) + '</div>' +
         '<h1 style="font-family:' + DISPLAY + '; font-weight:600; font-size:22px; max-width:280px; margin-top:16px;" class="lower">put your bills on autopilot</h1>' +
-        '<p style="font-family:' + SANS + '; font-size:14px; color:rgba(43,33,24,0.6); max-width:250px; margin:11px 0 0;">connect to set the bills you split every month and forget them 🫡</p>' +
-        '<button class="btn" id="rConnect" style="max-width:300px; margin-top:24px;">connect a wallet</button>' +
+        '<p style="font-family:' + SANS + '; font-size:14px; color:rgba(43,33,24,0.6); max-width:250px; margin:11px 0 0;">sign in to set the bills you split every month and forget them 🫡</p>' +
+        '<button class="btn" id="rConnect" style="max-width:300px; margin-top:24px;">sign in</button>' +
       '</div>';
     wireBack();
     var c = document.getElementById("rConnect");
-    if (c) c.onclick = function () {
-      if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); });
-    };
+    if (c) c.onclick = function () { app.signIn(); };
   }
 
   // ---- loading --------------------------------------------------------------

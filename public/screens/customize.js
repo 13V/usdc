@@ -129,15 +129,13 @@
           app.mascot({ size: 120, mood: "sparkle", glow: true }) +
           '<div class="title lower">make it yours</div>' +
           '<div class="hint">sign in to pick your emoji + color ✨</div>' +
-          '<button class="btn" id="cpConnect" style="max-width:260px;margin-top:8px;">create a wallet</button>' +
+          '<button class="btn" id="cpConnect" style="max-width:260px;margin-top:8px;">sign in</button>' +
         '</div>' +
       '</div>';
     var b = document.getElementById("cpBack");
     if (b) b.onclick = function () { app.go("you"); };
     var c = document.getElementById("cpConnect");
-    if (c) c.onclick = function () {
-      if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); });
-    };
+    if (c) c.onclick = function () { app.signIn(); };
   }
 
   function signedIn(view, user) {

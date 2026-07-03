@@ -19,6 +19,49 @@ export interface OnrampParams {
   walletAddress: string;
   /** Amount to buy, integer cents (their share). */
   amountCents: number;
+  /**
+   * MoonPay payment-method hint. When the client is iOS/Safari we pass
+   * "apple_pay" so the widget opens straight onto the Apple Pay sheet; omitted
+   * otherwise (widget picks its default card flow). Valid MoonPay values include
+   * "apple_pay", "google_pay", "credit_debit_card".
+   */
+  paymentMethod?: string;
+  /** URL the widget returns the user to when the purchase completes. */
+  redirectURL?: string;
+  /** Widget accent color (defaults to Divvy blue). */
+  colorCode?: string;
+}
+
+/** Divvy brand blue — the widget accent so the checkout feels like our app. */
+export const MOONPAY_ACCENT = "#2775CA";
+
+/**
+ * MoonPay's per-purchase minimum for USD→USDC. Real minimums hover around
+ * $20–30; kept as a single honest constant (env-overridable) so the guest pay
+ * page can tell a friend the truth when their share is below it: they buy the
+ * minimum and the remainder stays in their own balance "for next time" instead
+ * of us pretending the card can be charged exactly $12. Not used by signing.
+ */
+export const MOONPAY_MIN_CENTS = Number(process.env.MOONPAY_MIN_CENTS || 2000); // $20
+
+/**
+ * How much USDC to actually buy on the card ramp to cover a `shareCents` share.
+ * Card ramps skim a spread/fee, so buying the exact share can land a cent short
+ * and fail the pay — add a 5% cushion, round up to a whole dollar, then floor at
+ * the provider minimum. Returns the buy amount, whether the minimum forced it
+ * up, and the leftover that stays in the payer's balance afterwards.
+ */
+export function topUpPlan(
+  shareCents: number,
+  minCents = MOONPAY_MIN_CENTS
+): { buyCents: number; atMinimum: boolean; leftoverCents: number } {
+  const withSpread = Math.ceil((shareCents * 1.05) / 100) * 100; // +5%, ceil to $1
+  const buyCents = Math.max(withSpread, minCents);
+  return {
+    buyCents,
+    atMinimum: minCents > withSpread,
+    leftoverCents: Math.max(0, buyCents - shareCents),
+  };
 }
 
 /**
@@ -40,10 +83,18 @@ export function moonpayUrl(params: OnrampParams, apiKey = process.env.MOONPAY_AP
   const base = moonpayHost("buy", apiKey);
   const q = new URLSearchParams();
   q.set("apiKey", apiKey || "pk_test_PLACEHOLDER");
+  // USDC on Solana. baseCurrency=usd, quote=usdc_sol, amount pre-filled so the
+  // widget is as short as possible — the user just confirms.
   q.set("currencyCode", "usdc_sol");
   q.set("walletAddress", params.walletAddress);
-  q.set("baseCurrencyAmount", dollars(params.amountCents).toFixed(2));
   q.set("baseCurrencyCode", "usd");
+  q.set("baseCurrencyAmount", dollars(params.amountCents).toFixed(2));
+  // Jump straight to Apple Pay when the client hinted iOS/Safari.
+  if (params.paymentMethod) q.set("paymentMethod", params.paymentMethod);
+  // Brand the checkout so it reads as one continuous flow.
+  q.set("colorCode", params.colorCode || MOONPAY_ACCENT);
+  q.set("theme", "light");
+  if (params.redirectURL) q.set("redirectURL", params.redirectURL);
   return `${base}?${q.toString()}`;
 }
 

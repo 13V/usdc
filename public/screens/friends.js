@@ -211,14 +211,12 @@
       '<div class="appscroll" style="display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:34px;">' +
         '<div style="margin:8px 0 6px;">' + app.mascot({ size: 128, mood: "wave", glow: true }) + '</div>' +
         '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; max-width:280px; margin:0;">your people, in one place.</h1>' +
-        '<div class="eyebrow" style="margin:14px 0 22px; color:var(--muted);">connect a wallet to add friends and split</div>' +
-        '<button class="btn" id="frConnect" style="max-width:320px;">connect a wallet</button>' +
-        '<div class="eyebrow" style="margin-top:18px; color:var(--faint);">non-custodial · your keys</div>' +
+        '<div class="eyebrow" style="margin:14px 0 22px; color:var(--muted);">sign in to add friends and split</div>' +
+        '<button class="btn" id="frConnect" style="max-width:320px;">sign in</button>' +
+        '<div class="eyebrow" style="margin-top:18px; color:var(--faint);">dollars, just faster</div>' +
       '</div>');
     var b = document.getElementById("frConnect");
-    if (b) b.onclick = function () {
-      if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); });
-    };
+    if (b) b.onclick = function () { app.signIn(); };
   }
 
   // ---- signed in ----------------------------------------------------------

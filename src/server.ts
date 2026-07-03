@@ -36,7 +36,7 @@ import { alert, makeSpikeDetector } from "./alerts";
 import { db } from "./db";
 import { usingSupabase, supabase } from "./supabase";
 import { qrToDataUrl } from "./qr";
-import { cardOptions, ramsConfigured } from "./onramp";
+import { cardOptions, ramsConfigured, MOONPAY_MIN_CENTS } from "./onramp";
 import { cashoutOptions } from "./offramp";
 import { fmt, toCents, withTip, SplitMode } from "./split";
 import { Cluster, buildSolanaPayUrl, newReference, USDC_MINT } from "./solanaPay";
@@ -893,11 +893,15 @@ app.get("/api/me/onramp/:amountCents", requireAuth, async (req: Request, res: Re
   if (amountCents === null) return res.status(400).json({ error: "bad amount" });
   const railErr = railAmountError(amountCents);
   if (railErr) return res.status(400).json({ error: railErr });
+  // iOS/Safari clients pass ?applePay=1 so the widget opens straight onto the
+  // Apple Pay sheet; everyone else gets MoonPay's default card flow.
+  const paymentMethod = req.query.applePay === "1" ? "apple_pay" : undefined;
+  const redirectURL = `${req.protocol}://${req.get("host")}/#/you`;
   res.json({
     wallet,
     amountCents,
     live: ramsConfigured(),
-    ...cardOptions({ walletAddress: wallet, amountCents }),
+    ...cardOptions({ walletAddress: wallet, amountCents, paymentMethod, redirectURL }),
   });
 });
 
@@ -912,11 +916,12 @@ app.get("/api/me/offramp/:amountCents", requireAuth, async (req: Request, res: R
   if (amountCents === null) return res.status(400).json({ error: "bad amount" });
   const railErr = railAmountError(amountCents);
   if (railErr) return res.status(400).json({ error: railErr });
+  const redirectURL = `${req.protocol}://${req.get("host")}/#/you`;
   res.json({
     wallet,
     amountCents,
     live: ramsConfigured(),
-    ...cashoutOptions({ walletAddress: wallet, amountCents }),
+    ...cashoutOptions({ walletAddress: wallet, amountCents, redirectURL }),
   });
 });
 
@@ -1776,9 +1781,22 @@ app.get("/pay/:id/:name", async (req: Request, res: Response) => {
   if (!p) return res.status(404).send("Participant not found");
 
   const qr = await qrToDataUrl(p.url);
-  const cards = cardOptions({ walletAddress: bill.collector, amountCents: p.amountCents });
+  // Who's asking: the bill creator's display name, if we know it — so the card
+  // can say "alex is asking" instead of a faceless amount. Best-effort; a bill
+  // created anonymously simply shows the tab title.
+  let asker: string | null = null;
+  if (bill.creatorUserId) {
+    try {
+      const creator = await getUser(bill.creatorUserId);
+      asker = (creator && (creator.displayName || creator.handle)) || null;
+    } catch {
+      /* non-fatal — fall back to no asker name */
+    }
+  }
   const base = `${req.protocol}://${req.get("host")}`;
-  res.type("html").send(renderPayPage(bill, name, p.url, p.amountCents, qr, cards, p.paid, base));
+  res
+    .type("html")
+    .send(renderPayPage(bill, name, p.url, p.amountCents, qr, p.paid, base, asker, MOONPAY_MIN_CENTS));
 });
 
 // ---- helpers --------------------------------------------------------------
@@ -1924,9 +1942,10 @@ function renderPayPage(
   url: string,
   amountCents: number,
   qrDataUrl: string,
-  cards: { moonpay: string; coinbase: string },
   paid: boolean,
-  baseUrl = ""
+  baseUrl = "",
+  asker: string | null = null,
+  moonpayMinCents = 2000
 ): string {
   // Rich link preview: "<name>, you owe <amount> 🧾" so the shared pay link
   // unfurls with the ask front-and-center. ogMeta escapes every value.
@@ -1934,56 +1953,139 @@ function renderPayPage(
     title: paid
       ? `${name} paid ${fmt(amountCents)} ✓`
       : `${name}, you owe ${fmt(amountCents)} 🧾`,
-    description: `tap to pay your share of ${bill.title} on divvy`,
+    description: asker
+      ? `${asker} is asking — tap to pay your share of ${bill.title} on divvy`
+      : `tap to pay your share of ${bill.title} on divvy`,
     imageUrl: `${baseUrl}${OG_CARD_PATH}`,
     url: `${baseUrl}/pay/${encodeURIComponent(bill.id)}/${encodeURIComponent(name)}`,
   });
+
+  const embeddedUrl = `/embedded/?bill=${encodeURIComponent(bill.id)}&name=${encodeURIComponent(name)}`;
+  const askerLine = asker
+    ? `<span class="asker">${esc(asker)} is asking</span>`
+    : `<span class="asker">you've got a tab</span>`;
+
+  // Config the client JS reads. No secrets: bill id + name are already in the
+  // URL, the collector + solana-pay url are public capability data.
+  const payData = {
+    id: bill.id,
+    name,
+    title: bill.title,
+    share: amountCents,
+    shareFmt: fmt(amountCents),
+    moonpayMinCents,
+    collector: bill.collector,
+    cluster: bill.cluster,
+    payUrl: url,
+    embeddedUrl,
+  };
+
+  // The settled state is fully static — no JS, no watchers, fastest possible
+  // paint for the "already paid" reload.
+  const settled = `
+    <div class="state settled">
+      <div class="tick">✓</div>
+      <h2>this one's settled ✨</h2>
+      <p class="muted">${esc(name)}'s share of ${fmt(amountCents)} is paid. nothing to do.</p>
+      <a class="ghost" href="/">keep divvy for next time →</a>
+    </div>`;
+
+  // Live funnel: server-renders the resting "card" state so it works with zero
+  // JS (the primary button is a real link to the embedded flow); pay.js enhances
+  // it into the inline fund-and-pay experience.
+  const live = `
+    <div class="state card" id="flow">
+      <button class="primary" id="payBtn" data-href="${esc(embeddedUrl)}">pay ${fmt(amountCents)}</button>
+      <noscript><a class="primary" href="${esc(embeddedUrl)}" style="display:block;text-align:center;text-decoration:none">pay ${fmt(amountCents)}</a></noscript>
+      <p class="reassure muted">no app, no crypto — just your divvy balance. under a minute.</p>
+    </div>
+    <details class="wallet-alt">
+      <summary>i already use a wallet app</summary>
+      <div class="wallet-body">
+        <p class="muted">scan or open this in phantom, solflare, or any solana wallet — it's already tagged to this tab.</p>
+        <img class="qr" src="${qrDataUrl}" alt="pay QR" />
+        <a class="ghost" href="${esc(url)}">open in wallet →</a>
+      </div>
+    </details>`;
+
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#F7F1E3" />
 ${shareMeta}
 <style>
-  :root { color-scheme: light dark; }
-  body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 24px;
-         max-width: 480px; margin-inline: auto; line-height: 1.5; }
-  h1 { font-size: 1.25rem; margin: 0 0 4px; }
-  .muted { color: #888; font-size: .9rem; }
-  .amount { font-size: 2.25rem; font-weight: 700; margin: 12px 0; }
-  .card { border: 1px solid #8884; border-radius: 14px; padding: 18px; margin: 16px 0; text-align: center; }
-  img.qr { width: 260px; height: 260px; image-rendering: pixelated; }
-  a.btn { display: block; padding: 14px; border-radius: 12px; text-decoration: none;
-          font-weight: 600; margin: 8px 0; border: 1px solid #8884; }
-  a.btn.primary { background: #14f195; color: #04121a; }
-  .paid { background: #14f195; color: #04121a; padding: 10px; border-radius: 10px; text-align:center; font-weight:700; }
-  code { word-break: break-all; font-size: .75rem; color:#888; }
+  /* Journal theme — warm paper, ink, offset shadows. Critical + inlined. */
+  @font-face { font-family:'Space Mono'; font-style:normal; font-weight:700;
+    font-display:swap; src:url(/fonts/i7dMIFZifjKcF5UAWdDRaPpZUFWaHi6WZ3Q.woff2) format('woff2');
+    unicode-range:U+0000-00FF; }
+  :root { color-scheme: light; --paper:#F7F1E3; --card:#FFFDF7; --ink:#2B2118;
+          --blue:#2775CA; --mint:#3DE8C7; --coral:#FF6B5E; --sun:#FFC65C; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html,body { margin:0; }
+  body { font-family:-apple-system,system-ui,"Segoe UI",sans-serif; background:var(--paper);
+         color:var(--ink); line-height:1.5; padding:22px 18px 48px; max-width:440px;
+         margin-inline:auto; -webkit-font-smoothing:antialiased; }
+  .brand { display:flex; align-items:center; gap:8px; margin:0 2px 20px; }
+  .mark { width:30px; height:30px; border:2px solid var(--ink); border-radius:9px; background:var(--sun);
+          display:flex; align-items:center; justify-content:center; font-weight:800; box-shadow:3px 3px 0 var(--ink); }
+  .word { font-weight:800; font-size:1.15rem; letter-spacing:-.5px; }
+  .hero { background:var(--card); border:2px solid var(--ink); border-radius:20px; padding:24px 22px 26px;
+          box-shadow:6px 6px 0 var(--ink); }
+  .asker { display:inline-block; font-weight:700; font-size:.95rem; background:var(--mint);
+           border:2px solid var(--ink); border-radius:999px; padding:4px 12px; box-shadow:2px 2px 0 var(--ink); }
+  h1 { font-size:1.35rem; margin:14px 0 2px; letter-spacing:-.4px; }
+  .muted { color:#7c7266; font-size:.9rem; }
+  .amount { font-family:'Space Mono',ui-monospace,monospace; font-weight:700; font-size:3.5rem;
+            letter-spacing:-2px; margin:14px 0 6px; line-height:1; }
+  .state { margin-top:18px; }
+  button.primary, a.primary { display:block; width:100%; border:2px solid var(--ink); cursor:pointer;
+            background:var(--blue); color:#fff; font-weight:800; font-size:1.15rem; padding:17px;
+            border-radius:15px; box-shadow:5px 5px 0 var(--ink); font-family:inherit; letter-spacing:-.2px;
+            transition:transform .06s ease, box-shadow .06s ease; }
+  button.primary:active, a.primary:active { transform:translate(3px,3px); box-shadow:2px 2px 0 var(--ink); }
+  button.primary[disabled] { opacity:.55; }
+  .reassure { text-align:center; margin:12px 4px 0; }
+  a.ghost { display:inline-block; margin-top:12px; color:var(--blue); font-weight:700; text-decoration:none; }
+  .fund-note { background:var(--sun); border:2px solid var(--ink); border-radius:13px; padding:11px 13px;
+               margin:14px 0; font-size:.86rem; font-weight:600; box-shadow:3px 3px 0 var(--ink); }
+  .spin { width:34px; height:34px; border:4px solid #e5dcc9; border-top-color:var(--blue); border-radius:50%;
+          animation:sp 1s linear infinite; margin:20px auto 12px; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+  .center { text-align:center; }
+  .settled .tick, .success .tick { width:56px; height:56px; margin:6px auto 10px; border:2px solid var(--ink);
+          border-radius:50%; background:var(--mint); display:flex; align-items:center; justify-content:center;
+          font-size:1.8rem; font-weight:800; box-shadow:3px 3px 0 var(--ink); }
+  h2 { font-size:1.25rem; margin:6px 0; text-align:center; }
+  .settled, .success { text-align:center; }
+  details.wallet-alt { margin-top:22px; border-top:2px dashed #d8cdb6; padding-top:14px; }
+  details.wallet-alt summary { list-style:none; cursor:pointer; color:#7c7266; font-size:.85rem; font-weight:700; text-align:center; }
+  details.wallet-alt summary::-webkit-details-marker { display:none; }
+  .wallet-body { text-align:center; margin-top:14px; }
+  img.qr { width:220px; height:220px; image-rendering:pixelated; border:2px solid var(--ink);
+           border-radius:12px; background:#fff; padding:6px; }
+  .err { background:#ffe9e6; border:2px solid var(--ink); border-radius:13px; padding:13px; margin:14px 0;
+         font-size:.9rem; box-shadow:3px 3px 0 var(--ink); }
+  .retry { margin-top:10px; background:var(--coral); }
+  .foot { text-align:center; margin-top:22px; }
+  .confetti { position:fixed; top:-12px; width:9px; height:14px; z-index:9; pointer-events:none; border-radius:2px;
+              animation:fall linear forwards; }
+  @keyframes fall { to { transform:translateY(105vh) rotate(540deg); opacity:.9; } }
 </style>
 </head>
 <body>
-  <h1>${esc(bill.title)}</h1>
-  <div class="muted">${esc(name)}'s share · settle in USDC on ${esc(bill.cluster)}</div>
-  <div class="amount">${fmt(amountCents)}</div>
-  ${paid ? `<div class="paid">✓ Paid — thank you!</div>` : `
-  <div class="card">
-    <strong>Pay with a Solana wallet</strong>
-    <div class="muted">Scan with Phantom, Solflare, etc.</div>
-    <p><img class="qr" src="${qrDataUrl}" alt="Solana Pay QR" /></p>
-    <a class="btn primary" href="${esc(url)}">Open in wallet</a>
-    <code>${esc(url)}</code>
+  <div class="brand"><span class="mark">/</span><span class="word">divvy</span></div>
+  <div class="hero">
+    ${askerLine}
+    <h1>${esc(bill.title)}</h1>
+    <div class="muted">${esc(name)}'s share</div>
+    <div class="amount">${fmt(amountCents)}</div>
+    ${paid ? settled : live}
   </div>
-  <div class="card">
-    <strong>No crypto? Pay with card</strong>
-    <div class="muted">Buys USDC and sends it to the collector.</div>
-    <a class="btn" href="${esc(cards.moonpay)}" target="_blank" rel="noopener">Pay with card · MoonPay</a>
-    <a class="btn" href="${esc(cards.coinbase)}" target="_blank" rel="noopener">Pay with card · Coinbase</a>
-  </div>
-  <div class="card">
-    <strong>No wallet at all?</strong>
-    <div class="muted">Sign in with email/phone — we make you a wallet, no seed phrase.</div>
-    <a class="btn" href="/embedded/?bill=${esc(bill.id)}&name=${encodeURIComponent(name)}">Create a wallet &amp; pay</a>
-  </div>`}
-  <p class="muted">Collector: <code>${esc(bill.collector)}</code></p>
+  <p class="foot muted">settles instantly in dollars. friends split, divvy handles the rest.</p>
+  ${paid ? "" : `<script>window.__PAY__=${JSON.stringify(payData)};</script>
+  <script defer src="/pay.js"></script>`}
 </body>
 </html>`;
 }

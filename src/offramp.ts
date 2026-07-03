@@ -13,13 +13,17 @@
 
 import { createHmac } from "crypto";
 import { dollars } from "./split";
-import { moonpayHost } from "./onramp";
+import { moonpayHost, MOONPAY_ACCENT } from "./onramp";
 
 export interface OfframpParams {
   /** User wallet (base58) — where the USDC to sell is held / refunded to. */
   walletAddress: string;
   /** Amount to sell, integer cents. */
   amountCents: number;
+  /** URL the widget returns the user to when the cash-out completes. */
+  redirectURL?: string;
+  /** Widget accent color (defaults to Divvy blue). */
+  colorCode?: string;
 }
 
 /**
@@ -30,10 +34,16 @@ export function moonpaySellUrl(params: OfframpParams, apiKey = process.env.MOONP
   const base = moonpayHost("sell", apiKey);
   const q = new URLSearchParams();
   q.set("apiKey", apiKey || "pk_test_PLACEHOLDER");
+  // Sell widget: base=usdc_sol (what you're selling), quote=usd (what lands in
+  // the bank). Amount + wallet pre-filled so the user just confirms the payout.
   q.set("baseCurrencyCode", "usdc_sol");
   q.set("baseCurrencyAmount", dollars(params.amountCents).toFixed(2));
   q.set("quoteCurrencyCode", "usd");
+  q.set("walletAddress", params.walletAddress);
   q.set("refundWalletAddress", params.walletAddress);
+  q.set("colorCode", params.colorCode || MOONPAY_ACCENT);
+  q.set("theme", "light");
+  if (params.redirectURL) q.set("redirectURL", params.redirectURL);
   return `${base}?${q.toString()}`;
 }
 

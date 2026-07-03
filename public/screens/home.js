@@ -111,7 +111,7 @@
     if (walletCents == null || oweCents <= 0) return "";
     var covers = walletCents >= oweCents;
     var c = covers ? "#3DE8C7" : "#FF6B5E";
-    var label = covers ? "in your wallet · ready to settle" : "in your wallet · top up to settle";
+    var label = covers ? "your balance · ready to settle" : "your balance · top up to settle";
     return '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:10px; margin-left:8px; border:1px solid ' + c + '55; background:' + c + '1f; border-radius:999px; padding:4px 11px;">' +
       '<span style="width:6px; height:6px; border-radius:50%; background:' + c + '; box-shadow:0 0 7px ' + c + 'cc;"></span>' +
       '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:10px; color:' + c + ';">$' + (walletCents / 100).toFixed(2) + '</span>' +
@@ -255,7 +255,7 @@
           '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:400; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin-top:12px;">split bills · settle in seconds</span>' +
 
           // lowercase value headline
-          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; line-height:1.16; letter-spacing:-0.6px; text-align:center; text-wrap:pretty; max-width:320px; margin:8px 0 0; color:#2B2118;">split the bill. get your money back — before you leave the table.</h1>' +
+          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; line-height:1.16; letter-spacing:-0.6px; text-align:center; text-wrap:pretty; max-width:320px; margin:8px 0 0; color:#2B2118;">split bills. settle in dollars. instantly.</h1>' +
 
           // 3-step strip
           '<div style="display:flex; align-items:center; gap:9px; margin-top:16px;">' +
@@ -273,62 +273,92 @@
         '<div style="flex:1; min-height:14px;"></div>' +
 
         // ── ACTIONS ──
-        '<div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:10px; padding-bottom:calc(14px + env(safe-area-inset-bottom));">' +
-          // primary: create a wallet (with mono subline)
-          '<button id="hCreate" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">create a wallet</span>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:0.8px; color:rgba(255,255,255,0.78);">~10 seconds, no app</span>' +
-          '</button>' +
-
-          // divider
-          '<div style="display:flex; align-items:center; gap:12px; padding:3px 0;">' +
-            '<span style="flex:1; height:1px; background:rgba(43,33,24,0.10);"></span>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:1px; color:rgba(43,33,24,0.4);">or continue with</span>' +
-            '<span style="flex:1; height:1px; background:rgba(43,33,24,0.10);"></span>' +
-          '</div>' +
-
-          // secondary: apple / google
-          '<div style="display:flex; gap:11px;">' +
-            '<button id="hApple" style="appearance:none; cursor:pointer; flex:1; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' +
-              '<svg width="17" height="17" viewBox="0 0 24 24" fill="#2B2118" aria-hidden="true"><path d="M17.05 12.54c-.02-2.13 1.74-3.15 1.82-3.2-1-1.45-2.54-1.65-3.09-1.67-1.31-.13-2.57.77-3.24.77-.67 0-1.7-.75-2.8-.73-1.44.02-2.77.84-3.51 2.12-1.5 2.6-.38 6.44 1.07 8.55.71 1.03 1.55 2.19 2.66 2.15 1.07-.04 1.47-.69 2.76-.69s1.65.69 2.78.67c1.15-.02 1.87-1.05 2.57-2.09.81-1.2 1.14-2.36 1.16-2.42-.03-.01-2.22-.85-2.24-3.38zM14.94 5.69c.59-.72.99-1.71.88-2.69-.85.03-1.88.57-2.49 1.28-.55.63-1.03 1.64-.9 2.6.95.07 1.92-.48 2.51-1.19z"/></svg>' +
-              'apple' +
+        // One happy path: sign in (Apple leads on iOS). No custody decision, no
+        // "wallet" word — the account (and its wallet) is provisioned under the
+        // hood by the embedded flow.
+        (function () {
+          var ios = app.isIOS && app.isIOS();
+          var primaryLabel = ios ? "continue with apple" : "sign in";
+          var appleIcon = ios
+            ? '<svg width="19" height="19" viewBox="0 0 24 24" fill="#fff" aria-hidden="true" style="margin-top:-1px;"><path d="M17.05 12.54c-.02-2.13 1.74-3.15 1.82-3.2-1-1.45-2.54-1.65-3.09-1.67-1.31-.13-2.57.77-3.24.77-.67 0-1.7-.75-2.8-.73-1.44.02-2.77.84-3.51 2.12-1.5 2.6-.38 6.44 1.07 8.55.71 1.03 1.55 2.19 2.66 2.15 1.07-.04 1.47-.69 2.76-.69s1.65.69 2.78.67c1.15-.02 1.87-1.05 2.57-2.09.81-1.2 1.14-2.36 1.16-2.42-.03-.01-2.22-.85-2.24-3.38zM14.94 5.69c.59-.72.99-1.71.88-2.69-.85.03-1.88.57-2.49 1.28-.55.63-1.03 1.64-.9 2.6.95.07 1.92-.48 2.51-1.19z"/></svg>'
+            : "";
+          return '<div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:11px; padding-bottom:calc(14px + env(safe-area-inset-bottom));">' +
+            // primary: continue with apple (iOS) / sign in (elsewhere)
+            '<button id="hSignIn" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+              appleIcon +
+              '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">' + primaryLabel + '</span>' +
             '</button>' +
-            '<button id="hGoogle" style="appearance:none; cursor:pointer; flex:1; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' +
-              '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.52 12.27c0-.82-.07-1.6-.21-2.36H12v4.46h6.46a5.52 5.52 0 0 1-2.4 3.62v3h3.88c2.27-2.09 3.58-5.17 3.58-8.72z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.08 7.94-2.91l-3.88-3c-1.08.72-2.45 1.16-4.06 1.16-3.12 0-5.77-2.11-6.71-4.95H1.28v3.09A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.29 14.3a7.21 7.21 0 0 1 0-4.6V6.62H1.28a12 12 0 0 0 0 10.77l4.01-3.09z"/><path fill="#EA4335" d="M12 4.75c1.76 0 3.34.61 4.59 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.28 6.62l4.01 3.09C6.23 6.86 8.88 4.75 12 4.75z"/></svg>' +
-              'google' +
+
+            // secondary: phone or email → same flow, straight to phone/email entry
+            '<button id="hPhone" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' +
+              'continue with phone or email' +
             '</button>' +
-          '</div>' +
 
-          // quiet: i already have one
-          '<button id="hConnect" style="appearance:none; border:none; background:transparent; cursor:pointer; width:100%; padding:7px 0 2px; font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; color:rgba(43,33,24,0.55);">i already have one</button>' +
+            // reassurance — dollars, just faster (never crypto / seed phrase)
+            '<div style="text-align:center; margin-top:2px;">' +
+              '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:1px; color:rgba(43,33,24,0.38);">dollars, just faster · settles in seconds</span>' +
+            '</div>' +
 
-          // reassurance — dollars, just faster (never crypto / seed phrase)
-          '<div style="text-align:center; margin-top:4px;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:1px; color:rgba(43,33,24,0.38);">dollars, just faster · settles in seconds</span>' +
-          '</div>' +
-        '</div>' +
+            // tertiary: demo account (burner wallet). Keeps the old fast path alive
+            // for people who just want to look around — and is what e2e drives.
+            '<div style="text-align:center; margin-top:2px;">' +
+              '<button id="hDemo" style="appearance:none; border:none; background:transparent; cursor:pointer; padding:5px 8px; font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.42); text-decoration:underline; text-underline-offset:2px;">just exploring? try a demo account</button>' +
+            '</div>' +
+          '</div>';
+        })() +
       '</div>';
 
-    var c = document.getElementById("hCreate"), n = document.getElementById("hConnect"),
-        ap = document.getElementById("hApple"), gg = document.getElementById("hGoogle");
-    // Onboarding goes through the Privy embedded-wallet flow at /embedded: log in
-    // with email/social, get an auto-provisioned Solana wallet, and come back
-    // signed in (the flow stashes the session token in shared localStorage).
-    function privyOnboard(method) {
-      // No return param → the Privy flow lands on the "wallet ready" celebration.
-      window.location.href = "/embedded/?" + (method ? "method=" + method : "");
-    }
-    if (c) c.onclick = function () { privyOnboard(); };
-    if (ap) ap.onclick = function () { privyOnboard("apple"); };
-    if (gg) gg.onclick = function () { privyOnboard("google"); };
-    // "i already have one" → connect an injected wallet (Phantom) via SIWS, then
-    // show the wallet-ready celebration (connected variant).
-    if (n) n.onclick = function () {
-      Auth.signInWithWallet().then(function () {
-        try { sessionStorage.setItem("divvy.onboardVia", "phantom"); } catch (_) {}
-        location.hash = "#/welcome";
-      }).catch(function (e) { app.toast(e.message); });
+    var si = document.getElementById("hSignIn"),
+        ph = document.getElementById("hPhone"),
+        demo = document.getElementById("hDemo");
+    // Onboarding goes through the Privy embedded-wallet flow at /embedded: sign in
+    // with apple/google/phone/email, get an auto-provisioned Solana wallet, and
+    // come back signed in (the flow stashes the session token in localStorage).
+    if (si) si.onclick = function () { app.signIn(); };
+    if (ph) ph.onclick = function () { app.signIn("phone"); };
+    // Demo account: a local burner wallet + SIWS — no sign-up, instant look-around.
+    if (demo) demo.onclick = function () {
+      Auth.createWallet().catch(function (e) { app.toast(e.message); });
     };
+  }
+
+  // First-run "how it works" journal card — shown once, right after the first
+  // sign-in, then dismissed for good via localStorage. Three plain-English steps,
+  // zero crypto words: split → they pay their share → money's yours.
+  var HOW_KEY = "divvy.seenHowItWorks";
+  function seenHow() {
+    try { return localStorage.getItem(HOW_KEY) === "1"; } catch (_) { return true; }
+  }
+  function markHowSeen() {
+    try { localStorage.setItem(HOW_KEY, "1"); } catch (_) {}
+  }
+  function howStep(n, emoji, text) {
+    return '<div style="display:flex; align-items:center; gap:11px;">' +
+      '<div style="width:30px; height:30px; border-radius:9px; background:#F7F1E3; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; font-size:15px; flex:none; box-shadow:2px 2px 0 rgba(43,33,24,0.85);">' + emoji + '</div>' +
+      '<div style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:#2B2118;">' + text + '</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; color:rgba(43,33,24,0.32); flex:none;">' + n + '</div>' +
+    '</div>';
+  }
+  function howItWorksCard() {
+    return '<div id="howCard" style="position:relative; background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:4px 5px 0 rgba(43,33,24,0.9); padding:18px 18px 16px; margin-top:14px;">' +
+      '<div id="howClose" style="position:absolute; top:11px; right:11px; width:28px; height:28px; border-radius:50%; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; letter-spacing:2px; color:#3DE8C7;">HOW IT WORKS</div>' +
+      '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:19px; letter-spacing:-0.4px; color:#2B2118; margin:5px 0 15px;">three taps, you\'re square.</div>' +
+      '<div style="display:flex; flex-direction:column; gap:12px;">' +
+        howStep("1", "🧾", "split a bill with your people") +
+        howStep("2", "💸", "they pay their share") +
+        howStep("3", "🎉", "the money\'s yours — in dollars") +
+      '</div>' +
+      '<button id="howGot" style="appearance:none; cursor:pointer; width:100%; min-height:44px; margin-top:16px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; box-shadow:3px 3px 0 rgba(43,33,24,0.9); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff;">got it ✨</button>' +
+    '</div>';
+  }
+  function wireHowCard(view) {
+    var card = view.querySelector("#howCard");
+    if (!card) return;
+    function dismiss() { markHowSeen(); if (card && card.parentNode) card.parentNode.removeChild(card); }
+    var close = view.querySelector("#howClose"), got = view.querySelector("#howGot");
+    if (close) close.onclick = dismiss;
+    if (got) got.onclick = dismiss;
   }
 
   async function signedIn(view) {
@@ -376,7 +406,9 @@
     var emptyHtml = (orderedBills.length || grp.length || orderedIncoming.length) ? "" :
       '<div class="empty" style="padding-top:30px;">' + app.mascot({ size: 96, mood: "happy" }) + '<div class="title lower">no tabs yet</div><div class="hint">start a group and split something 🎉</div><button class="btn" style="max-width:240px;margin-top:8px;" onclick="location.hash=\'#/new\'">new tab</button></div>';
 
-    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + hero(net, owed, owe, ppl, walletCents, quick) + incomingHtml + peopleHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
+    var howHtml = seenHow() ? "" : howItWorksCard();
+    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + howHtml + hero(net, owed, owe, ppl, walletCents, quick) + incomingHtml + peopleHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
+    wireHowCard(view);
     // count the hero balance up from zero, and stagger the card list in.
     if (app.countUp) {
       var balEl = document.getElementById("hBalance");

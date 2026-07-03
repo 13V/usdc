@@ -40,19 +40,36 @@ function Root() {
     );
   }
 
+  // Apple sign-in leads on iOS (native expectation); elsewhere Google leads.
+  // Only the ORDER differs — the same four methods are always available.
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) ||
+    (window as any).Capacitor?.getPlatform?.() === "ios";
+  type M = "apple" | "google" | "sms" | "email";
+  const primary: [M, ...M[]] = isIOS
+    ? ["apple", "google", "sms", "email"]
+    : ["google", "apple", "sms", "email"];
+
   return (
     <PrivyProvider
       appId={PRIVY_APP_ID}
       config={{
         // Auto-provision a self-custodial Solana wallet for users who don't have
-        // one — no seed phrase for the friend to manage.
+        // one — no seed phrase for the friend to manage, no custody decision.
         embeddedWallets: {
           solana: { createOnLogin: "users-without-wallets" },
         },
-        loginMethods: ["email", "google", "apple", "sms"],
+        // Social + phone + email only. Deliberately NO "wallet" method, so the
+        // modal never shows a MetaMask / external-wallet list on this flow.
+        loginMethods: ["apple", "google", "sms", "email"],
+        loginMethodsAndOrder: { primary },
         // Match the app: light journal sheet, Divvy blue accent, our mark.
         appearance: {
           walletChainType: "solana-only",
+          // Belt-and-suspenders: an empty wallet list hides every external
+          // wallet option even if a 'wallet' method ever slips into the config.
+          walletList: [],
           theme: "light",
           accentColor: "#2775CA",
           logo: `${window.location.origin}/icons/icon-192.png`,

@@ -484,14 +484,14 @@
       topbar() +
       '<div class="empty" style="position:relative; z-index:2; padding-top:60px;">' +
         (window.app ? app.mascot({ size: 120, mood: "wave" }) : '') +
-        '<div class="title lower">connect to see your friend</div>' +
-        '<div class="hint">your tabs together live behind your wallet.</div>' +
-        '<button class="btn" id="fdConnect" style="max-width:280px;margin-top:8px;">create a wallet</button>' +
+        '<div class="title lower">sign in to see your friend</div>' +
+        '<div class="hint">your tabs together live behind your account.</div>' +
+        '<button class="btn" id="fdConnect" style="max-width:280px;margin-top:8px;">sign in</button>' +
       '</div>' +
       '</div>';
     wireBack();
     var c = document.getElementById("fdConnect");
-    if (c) c.onclick = function () { if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); }); };
+    if (c) c.onclick = function () { app.signIn(); };
   }
 
   function notFound(view, title, hint, mood) {

@@ -372,17 +372,17 @@
         header() +
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; padding:30px 24px 104px;">' +
           '<div style="margin:10px 0 4px;">' + app.mascot({ size: 128, mood: "happy", glow: true }) + '</div>' +
-          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.6px; max-width:300px; margin:10px 0 0; color:#2B2118;">your wallet, your tabs, your money.</h1>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(43,33,24,0.45); margin:16px 0 22px;">connect to see your balance</div>' +
-          '<button id="yConnect" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:320px; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">connect a wallet</button>' +
-          '<button id="yCreate" style="appearance:none; cursor:pointer; width:100%; max-width:320px; min-height:52px; margin-top:11px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.2); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">create a wallet</button>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(43,33,24,0.4); margin-top:22px;">non-custodial · your keys · usdc on solana</div>' +
+          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.6px; max-width:300px; margin:10px 0 0; color:#2B2118;">your tabs, your money, your people.</h1>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(43,33,24,0.45); margin:16px 0 22px;">sign in to see your balance</div>' +
+          '<button id="yConnect" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:320px; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">sign in</button>' +
+          '<div style="margin-top:16px;"><button id="yCreate" style="appearance:none; border:none; background:transparent; cursor:pointer; padding:5px 8px; font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.42); text-decoration:underline; text-underline-offset:2px;">just exploring? try a demo account</button></div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(43,33,24,0.4); margin-top:20px;">dollars, just faster · settles in seconds</div>' +
         '</div>' +
       '</div>';
 
     wireGear();
     var c = document.getElementById("yConnect"), n = document.getElementById("yCreate");
-    if (c) c.onclick = function () { if (window.Auth) Auth.signInWithWallet().catch(function (e) { app.toast(e.message); }); };
+    if (c) c.onclick = function () { app.signIn(); };
     if (n) n.onclick = function () { if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); }); };
   }
 
@@ -427,11 +427,9 @@
       if (w && typeof w.usdcCents === "number") maxCents = w.usdcCents;
     } catch (_) {}
 
-    // Pick a sensible default that doesn't exceed the balance when we know it.
-    var DEFAULT = 5000;
-    if (typeof maxCents === "number" && maxCents > 0 && maxCents < DEFAULT) {
-      DEFAULT = maxCents;
-    }
+    // Default to cashing out the whole balance (the common intent); falls back
+    // to $50 when we couldn't read the balance.
+    var DEFAULT = (typeof maxCents === "number" && maxCents > 0) ? maxCents : 5000;
 
     var entryOpts = { idp: "out", default: DEFAULT };
     if (typeof maxCents === "number" && maxCents > 0) entryOpts.maxCents = maxCents;
@@ -440,15 +438,15 @@
       '<div style="padding:4px 20px 26px;">' +
         '<div style="text-align:center; margin-bottom:6px;">' +
           '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">CASH OUT</div>' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118; margin-top:4px;">cash out to your card</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118; margin-top:4px;">cash out to your bank</div>' +
         '</div>' +
         app.amountEntryHtml(entryOpts) +
         '<button id="yOut" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>' +
-          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">cash out to card/bank</span>' +
+          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="10" rx="1.5"/><path d="M12 3L3 8h18z"/><path d="M7 14v2M12 14v2M17 14v2"/></svg>' +
+          '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">cash out to your bank</span>' +
         '</button>' +
         '<div style="text-align:center; margin-top:9px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">to your debit card or bank</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">arrives in 1-2 business days</span>' +
         '</div>' +
         '<div id="yOutTestNote"></div>' +
         // honest secondary framing — compact version of the old explainer.
@@ -460,17 +458,30 @@
     );
 
     var entry = app.wireAmountEntry("out");
+    var railsLive = true;
+    var out = document.getElementById("yOut");
 
-    // Prefetch live flag for the subtle test-mode note.
+    // Prefetch live flag. No provider keys → degrade to a soft "coming soon"
+    // state instead of a broken payout link.
     app.api.get("/api/me/offramp/" + DEFAULT).then(function (r) {
       if (r && r.live === false) {
+        railsLive = false;
+        if (out) {
+          out.disabled = true;
+          out.style.opacity = "0.45";
+          out.style.cursor = "not-allowed";
+          out.style.boxShadow = "none";
+          var lbl = out.querySelector("span:last-child");
+          if (lbl) lbl.textContent = "coming soon";
+        }
         var note = document.getElementById("yOutTestNote");
-        if (note) note.innerHTML = app.testModeNote();
+        if (note) note.innerHTML =
+          '<div style="text-align:center; margin-top:12px;"><span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">coming soon in your region ✨</span></div>';
       }
     }).catch(function () {});
 
-    var out = document.getElementById("yOut");
     if (out) out.onclick = function () {
+      if (!railsLive) { app.toast("coming soon in your region ✨"); return; }
       var cents = entry.getCents();
       if (!(cents > 0)) { app.toast("enter an amount first"); return; }
       if (typeof maxCents === "number" && maxCents > 0 && cents > maxCents) {

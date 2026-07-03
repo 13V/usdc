@@ -76,7 +76,7 @@ function errorHtml(refCode: string): string {
       </div>
       <div style="font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:3px; color:#FF6B5E; margin-top:18px;">HMM</div>
       <h1 style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:42px; letter-spacing:-1.2px; margin:8px 0 0; color:#2B2118;">that didn't take.</h1>
-      <p style="font-family:'General Sans',sans-serif; font-weight:400; font-size:14.5px; line-height:1.55; color:rgba(43,33,24,0.55); max-width:310px; margin:14px 0 0; text-wrap:pretty;">something hiccuped on the way to your wallet — no harm done, nothing was charged. let's try again.</p>
+      <p style="font-family:'General Sans',sans-serif; font-weight:400; font-size:14.5px; line-height:1.55; color:rgba(43,33,24,0.55); max-width:310px; margin:14px 0 0; text-wrap:pretty;">something hiccuped on the way to your account — no harm done, nothing was charged. let's try again.</p>
     </div>
     <div style="position:relative; z-index:6; flex:none; padding:8px 26px calc(20px + env(safe-area-inset-bottom));">
       <button data-act="retry" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:58px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 14px 34px rgba(39,117,202,0.55), inset 0 1px 0 rgba(255,255,255,0.28);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg><span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:17px; color:#fff;">try again</span></button>
@@ -92,7 +92,7 @@ function Connecting() {
     const t = setInterval(() => setI((x) => x + 1), 1100);
     return () => clearInterval(t);
   }, []);
-  const lines = ["creating your secure wallet…", "no seed phrase, promise…", "almost there…"];
+  const lines = ["setting up your account…", "no passwords, no seed phrase…", "almost there…"];
   const onClick = (e: React.MouseEvent) => {
     const el = (e.target as HTMLElement).closest?.("[data-act]");
     const act = el?.getAttribute("data-act");
@@ -102,7 +102,7 @@ function Connecting() {
   return (
     <div
       onClick={onClick}
-      dangerouslySetInnerHTML={{ __html: connectingHtml("spinning up your wallet", lines[i % lines.length]) }}
+      dangerouslySetInnerHTML={{ __html: connectingHtml("setting up your account", lines[i % lines.length]) }}
     />
   );
 }
@@ -136,14 +136,22 @@ export function Login() {
   const params = new URLSearchParams(window.location.search);
   // Same-origin only — never let `return` open-redirect off the app.
   const returnTo = safeReturnPath(params.get("return"), "/");
+  // Optional initial-screen hint from the welcome screen's secondary CTA.
+  // "phone" → open straight to phone/email entry; anything else → full modal
+  // (Apple leads on iOS via the provider config's loginMethodsAndOrder).
+  const method = params.get("method");
 
-  // Open Privy's login as soon as it's ready (the user already tapped "create a
-  // wallet"), with the connecting frame behind the modal.
+  // Open Privy's login as soon as it's ready (the user already tapped a sign-in
+  // button), with the connecting frame behind the modal.
   useEffect(() => {
     if (!ready || authenticated || autoLoginRef.current || error) return;
     autoLoginRef.current = true;
-    login();
-  }, [ready, authenticated, login, error]);
+    if (method === "phone" || method === "email") {
+      login({ loginMethods: ["sms", "email"] });
+    } else {
+      login();
+    }
+  }, [ready, authenticated, login, error, method]);
 
   // Once authenticated, exchange for a Divvy session (after the embedded wallet
   // provisions, with a short fallback) and hand off to the app.

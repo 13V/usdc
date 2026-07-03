@@ -454,17 +454,15 @@
           'justify-content:center; gap:16px; padding:40px 44px; text-align:center;">' +
           app.mascot({ size: 104, mood: "happy", glow: true }) +
           '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(43,33,24,0.65);">' +
-            'your feed lives here<br>connect a wallet to see who chipped in 💸</div>' +
+            'your feed lives here<br>sign in to see who chipped in 💸</div>' +
           '<button id="acConnect" style="appearance:none; border:none; cursor:pointer; min-height:50px; padding:0 26px; ' +
             'border-radius:999px; background:#2775CA; border:2px solid #2B2118; ' +
             'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff; ' +
-            'box-shadow:3px 3px 0 rgba(43,33,24,0.9);">connect a wallet</button>' +
+            'box-shadow:3px 3px 0 rgba(43,33,24,0.9);">sign in</button>' +
         '</div>' +
       '</div>';
     var b = document.getElementById("acConnect");
-    if (b) b.onclick = function () {
-      if (window.Auth) Auth.createWallet().catch(function (e) { app.toast(e.message); });
-    };
+    if (b) b.onclick = function () { app.signIn(); };
   }
 
   function errorState(view, msg) {
