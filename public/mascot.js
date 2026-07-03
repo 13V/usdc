@@ -19,71 +19,111 @@
     var s = document.createElement("style");
     s.id = "divvy-mascot-css";
     s.textContent = [
-      // whole-frog idle float (gentle bob, tiny tilt)
-      "@keyframes mFloat{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-7px) rotate(1.5deg)}}",
-      // body breathes: squash from the feet, like it's sitting
-      "@keyframes mqSquish{0%,100%{transform:scale(1,1)}50%{transform:scale(1.035,.96)}}",
-      // frog blink: pupils squash shut
-      "@keyframes mBlink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}",
-      // periscope eyes bob independently — the signature move
-      "@keyframes mqPeekL{0%,100%{transform:translateY(0)}30%{transform:translateY(-2.5px)}60%{transform:translateY(0)}}",
-      "@keyframes mqPeekR{0%,100%{transform:translateY(0)}45%{transform:translateY(-2.5px)}75%{transform:translateY(0)}}",
-      // arms: resting bob / big hello wave
+      /* ---- easing vocabulary ----------------------------------------------
+         sine   cubic-bezier(.445,.05,.55,.95)  breathing, floats
+         back   cubic-bezier(.34,1.56,.64,1)    overshoot pop-out
+         swift  cubic-bezier(.55,0,.1,1)        fast-out settle
+         Per-segment curves live INSIDE keyframes via animation-timing-function
+         so each phase (anticipate → action → settle) gets its own physics. */
+
+      // whole-frog idle float: slow sine bob with a lazy tilt
+      "@keyframes mFloat{0%,100%{transform:translate3d(0,0,0) rotate(-1deg)}50%{transform:translate3d(0,-6px,0) rotate(1deg)}}",
+      // body breathes from the feet, volume conserved (wider as it settles)
+      "@keyframes mqSquish{0%,100%{transform:scale(1,1)}50%{transform:scale(1.03,.965)}}",
+      // blink: snap shut, micro-hold, overshoot open (real lids do this)
+      "@keyframes mBlink{0%,91%,100%{transform:scaleY(1)}93%{transform:scaleY(.06);animation-timing-function:cubic-bezier(.55,0,.1,1)}95%{transform:scaleY(.06)}97.5%{transform:scaleY(1.08)}}",
+      // periscope eyes bob out of phase, with a hair of tilt (overlapping action)
+      "@keyframes mqPeekL{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-2.5px) rotate(-1.6deg)}60%{transform:translateY(0) rotate(0)}}",
+      "@keyframes mqPeekR{0%,100%{transform:translateY(0) rotate(0)}45%{transform:translateY(-2.5px) rotate(1.6deg)}75%{transform:translateY(0) rotate(0)}}",
+      // arms: resting sway / big hello wave with overshoot at each end
       "@keyframes mqArm{0%,100%{transform:rotate(0)}50%{transform:rotate(-7deg)}}",
-      "@keyframes mqWave{0%,100%{transform:rotate(0)}50%{transform:rotate(-42deg)}}",
+      "@keyframes mqWave{0%,100%{transform:rotate(0)}12%{transform:rotate(6deg);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}55%{transform:rotate(-46deg);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}88%{transform:rotate(3deg)}}",
       // soft paper glow
       "@keyframes mGlow{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.7}50%{transform:translate(-50%,-50%) scale(1.1);opacity:1}}",
       "@keyframes mSpark{0%,100%{opacity:.3;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}",
-      // worried sweat drop slides down
-      "@keyframes mqSweat{0%{opacity:0;transform:translateY(-2px)}30%{opacity:1}100%{opacity:0;transform:translateY(7px)}}",
-      // Tap squash: a springy pop when the mascot is poked.
-      "@keyframes mPop{0%{transform:scale(1)}30%{transform:scale(.9,1.08)}60%{transform:scale(1.06,.94)}100%{transform:scale(1)}}",
+      // worried sweat: bead grows, clings, drops
+      "@keyframes mqSweat{0%{opacity:0;transform:translateY(-2px) scale(.55)}28%{opacity:1;transform:translateY(0) scale(1)}62%{opacity:1;transform:translateY(4px) scale(1.04)}100%{opacity:0;transform:translateY(10px) scale(.85)}}",
+      // poke pop: springy squash with two-step recovery
+      "@keyframes mPop{0%{transform:scale(1)}25%{transform:scale(.86,1.12);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}52%{transform:scale(1.12,.88);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}74%{transform:scale(.96,1.04)}88%{transform:scale(1.02,.99)}100%{transform:scale(1)}}",
       ".dmascot-drawn{transform-origin:50% 90%}",
-      ".dmascot-drawn.mtap{animation:mPop .42s cubic-bezier(.34,1.56,.64,1)}",
+      ".dmascot-drawn.mtap{animation:mPop .5s cubic-bezier(.445,.05,.55,.95)}",
       // poke games: 5 quick pokes → dizzy wobble; rare lucky poke → backflip
-      "@keyframes mDizzy{0%,100%{transform:rotate(0)}20%{transform:rotate(13deg)}45%{transform:rotate(-11deg) scale(.96)}70%{transform:rotate(7deg)}88%{transform:rotate(-4deg)}}",
-      ".dmascot-drawn.mdizzy{animation:mDizzy .9s ease-in-out 2}",
-      "@keyframes mFlip{to{transform:rotate(360deg)}}",
-      ".dmascot-drawn.mflip{animation:mFlip .7s cubic-bezier(.34,1.56,.64,1)}",
+      "@keyframes mDizzy{0%,100%{transform:rotate(0)}18%{transform:rotate(12deg)}42%{transform:rotate(-10deg) scale(.97)}64%{transform:rotate(6deg)}82%{transform:rotate(-3deg)}93%{transform:rotate(1deg)}}",
+      ".dmascot-drawn.mdizzy{animation:mDizzy .95s cubic-bezier(.445,.05,.55,.95) 2}",
+      "@keyframes mFlip{0%{transform:rotate(0) scale(1)}40%{transform:rotate(200deg) scale(.92)}100%{transform:rotate(360deg) scale(1)}}",
+      ".dmascot-drawn.mflip{animation:mFlip .75s cubic-bezier(.34,1.56,.64,1)}",
       // idle: after ~40s of stillness mochi nods off (floating z z)
       "@keyframes mZz{0%{opacity:0;transform:translateY(4px) scale(.8)}25%{opacity:1}100%{opacity:0;transform:translateY(-16px) scale(1.1)}}",
       ".mzz{position:absolute;right:6%;top:2%;font-family:'Space Mono',monospace;font-weight:700;font-size:13px;color:#17a98c;animation:mZz 2.4s ease-in-out infinite;pointer-events:none;z-index:5}",
       // SVG rig part animations (transform-box so origins are per-part)
-      ".mq-bodygroup{transform-box:fill-box;transform-origin:50% 100%;animation:mqSquish 4.5s ease-in-out infinite}",
-      ".mq-eye-l{transform-box:fill-box;transform-origin:50% 100%;animation:mqPeekL 6s ease-in-out infinite}",
-      ".mq-eye-r{transform-box:fill-box;transform-origin:50% 100%;animation:mqPeekR 6s ease-in-out infinite .4s}",
-      ".mq-pupil{transform-box:fill-box;transform-origin:center;animation:mBlink 5s ease-in-out infinite}",
-      ".mq-arm-l{transform-box:fill-box;transform-origin:100% 0%;animation:mqArm 4.2s ease-in-out infinite}",
-      ".mq-arm-r{transform-box:fill-box;transform-origin:0% 0%;animation:mqArm 4.2s ease-in-out infinite .3s}",
-      ".mq-arm-r.mq-waving{animation:mqWave 1.5s ease-in-out infinite}",
-      ".mq-sweat{transform-box:fill-box;animation:mqSweat 2.2s ease-in-out infinite}",
+      ".mq-bodygroup{transform-box:fill-box;transform-origin:50% 100%;animation:mqSquish 4.5s cubic-bezier(.445,.05,.55,.95) infinite}",
+      ".mq-eye-l{transform-box:fill-box;transform-origin:50% 100%;animation:mqPeekL 6s cubic-bezier(.445,.05,.55,.95) infinite}",
+      ".mq-eye-r{transform-box:fill-box;transform-origin:50% 100%;animation:mqPeekR 6s cubic-bezier(.445,.05,.55,.95) infinite .4s}",
+      ".mq-pupil{transform-box:fill-box;transform-origin:center;animation:mBlink 5s linear infinite}",
+      ".mq-arm-l{transform-box:fill-box;transform-origin:100% 0%;animation:mqArm 4.2s cubic-bezier(.445,.05,.55,.95) infinite}",
+      ".mq-arm-r{transform-box:fill-box;transform-origin:0% 0%;animation:mqArm 4.2s cubic-bezier(.445,.05,.55,.95) infinite .3s}",
+      ".mq-arm-r.mq-waving{animation:mqWave 1.6s linear infinite}",
+      ".mq-sweat{transform-box:fill-box;animation:mqSweat 2.2s cubic-bezier(.445,.05,.55,.95) infinite}",
+
       // ---- life engine: random micro-behaviors ----
-      // pupils glance (wrapper so it composes with the blink animation)
-      ".mq-pupilbox{transform-box:fill-box;transform-origin:center;transition:transform .22s ease}",
+      // pupils glance with a springy settle (composes with blink)
+      ".mq-pupilbox{transform-box:fill-box;transform-origin:center;transition:transform .3s cubic-bezier(.34,1.56,.64,1)}",
       ".mlook-l .mq-pupilbox{transform:translateX(-4.5px)}",
       ".mlook-r .mq-pupilbox{transform:translateX(4.5px)}",
-      // quick double-blink
-      "@keyframes mBlink2{0%,100%{transform:scaleY(1)}25%{transform:scaleY(.08)}50%{transform:scaleY(1)}75%{transform:scaleY(.08)}}",
-      ".mblink2 .mq-pupil{animation:mBlink2 .55s ease-in-out}",
-      // little excited hop (squash -> leap -> land)
-      "@keyframes mHop{0%,100%{transform:translateY(0) scale(1,1)}22%{transform:translateY(1px) scale(1.09,.86)}45%{transform:translateY(-13px) scale(.95,1.07)}70%{transform:translateY(0) scale(1.07,.9)}85%{transform:translateY(-2px) scale(.99,1.02)}}",
-      ".mhop{animation:mHop .75s cubic-bezier(.4,0,.35,1)}",
-      // croak: throat puffs twice
+      // quick double-blink (surprise beat)
+      "@keyframes mBlink2{0%,100%{transform:scaleY(1)}20%{transform:scaleY(.06)}38%{transform:scaleY(1.06)}58%{transform:scaleY(.06)}80%{transform:scaleY(1.08)}}",
+      ".mblink2 .mq-pupil{animation:mBlink2 .6s cubic-bezier(.55,0,.1,1)}",
+      // the hop: anticipation crouch → launch stretch → apex → landing squash →
+      // rebound → settle. Per-segment curves: ease-in down, ease-out up.
+      "@keyframes mHop{" +
+        "0%{transform:translateY(0) scale(1,1);animation-timing-function:cubic-bezier(.5,0,.7,.3)}" +
+        "16%{transform:translateY(2px) scale(1.13,.83);animation-timing-function:cubic-bezier(.2,.7,.35,1)}" +      // crouch (anticipation)
+        "34%{transform:translateY(-17px) scale(.93,1.11);animation-timing-function:cubic-bezier(.4,0,.8,.6)}" +     // launch, stretched
+        "48%{transform:translateY(-21px) scale(.99,1.02);animation-timing-function:cubic-bezier(.5,0,.75,.45)}" +   // hang at apex
+        "64%{transform:translateY(0) scale(1.14,.84);animation-timing-function:cubic-bezier(.2,.8,.3,1)}" +          // land, big squash
+        "78%{transform:translateY(-3.5px) scale(.965,1.05);animation-timing-function:cubic-bezier(.4,0,.6,1)}" +     // rebound
+        "89%{transform:translateY(0) scale(1.03,.98)}" +
+        "100%{transform:translateY(0) scale(1,1)}}",
+      ".mhop{animation:mHop .9s linear}",
+      // eyes drag behind the hop (follow-through)
+      "@keyframes mHopEyes{0%,100%{transform:translateY(0)}18%{transform:translateY(2.5px)}36%{transform:translateY(-3.5px)}52%{transform:translateY(1px)}66%{transform:translateY(3.5px)}80%{transform:translateY(-1.5px)}}",
+      ".mhop .mq-eye-l,.mhop .mq-eye-r{animation:mHopEyes .9s cubic-bezier(.445,.05,.55,.95)}",
+      // landing dust puff, timed to the touchdown frame
+      ".mq-dust{transform-box:fill-box;transform-origin:center;opacity:0}",
+      "@keyframes mDust{0%{opacity:.7;transform:scaleX(.5) translateY(0)}100%{opacity:0;transform:scaleX(1.5) translateY(-3px)}}",
+      ".mhop .mq-dust{animation:mDust .32s cubic-bezier(.2,.8,.3,1) .56s}",
+      // croak: throat sac with elastic double-pump; body inflates in sympathy
       ".mq-throat{transform-box:fill-box;transform-origin:center}",
-      "@keyframes mCroak{0%{opacity:0;transform:scale(.6)}25%{opacity:1;transform:scale(1.15)}45%{transform:scale(.85)}65%{transform:scale(1.15)}85%{transform:scale(.9)}100%{opacity:0;transform:scale(.6)}}",
-      ".mcroak .mq-throat{animation:mCroak 1.15s ease-in-out}",
-      // tongue zap (fly catch)
+      "@keyframes mCroak{0%{opacity:0;transform:scale(.5);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}16%{opacity:1;transform:scale(1.22)}32%{transform:scale(.88);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}48%{transform:scale(1.18)}64%{transform:scale(.92)}78%{transform:scale(1.05)}100%{opacity:0;transform:scale(.6)}}",
+      ".mcroak .mq-throat{animation:mCroak 1.2s linear}",
+      "@keyframes mCroakBody{0%,100%{transform:scale(1,1)}18%{transform:scale(1.025,.98)}34%{transform:scale(.99,1.012)}50%{transform:scale(1.02,.985)}68%{transform:scale(.995,1.006)}}",
+      ".mcroak .mq-bodygroup{animation:mCroakBody 1.2s cubic-bezier(.445,.05,.55,.95)}",
+      // tongue zap: lash out with overshoot, hold a beat, snap back
       ".mq-tongue{opacity:0;transform-box:fill-box;transform-origin:0% 100%}",
-      "@keyframes mTongue{0%{opacity:1;transform:scale(.05)}40%{opacity:1;transform:scale(1)}65%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.1)}}",
-      ".mzap .mq-tongue{animation:mTongue .5s cubic-bezier(.2,.85,.3,1)}",
-      // the fly
-      ".mfly{position:absolute;right:7%;top:4%;z-index:4;pointer-events:none;animation:mFlyBuzz .5s ease-in-out infinite}",
-      "@keyframes mFlyBuzz{0%,100%{transform:translate(0,0)}25%{transform:translate(-2px,1.5px)}50%{transform:translate(1.5px,-2px)}75%{transform:translate(-1px,-1px)}}",
+      "@keyframes mTongue{0%{opacity:1;transform:scale(.04);animation-timing-function:cubic-bezier(.2,.9,.25,1.25)}30%{opacity:1;transform:scale(1.07)}42%{opacity:1;transform:scale(1)}62%{opacity:1;transform:scale(1);animation-timing-function:cubic-bezier(.7,0,.9,.4)}100%{opacity:0;transform:scale(.06)}}",
+      ".mzap .mq-tongue{animation:mTongue .46s linear}",
+      // …and the whole body lunges toward the fly (weight behind the action)
+      "@keyframes mZapLunge{0%{transform:rotate(0) translate(0,0);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}28%{transform:rotate(3.5deg) translate(2px,-2px)}58%{transform:rotate(3.5deg) translate(2px,-2px)}100%{transform:rotate(0) translate(0,0)}}",
+      ".mzap .mq-bodygroup{animation:mZapLunge .46s linear}",
+      // the fly: quick erratic jitter, never repeating visually
+      ".mfly{position:absolute;right:7%;top:4%;z-index:4;pointer-events:none;animation:mFlyBuzz .46s linear infinite}",
+      "@keyframes mFlyBuzz{0%,100%{transform:translate(0,0)}18%{transform:translate(-2.2px,1.4px)}37%{transform:translate(1.6px,-2px)}58%{transform:translate(-1.2px,-1px)}79%{transform:translate(2px,1.2px)}}",
       "@keyframes mFlyPop{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.2)}}",
       ".mfly.mgone{animation:mFlyPop .18s ease-out forwards}",
-      // settle-up cheer: three happy bounces (triggered by app.celebrate)
-      "@keyframes mCheer{0%,100%{transform:translateY(0) scale(1)}30%{transform:translateY(-10px) scale(.97,1.05)}60%{transform:translateY(0) scale(1.06,.92)}}",
-      ".mcheer{animation:mCheer .5s ease-in-out 3}",
+      // settle-up cheer: one choreographed run — three diminishing bounces with
+      // alternating tilt, big first hit, soft landing
+      "@keyframes mCheer{" +
+        "0%{transform:translateY(0) rotate(0) scale(1);animation-timing-function:cubic-bezier(.5,0,.7,.3)}" +
+        "9%{transform:translateY(2px) rotate(0) scale(1.1,.86);animation-timing-function:cubic-bezier(.2,.7,.35,1)}" +
+        "23%{transform:translateY(-15px) rotate(-3deg) scale(.94,1.08);animation-timing-function:cubic-bezier(.5,0,.75,.45)}" +
+        "36%{transform:translateY(0) rotate(0) scale(1.1,.88);animation-timing-function:cubic-bezier(.2,.7,.35,1)}" +
+        "48%{transform:translateY(-9px) rotate(2.5deg) scale(.96,1.05);animation-timing-function:cubic-bezier(.5,0,.75,.45)}" +
+        "60%{transform:translateY(0) rotate(0) scale(1.07,.92);animation-timing-function:cubic-bezier(.2,.7,.35,1)}" +
+        "71%{transform:translateY(-4px) rotate(-1.5deg) scale(.98,1.02);animation-timing-function:cubic-bezier(.5,0,.75,.45)}" +
+        "81%{transform:translateY(0) rotate(0) scale(1.03,.975)}" +
+        "91%{transform:translateY(-1px) rotate(0) scale(.995,1.005)}" +
+        "100%{transform:translateY(0) rotate(0) scale(1)}}",
+      ".mcheer{animation:mCheer 1.6s linear}",
       "@media (prefers-reduced-motion: reduce){.dmascot *{animation:none!important}.mzz{animation:none!important}.mfly{display:none!important}}",
     ].join("");
     document.head.appendChild(s);
@@ -189,7 +229,7 @@
       if (!drawn) return;
       var r = Math.random();
       if (r < 0.13) flyCatch(host);
-      else if (r < 0.30) timed(drawn, "mhop", 800);
+      else if (r < 0.30) timed(drawn, "mhop", 950);
       else if (r < 0.48) timed(drawn, "mcroak", 1200);
       else if (r < 0.66) timed(drawn, "mblink2", 600);
       else if (r < 0.83) timed(drawn, "mlook-l", 1100);
@@ -220,7 +260,7 @@
       m.classList.remove("mcheer");
       void m.offsetWidth;
       m.classList.add("mcheer");
-      setTimeout(function () { m.classList.remove("mcheer"); }, 1600);
+      setTimeout(function () { m.classList.remove("mcheer"); }, 1700);
     });
   }
 
@@ -279,6 +319,8 @@
       // legs (behind body)
       '<g class="mq-leg-l"><path d="M60,132 v9 M51,141 h15" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
       '<g class="mq-leg-r"><path d="M110,132 v9 M104,141 h15" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
+      // landing dust (visible only during the hop's touchdown)
+      '<g class="mq-dust"><path d="M38,143 q-7,2 -12,-1 M132,143 q7,2 12,-1" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="3" stroke-linecap="round"/></g>' +
       '<g class="mq-bodygroup">' +
         // arms (attach at the body sides)
         '<g class="mq-arm-l"><path d="M27,98 q-11,3 -13,13" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
