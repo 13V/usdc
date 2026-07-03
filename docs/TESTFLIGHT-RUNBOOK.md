@@ -58,7 +58,7 @@ In Xcode, select the **App** target:
    - Bundle Identifier: `com.divvysol.app` (should already be set).
    - + Capability → **Push Notifications**.
    - + Capability → **Associated Domains** → add
-     `applinks:demo.wildfireonsol.com` (and `applinks:divvysol.com` when the
+     `applinks:app.divvysol.com` (and `applinks:divvysol.com` when the
      app origin moves there).
 2. **General**
    - Display Name: `Divvy`. Version `1.0.0`, Build `1` (bump Build on every
@@ -126,7 +126,7 @@ address; here is the inbox password" as long as it works.
 - **Guideline 3.1.5(b)**: never call anything "banking"; the listing copy in
   APP-STORE.md is already worded to comply. Don't edit it casually.
 - **Server outage during review = rejection.** The shell is server-driven;
-  check https://demo.wildfireonsol.com/healthz is green before submitting and
+  check https://app.divvysol.com/healthz is green before submitting and
   keep Railway alerts on (`ALERT_WEBHOOK_URL`).
 - **Build number reuse**: every upload needs a strictly higher Build number
   for the same Version, or the upload silently fails at the end.

@@ -15,7 +15,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * share (@capacitor/share), haptics (@capacitor/haptics), and biometric unlock.
  * The runbook lists these as the pre-submit step.
  */
-const SERVER_URL = process.env.CAP_SERVER_URL || "https://demo.wildfireonsol.com";
+const SERVER_URL = process.env.CAP_SERVER_URL || "https://app.divvysol.com";
 
 const config: CapacitorConfig = {
   appId: "com.divvysol.app",
