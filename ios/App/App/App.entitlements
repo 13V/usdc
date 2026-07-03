@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- APNs. "production" is what App Store / TestFlight builds require; the
+	     value is validated against the provisioning profile's aps-environment.
+	     Xcode development builds signed with a development profile use the APNs
+	     sandbox automatically. See docs/PUSH.md. -->
+	<key>aps-environment</key>
+	<string>production</string>
+</dict>
+</plist>

@@ -20,6 +20,8 @@ import { app } from "./server";
 import { claimSignature } from "./consumedSignatures";
 import nacl from "tweetnacl";
 import { Keypair } from "@solana/web3.js";
+import * as nodeCrypto from "crypto";
+import { signApnsJwt, buildApnsBody } from "./pushNative";
 
 let passed = 0;
 let failed = 0;
@@ -206,6 +208,75 @@ async function main(): Promise<void> {
     const del = await fetch(`${B}/api/me`, { method: "DELETE", headers: H(doomed) });
     const postDel = await fetch(`${B}/api/me`, { headers: H(doomed) }).then((r) => r.json());
     ok("delete: session token dies with the account", del.status === 200 && postDel.user === null);
+
+    // --- rate limiting: burst 429 + trust-proxy first-hop bucketing ---
+    // POST /api/trips is spam-tier limited (10/min per IP). We drive it directly
+    // with an X-Forwarded-For header: app.set("trust proxy", 1) makes req.ip the
+    // FIRST XFF hop, so distinct forwarded IPs get distinct buckets. Bodies are
+    // intentionally invalid — the limiter runs BEFORE the handler, so a 400 still
+    // counts toward the window and we avoid creating junk trips.
+    const hitTrips = (ip: string) =>
+      fetch(`${B}/api/trips`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-forwarded-for": ip },
+        body: JSON.stringify({}),
+      }).then((r) => r.status);
+
+    let saw429 = false;
+    for (let i = 0; i < 13; i++) {
+      const s = await hitTrips("203.0.113.7"); // > spam cap (10) → must 429
+      if (s === 429) saw429 = true;
+    }
+    ok("ratelimit: spam-tier endpoint 429s after a burst", saw429);
+
+    // A DIFFERENT forwarded IP must get its OWN fresh bucket — proving req.ip is
+    // the first X-Forwarded-For hop (trust proxy = 1), not the shared socket IP.
+    // If XFF were ignored, every request above would share one bucket and this
+    // would already be 429.
+    const freshStatus = await hitTrips("198.51.100.42");
+    ok("ratelimit: trust-proxy honors first X-Forwarded-For hop (distinct IP → fresh bucket)", freshStatus !== 429);
+
+    // ---- APNs provider JWT + payload construction (pushNative, no network) ----
+    // Sign with a throwaway EC P-256 key, then decode the JWT and cryptographically
+    // verify the ES256 signature — this exercises the exact code path the live
+    // sender uses to authenticate to api.push.apple.com.
+    {
+      const b64urlToBuf = (s: string): Buffer =>
+        Buffer.from(s.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+      const { publicKey, privateKey } = nodeCrypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
+      const iat = 1_700_000_000;
+      const jwt = signApnsJwt({ keyId: "ABC1234DEF", teamId: "TEAM123456", key: privateKey, iat });
+      const parts = jwt.split(".");
+      ok("apns.jwt: has three dot-separated segments", parts.length === 3);
+
+      const header = JSON.parse(b64urlToBuf(parts[0]).toString("utf8"));
+      const payload = JSON.parse(b64urlToBuf(parts[1]).toString("utf8"));
+      ok("apns.jwt: header alg=ES256", header.alg === "ES256", JSON.stringify(header));
+      ok("apns.jwt: header carries the key id (kid)", header.kid === "ABC1234DEF");
+      ok("apns.jwt: payload iss=team id", payload.iss === "TEAM123456");
+      ok("apns.jwt: payload iat matches", payload.iat === iat);
+
+      // JOSE ES256 signatures are raw r||s = 64 bytes (NOT DER).
+      const sig = b64urlToBuf(parts[2]);
+      ok("apns.jwt: signature is 64-byte IEEE-P1363", sig.length === 64, `len=${sig.length}`);
+      const verified = nodeCrypto.verify(
+        "sha256",
+        Buffer.from(`${parts[0]}.${parts[1]}`),
+        { key: publicKey, dsaEncoding: "ieee-p1363" },
+        sig
+      );
+      ok("apns.jwt: signature verifies against the public key", verified);
+
+      // Payload shape the aps sender emits.
+      const body = JSON.parse(buildApnsBody({ title: "maya paid you", body: "$23 💸", tag: "nudge:1", url: "/#/activity" }));
+      ok("apns.payload: aps.alert.title/body set", body.aps.alert.title === "maya paid you" && body.aps.alert.body === "$23 💸");
+      ok("apns.payload: aps.sound=default", body.aps.sound === "default");
+      ok("apns.payload: tag → aps.thread-id", body.aps["thread-id"] === "nudge:1");
+      ok("apns.payload: url carried at top level", body.url === "/#/activity");
+      const bodyNoTag = JSON.parse(buildApnsBody({ title: "t", body: "b" }));
+      ok("apns.payload: url defaults to / and no thread-id without a tag",
+        bodyNoTag.url === "/" && bodyNoTag.aps["thread-id"] === undefined);
+    }
   } finally {
     server.close();
   }

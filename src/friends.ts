@@ -23,6 +23,7 @@ import {
   serializeUser,
   User,
 } from "./users";
+import { writeRateLimit, spamRateLimit } from "./ratelimit";
 
 // ---- Schema (idempotent) ---------------------------------------------------
 
@@ -205,6 +206,7 @@ export const friendsRouter = Router();
  */
 friendsRouter.post(
   "/api/friends",
+  spamRateLimit,
   requireAuth,
   async (req: Request, res: Response) => {
     const meId = req.userId as string;
@@ -304,6 +306,7 @@ friendsRouter.get(
  */
 friendsRouter.post(
   "/api/friends/accept",
+  writeRateLimit,
   requireAuth,
   async (req: Request, res: Response) => {
     const meId = req.userId as string;
@@ -326,6 +329,7 @@ friendsRouter.post(
  */
 friendsRouter.delete(
   "/api/friends/:friendUserId",
+  writeRateLimit,
   requireAuth,
   async (req: Request, res: Response) => {
     const meId = req.userId as string;

@@ -43,6 +43,35 @@ platform :ios do
       Spaceship::ConnectAPI::BundleId.create(name: "Divvy", identifier: APP_ID, platform: "IOS")
     end
 
+    # Ensure the Push Notifications capability is enabled on the App ID (needed
+    # for the aps-environment entitlement to sign). Idempotent. GUARDED: if the
+    # API key lacks capability-management permission (or the Spaceship surface
+    # differs across fastlane versions) we only WARN — the build still proceeds,
+    # and the one-time manual toggle is documented in docs/PUSH.md. If the App ID
+    # gains the capability here for the FIRST time, the existing match profile
+    # won't include push until it's regenerated — see docs/PUSH.md (match force).
+    begin
+      bundle = Spaceship::ConnectAPI::BundleId.all.find { |b| b.identifier == APP_ID }
+      if bundle
+        caps = (Spaceship::ConnectAPI::BundleIdCapability.all(filter: { bundleId: bundle.id }) rescue [])
+        has_push = caps.any? { |c| c.respond_to?(:capability_type) && c.capability_type.to_s == "PUSH_NOTIFICATIONS" }
+        if has_push
+          UI.message("Push Notifications capability already enabled on #{APP_ID}.")
+        else
+          UI.message("Enabling Push Notifications capability on #{APP_ID}…")
+          Spaceship::ConnectAPI::BundleIdCapability.create(
+            bundle_id_id: bundle.id,
+            capability_type: "PUSH_NOTIFICATIONS",
+            settings: []
+          )
+        end
+      end
+    rescue => e
+      UI.important("Could not ensure Push capability via API (#{e.message}). " \
+                   "Enable it once in the Developer portal (Certificates, IDs & Profiles → " \
+                   "Identifiers → #{APP_ID} → Push Notifications) — see docs/PUSH.md.")
+    end
+
     # Distribution cert + App Store provisioning profile, created on first run
     # and stored encrypted in this repo's ios-certificates branch thereafter.
     match(

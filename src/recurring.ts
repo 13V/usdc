@@ -21,6 +21,7 @@ import { usingSupabase, supabase } from "./supabase";
 import { requireAuth } from "./auth";
 import { getTrip, addExpense } from "./trips";
 import { toCents, fmt } from "./split";
+import { writeRateLimit } from "./ratelimit";
 
 // ---- Schema (idempotent) ---------------------------------------------------
 
@@ -421,7 +422,7 @@ export const recurringRouter = Router();
 // Per-route requireAuth ONLY. This router is mounted path-lessly
 // (app.use(recurringRouter)); a router-wide guard would gate the whole app.
 
-recurringRouter.post("/api/recurring", requireAuth, async (req: Request, res: Response) => {
+recurringRouter.post("/api/recurring", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const body = req.body || {};
 
@@ -542,7 +543,7 @@ recurringRouter.get("/api/recurring", requireAuth, async (req: Request, res: Res
   res.json({ rules: await Promise.all(rows.map(serialize)) });
 });
 
-recurringRouter.delete("/api/recurring/:id", requireAuth, async (req: Request, res: Response) => {
+recurringRouter.delete("/api/recurring/:id", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const changed = await deleteOwnedRule(req.params.id, userId);
   if (!changed) {
@@ -561,7 +562,7 @@ recurringRouter.delete("/api/recurring/:id", requireAuth, async (req: Request, r
  * Paused rules stay listed but are skipped by the materializer; on resume we roll
  * next_due past now so a long pause doesn't dump a backlog.
  */
-recurringRouter.patch("/api/recurring/:id", requireAuth, async (req: Request, res: Response) => {
+recurringRouter.patch("/api/recurring/:id", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const body = (req.body || {}) as {
     paused?: unknown; title?: unknown; amountCents?: unknown;
@@ -659,7 +660,7 @@ recurringRouter.patch("/api/recurring/:id", requireAuth, async (req: Request, re
   res.json(await serialize(updated));
 });
 
-recurringRouter.post("/api/recurring/run", requireAuth, async (req: Request, res: Response) => {
+recurringRouter.post("/api/recurring/run", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const materialized = await materializeDue(userId);
   res.json({ materialized });

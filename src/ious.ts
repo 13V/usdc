@@ -32,6 +32,7 @@ import { validatePayment } from "./verify";
 import { claimSignature } from "./consumedSignatures";
 import { alert } from "./alerts";
 import { fmt, toCents } from "./split";
+import { moneyRateLimit, writeRateLimit } from "./ratelimit";
 
 // ---- Config ----------------------------------------------------------------
 
@@ -237,7 +238,7 @@ export const iouRouter = Router();
 /**
  * POST /api/ious — create a one-off IOU / money request.
  */
-iouRouter.post("/api/ious", requireAuth, async (req: Request, res: Response) => {
+iouRouter.post("/api/ious", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const body = (req.body || {}) as Record<string, unknown>;
 
@@ -340,6 +341,7 @@ iouRouter.get("/api/ious", requireAuth, async (req: Request, res: Response) => {
  */
 iouRouter.post(
   "/api/ious/:id/settle/verify",
+  moneyRateLimit,
   requireAuth,
   async (req: Request, res: Response) => {
     const userId = req.userId as string;
@@ -383,7 +385,7 @@ iouRouter.post(
 /**
  * DELETE /api/ious/:id — delete one of your IOUs.
  */
-iouRouter.delete("/api/ious/:id", requireAuth, async (req: Request, res: Response) => {
+iouRouter.delete("/api/ious/:id", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const removed = await deleteIou(req.params.id, userId);
   if (!removed) return res.status(404).json({ error: "not found" });

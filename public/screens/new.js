@@ -952,6 +952,7 @@
           });
           var id = bill && (bill.id || bill.billId);
           if (!id) throw new Error("no bill id");
+          app.track && app.track("tab_sent");
           location.hash = "#/collect/" + encodeURIComponent(id);
         }
       } catch (e) {

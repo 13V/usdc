@@ -724,6 +724,7 @@
       friendly("couldn't load this settle", e.message || "try again in a sec", "back to groups");
       return;
     }
+    app.track && app.track("settle_started");
     S.trip = trip;
     var mine = findMyTransfer(trip);
     if (!mine) {

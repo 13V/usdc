@@ -17,6 +17,7 @@ import { Request, Response, Router } from "express";
 import { db } from "./db";
 import { usingSupabase, supabase } from "./supabase";
 import { getTrip, isTripAuthorized, Trip } from "./trips";
+import { writeRateLimit } from "./ratelimit";
 
 // ---- Schema ----------------------------------------------------------------
 
@@ -255,6 +256,7 @@ reactionsRouter.get(
  */
 reactionsRouter.post(
   "/api/trips/:id/reactions",
+  writeRateLimit,
   async (req: Request, res: Response): Promise<void> => {
     const trip = await getTrip(req.params.id);
     if (!trip) {

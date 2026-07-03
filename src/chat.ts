@@ -20,6 +20,7 @@ import { db } from "./db";
 import { usingSupabase, supabase } from "./supabase";
 import { getTrip, isTripAuthorized, Trip } from "./trips";
 import { getUser, serializeUser } from "./users";
+import { writeRateLimit } from "./ratelimit";
 
 // ---- Schema ----------------------------------------------------------------
 
@@ -278,6 +279,7 @@ export const chatRouter = Router();
  */
 chatRouter.post(
   "/api/trips/:id/messages",
+  writeRateLimit,
   async (req: Request, res: Response): Promise<void> => {
     const trip = await getTrip(req.params.id);
     if (!trip) {
@@ -396,6 +398,7 @@ chatRouter.get(
  */
 chatRouter.post(
   "/api/trips/:id/messages/:mid/react",
+  writeRateLimit,
   async (req: Request, res: Response): Promise<void> => {
     const trip = await getTrip(req.params.id);
     if (!trip) { res.status(404).json({ error: "trip not found" }); return; }
@@ -424,6 +427,7 @@ chatRouter.post(
  */
 chatRouter.delete(
   "/api/trips/:id/messages/:mid",
+  writeRateLimit,
   async (req: Request, res: Response): Promise<void> => {
     const trip = await getTrip(req.params.id);
     if (!trip) {

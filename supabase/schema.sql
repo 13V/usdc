@@ -174,6 +174,25 @@ create table if not exists trip_reactions (
 );
 create index if not exists trip_reactions_trip_idx on trip_reactions (trip_id);
 
+-- ---- telemetry (src/telemetry.ts) -----------------------------------------
+-- First-party error + product-analytics ring buffer. Mirrors the SQLite
+-- CREATE TABLE in src/telemetry.ts. Privacy by design: no PII, no wallet
+-- addresses, no amounts — `uhash` is a sha256 hex slice of the user id (never
+-- the id itself), and `detail` is PII-scrubbed server-side before insert. Rows
+-- older than 14 days are deleted on insert (application-side ring buffer), so no
+-- retention policy is needed here.
+create table if not exists telemetry (
+  id          text primary key,
+  kind        text not null,          -- 'error' | 'event'
+  name        text not null,
+  detail      text,
+  url         text,
+  uhash       text,
+  created_at  text not null
+);
+create index if not exists telemetry_created_idx on telemetry (created_at);
+create index if not exists telemetry_kind_idx on telemetry (kind);
+
 -- ---- consumed_signatures (src/consumedSignatures.ts) -----------------------
 -- Global "one on-chain payment settles one share" ledger. Each confirmed
 -- signature can be claimed by exactly one owner (bill:<id>:<ref> or
@@ -212,6 +231,18 @@ create table if not exists push_subscriptions (
   created_at text not null
 );
 create index if not exists push_subs_user_idx on push_subscriptions (user_id);
+
+-- ---- push_tokens (src/push.ts) --------------------------------------------
+-- Native APNs device tokens, one row per device (token unique). Kept separate
+-- from push_subscriptions so the APNs fan-out has a clean dedicated store.
+-- Mirrors the SQLite CREATE TABLE in src/push.ts.
+create table if not exists push_tokens (
+  token      text primary key,
+  user_id    text not null,
+  platform   text not null default 'ios',
+  created_at text not null
+);
+create index if not exists push_tokens_user_idx on push_tokens (user_id);
 
 -- ---- referrals (src/referrals.ts) -----------------------------------------
 -- Invite attribution: who brought whom. One row per invited user (first inviter

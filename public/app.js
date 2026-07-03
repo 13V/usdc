@@ -50,6 +50,10 @@
     var data = null;
     try { data = await res.json(); } catch (_) {}
     if (!res.ok) {
+      // 429 = the per-IP rate limiter tripped. Surface a friendly nudge instead
+      // of the raw "too many requests" error string. toast() is a hoisted
+      // declaration in this same IIFE, so it's safe to call here.
+      if (res.status === 429) { try { toast("slow down a sec 😅"); } catch (_) {} }
       var e = new Error((data && data.error) || ("request failed (" + res.status + ")"));
       e.status = res.status; e.data = data; throw e;
     }
@@ -233,6 +237,33 @@
       }).catch(function () { return false; });
     },
   };
+  // ---- Native iOS APNs token bridge ----
+  // The native shell (AppDelegate.swift) registers for remote notifications,
+  // receives the APNs device token, and injects it into this WKWebView as
+  // window.__divvyApnsToken + an 'apnstoken' event. We forward it to the server
+  // once the user is signed in. Deduped per session (and per token value) so a
+  // re-inject or an onChange re-fire doesn't spam /api/push/native.
+  var APNS_POSTED_KEY = "divvy.apnsPosted";
+  function registerApnsToken() {
+    var token = window.__divvyApnsToken;
+    if (typeof token !== "string" || !/^[0-9a-fA-F]{64,160}$/.test(token)) return;
+    if (!(window.Auth && window.Auth.user)) return; // wait for sign-in
+    var already;
+    try { already = sessionStorage.getItem(APNS_POSTED_KEY); } catch (_) { already = null; }
+    if (already === token) return;
+    api.post("/api/push/native", { token: token }).then(function () {
+      try { sessionStorage.setItem(APNS_POSTED_KEY, token); } catch (_) {}
+    }).catch(function () { /* best-effort; retried on next sign-in / re-inject */ });
+  }
+  // The token can arrive before OR after auth resolves — cover both.
+  window.addEventListener("apnstoken", registerApnsToken);
+  if (window.Auth && window.Auth.onChange) window.Auth.onChange(registerApnsToken);
+  if (window.Auth && window.Auth.ready && window.Auth.ready.then) {
+    window.Auth.ready.then(registerApnsToken);
+  }
+  // If the native side injected the token before this script ran, pick it up now.
+  if (window.__divvyApnsToken) { try { registerApnsToken(); } catch (_) {} }
+
   function toast(msg) {
     var t = document.createElement("div");
     t.textContent = msg;
@@ -435,6 +466,7 @@
   var lastScreenName = null;
   async function render() {
     var r = parseHash();
+    track("screen_view", r.name); // funnel: navigation moment (screen name only)
     var screen = window.Screens && window.Screens[r.name];
     var view = document.getElementById("view");
     if (!view) return;
@@ -893,6 +925,86 @@
     }
   }
 
+  // ---- telemetry (first-party error + funnel capture) ----
+  // Batches errors (window.onerror / unhandledrejection) and app.track(name,
+  // detail?) events, then flushes to POST /api/telemetry at most every 15s (or
+  // on pagehide) via sendBeacon, with a fetch fallback. Privacy: NEVER include
+  // input values, names, amounts, or wallets — screen_view detail is the screen
+  // name only. Drops everything when offline; queue capped at 20.
+  var TELE_MAX = 20;
+  var TELE_INTERVAL = 15000;
+  var teleQueue = [];
+  var teleTimer = null;
+  var teleLastFlush = 0;
+  var teleLastErrKey = null; // dedupe identical CONSECUTIVE errors
+  function teleOnline() { try { return navigator.onLine !== false; } catch (_) { return true; } }
+  function teleEnqueue(ev) {
+    // Consecutive-dedupe applies to errors (a tight throw-loop shouldn't spam).
+    if (ev.kind === "error") {
+      var key = ev.name + "|" + (ev.detail || "");
+      if (key === teleLastErrKey) return;
+      teleLastErrKey = key;
+    }
+    teleQueue.push(ev);
+    while (teleQueue.length > TELE_MAX) teleQueue.shift();
+    teleSchedule();
+  }
+  function teleSchedule() {
+    if (teleTimer) return;
+    var wait = Math.max(0, TELE_INTERVAL - (Date.now() - teleLastFlush));
+    teleTimer = setTimeout(function () { teleTimer = null; teleFlush(false); }, wait);
+  }
+  function teleFlush(viaBeacon) {
+    if (teleTimer) { clearTimeout(teleTimer); teleTimer = null; }
+    if (!teleQueue.length) return;
+    // Offline: drop the queue rather than buffering stale events indefinitely.
+    if (!teleOnline()) { teleQueue.length = 0; return; }
+    var batch = teleQueue.splice(0, TELE_MAX);
+    teleLastFlush = Date.now();
+    var payload = JSON.stringify({ events: batch });
+    try {
+      if (navigator.sendBeacon) {
+        var blob = new Blob([payload], { type: "application/json" });
+        if (navigator.sendBeacon("/api/telemetry", blob)) return;
+      }
+      if (viaBeacon) return; // pagehide path: don't start an async fetch we can't finish
+      fetchFn()("/api/telemetry", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: payload, keepalive: true,
+      }).catch(function () {});
+    } catch (_) {}
+  }
+  function track(name, detail) {
+    if (!name) return;
+    teleEnqueue({
+      kind: "event",
+      name: String(name).slice(0, 80),
+      detail: detail != null ? String(detail).slice(0, 600) : undefined,
+      url: location.hash || "",
+      at: Date.now(),
+    });
+  }
+  function teleError(name, stack) {
+    teleEnqueue({
+      kind: "error",
+      name: String(name || "error").slice(0, 80),
+      detail: stack != null ? String(stack).slice(0, 600) : undefined,
+      url: location.hash || "",
+      at: Date.now(),
+    });
+  }
+  window.addEventListener("error", function (e) {
+    // Only script errors carry a message; skip resource-load (img/script) errors.
+    if (!e || !e.message) return;
+    teleError(e.message, (e.error && e.error.stack) || e.message);
+  });
+  window.addEventListener("unhandledrejection", function (e) {
+    var r = e && e.reason;
+    var msg = (r && r.message) || String(r == null ? "unhandledrejection" : r);
+    teleError(msg, (r && r.stack) || msg);
+  });
+  window.addEventListener("pagehide", function () { teleFlush(true); });
+
   var app = {
     api: api, esc: esc, money: money, avatar: avatar, face: face, colorFor: colorFor, mascot: mascot,
     toast: toast, sheet: sheet, closeSheet: closeSheet, go: go, render: render,
@@ -902,6 +1014,7 @@
     tripToken: tripToken, setTripToken: setTripToken,
     qrImg: qrImg, amountEntryHtml: amountEntryHtml, wireAmountEntry: wireAmountEntry,
     openProvider: openProvider, testModeNote: testModeNote, dollarsLabel: dollarsLabel,
+    track: track,
     _sheet: null, _sheetKey: null,
   };
   window.app = app;
@@ -969,6 +1082,13 @@
   window.addEventListener("hashchange", render);
   window.addEventListener("DOMContentLoaded", function () {
     syncIdentity();
+    // App-open funnel event, once per browser session.
+    try {
+      if (!sessionStorage.getItem("divvy.telemetry.opened")) {
+        sessionStorage.setItem("divvy.telemetry.opened", "1");
+        track("app_open");
+      }
+    } catch (_) { track("app_open"); }
     handleShareLink().then(function (handled) {
       if (handled) { render(); return; }
       if (!location.hash) location.hash = "#/home";

@@ -103,44 +103,18 @@ import { pushRouter, sendPush } from "./push";
 // Growth loops: OG share cards (og.ts) + invite attribution (referrals.ts).
 import { ogMeta, tripShareHtml, OG_CARD_PATH } from "./og";
 import { referralsRouter, setRefCookie, readRefCookie, recordReferral } from "./referrals";
+import { rateLimit, moneyRateLimit, writeRateLimit, spamRateLimit } from "./ratelimit";
+import { telemetryRouter } from "./telemetry";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
 
-/**
- * Tiny in-memory IP rate limiter — fixed window, no external dependency.
- * Tracks recent request timestamps per IP in a Map and rejects with 429 once a
- * client exceeds `max` requests within `windowMs`. Intended for the handful of
- * abuse-prone endpoints (auth nonce/verify, external scan provider).
- */
-function rateLimit(max: number, windowMs: number) {
-  const hits = new Map<string, number[]>();
-  return (req: Request, res: Response, next: () => void): void => {
-    const now = Date.now();
-    const ip = req.ip || "unknown";
-    const recent = (hits.get(ip) || []).filter((t) => now - t < windowMs);
-    // Prune stale IPs on any insert once the Map gets large — NOT only in the 429
-    // branch, or a flood of distinct never-limited IPs would grow it unboundedly.
-    if (hits.size > 10000) {
-      for (const [k, v] of hits) {
-        if (v.every((t) => now - t >= windowMs)) hits.delete(k);
-      }
-    }
-    if (recent.length >= max) {
-      res.status(429).json({ error: "too many requests, slow down" });
-      return;
-    }
-    recent.push(now);
-    hits.set(ip, recent);
-    next();
-  };
-}
-
+// The fixed-window per-IP limiter itself lives in ./ratelimit (shared with the
+// feature routers, and audited there for bucket cleanup + trust-proxy). The
+// tiers below are server-only; moneyRateLimit/writeRateLimit/spamRateLimit are
+// imported so routers share the exact same buckets.
 const authRateLimit = rateLimit(60, 60_000); // ~60 req/min
 const scanRateLimit = rateLimit(10, 60_000); // ~10 req/min
-// Money endpoints: tighter caps so the settle/verify + bill paths can't be
-// hammered, and the funding faucet can't be drained by rapid repeat calls.
-const moneyRateLimit = rateLimit(30, 60_000); // ~30 req/min per IP
 const fundRateLimit = rateLimit(8, 60_000); // ~8 mints/min per IP (treasury guard)
 const rpcProxyRateLimit = rateLimit(150, 60_000); // web3.js is chatty; per-IP cap
 
@@ -257,6 +231,10 @@ app.use(reactionsRouter);
 app.use(nudgesRouter);
 app.use(pushRouter);
 app.use(referralsRouter);
+// First-party error + analytics ingest. Reuses the shared IP rate limiter
+// (12/min per IP). authOptional (above) sets req.userId; telemetry stores only
+// a hash of it, never the id. See src/telemetry.ts.
+app.use(telemetryRouter(rateLimit(12, 60_000)));
 
 // ---- Auth & identity (progressive, optional) ------------------------------
 
@@ -372,7 +350,7 @@ app.get("/api/me", async (req: Request, res: Response) => {
   res.json({ user: user ? await serializeUser(user) : null });
 });
 
-app.patch("/api/me", requireAuth, async (req: Request, res: Response) => {
+app.patch("/api/me", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   const body = req.body as { handle?: string; displayName?: string; emoji?: string; color?: string };
   try {
@@ -394,7 +372,7 @@ app.patch("/api/me", requireAuth, async (req: Request, res: Response) => {
 // Permanently delete the signed-in user's account + login/PII (App Store
 // requirement 5.1.1(v)). Non-custodial: their on-chain funds stay in their own
 // wallet, which they keep — deleting the Divvy account only unlinks the login.
-app.delete("/api/me", requireAuth, async (req: Request, res: Response) => {
+app.delete("/api/me", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   const userId = req.userId as string;
   try {
     await deleteUser(userId);
@@ -773,7 +751,7 @@ app.get("/api/groups", requireAuth, async (req: Request, res: Response) => {
   res.json(await listGroups(req.userId as string));
 });
 
-app.post("/api/groups", requireAuth, async (req: Request, res: Response) => {
+app.post("/api/groups", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   const body = req.body as { name?: string; members?: string[] };
   try {
     const group = await createGroup(body.name || "", body.members || [], req.userId as string);
@@ -783,7 +761,7 @@ app.post("/api/groups", requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-app.delete("/api/groups/:id", requireAuth, async (req: Request, res: Response) => {
+app.delete("/api/groups/:id", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   if (await deleteGroup(req.params.id, req.userId as string)) return res.json({ ok: true });
   res.status(404).json({ error: "not found" });
 });
@@ -1131,7 +1109,7 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
   };
 }
 
-app.post("/api/trips", async (req: Request, res: Response) => {
+app.post("/api/trips", spamRateLimit, async (req: Request, res: Response) => {
   try {
     const body = req.body as {
       name?: string;
@@ -1224,7 +1202,7 @@ app.get("/api/trips/:idOrToken", async (req: Request, res: Response) => {
 
 // Group settings: rename, set emoji, archive/unarchive. Owner or any claimed
 // member (see canAdminTrip). Only provided fields change.
-app.patch("/api/trips/:id", async (req: Request, res: Response) => {
+app.patch("/api/trips/:id", writeRateLimit, async (req: Request, res: Response) => {
   try {
     const existing = await getTrip(req.params.id);
     if (!existing) return res.status(404).json({ error: "not found" });
@@ -1255,7 +1233,7 @@ app.patch("/api/trips/:id", async (req: Request, res: Response) => {
 // THEMSELVES. HARD RULE: refuse (409) if that member carries a nonzero balance
 // or appears in any expense (paidBy/participants) — money history must never
 // dangle a reference to a deleted member.
-app.delete("/api/trips/:id/members/:mid", async (req: Request, res: Response) => {
+app.delete("/api/trips/:id/members/:mid", writeRateLimit, async (req: Request, res: Response) => {
   try {
     const existing = await getTrip(req.params.id);
     if (!existing) return res.status(404).json({ error: "not found" });
@@ -1300,7 +1278,7 @@ app.delete("/api/trips/:id/members/:mid", async (req: Request, res: Response) =>
   }
 });
 
-app.post("/api/trips/:id/members", async (req: Request, res: Response) => {
+app.post("/api/trips/:id/members", writeRateLimit, async (req: Request, res: Response) => {
   try {
     const body = req.body as { name?: string; wallet?: string };
     const existing = await getTrip(req.params.id);
@@ -1320,7 +1298,7 @@ app.post("/api/trips/:id/members", async (req: Request, res: Response) => {
   }
 });
 
-app.patch("/api/trips/:id/members/:mid", async (req: Request, res: Response) => {
+app.patch("/api/trips/:id/members/:mid", writeRateLimit, async (req: Request, res: Response) => {
   try {
     const body = req.body as { name?: string; wallet?: string };
     const existing = await getTrip(req.params.id);
@@ -1362,7 +1340,7 @@ app.patch("/api/trips/:id/members/:mid", async (req: Request, res: Response) => 
 // trip owner (or re-claimed by the same user); a non-owner creditor's wallet is
 // assigned by the owner via PATCH …/members/:mid. Debtor/even slots stay freely
 // self-claimable (no incoming payout to hijack).
-app.post("/api/trips/:id/members/:mid/claim", requireAuth, async (req: Request, res: Response) => {
+app.post("/api/trips/:id/members/:mid/claim", writeRateLimit, requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.userId as string;
     const existing = await getTrip(req.params.id);
@@ -1394,7 +1372,7 @@ app.post("/api/trips/:id/members/:mid/claim", requireAuth, async (req: Request, 
   }
 });
 
-app.post("/api/trips/:id/expenses", async (req: Request, res: Response) => {
+app.post("/api/trips/:id/expenses", writeRateLimit, async (req: Request, res: Response) => {
   try {
     const trip = await getTrip(req.params.id);
     if (!trip) return res.status(404).json({ error: "not found" });
@@ -1442,7 +1420,7 @@ app.post("/api/trips/:id/expenses", async (req: Request, res: Response) => {
   }
 });
 
-app.patch("/api/trips/:id/expenses/:eid", async (req: Request, res: Response) => {
+app.patch("/api/trips/:id/expenses/:eid", writeRateLimit, async (req: Request, res: Response) => {
   try {
     const trip = await getTrip(req.params.id);
     if (!trip) return res.status(404).json({ error: "not found" });
@@ -1492,7 +1470,7 @@ app.patch("/api/trips/:id/expenses/:eid", async (req: Request, res: Response) =>
   }
 });
 
-app.delete("/api/trips/:id/expenses/:eid", async (req: Request, res: Response) => {
+app.delete("/api/trips/:id/expenses/:eid", writeRateLimit, async (req: Request, res: Response) => {
   try {
     const existing = await getTrip(req.params.id);
     if (!existing) return res.status(404).json({ error: "not found" });
@@ -1693,7 +1671,7 @@ app.post("/api/trips/:id/settle/verify", moneyRateLimit, async (req: Request, re
 // Look up a single payment by its Solana Pay reference OR confirmed signature,
 // across both settlement transfers and bill participants. Returns the receipt
 // fields, or { found:false } (HTTP 200) when nothing matches.
-app.get("/api/receipts/:ref", requireAuth, async (req: Request, res: Response) => {
+app.get("/api/receipts/:ref", moneyRateLimit, requireAuth, async (req: Request, res: Response) => {
   const ref = String(req.params.ref || "");
   if (!ref) return res.json({ found: false });
   const userId = req.userId as string;

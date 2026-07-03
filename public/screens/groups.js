@@ -437,6 +437,7 @@
     btn.textContent = "starting…";
     try {
       var trip = await app.api.post("/api/trips", { name: name, members: members });
+      app.track && app.track("group_created");
       app.closeSheet();
       app.toast("group started ✨");
       location.hash = "#/group/" + encodeURIComponent(trip.id);
