@@ -105,6 +105,7 @@ import { pushRouter, sendPush } from "./push";
 import { ogMeta, tripShareHtml, rootShellHtml, OG_CARD_PATH } from "./og";
 import { referralsRouter, setRefCookie, readRefCookie, recordReferral } from "./referrals";
 import { rateLimit, moneyRateLimit, writeRateLimit, spamRateLimit } from "./ratelimit";
+import { securityHeaders } from "./headers";
 import { telemetryRouter } from "./telemetry";
 // Server-rendered legal + support pages (GET /terms, /privacy, /support). Static,
 // no SPA. See src/legal.ts.
@@ -333,6 +334,10 @@ const app = express();
 // the per-IP rate limiter throttle all users as one bucket). A specific hop count
 // (not `true`) keeps X-Forwarded-For unspoofable by clients.
 app.set("trust proxy", 1);
+// Baseline security headers (nosniff, DENY framing, referrer, permissions) on
+// every response + an enforced CSP on the first-party surface (see ./headers).
+// Registered first so it applies to pages, API JSON, and static assets alike.
+app.use(securityHeaders);
 // Receipt images arrive as base64 in the JSON body, so allow a larger payload.
 app.use(express.json({ limit: "12mb" }));
 // gzip for compressible payloads. Express ships no compression and Railway's
@@ -2019,6 +2024,23 @@ function esc(s: string): string {
   );
 }
 
+/**
+ * Serialize a value for safe embedding inside an inline <script> element.
+ * JSON.stringify does NOT escape `<`, `>`, `&`, or the JS line separators
+ * U+2028/U+2029 — so a user-controlled string containing "</script>" (e.g. a
+ * bill title or participant name) would otherwise close the script tag and inject
+ * arbitrary HTML/JS into the pay page (stored XSS). Escaping these as \uXXXX keeps
+ * the output valid JSON while making element-context breakout impossible.
+ */
+function jsonForScript(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
+
 function renderBillLanding(bill: Bill, baseUrl = ""): string {
   const rows = bill.participants
     .map((p) => {
@@ -2262,7 +2284,7 @@ ${shareMeta}
     ${paid ? settled : live}
   </div>
   <p class="foot muted">settles instantly in dollars. friends split, divvy handles the rest.</p>
-  ${paid ? "" : `<script>window.__PAY__=${JSON.stringify(payData)};</script>
+  ${paid ? "" : `<script>window.__PAY__=${jsonForScript(payData)};</script>
   <script defer src="/pay.js"></script>`}
 </body>
 </html>`;
@@ -2290,7 +2312,12 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
     const spike = serverErrorSpike.record();
     if (spike.fired) alert("high", "server_error_spike", { count: spike.count, lastPath: req.path, lastMessage: message });
   }
-  res.status(status).json({ error: message });
+  // Never leak internal exception text (SQL/file paths/stack detail) to clients on
+  // an unexpected 500 — the real message + stack are logged server-side above. 4xx
+  // (validation feedback) and the controlled 502 "RPC unavailable" message are
+  // intentional and safe to return.
+  const clientMessage = status === 500 ? "something went wrong" : message;
+  res.status(status).json({ error: clientMessage });
 });
 
 // Last-resort backstop: a stray rejection from a background task (e.g. the

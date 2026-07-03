@@ -277,6 +277,68 @@ async function main(): Promise<void> {
       ok("apns.payload: url defaults to / and no thread-id without a tag",
         bodyNoTag.url === "/" && bodyNoTag.aps["thread-id"] === undefined);
     }
+
+    // ---- HTTP security headers (headers.ts) ----------------------------------
+    {
+      const landing = await fetch(`${B}/`);
+      ok("headers: X-Content-Type-Options nosniff", landing.headers.get("x-content-type-options") === "nosniff");
+      ok("headers: X-Frame-Options DENY (clickjacking)", landing.headers.get("x-frame-options") === "DENY");
+      ok("headers: Referrer-Policy strict-origin-when-cross-origin",
+        (landing.headers.get("referrer-policy") || "").includes("strict-origin-when-cross-origin"));
+      const pp = landing.headers.get("permissions-policy") || "";
+      ok("headers: Permissions-Policy denies geolocation + microphone",
+        pp.includes("geolocation=()") && pp.includes("microphone=()"));
+      const csp = landing.headers.get("content-security-policy") || "";
+      ok("headers: CSP enforced (default-src 'self' + connect-src 'self' + object-src 'none')",
+        csp.includes("default-src 'self'") && csp.includes("connect-src 'self'") && csp.includes("object-src 'none'"),
+        csp);
+      // The /embedded surface keeps the baseline headers but is intentionally
+      // exempt from the first-party CSP (vendored Privy/WalletConnect stack).
+      const emb = await fetch(`${B}/embedded/`);
+      ok("headers: /embedded keeps baseline nosniff header", emb.headers.get("x-content-type-options") === "nosniff");
+      ok("headers: /embedded omits the first-party CSP (documented Privy carve-out)",
+        !emb.headers.get("content-security-policy"));
+    }
+
+    // ---- pay page: user-controlled title can't break out of inline <script> (XSS) ----
+    {
+      const xssTitle = "</script><img src=x onerror=alert(1)>";
+      const xssBill = await fetch(`${B}/api/bills`, {
+        method: "POST", headers: H(owner),
+        body: JSON.stringify({ total: 20, count: 2, title: xssTitle }),
+      }).then((r) => r.json());
+      const pname = xssBill.participants[0].name as string;
+      const payHtml = await fetch(`${B}/pay/${xssBill.id}/${encodeURIComponent(pname)}`).then((r) => r.text());
+      ok("payXSS: raw </script> breakout payload never appears in the served page",
+        !payHtml.includes("</script><img"));
+      ok("payXSS: breakout chars are unicode-escaped inside the data <script>",
+        payHtml.includes("\\u003c/script"));
+    }
+
+    // ---- trip authz: read/patch by raw id requires token or membership ----
+    {
+      const solo = await fetch(`${B}/api/trips`, {
+        method: "POST", headers: H(owner),
+        body: JSON.stringify({ name: "Private", members: [{ name: "Me" }] }),
+      }).then((r) => r.json());
+      const outsider = await mint();
+      const foreignRead = await fetch(`${B}/api/trips/${solo.id}`, { headers: H(outsider) });
+      ok("tripAuthz: outsider can't GET a trip by raw id without token/membership (403)", foreignRead.status === 403);
+      const tokenRead = await fetch(`${B}/api/trips/${solo.shareToken}`);
+      ok("tripAuthz: share-token path grants read (shareable-by-link, by design)", tokenRead.status === 200);
+      const foreignPatch = await fetch(`${B}/api/trips/${solo.id}`, {
+        method: "PATCH", headers: H(outsider), body: JSON.stringify({ name: "hijacked" }),
+      });
+      ok("tripAuthz: outsider can't PATCH an owned trip (403)", foreignPatch.status === 403);
+    }
+
+    // ---- telemetry: the recent-events admin view is gated ----
+    {
+      const telUnauth = await fetch(`${B}/api/telemetry/recent`);
+      ok("telemetry: /recent admin view 404s without ADMIN_TOKEN", telUnauth.status === 404);
+      const telWrong = await fetch(`${B}/api/telemetry/recent`, { headers: { authorization: "Bearer wrong-admin" } });
+      ok("telemetry: /recent admin view 404s with a wrong admin token", telWrong.status === 404);
+    }
   } finally {
     server.close();
   }
