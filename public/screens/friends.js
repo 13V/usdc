@@ -17,7 +17,7 @@
   function header(sub) {
     return '<div style="display:flex; align-items:flex-end; justify-content:space-between; padding:6px 20px 12px; flex:none;">' +
       '<div>' +
-        '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:30px; letter-spacing:-0.8px; margin:0; color:#2B2118;">your people</h1>' +
+        '<h1 class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:30px; letter-spacing:-0.8px; margin:0; color:#2B2118;">your people</h1>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.45); margin-top:3px;">' + app.esc(sub) + '</div>' +
       '</div>' +
       '<div id="frSearch" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
@@ -29,7 +29,7 @@
   // ---- add well (lifted: recessed #0e1a25, mono input, QR tile, glowing + add)
   function addWell() {
     return '<div style="position:relative; z-index:5; flex:none; margin:0 16px 4px;">' +
-      '<div style="position:relative; background:#0e1a25; border:1px solid rgba(39,117,202,0.28); border-radius:20px; padding:10px; display:flex; align-items:center; gap:9px; box-shadow:inset 0 1px 0 rgba(255,255,255,0.03), 0 10px 26px rgba(0,0,0,0.3);">' +
+      '<div style="position:relative; background:#FFFDF7; border:1px solid rgba(39,117,202,0.28); border-radius:20px; padding:10px; display:flex; align-items:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.85);">' +
         '<div style="flex:1; min-width:0; display:flex; align-items:center; gap:10px; padding-left:8px;">' +
           '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><circle cx="11" cy="8" r="4"/><path d="M4 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5"/></svg>' +
           '<input id="frInput" placeholder="@handle or wallet…" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
@@ -40,7 +40,7 @@
           '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3M21 14v.01M21 21v-4M17 21h-3"/></svg>' +
         '</div>' +
         // glowing blue + add
-        '<div id="frAdd" role="button" aria-label="add" style="width:46px; height:40px; border-radius:12px; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:0 6px 18px rgba(39,117,202,0.5), inset 0 1px 0 rgba(255,255,255,0.28);">' +
+        '<div id="frAdd" role="button" aria-label="add" style="width:46px; height:40px; border-radius:12px; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
           '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
         '</div>' +
       '</div>' +
@@ -142,7 +142,7 @@
         stack += '<div style="width:15px; height:15px; border-radius:50%; background:' + STACK_GRADS[(i + k) % STACK_GRADS.length] + '; border:1.5px solid #FFFDF7;' + (k ? " margin-left:-5px;" : "") + ' display:flex; align-items:center; justify-content:center; font-size:8px;">' + STACK_EMOJI[(i + k) % STACK_EMOJI.length] + '</div>';
       }
     }
-    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="text-decoration:none; flex:none; display:flex; align-items:center; gap:9px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.08); border-radius:15px; padding:9px 13px 9px 11px; cursor:pointer;">' +
+    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="text-decoration:none; flex:none; display:flex; align-items:center; gap:9px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:9px 13px 9px 11px; cursor:pointer;">' +
       '<div style="width:30px; height:30px; border-radius:10px; background:' + cover + '; display:flex; align-items:center; justify-content:center; font-size:15px;">' + app.esc(em) + '</div>' +
       '<div>' +
         '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; color:#2B2118;">' + app.esc((t.name || "tab").toLowerCase()) + '</div>' +
@@ -172,7 +172,7 @@
         '</div>'
       : '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.45); margin-top:5px;">no wallet yet</div>';
 
-    return '<a href="#/friend/' + encodeURIComponent(f.id) + '" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:13px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.07); border-radius:18px; padding:13px 14px;">' +
+    return '<a href="#/friend/' + encodeURIComponent(f.id) + '" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 14px;">' +
       avatarTile(f, nm) +
       '<div style="flex:1; min-width:0;">' +
         '<div style="display:flex; align-items:center; gap:7px;">' +
@@ -389,7 +389,7 @@
       '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">' + app.esc(emoji) + '</div>' +
       '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div><div style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.4);">wants to be friends</div></div>' +
       '<button data-decline="' + app.esc(f.id) + '" title="dismiss" style="appearance:none; cursor:pointer; flex:none; width:36px; height:36px; border-radius:50%; background:transparent; border:1px solid rgba(43,33,24,0.14); color:rgba(43,33,24,0.55); font-size:15px;">✕</button>' +
-      '<button data-accept="' + app.esc(f.id) + '" style="appearance:none; border:none; cursor:pointer; flex:none; min-height:36px; padding:0 16px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); color:#fff; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px;">accept</button>' +
+      '<button data-accept="' + app.esc(f.id) + '" style="appearance:none; border:none; cursor:pointer; flex:none; min-height:36px; padding:0 16px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; color:#fff; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px;">accept</button>' +
     '</div>';
   }
   // ---- outgoing requests you've sent (still pending acceptance) ------------
@@ -404,7 +404,7 @@
     var name = f.displayName || f.handle || (f.primaryWallet ? shortWallet(f.primaryWallet) : "someone");
     var emoji = f.emoji || "🙂";
     var color = app.esc(f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)"); // esc: stored color never raw
-    return '<div style="display:flex; align-items:center; gap:11px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.07); border-radius:18px; padding:11px 12px;">' +
+    return '<div style="display:flex; align-items:center; gap:11px; background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 12px;">' +
       '<div style="width:42px; height:42px; border-radius:50%; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:20px; flex:none; opacity:.9;">' + app.esc(emoji) + '</div>' +
       '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div><div style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.4);">waiting for them to accept</div></div>' +
       '<span style="display:inline-flex; align-items:center; gap:5px; flex:none; background:rgba(255,198,92,0.1); border:1px solid rgba(255,198,92,0.35); border-radius:999px; padding:5px 11px; font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; letter-spacing:.5px; color:#FFC65C;"><span style="width:5px; height:5px; border-radius:50%; background:#FFC65C;"></span>pending</span>' +
@@ -444,7 +444,7 @@
   // and hand off to the embedded wallet to sign + send.
   function sendBar() {
     return '<div style="margin:2px 16px 0;">' +
-      '<button id="frSend" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:15px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 8px 22px rgba(61,232,199,0.28);">' +
+      '<button id="frSend" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:15px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118;">send money</span>' +
       '</button></div>';
@@ -470,7 +470,7 @@
         ? '<div style="display:flex; gap:8px; overflow-x:auto; padding:2px 0 4px; margin-top:8px;">' +
             friends.map(function (f) {
               var nm = (f.displayName || f.handle || "friend");
-              return '<button class="snFriend" data-w="' + app.esc(f.primaryWallet) + '" data-n="' + app.esc(nm) + '" style="appearance:none; cursor:pointer; flex:none; display:flex; align-items:center; gap:7px; background:#0e1a24; border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:6px 12px 6px 7px;">' +
+              return '<button class="snFriend" data-w="' + app.esc(f.primaryWallet) + '" data-n="' + app.esc(nm) + '" style="appearance:none; cursor:pointer; flex:none; display:flex; align-items:center; gap:7px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:6px 12px 6px 7px;">' +
                 '<span style="width:24px; height:24px; border-radius:50%; background:' + (f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)") + '; display:flex; align-items:center; justify-content:center; font-size:13px;">' + app.esc(f.emoji || "🙂") + '</span>' +
                 '<span style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:#2B2118;">' + app.esc(nm.toLowerCase()) + '</span></button>';
             }).join("") +

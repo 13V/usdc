@@ -186,7 +186,7 @@
     var chips = {};
     keys.forEach(function (emoji) {
       var capped = capEmoji(emoji);
-      var chip = el('<button type="button" style="appearance:none; display:inline-flex; align-items:center; gap:4px; cursor:pointer; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:3px 9px;"></button>');
+      var chip = el('<button type="button" style="appearance:none; display:inline-flex; align-items:center; gap:4px; cursor:pointer; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:3px 9px;"></button>');
       chips[emoji] = chip;
       function paint() {
         var st = state[emoji] || { count: 0, mine: false };
@@ -303,7 +303,7 @@
     var av = el('<div style="width:33px; height:33px; border-radius:50%; background:' + gradFor(msg.author) + '; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;"></div>');
     av.textContent = avEmoji(msg.author);
     line.appendChild(av);
-    var bub = el('<div style="background:#FFFDF7; border:1px solid rgba(43,33,24,0.07); border-radius:20px 20px 20px 6px; padding:11px 15px; font-family:' + SANS + '; font-size:15px; line-height:1.35; color:#2B2118; word-break:break-word;"></div>');
+    var bub = el('<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85) 20px 20px 6px; padding:11px 15px; font-family:' + SANS + '; font-size:15px; line-height:1.35; color:#2B2118; word-break:break-word;"></div>');
     fillBubble(bub, msg);
     line.appendChild(bub);
     lwrap.appendChild(line);
@@ -412,8 +412,8 @@
     var who = p.fromName ? String(p.fromName).toLowerCase() : "someone";
 
     var wrap = el('<div style="display:flex; flex-direction:column; align-items:flex-start; gap:6px; width:100%;"></div>');
-    var border = el('<div style="position:relative; width:100%; border-radius:20px; padding:1.5px; background:linear-gradient(90deg,#2775CA,#3DE8C7,#2775CA); background-size:200% 100%; animation:gcKinetic 4s linear infinite; box-shadow:0 12px 32px rgba(39,117,202,0.3);"></div>');
-    var card = el('<div style="position:relative; border-radius:18.5px; background:#0f1d29; overflow:hidden;"></div>');
+    var border = el('<div style="position:relative; width:100%; border-radius:20px; padding:1.5px; background:linear-gradient(90deg,#2775CA,#3DE8C7,#2775CA); background-size:200% 100%; animation:gcKinetic 4s linear infinite; box-shadow:3px 3px 0 rgba(43,33,24,0.9);"></div>');
+    var card = el('<div style="position:relative; border-radius:18.5px; background:#FFFDF7; overflow:hidden;"></div>');
     card.appendChild(el('<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 8% 100%, rgba(61,232,199,0.05) 0 1px, transparent 1px 9px); opacity:.7; pointer-events:none;"></div>'));
 
     var rowInner = el('<div style="position:relative; display:flex; align-items:center; gap:13px; padding:14px 16px;"></div>');
@@ -421,7 +421,7 @@
     // mascot blob — lifted exactly (mint-tinted squish blob with pulsing glow).
     var blob = el('<div style="position:relative; width:42px; height:42px; flex:none; display:flex; align-items:center; justify-content:center;">' +
       '<div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.4) 0%, rgba(61,232,199,0) 68%); animation:gcPulse 3s ease-in-out infinite;"></div>' +
-      '<div style="position:relative; width:30px; height:30px; background:linear-gradient(155deg,#5cf0d4,#2775CA); animation:gcSquish 4s ease-in-out infinite; box-shadow:0 4px 12px rgba(39,117,202,0.5);">' +
+      '<div style="position:relative; width:30px; height:30px; background:linear-gradient(155deg,#5cf0d4,#2775CA); animation:gcSquish 4s ease-in-out infinite; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
         '<div style="position:absolute; top:9px; left:7px; width:4px; height:5px; border-radius:50%; background:#F7F1E3; animation:gcBlink 4.6s infinite;"></div>' +
         '<div style="position:absolute; top:9px; right:7px; width:4px; height:5px; border-radius:50%; background:#F7F1E3; animation:gcBlink 4.6s infinite;"></div>' +
       '</div></div>');
@@ -554,7 +554,7 @@
     var box = el('<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:0 40px; text-align:center; margin:auto 0;">' +
       '<div style="position:relative; width:80px; height:80px; display:flex; align-items:center; justify-content:center;">' +
         '<div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.32) 0%, rgba(39,117,202,0) 68%); animation:gcPulse 3s ease-in-out infinite;"></div>' +
-        '<div style="position:relative; width:54px; height:54px; background:linear-gradient(155deg,#4a9ff0,#2775CA); animation:gcSquish 4s ease-in-out infinite; box-shadow:0 8px 22px rgba(39,117,202,0.5);">' +
+        '<div style="position:relative; width:54px; height:54px; background:linear-gradient(155deg,#4a9ff0,#2775CA); animation:gcSquish 4s ease-in-out infinite; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
           '<div style="position:absolute; top:18px; left:13px; width:7px; height:9px; border-radius:50%; background:#F7F1E3; animation:gcBlink 4.6s infinite;"></div>' +
           '<div style="position:absolute; top:18px; right:13px; width:7px; height:9px; border-radius:50%; background:#F7F1E3; animation:gcBlink 4.6s infinite;"></div>' +
         '</div>' +
@@ -835,7 +835,7 @@
         '<div style="position:absolute; left:-60px; top:380px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.13) 0%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>' +
 
         // top bar
-        '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:11px; height:58px; padding:0 14px; flex:none; background:rgba(11,22,34,0.82); border-bottom:1px solid rgba(43,33,24,0.06); backdrop-filter:blur(8px);">' +
+        '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:11px; height:58px; padding:0 14px; flex:none; background:rgba(247,241,227,0.88); border-bottom:1.5px dashed rgba(43,33,24,0.2); backdrop-filter:blur(8px);">' +
           '<button class="gc-back" type="button" aria-label="back" style="appearance:none; width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;">' +
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
           '<div style="position:relative; width:40px; height:40px; flex:none;">' +
@@ -862,13 +862,13 @@
         '<div style="position:relative; z-index:6; flex:none; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); background:rgba(8,17,26,0.96); border-top:1px solid rgba(43,33,24,0.07); display:flex; align-items:center; gap:9px;">' +
           '<button class="gc-attach" type="button" aria-label="attach receipt" style="appearance:none; width:40px; height:40px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer; flex:none; padding:0;">📷</button>' +
           '<input class="gc-file" type="file" accept="image/*" capture="environment" style="display:none" />' +
-          '<div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:0 6px 0 16px; min-height:44px;">' +
+          '<div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:0 6px 0 16px; min-height:44px;">' +
             '<input class="gc-input" type="text" placeholder="message…" aria-label="message" style="flex:1; min-width:0; border:0; outline:none; background:transparent; color:#2B2118; font-family:' + SANS + '; font-size:15px; padding:11px 0;" />' +
             '<button class="gc-tabbtn" type="button" aria-label="new tab" style="appearance:none; display:inline-flex; align-items:center; gap:5px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.4); border-radius:999px; padding:6px 11px; cursor:pointer; flex:none;">' +
               '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
               '<span style="font-family:' + MONO + '; font-weight:700; font-size:10.5px; color:#2775CA;">tab</span></button>' +
           '</div>' +
-          '<button class="gc-send" type="button" aria-label="send" style="appearance:none; width:46px; height:46px; border-radius:50%; border:0; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:0 6px 20px rgba(39,117,202,0.55), inset 0 1px 0 rgba(255,255,255,0.28);">' +
+          '<button class="gc-send" type="button" aria-label="send" style="appearance:none; width:46px; height:46px; border-radius:50%; border:0; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
             '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>' +
         '</div>' +
       '</div>');

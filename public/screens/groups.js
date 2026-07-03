@@ -18,7 +18,7 @@
   function brandRow() {
     var me = meIdentity();
     return '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-      '<div style="width:36px; height:36px; border-radius:11px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(39,117,202,0.4), inset 0 1px 0 rgba(255,255,255,0.25);">' +
+      '<div style="width:36px; height:36px; border-radius:11px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:24px; line-height:1; color:#fff; transform:translateY(-1px);">/</span>' +
       '</div>' +
       '<a href="#/you" style="text-decoration:none; width:36px; height:36px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(43,33,24,0.13);">' + app.esc(me.emoji) + '</a>' +
@@ -29,8 +29,8 @@
   function header(count) {
     var sub = count === 1 ? "1 active" : count + " active";
     return '<div style="display:flex; align-items:baseline; gap:11px; margin-top:20px;">' +
-      '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:33px; line-height:1; letter-spacing:-0.5px; margin:0; color:#2B2118;">your groups</h1>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:12px; font-weight:400; color:rgba(43,33,24,0.5);">' + sub + '</span>' +
+      '<h1 class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:33px; line-height:1; letter-spacing:-0.5px; margin:0; color:#2B2118;">your groups</h1>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; color:#FF6B5E;">' + sub + '!!</span>' +
     '</div>';
   }
 
@@ -83,7 +83,7 @@
     }
     var owedSeg = Math.max(owed, 1), oweSeg = Math.max(owe, 1);
     var bar = (owed > 0 || owe > 0)
-      ? '<div style="display:flex; height:30px; border-radius:999px; overflow:hidden; gap:3px; margin-top:18px; box-shadow:0 6px 18px rgba(39,117,202,0.22);">' +
+      ? '<div style="display:flex; height:30px; border-radius:999px; overflow:hidden; gap:3px; margin-top:18px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
           (owed > 0 ? '<div style="flex:' + owedSeg + '; background:linear-gradient(90deg,#2775CA,#3f97ee); display:flex; align-items:center; padding-left:9px;">' + ridingAv(owers) + '</div>' : '') +
           (owe > 0 ? '<div style="flex:' + oweSeg + '; background:linear-gradient(90deg,#FF6B5E,#ff8073); display:flex; align-items:center; justify-content:flex-end; padding-right:7px;">' + ridingAv(owees) + '</div>' : '') +
         '</div>' +
@@ -247,7 +247,7 @@
 
   // ---- "+ new group" button (lifted gradient pill from frame) -----------
   function newGroupBtn() {
-    return '<button id="gNew" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; margin-top:18px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 8px 26px rgba(39,117,202,0.42);">' +
+    return '<button id="gNew" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; margin-top:18px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
       '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
       '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">new group</span>' +
     '</button>';
@@ -337,7 +337,7 @@
         app.mascot({ size: 108, mood: "happy", glow: true }) +
         '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:30px 0 0; color:#2B2118;">no tabs yet — start one 🎉</h2>' +
         '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(43,33,24,0.55);">split a trip, the rent, or last night\'s dinner. settle in dollars, just faster.</p>' +
-        '<button id="gNew" style="appearance:none; border:none; cursor:pointer; min-height:54px; margin-top:26px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); padding:0 26px; display:flex; align-items:center; gap:9px; box-shadow:0 8px 26px rgba(39,117,202,0.45);">' +
+        '<button id="gNew" style="appearance:none; border:none; cursor:pointer; min-height:54px; margin-top:26px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; padding:0 26px; display:flex; align-items:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16.5px; color:#fff;">start a tab</span>' +
         '</button>' +

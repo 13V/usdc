@@ -17,7 +17,7 @@
     return '' +
     '<div style="display:flex; align-items:center; justify-content:space-between; height:56px; padding:0 18px; flex:none;">' +
       '<div style="display:flex; align-items:center; gap:9px;">' +
-        '<div style="width:32px; height:32px; border-radius:10px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:0 5px 14px rgba(39,117,202,0.4), inset 0 1px 0 rgba(255,255,255,0.25);">' +
+        '<div style="width:32px; height:32px; border-radius:10px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:21px; color:#fff; transform:translateY(-1px);">/</span></div>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.5px; color:#2B2118;">divvy</span>' +
       '</div>' +
@@ -193,7 +193,7 @@
     var paid = !!mine.paid;
     var right = paid
       ? '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.14); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:5px 11px; flex:none; font-family:\'Space Mono\',monospace; font-size:11px; color:#3DE8C7;">paid ✨</span>'
-      : '<a href="' + app.esc(mine.payPath || ("/pay/" + encodeURIComponent(b.id))) + '" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(120deg,#3286db,#2775CA); border-radius:999px; padding:9px 16px; flex:none; box-shadow:0 6px 16px rgba(39,117,202,0.4);">' +
+      : '<a href="' + app.esc(mine.payPath || ("/pay/" + encodeURIComponent(b.id))) + '" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:#2775CA; border:2px solid #2B2118; border-radius:999px; padding:9px 16px; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#fff;">pay <span style="font-family:\'Space Mono\',monospace;">' + app.esc(mine.amountFmt || "") + '</span></span>' +
         '</a>';
     var sub = paid ? "you paid your share" : "your share";
@@ -266,7 +266,7 @@
         // ── ACTIONS ──
         '<div style="position:relative; z-index:2; display:flex; flex-direction:column; gap:10px; padding-bottom:calc(14px + env(safe-area-inset-bottom));">' +
           // primary: create a wallet (with mono subline)
-          '<button id="hCreate" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:0 10px 30px rgba(39,117,202,0.45);">' +
+          '<button id="hCreate" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">create a wallet</span>' +
             '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:0.8px; color:rgba(255,255,255,0.78);">~10 seconds, no app</span>' +
           '</button>' +

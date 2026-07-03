@@ -164,7 +164,7 @@
       '<div style="position:relative; z-index:2; min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:40px 44px 120px; text-align:center;">' +
         app.mascot({ size: 120, mood: "sleepy", glow: true }) +
         '<div style="font-family:' + SANS + '; font-size:16px; line-height:1.5; color:rgba(43,33,24,0.65);">set the bills you split every month<br>and forget them 🫡</div>' +
-        '<button id="rNew" style="appearance:none; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-height:50px; padding:0 24px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); box-shadow:0 10px 26px rgba(39,117,202,0.45);">' +
+        '<button id="rNew" style="appearance:none; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-height:50px; padding:0 24px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
           '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
           '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:16px; color:#fff;">new recurring</span>' +
         '</button>' +
@@ -262,7 +262,7 @@
     var cad = cadence(rule.interval);
 
     if (paused) {
-      return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:#0f1a24; border-radius:20px; border:1px solid rgba(43,33,24,0.05); padding:14px; overflow:hidden; opacity:.72; cursor:pointer;">' +
+      return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:#FFFDF7; border-radius:20px; border:1px solid rgba(43,33,24,0.05); padding:14px; overflow:hidden; opacity:.72; cursor:pointer;">' +
         '<div style="position:relative; display:flex; align-items:center; justify-content:space-between;">' +
           '<div style="width:38px; height:38px; border-radius:12px; background:rgba(255,198,92,0.12); display:flex; align-items:center; justify-content:center; font-size:18px; filter:grayscale(.3);">' + app.esc(emoji) + '</div>' +
           '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(255,198,92,0.1); border:1px solid rgba(255,198,92,0.3); border-radius:999px; padding:2px 8px;"><svg width="8" height="8" viewBox="0 0 24 24" fill="#FFC65C"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:#FFC65C;">PAUSED</span></span>' +
@@ -273,7 +273,7 @@
       '</div>';
     }
 
-    return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:#FFFDF7; border-radius:20px; border:1px solid rgba(43,33,24,0.07); padding:14px; overflow:hidden; cursor:pointer;">' +
+    return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:#FFFDF7; border-radius:20px; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:14px; overflow:hidden; cursor:pointer;">' +
       '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 6%, rgba(255,255,255,0.03) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>' +
       '<div style="position:relative; display:flex; align-items:center; justify-content:space-between;">' +
         '<div style="width:38px; height:38px; border-radius:12px; background:' + tileTint(emoji) + '; display:flex; align-items:center; justify-content:center; font-size:18px;">' + app.esc(emoji) + '</div>' +
@@ -375,19 +375,19 @@
       '<div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">' +
 
         // title row
-        '<div style="display:flex; align-items:center; gap:12px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.08); border-radius:16px; padding:13px 16px;">' +
+        '<div style="display:flex; align-items:center; gap:12px; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
           '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); flex:none;">title</span>' +
           '<input id="rfTitle" placeholder="rent 🏠" style="appearance:none; border:none; outline:none; background:transparent; flex:1; min-width:0; text-align:right; font-family:' + MONO + '; font-size:13px; color:#2B2118;" />' +
         '</div>' +
 
         // group picker
-        '<div id="rTripWrap" style="background:#FFFDF7; border:1px solid rgba(43,33,24,0.08); border-radius:16px; padding:13px 16px;">' +
+        '<div id="rTripWrap" style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
           '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-bottom:11px;">group</div>' +
           '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6);">loading groups…</div>' +
         '</div>' +
 
         // interval segmented
-        '<div style="background:#FFFDF7; border:1px solid rgba(43,33,24,0.08); border-radius:16px; padding:13px 16px;">' +
+        '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
           '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-bottom:11px;">interval</div>' +
           '<div id="rfInterval" style="display:flex; gap:7px;">' +
             segChip("weekly", "weekly", false) +
@@ -397,7 +397,7 @@
         '</div>' +
 
         // next due
-        '<div style="display:flex; align-items:center; justify-content:space-between; background:#FFFDF7; border:1px solid rgba(43,33,24,0.08); border-radius:16px; padding:13px 16px;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
           '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">next due</span>' +
           '<span style="display:inline-flex; align-items:center; gap:8px;">' +
             '<input id="rfDate" type="date" style="appearance:none; border:none; outline:none; background:transparent; font-family:' + MONO + '; font-size:13px; color:#2B2118; color-scheme:dark;" />' +
@@ -406,7 +406,7 @@
         '</div>' +
 
         // members
-        '<div id="rfMembers" style="background:#FFFDF7; border:1px solid rgba(43,33,24,0.08); border-radius:16px; padding:13px 16px;">' +
+        '<div id="rfMembers" style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
           '<div style="display:flex; align-items:center; justify-content:space-between;">' +
             '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">members</span>' +
             '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(43,33,24,0.4);">pick a group first</span>' +
@@ -416,7 +416,7 @@
       '</div>' +
 
       // set & forget
-      '<button id="rfSave" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 12px 30px rgba(39,117,202,0.5), inset 0 1px 0 rgba(255,255,255,0.25); margin-top:18px;">' +
+      '<button id="rfSave" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9); margin-top:18px;">' +
         '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (editing ? "save changes" : "set &amp; forget") + '</span><span style="font-size:15px;">✨</span>' +
       '</button>'
     );
@@ -658,7 +658,7 @@
 
     // ===== HEADER identity card (blue gradient) =====
     var headerCard =
-      '<div style="position:relative; border-radius:24px; overflow:hidden; padding:20px; background:linear-gradient(150deg,#2f80d6 0%,#2775CA 55%,#1d5e9f 100%); box-shadow:0 16px 40px rgba(39,117,202,0.4);">' +
+      '<div style="position:relative; border-radius:24px; overflow:hidden; padding:20px; background:linear-gradient(150deg,#2f80d6 0%,#2775CA 55%,#1d5e9f 100%); box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 8%, rgba(255,255,255,0.09) 0 1px, transparent 1px 9px); opacity:.55; pointer-events:none;"></div>' +
         '<div style="position:relative; display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">' +
           '<div style="min-width:0;">' +
@@ -706,11 +706,11 @@
           '<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">WHO SPLITS IT</span>' +
           '<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.4);">SPLIT ' + n + ' · ' + plain$(share) + ' EACH</span>' +
         '</div>' +
-        '<div id="rdMembers" style="background:#FFFDF7; border:1px solid rgba(43,33,24,0.07); border-radius:18px; overflow:hidden;"><div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6); padding:14px 15px;">loading members…</div></div>' +
+        '<div id="rdMembers" style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); overflow:hidden;"><div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6); padding:14px 15px;">loading members…</div></div>' +
 
         // ===== THIS RUN (preview — no live run state is persisted yet) =====
         '<div style="margin:24px 2px 12px; display:flex; align-items:center; gap:7px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">THIS RUN · ' + fmtDate(rule.nextDue).toUpperCase() + '</span><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:rgba(43,33,24,0.4); background:rgba(43,33,24,0.06); border:1px solid rgba(43,33,24,0.12); border-radius:999px; padding:2px 7px;">PREVIEW</span></div>' +
-        '<div style="background:#FFFDF7; border:1px solid rgba(43,33,24,0.07); border-radius:18px; padding:16px;">' +
+        '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:16px;">' +
           '<div style="display:flex; align-items:center; justify-content:space-between;">' +
             '<span style="font-family:' + DISPLAY + '; font-weight:500; font-size:16px; color:#2B2118;" class="lower">0 of ' + n + ' squared</span>' +
             '<span style="font-family:' + MONO + '; font-size:11px; color:#3DE8C7;">$0 in</span>' +
@@ -851,7 +851,7 @@
     } catch (_) {}
 
     if (!runs.length) {
-      return '<div style="background:#FFFDF7; border:1px solid rgba(43,33,24,0.07); border-radius:18px; padding:16px;"><div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6);" class="lower">no past runs yet — this one\'s fresh ✨</div></div>';
+      return '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:16px;"><div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6);" class="lower">no past runs yet — this one\'s fresh ✨</div></div>';
     }
     return '<div style="display:flex; flex-direction:column; gap:3px;">' + runs.map(function (date, i) {
       return (i > 0 ? '<div style="height:1px; background:rgba(43,33,24,0.05); margin:0 6px;"></div>' : '') +

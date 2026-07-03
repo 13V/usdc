@@ -232,13 +232,13 @@
 
     // lifted centered header — big standalone 84px avatar (no mascot)
     return '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:8px 0 4px;">' +
-      '<div style="position:relative; width:84px; height:84px; border-radius:26px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:42px; box-shadow:0 14px 34px rgba(39,117,202,0.4);">' + app.esc(emoji) + '</div>' +
+      '<div style="position:relative; width:84px; height:84px; border-radius:26px; background:' + bg + '; display:flex; align-items:center; justify-content:center; font-size:42px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + app.esc(emoji) + '</div>' +
       '<div style="display:flex; align-items:center; gap:8px; margin-top:14px;">' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.4px; color:#2B2118;">' + app.esc(name) + '</span>' +
         (handle ? '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(39,117,202,0.75);">' + app.esc(handle) + '</span>' : '') +
       '</div>' +
       '<div style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(43,33,24,0.42); margin-top:7px;">' + tabs + ' tab' + (tabs === 1 ? '' : 's') + ' together' + since + '</div>' +
-      (wallet ? '<div id="fdCopy" style="display:inline-flex; align-items:center; gap:8px; margin-top:10px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:999px; padding:6px 12px; cursor:pointer;">' +
+      (wallet ? '<div id="fdCopy" style="display:inline-flex; align-items:center; gap:8px; margin-top:10px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:6px 12px; cursor:pointer;">' +
         '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.6);">' + app.esc(truncWallet(wallet)) + '</span>' +
         '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
       '</div>' : '') +
@@ -318,7 +318,7 @@
   function chipStrip(d) {
     if (!d.groups.length) return "";
     var chips = d.groups.map(function (g, i) {
-      return '<a href="#/group/' + encodeURIComponent(g.id) + '" style="flex:none; display:flex; align-items:center; gap:9px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.08); border-radius:15px; padding:10px 14px 10px 11px; cursor:pointer; text-decoration:none;">' +
+      return '<a href="#/group/' + encodeURIComponent(g.id) + '" style="flex:none; display:flex; align-items:center; gap:9px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:10px 14px 10px 11px; cursor:pointer; text-decoration:none;">' +
         '<div style="width:30px; height:30px; border-radius:10px; background:' + CHIP_COVERS[i % CHIP_COVERS.length] + '; display:flex; align-items:center; justify-content:center; font-size:15px;">' + app.esc(g.emoji) + '</div>' +
         '<div>' +
           '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; color:#2B2118;">' + app.esc(g.name) + '</div>' +

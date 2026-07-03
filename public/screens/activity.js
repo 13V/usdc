@@ -43,7 +43,7 @@
     return '<div style="position:relative; z-index:6; display:flex; align-items:flex-end; ' +
       'justify-content:space-between; padding:6px 20px 14px; flex:none;">' +
       '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; ' +
-      'font-size:30px; letter-spacing:-0.8px; margin:0; color:#2B2118;">activity</h1>' +
+      'font-size:30px; letter-spacing:-0.8px; margin:0; color:#2B2118;" class="jdoodle">activity</h1>' +
       '<div style="display:flex; align-items:center; gap:9px;">' +
         chip('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/>') +
         chip('<path d="M4 6h16M7 12h10M10 18h4"/>') +
@@ -435,9 +435,9 @@
           '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(43,33,24,0.65);">' +
             'nothing\'s happened yet 🫥<br>start a tab and the feed wakes up</div>' +
           '<button id="acNew" style="appearance:none; border:none; cursor:pointer; min-height:50px; padding:0 26px; ' +
-            'border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); ' +
+            'border-radius:999px; background:#2775CA; border:2px solid #2B2118; ' +
             'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff; ' +
-            'box-shadow:0 8px 24px rgba(39,117,202,0.42);">start a tab</button>' +
+            'box-shadow:3px 3px 0 rgba(43,33,24,0.9);">start a tab</button>' +
         '</div>' +
       '</div>';
     var b = document.getElementById("acNew");
@@ -456,9 +456,9 @@
           '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(43,33,24,0.65);">' +
             'your feed lives here<br>connect a wallet to see who chipped in 💸</div>' +
           '<button id="acConnect" style="appearance:none; border:none; cursor:pointer; min-height:50px; padding:0 26px; ' +
-            'border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); ' +
+            'border-radius:999px; background:#2775CA; border:2px solid #2B2118; ' +
             'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff; ' +
-            'box-shadow:0 8px 24px rgba(39,117,202,0.42);">connect a wallet</button>' +
+            'box-shadow:3px 3px 0 rgba(43,33,24,0.9);">connect a wallet</button>' +
         '</div>' +
       '</div>';
     var b = document.getElementById("acConnect");

@@ -255,7 +255,7 @@
       var whatFor =
         '<div style="margin-top:22px;">' +
           '<label style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); display:block; margin:0;">WHAT\'S IT FOR?</label>' +
-          '<div style="display:flex; align-items:center; gap:11px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:15px; padding:14px 16px; margin-top:9px;">' +
+          '<div style="display:flex; align-items:center; gap:11px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:14px 16px; margin-top:9px;">' +
             '<button id="nEmoji" style="appearance:none; border:none; background:transparent; font-size:22px; cursor:pointer; padding:0; line-height:1;">' + app.esc(st.titleEmoji) + '</button>' +
             '<input id="nTitle" enterkeyhint="next" value="' + app.esc(st.title) + '" placeholder="dinner" style="all:unset; flex:1; font-family:' + F_DISPLAY + '; font-weight:500; font-size:18px; color:#2B2118;">' +
             '<span style="width:1.5px; height:20px; background:#3DE8C7; margin-left:1px; border-radius:2px;"></span>' +
@@ -267,7 +267,7 @@
       var totalBlock =
         '<div style="margin-top:16px;">' +
           '<label style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); display:block; margin:0;">TOTAL</label>' +
-          '<div style="display:flex; align-items:center; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:15px; padding:13px 16px; margin-top:9px;">' +
+          '<div style="display:flex; align-items:center; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px; margin-top:9px;">' +
             '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:18px; opacity:.5;">$</span>' +
             '<input id="nTotal" inputmode="decimal" enterkeyhint="done" value="' + (st.totalCents ? dollars(st.totalCents) : '') + '" placeholder="0.00" ' +
               'style="all:unset; flex:1; font-family:' + F_MONO + '; font-weight:700; font-size:30px; letter-spacing:-1px; color:#2B2118;">' +
@@ -281,7 +281,7 @@
             '<label style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); display:block; margin:0;">TIP</label>' +
             '<span style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.38);">scanned totals often include it</span>' +
           '</div>' +
-          '<div style="display:flex; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:13px; padding:4px; margin-top:9px; gap:3px;">' +
+          '<div style="display:flex; background:#FFFDF7; border:2px solid #2B2118; border-radius:13px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:4px; margin-top:9px; gap:3px;">' +
             TIPS.map(function (t) {
               var sel = st.tipKey === t.key;
               return '<button data-tip="' + t.key + '" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:42px; border-radius:9px; ' +
@@ -316,10 +316,10 @@
       // in the edit sheet — so the −/+ box is redundant chrome on the hot path.
       var canStep = !inGroup && st.mode === "custom";
       var stepper = canStep ?
-        '<div style="display:flex; align-items:center; gap:14px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:13px; padding:8px 10px; margin-top:9px; width:fit-content;">' +
-          '<button id="nMinus" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:10px; background:#0e2734; color:#2B2118; font-size:20px; font-family:' + F_MONO + ';">−</button>' +
+        '<div style="display:flex; align-items:center; gap:14px; background:#FFFDF7; border:2px solid #2B2118; border-radius:13px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:8px 10px; margin-top:9px; width:fit-content;">' +
+          '<button id="nMinus" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:10px; background:#F1E8D6; color:#2B2118; font-size:20px; font-family:' + F_MONO + ';">−</button>' +
           '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:18px; min-width:24px; text-align:center;">' + st.members.length + '</span>' +
-          '<button id="nPlus" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:10px; background:#0e2734; color:#2B2118; font-size:20px; font-family:' + F_MONO + ';">+</button>' +
+          '<button id="nPlus" style="appearance:none; border:none; cursor:pointer; width:34px; height:34px; border-radius:10px; background:#F1E8D6; color:#2B2118; font-size:20px; font-family:' + F_MONO + ';">+</button>' +
         '</div>' : '';
 
       var modeToggle = inGroup ? '' :
@@ -372,7 +372,7 @@
           leftBg = "rgba(255,107,94,0.07)"; leftBorder = "rgba(255,107,94,0.3)";
         }
         body =
-          '<div style="margin-top:16px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:20px; padding:8px 8px;">' +
+          '<div style="margin-top:16px; background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:8px 8px;">' +
             included().map(function (m) {
               return '<div style="display:flex; align-items:center; gap:12px; padding:9px 10px;">' +
                 '<div style="width:36px; height:36px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;">' + app.esc(m.emoji) + '</div>' +
@@ -431,8 +431,8 @@
 
       // send footer — exact frame button + dry mono subline
       var footer =
-        '<div style="position:fixed; left:0; right:0; bottom:0; z-index:55; padding:14px 20px calc(14px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(11,22,34,0) 0%, #2B2118 24%);">' +
-          '<button id="nSend" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 12px 30px rgba(39,117,202,0.45);">' +
+        '<div style="position:fixed; left:0; right:0; bottom:0; z-index:55; padding:14px 20px calc(14px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(247,241,227,0) 0%, #F7F1E3 24%);">' +
+          '<button id="nSend" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
             '<span style="font-family:' + F_DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (editing ? "save changes" : inGroup ? "add to tab" : "send the tab") + '</span>' +
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>' +
           '</button>' +
@@ -585,15 +585,15 @@
             '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.6px; margin:0;">' + (editing ? "edit person" : "split with") + '</h2>' +
             '<div style="font-family:' + F_MONO + '; font-size:11px; color:rgba(43,33,24,0.45); margin-top:5px;">' + (editing ? "rename, pick a friend, or remove" : "tap a friend, or add a guest") + '</div>' +
           '</div>' +
-          '<div style="flex:none; margin:14px 0 6px;"><div style="display:flex; align-items:center; gap:10px; background:#0e1a24; border:1px solid rgba(43,33,24,0.08); border-radius:14px; padding:11px 14px;">' +
+          '<div style="flex:none; margin:14px 0 6px;"><div style="display:flex; align-items:center; gap:10px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.08); border-radius:14px; padding:11px 14px;">' +
             '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
             '<input id="psSearch" type="text" placeholder="find a friend…" autocomplete="off" style="flex:1; background:transparent; border:none; outline:none; color:#2B2118; font-family:\'Space Mono\',monospace; font-size:12.5px;" /></div></div>' +
           '<div id="psList" class="appscroll" style="flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; min-height:64px; padding-top:6px;"><div style="font-family:' + F_MONO + '; font-size:11px; color:rgba(43,33,24,0.4); padding:8px 2px;">loading…</div></div>' +
           '<div style="flex:none;">' +
             '<div style="display:flex; align-items:center; gap:12px; margin:16px 2px 12px;"><div style="flex:1; height:1px; background:rgba(43,33,24,0.08);"></div><span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.4);">' + (editing ? "or rename" : "or add a guest") + '</span><div style="flex:1; height:1px; background:rgba(43,33,24,0.08);"></div></div>' +
             '<div style="display:flex; gap:10px;">' +
-              '<div style="flex:1; display:flex; align-items:center; gap:9px; background:#0e1a24; border:1px solid rgba(43,33,24,0.1); border-radius:14px; padding:12px 14px;"><span style="font-size:15px;">🙂</span><input id="psName" type="text" placeholder="guest name" value="' + (editing && !member.you ? app.esc(member.name) : "") + '" autocomplete="off" style="flex:1; background:transparent; border:none; outline:none; color:#2B2118; font-family:\'General Sans\',sans-serif; font-size:15px;" /></div>' +
-              '<button id="psSave" style="appearance:none; border:none; cursor:pointer; padding:0 22px; border-radius:14px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff; box-shadow:0 8px 22px rgba(39,117,202,0.4);">' + (editing ? "save" : "add") + '</button>' +
+              '<div style="flex:1; display:flex; align-items:center; gap:9px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.1); border-radius:14px; padding:12px 14px;"><span style="font-size:15px;">🙂</span><input id="psName" type="text" placeholder="guest name" value="' + (editing && !member.you ? app.esc(member.name) : "") + '" autocomplete="off" style="flex:1; background:transparent; border:none; outline:none; color:#2B2118; font-family:\'General Sans\',sans-serif; font-size:15px;" /></div>' +
+              '<button id="psSave" style="appearance:none; border:none; cursor:pointer; padding:0 22px; border-radius:14px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + (editing ? "save" : "add") + '</button>' +
             '</div>' +
             (editing && !member.you ? '<button id="psRemove" style="width:100%; margin-top:12px; appearance:none; cursor:pointer; min-height:46px; border-radius:999px; background:transparent; border:1px solid rgba(255,107,94,0.4); color:#FF6B5E; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px;">remove from split</button>' : '') +
           '</div>' +
@@ -632,7 +632,7 @@
         var color = f.color || "linear-gradient(150deg,#2775CA,#3DE8C7)";
         var sub = f.handle ? ("@" + f.handle) : (f.primaryWallet ? (f.primaryWallet.slice(0, 4) + "…" + f.primaryWallet.slice(-4)) : "");
         return '<div class="psFriend" data-name="' + app.esc(nm) + '" data-uid="' + app.esc(f.id) + '" data-wallet="' + app.esc(f.primaryWallet || "") + '" data-emoji="' + app.esc(em) + '" ' +
-          'style="display:flex; align-items:center; gap:13px; background:#0e1a24; border:1px solid rgba(43,33,24,0.05); border-radius:14px; padding:11px 12px; cursor:pointer; margin-bottom:8px;">' +
+          'style="display:flex; align-items:center; gap:13px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.05); border-radius:14px; padding:11px 12px; cursor:pointer; margin-bottom:8px;">' +
           '<div style="width:44px; height:44px; border-radius:14px; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none; box-shadow:0 5px 14px rgba(43,33,24,0.13);">' + app.esc(em) + '</div>' +
           '<div style="flex:1; min-width:0;"><div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(nm) + '</div>' + (sub ? '<div style="font-family:' + F_MONO + '; font-size:10.5px; color:rgba(43,33,24,0.4); margin-top:2px;">' + app.esc(sub) + '</div>' : '') + '</div>' +
           '<div style="display:inline-flex; align-items:center; gap:5px; background:rgba(39,117,202,0.14); border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:6px 13px 6px 10px; flex:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5BA6F0" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:#5BA6F0;">add</span></div>' +

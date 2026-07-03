@@ -54,7 +54,7 @@
     return '' +
       '<div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:88px; padding:0 20px; flex:none;">' +
         '<div style="display:flex; align-items:center; gap:12px;">' +
-          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:28px; letter-spacing:-0.8px; margin:0; color:#2B2118;">you</h1>' +
+          '<h1 class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:28px; letter-spacing:-0.8px; margin:0; color:#2B2118;">you</h1>' +
           '<div id="yGear" style="width:36px; height:36px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.75)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a1.8 1.8 0 0 0 .36 1.98l.07.07a2.2 2.2 0 1 1-3.11 3.11l-.07-.07a1.8 1.8 0 0 0-3.04 1.28V21a2.2 2.2 0 0 1-4.4 0v-.1A1.8 1.8 0 0 0 5.5 19.4l-.07.07a2.2 2.2 0 1 1-3.11-3.11l.07-.07a1.8 1.8 0 0 0-1.28-3.04H1a2.2 2.2 0 0 1 0-4.4h.1A1.8 1.8 0 0 0 2.6 5.5l-.07-.07a2.2 2.2 0 1 1 3.11-3.11l.07.07a1.8 1.8 0 0 0 1.98.36H8a1.8 1.8 0 0 0 1.1-1.65V1a2.2 2.2 0 0 1 4.4 0v.1a1.8 1.8 0 0 0 3.04 1.28l.07-.07a2.2 2.2 0 1 1 3.11 3.11l-.07.07A1.8 1.8 0 0 0 21.9 8H22a2.2 2.2 0 0 1 0 4.4h-.1a1.8 1.8 0 0 0-1.5 1.1z"/></svg></div>' +
         '</div>' +
         // full-body mascot companion (window.Mascot, wave mood), scaled into the
@@ -78,7 +78,7 @@
         '<div id="yAvatar" style="width:72px; height:72px; border-radius:22px; background:' + id.color + '; display:flex; align-items:center; justify-content:center; font-size:36px; box-shadow:0 12px 28px rgba(43,33,24,0.13); flex:none; cursor:pointer;">' + app.esc(id.emoji) + '</div>' +
         '<div style="flex:1; min-width:0;">' +
           '<div style="display:flex; align-items:center; gap:8px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.4px; color:#2B2118;">' + app.esc((id.name || "you").toLowerCase()) + '</span><span style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(39,117,202,0.75);">' + app.esc(id.handle.toLowerCase()) + '</span><span id="yEdit" style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.4); cursor:pointer;">edit</span></div>' +
-          '<div id="yWalletChip" style="display:inline-flex; align-items:center; gap:8px; margin-top:9px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:999px; padding:5px 11px;' + (id.wallet ? ' cursor:pointer;' : '') + '">' +
+          '<div id="yWalletChip" style="display:inline-flex; align-items:center; gap:8px; margin-top:9px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:5px 11px;' + (id.wallet ? ' cursor:pointer;' : '') + '">' +
             '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.6);">' + app.esc(truncWallet(id.wallet)) + '</span>' +
             copyIcon +
           '</div>' +
@@ -90,10 +90,8 @@
   //    shimmer, perforated middle). Big mono balance with blue glow. ────────────
   function balanceCard(balanceCents) {
     return '' +
-      '<div style="position:relative; background:#FFFDF7; border-radius:24px; border:1px solid rgba(43,33,24,0.08); box-shadow:0 16px 40px rgba(43,33,24,0.13); overflow:hidden; margin-top:22px;">' +
-        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 5%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
-        '<div style="position:absolute; left:0; right:0; top:0; height:4px; background:linear-gradient(90deg,#2775CA,#3DE8C7);"></div>' +
-        '<div style="position:absolute; top:0; bottom:0; right:0; width:130px; background:linear-gradient(102deg, transparent 0%, rgba(39,117,202,0.045) 50%, rgba(255,255,255,0.03) 60%, transparent 100%); pointer-events:none;"></div>' +
+      '<div style="position:relative; background:#FFFDF7; border-radius:24px; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); margin-top:22px; transform:rotate(0.4deg);">' +
+        '<div class="jtape" style="top:-12px; right:12%; background:rgba(255,198,92,0.6);"></div>' +
 
         '<div style="position:relative; padding:20px 20px 8px;">' +
           '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">YOUR BALANCE</div>' +
@@ -115,7 +113,7 @@
 
         '<div style="position:relative; padding:18px 20px 20px;">' +
           '<div style="display:flex; gap:11px;">' +
-            '<button id="yAdd" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 24px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);">' +
+            '<button id="yAdd" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
               '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
               '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#fff;">add money</span>' +
             '</button>' +
@@ -157,7 +155,7 @@
 
     return '' +
       '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); padding:24px 2px 11px;">SETTINGS</div>' +
-      '<div style="background:#FFFDF7; border:1px solid rgba(43,33,24,0.07); border-radius:18px; overflow:hidden;">' +
+      '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); overflow:hidden;">' +
         row("yWallet", "🔑", "rgba(139,92,246,0.16)", "wallet & recovery") + divider() +
         row("yFriends", "🫂", "rgba(39,117,202,0.16)", "friends") + divider() +
         row("yRecurring", "🔁", "rgba(61,232,199,0.14)", "recurring") + divider() +
@@ -265,7 +263,7 @@
           '<div style="margin:10px 0 4px;">' + app.mascot({ size: 128, mood: "happy", glow: true }) + '</div>' +
           '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.6px; max-width:300px; margin:10px 0 0; color:#2B2118;">your wallet, your tabs, your money.</h1>' +
           '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(43,33,24,0.45); margin:16px 0 22px;">connect to see your balance</div>' +
-          '<button id="yConnect" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:320px; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 8px 24px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);">connect a wallet</button>' +
+          '<button id="yConnect" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:320px; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">connect a wallet</button>' +
           '<button id="yCreate" style="appearance:none; cursor:pointer; width:100%; max-width:320px; min-height:52px; margin-top:11px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.2); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">create a wallet</button>' +
           '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(43,33,24,0.4); margin-top:22px;">non-custodial · your keys · usdc on solana</div>' +
         '</div>' +
@@ -334,7 +332,7 @@
           '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118; margin-top:4px;">cash out to your card</div>' +
         '</div>' +
         app.amountEntryHtml(entryOpts) +
-        '<button id="yOut" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 8px 24px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);">' +
+        '<button id="yOut" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">cash out to card/bank</span>' +
         '</button>' +

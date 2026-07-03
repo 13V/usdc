@@ -338,7 +338,7 @@
     // and boings while the refresh runs.
     ind.innerHTML = '<div style="width:26px;height:26px;border-radius:47% 53% 52% 48%/55% 48% 52% 45%;' +
       'background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697);' +
-      'box-shadow:0 4px 12px rgba(39,117,202,.5), inset 0 2px 4px rgba(255,255,255,.28);' +
+      'box-shadow:3px 3px 0 rgba(43,33,24,0.9);' +
       'display:flex;align-items:center;justify-content:center;gap:4px;">' +
       '<span style="width:4px;height:6px;border-radius:50%;background:#F7F1E3;"></span>' +
       '<span style="width:4px;height:6px;border-radius:50%;background:#F7F1E3;"></span></div>';
@@ -659,7 +659,7 @@
           '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:4px;">straight to your balance — dollars, just faster.</div>' +
         '</div>' +
         amountEntryHtml({ idp: "dep", default: DEFAULT }) +
-        '<button id="depCard" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 8px 24px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);">' +
+        '<button id="depCard" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">add with card</span>' +
         '</button>' +
@@ -676,7 +676,7 @@
           '<div id="depQrWrap" style="width:206px; margin:14px auto 0; background:#fff; border-radius:16px; padding:8px;">' +
             '<img id="depQr" alt="your wallet qr" width="190" height="190" style="display:block; border-radius:8px;" src="' + esc(qrImg(solUrl)) + '">' +
           '</div>' +
-          '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:16px auto 0; max-width:300px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); border-radius:13px; padding:12px 14px; cursor:pointer;">' +
+          '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:16px auto 0; max-width:300px; background:#FFFDF7; border:2px solid #2B2118; border-radius:13px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:12px 14px; cursor:pointer;">' +
             '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(43,33,24,0.85);">' + esc(short) + '</span>' +
             '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
           '</div>' +

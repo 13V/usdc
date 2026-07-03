@@ -126,7 +126,7 @@
 
   // the receipt card (header + perforation + member rows) — lifted verbatim
   function receiptCard(bill, ps, eachFmt, rowsHtml) {
-    return '<div style="position:relative; width:100%; background:#FFFDF7; border-radius:22px; border:1px solid rgba(43,33,24,0.08); box-shadow:0 16px 40px rgba(43,33,24,0.13); overflow:hidden;">' +
+    return '<div style="position:relative; width:100%; background:#FFFDF7; border-radius:22px; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); overflow:hidden;">' +
       '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 5%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
       '<div style="position:relative; padding:18px 18px 6px;">' +
         '<div style="display:flex; align-items:center; justify-content:space-between;">' +
@@ -214,7 +214,7 @@
     } else {
       actions =
         '<div style="width:100%; display:flex; flex-direction:column; gap:10px; margin-top:16px;">' +
-          '<button class="tcShare" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 10px 26px rgba(39,117,202,0.45);">' +
+          '<button class="tcShare" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">share tab</span>' +
           '</button>' +
@@ -277,7 +277,7 @@
       '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 24px 40px;">' +
         '<div style="margin-bottom:6px;">' + app.mascot({ size: 104, mood: "sparkle", glow: true }) + '</div>' +
         // share card — the reserved kinetic blue→mint gradient (settle/success)
-        '<div style="position:relative; width:100%; border-radius:24px; padding:28px 24px 24px; overflow:hidden; background:linear-gradient(125deg,#2775CA 0%,#2aa5cf 48%,#3DE8C7 100%); background-size:200% 200%; animation:tcGrad 6s ease-in-out infinite; box-shadow:0 22px 52px rgba(39,117,202,0.45);">' +
+        '<div style="position:relative; width:100%; border-radius:24px; padding:28px 24px 24px; overflow:hidden; background:linear-gradient(125deg,#2775CA 0%,#2aa5cf 48%,#3DE8C7 100%); background-size:200% 200%; animation:tcGrad 6s ease-in-out infinite; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
           '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 85% 6%, rgba(255,255,255,0.10) 0 1px, transparent 1px 9px); opacity:.55; pointer-events:none;"></div>' +
           '<div style="position:absolute; top:20px; right:18px; transform:rotate(-11deg); animation:tcStamp .6s ease-out .15s both;">' +
             '<span style="display:inline-flex; align-items:center; gap:5px; border:2px dashed rgba(255,255,255,0.85); border-radius:999px; padding:5px 11px;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:12px; letter-spacing:1px; color:#fff;">ALL IN</span><span style="font-size:12px;">✨</span></span>' +
@@ -295,7 +295,7 @@
           '</div>' +
         '</div>' +
         '<div style="display:flex; gap:11px; width:100%; margin-top:14px;">' +
-          '<button class="tcShareDone" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 8px 22px rgba(61,232,199,0.3);">' +
+          '<button class="tcShareDone" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5 8.6 10.5"/></svg>' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">share ✨</span>' +
           '</button>' +
@@ -401,7 +401,7 @@
           app.mascot({ size: 92, mood: "worried", glow: true }) +
           '<div style="font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:21px; margin-top:6px;">couldn\'t find that tab</div>' +
           '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.6); margin-top:8px;">' + app.esc(e.status === 404 ? "it may have expired or never existed." : e.message) + '</div>' +
-          '<button style="appearance:none; border:none; cursor:pointer; max-width:240px; width:100%; min-height:52px; border-radius:999px; margin-top:18px; background:linear-gradient(120deg,#3286db,#2775CA); color:#fff; font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:16px;" onclick="location.hash=\'#/home\'">back home</button>' +
+          '<button style="appearance:none; border:none; cursor:pointer; max-width:240px; width:100%; min-height:52px; border-radius:999px; margin-top:18px; background:#2775CA; border:2px solid #2B2118; color:#fff; font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:16px;" onclick="location.hash=\'#/home\'">back home</button>' +
         '</div>';
       view.innerHTML = phone(inner, "0.16");
       return;
@@ -433,7 +433,7 @@
             app.mascot({ size: 92, mood: "sleepy", glow: true }) +
             '<div style="font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:21px; margin-top:6px;">no tab to collect</div>' +
             '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.6); margin-top:8px;">start a tab and we\'ll chase everyone down 👀</div>' +
-            '<button style="appearance:none; border:none; cursor:pointer; max-width:240px; width:100%; min-height:52px; border-radius:999px; margin-top:18px; background:linear-gradient(120deg,#3286db,#2775CA); color:#fff; font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:16px;" onclick="location.hash=\'#/new\'">new tab</button>' +
+            '<button style="appearance:none; border:none; cursor:pointer; max-width:240px; width:100%; min-height:52px; border-radius:999px; margin-top:18px; background:#2775CA; border:2px solid #2B2118; color:#fff; font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:16px;" onclick="location.hash=\'#/new\'">new tab</button>' +
           '</div>';
         view.innerHTML = phone(inner, "0.16");
         return;

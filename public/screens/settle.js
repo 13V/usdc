@@ -148,7 +148,7 @@
     var themLabel = S.toName + (t.toWallet ? " · " + trunc(t.toWallet) : "");
 
     var card =
-      '<div style="position:relative; width:100%; max-width:340px; background:#FFFDF7; border-radius:24px; border:1px solid rgba(43,33,24,0.07); box-shadow:0 16px 40px rgba(43,33,24,0.13); padding:20px 20px 18px; overflow:hidden;">' +
+      '<div style="position:relative; width:100%; max-width:340px; background:#FFFDF7; border-radius:24px; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:20px 20px 18px; overflow:hidden;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 4%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
         '<div style="position:absolute; top:16px; bottom:16px; right:12px; width:3px; background:repeating-linear-gradient(180deg, rgba(39,117,202,0.6) 0 5px, transparent 5px 11px); opacity:.5; pointer-events:none;"></div>' +
         '<div style="position:relative;">' +
@@ -168,7 +168,7 @@
           '</div>' +
           // pay paths
           '<div style="display:flex; flex-direction:column; gap:9px; margin-top:18px;">' +
-            '<button id="stPhantom" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:52px; border-radius:15px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 10px 26px rgba(39,117,202,0.45);">' +
+            '<button id="stPhantom" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:52px; border-radius:15px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
               PHANTOM_SVG +
               '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">pay with phantom</span>' +
             '</button>' +
@@ -201,7 +201,7 @@
         stage("",
           '<div style="margin-bottom:14px;">' + mascot(58, "happy") + '</div>' +
           // primary: pay in-app with the user's own (Privy/created) wallet
-          '<button id="stInApp" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:340px; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 12px 30px rgba(39,117,202,0.5);">' +
+          '<button id="stInApp" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:340px; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">pay ' + amtStr + ' with my wallet</span><span style="font-size:14px;">✨</span>' +
           '</button>' +
           '<div style="display:flex; align-items:center; gap:12px; width:100%; max-width:340px; padding:14px 0 4px;"><span style="flex:1; height:1px; background:rgba(43,33,24,0.10);"></span><span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.4);">or pay from another wallet</span><span style="flex:1; height:1px; background:rgba(43,33,24,0.10);"></span></div>' +
@@ -261,7 +261,7 @@
           // truthful reassurance — we're watching, nothing's confirmed yet.
           '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.42); margin-top:8px; max-width:280px;">hang tight — we check automatically every few seconds.</div>' +
           '<div style="width:100%; max-width:340px; margin-top:30px; display:flex; flex-direction:column; gap:11px;">' +
-            '<button id="stCheck" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 10px 26px rgba(39,117,202,0.42);">i\'ve paid — check now</button>' +
+            '<button id="stCheck" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">i\'ve paid — check now</button>' +
             '<button id="stWalletAgain" style="appearance:none; background:transparent; border:none; cursor:pointer; width:100%; min-height:44px; font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5);">open wallet again</button>' +
           '</div>'
         ) +
@@ -287,7 +287,7 @@
           '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:25px; line-height:1.16; letter-spacing:-0.3px; text-align:center; margin:22px 0 0; color:#2B2118;">still looking 👀</h2>' +
           '<p style="font-family:\'General Sans\',sans-serif; font-size:14px; line-height:1.45; text-align:center; color:rgba(43,33,24,0.55); margin:11px 0 0; max-width:264px;">paid already? give it a few seconds — solana\'s fast, but your wallet might still be broadcasting.</p>' +
           '<div style="width:100%; max-width:340px; margin-top:30px; display:flex; flex-direction:column; gap:11px;">' +
-            '<button id="stAgain" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 10px 26px rgba(39,117,202,0.42);">check again</button>' +
+            '<button id="stAgain" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">check again</button>' +
             '<button id="stOpenAgain" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">open wallet again</button>' +
           '</div>'
         ) +
@@ -327,7 +327,7 @@
           '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; line-height:1.2; letter-spacing:-0.3px; text-align:center; margin:20px 0 0; color:#2B2118; max-width:280px;">you need ' + amt + ' USDC to settle this</h2>' +
           breakdown +
           '<div style="width:100%; max-width:340px; margin-top:30px; display:flex; flex-direction:column; gap:11px;">' +
-            '<button id="stAdd" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#FF8A7E,#FF6B5E); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; box-shadow:0 10px 28px rgba(255,107,94,0.4);">' +
+            '<button id="stAdd" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#FF8A7E,#FF6B5E); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
               '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">add money</span>' +
               '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(255,255,255,0.8);">DEBIT CARD · APPLE PAY · INSTANT</span>' +
             '</button>' +
@@ -381,7 +381,7 @@
   function renderSettled() {
     var card =
       '<div id="stShare" style="position:relative; width:100%; max-width:340px; border-radius:24px; padding:18px 24px 24px; overflow:hidden; color:#fff;' +
-        'background:linear-gradient(125deg,#2775CA 0%,#2aa5cf 48%,#3DE8C7 100%); background-size:200% 200%; animation:stGrad 6s ease-in-out infinite; box-shadow:0 22px 52px rgba(39,117,202,0.45);">' +
+        'background:linear-gradient(125deg,#2775CA 0%,#2aa5cf 48%,#3DE8C7 100%); background-size:200% 200%; animation:stGrad 6s ease-in-out infinite; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 85% 6%, rgba(255,255,255,0.10) 0 1px, transparent 1px 9px); opacity:.55; pointer-events:none;"></div>' +
         // squared stamp
         '<div style="position:absolute; top:18px; right:16px; transform:rotate(-11deg); animation:stStamp .6s ease-out .15s both;">' +
@@ -420,7 +420,7 @@
           '<div style="margin-bottom:16px;">' + mascot(62, "sparkle", "stBounce 2.4s ease-in-out infinite") + '</div>' +
           card +
           '<div style="display:flex; gap:11px; width:100%; max-width:340px; margin-top:14px;">' +
-            '<button id="stShareBtn" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 8px 22px rgba(61,232,199,0.3);">' +
+            '<button id="stShareBtn" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
               SHARE_SVG +
               '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">share ✨</span>' +
             '</button>' +
@@ -596,7 +596,7 @@
           mascot(96, "shrug", "stShrug 3.4s ease-in-out infinite") +
           '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; margin-top:14px; color:#2B2118;">' + esc(title) + '</div>' +
           '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.55); margin-top:6px; max-width:280px;">' + esc(hint) + '</div>' +
-          (btnLabel ? '<button id="stBack" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:260px; min-height:54px; margin-top:18px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:0 10px 26px rgba(39,117,202,0.42);">' + esc(btnLabel) + '</button>' : '')
+          (btnLabel ? '<button id="stBack" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:260px; min-height:54px; margin-top:18px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + esc(btnLabel) + '</button>' : '')
         ) +
       '</div>';
     wireCancel();

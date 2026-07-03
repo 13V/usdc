@@ -47,7 +47,7 @@
     Object.keys(state).forEach(function (e) { if (keys.indexOf(e) < 0) keys.push(e); });
     var chips = {};
     keys.forEach(function (emoji) {
-      var chip = elFrom('<div style="display:inline-flex; align-items:center; gap:5px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:5px 11px; cursor:pointer;"></div>');
+      var chip = elFrom('<div style="display:inline-flex; align-items:center; gap:5px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:5px 11px; cursor:pointer;"></div>');
       chips[emoji] = chip;
       function paint() {
         var st = state[emoji] || { count: 0, mine: false };
@@ -172,7 +172,7 @@
       " · " + ntabs + " " + (ntabs === 1 ? "TAB" : "TABS") + since;
 
     return '' +
-    '<div style="position:relative; margin:6px 16px 0; border-radius:22px; overflow:hidden; padding:18px 18px; background:linear-gradient(135deg,#2775CA 0%,#2f7fd6 55%,#1f63ab 100%); box-shadow:0 14px 34px rgba(39,117,202,0.4);">' +
+    '<div style="position:relative; margin:6px 16px 0; border-radius:22px; overflow:hidden; padding:18px 18px; background:linear-gradient(135deg,#2775CA 0%,#2f7fd6 55%,#1f63ab 100%); box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
       '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 10%, rgba(255,255,255,0.10) 0 1px, transparent 1px 9px); opacity:.5; pointer-events:none;"></div>' +
       '<div style="position:relative; display:flex; align-items:center; justify-content:space-between;">' +
         '<div style="display:flex; align-items:center;">' + stack + more + '</div>' +
@@ -228,7 +228,7 @@
     var html = '' +
     '<div style="margin:22px 0 4px; border-radius:20px; padding:18px 18px 16px; ' +
       'background:linear-gradient(150deg, rgba(61,232,199,0.12), rgba(39,117,202,0.10)); ' +
-      'border:1px solid rgba(61,232,199,0.35); box-shadow:0 12px 30px rgba(61,232,199,0.12);">' +
+      'border:1px solid rgba(61,232,199,0.35); box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
       '<div style="display:flex; align-items:center; gap:9px;">' +
         '<span style="font-size:20px;">✨</span>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.3px; color:#2B2118;">is one of these you?</span>' +
@@ -410,7 +410,7 @@
       var toNameStyle = toYou
         ? 'font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.5);'
         : 'font-family:\'General Sans\',sans-serif; font-size:14px; font-weight:500; color:#2B2118;';
-      return '<div style="display:flex; align-items:center; gap:10px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:14px; padding:11px 14px;">' +
+      return '<div style="display:flex; align-items:center; gap:10px; background:#FFFDF7; border:2px solid #2B2118; border-radius:14px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px;">' +
         gavatar(fromM, 28) +
         '<span style="' + fromNameStyle + '">' + app.esc(fromName) + '</span>' +
         arrowSvg() +
@@ -476,7 +476,7 @@
       ? '<div style="font-family:\'Space Mono\',monospace; font-size:9px; color:' + d.color + '; margin-top:2px;">' + d.sign + (d.cents / 100).toFixed(2) + '</div>'
       : "";
     return '' +
-    '<div class="gTab" data-eid="' + app.esc(e.id) + '" style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:16px; padding:13px 15px; cursor:pointer;">' +
+    '<div class="gTab" data-eid="' + app.esc(e.id) + '" style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 15px; cursor:pointer;">' +
       '<div style="width:42px; height:42px; border-radius:13px; background:#F7F1E3; display:flex; align-items:center; justify-content:center; font-size:21px; flex:none;">' + tabEmoji(e.title) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
         '<div style="display:flex; align-items:center; gap:7px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(e.title || "a tab") + '</span></div>' +
@@ -511,9 +511,9 @@
   // ---------- sticky bottom: settle up + add a tab ----------
   function stickyBar() {
     return '' +
-    '<div style="position:fixed; left:0; right:0; bottom:0; z-index:40; padding:12px 18px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(11,22,34,0) 0%, #2B2118 26%); display:flex; gap:11px; max-width:520px; margin:0 auto;">' +
+    '<div style="position:fixed; left:0; right:0; bottom:0; z-index:40; padding:12px 18px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(247,241,227,0) 0%, #F7F1E3 26%); display:flex; gap:11px; max-width:520px; margin:0 auto;">' +
       '<button id="gSettle" style="appearance:none; cursor:pointer; flex:none; width:128px; min-height:54px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">settle up</button>' +
-      '<button id="gAdd" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:54px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 10px 26px rgba(39,117,202,0.45);">' +
+      '<button id="gAdd" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">add a tab</span>' +
       '</button>' +
@@ -577,7 +577,7 @@
     }).join("");
 
     var settleBtn = youOwe > 0
-      ? '<button id="gTabSettle" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#FF8A7E,#FF6B5E); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 12px 30px rgba(255,107,94,0.38); margin-top:14px;">' +
+      ? '<button id="gTabSettle" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#FF8A7E,#FF6B5E); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(43,33,24,0.9); margin-top:14px;">' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">settle your ' + plain(youOwe) + '</span>' +
         '</button>'
       : '<button id="gTabSettle" style="appearance:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; margin-top:14px;">settle up</button>';
@@ -585,7 +585,7 @@
     var html = '' +
     '<div style="margin:0 -20px;">' +
       // receipt sheet
-      '<div style="position:relative; background:#FFFDF7; border-radius:24px; border:1px solid rgba(43,33,24,0.08); box-shadow:0 18px 44px rgba(43,33,24,0.13); overflow:hidden; margin:0 20px;">' +
+      '<div style="position:relative; background:#FFFDF7; border-radius:24px; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); overflow:hidden; margin:0 20px;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 4%, rgba(255,255,255,0.045) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
         '<div style="position:absolute; left:0; right:0; top:0; height:5px; background:linear-gradient(90deg,#2775CA,#3DE8C7);"></div>' +
         // head

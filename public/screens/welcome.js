@@ -48,7 +48,7 @@
         // welcome-only celebration decoration.
         '<div style="position:relative; display:flex; align-items:center; justify-content:center;">' +
           (window.Mascot ? window.Mascot.html({ size: 132, mood: "sparkle", glow: false }) : "") +
-          '<div style="position:absolute; right:24px; bottom:28px; width:40px; height:40px; border-radius:50%; background:linear-gradient(150deg,#5ff0d4,#2bccae); border:3px solid #2B2118; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(61,232,199,0.5); animation:wrPop .5s ease-out both; animation-delay:.35s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
+          '<div style="position:absolute; right:24px; bottom:28px; width:40px; height:40px; border-radius:50%; background:linear-gradient(150deg,#5ff0d4,#2bccae); border:3px solid #2B2118; display:flex; align-items:center; justify-content:center; box-shadow:3px 3px 0 rgba(43,33,24,0.9); animation:wrPop .5s ease-out both; animation-delay:.35s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
         '</div>' +
       '</div>';
   }
@@ -90,8 +90,8 @@
           // wallet identity card
           '<div style="width:100%; max-width:320px; margin-top:26px;">' +
             '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); text-align:left; margin:0 4px 9px;">YOUR WALLET</div>' +
-            '<div style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:20px; padding:14px 15px; box-shadow:0 14px 32px rgba(43,33,24,0.13);">' +
-              '<div style="width:46px; height:46px; border-radius:15px; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; box-shadow:0 6px 16px rgba(39,117,202,0.4);">' + app.esc(emoji) + '</div>' +
+            '<div style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:14px 15px; box-shadow:0 14px 32px rgba(43,33,24,0.13);">' +
+              '<div style="width:46px; height:46px; border-radius:15px; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + app.esc(emoji) + '</div>' +
               '<div style="flex:1; text-align:left; min-width:0;">' +
                 '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(43,33,24,0.4);">SOLANA</div>' +
                 '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:.5px; color:#2B2118; margin-top:3px;">' + app.esc(trunc(wallet)) + '</div>' +
@@ -107,7 +107,7 @@
 
         // sticky CTA
         '<div style="position:relative; z-index:6; flex:none; padding:8px 26px calc(20px + env(safe-area-inset-bottom));">' +
-          '<button id="wStart" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:58px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 14px 34px rgba(39,117,202,0.55), inset 0 1px 0 rgba(255,255,255,0.28);">' +
+          '<button id="wStart" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:58px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">start splitting</span><span style="font-size:15px;">✨</span>' +
           '</button>' +
           '<div style="text-align:center; margin-top:14px;"><span id="wView" style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">view my wallet</span></div>' +
