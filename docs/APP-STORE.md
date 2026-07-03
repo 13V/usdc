@@ -118,10 +118,10 @@ that settles in **USDC on Solana**, presented to users as plain dollars
 | Keywords (iOS, 100 char) | split,bill,expenses,settle,friends,roommates,venmo,group,IOU,dinner,rent,dollars |
 | Category (primary) | **Finance** |
 | Category (secondary, optional) | Utilities / Social Networking |
-| Support URL | https://divvysol.com/support (create; can point to a contact page) |
+| Support URL | **https://app.divvysol.com/support** — server-rendered support/FAQ + contact page (`GET /support`, `src/legal.ts`). Host is `PUBLIC_ORIGIN`-based (defaults to the request host); swap the domain if the app is served elsewhere. |
 | Marketing URL | https://divvysol.com |
-| Privacy policy URL | **https://divvysol.com/privacy.html** (`/public/privacy.html`) |
-| Terms of Use (EULA) URL | **https://divvysol.com/terms.html** (`/public/terms.html`) |
+| Privacy policy URL | **https://app.divvysol.com/privacy** — server-rendered (`GET /privacy`, `src/legal.ts`). Legacy static `/public/privacy.html` still resolves as a fallback. |
+| Terms of Use (EULA) URL | **https://app.divvysol.com/terms** — server-rendered (`GET /terms`, `src/legal.ts`). Legacy static `/public/terms.html` still resolves as a fallback. |
 | Support email | support@divvysol.com |
 | Copyright | © 2026 Divvy |
 | Age rating | **17+ (iOS) / Teen or higher (Play)** — see age-rating note in (f). |
@@ -225,13 +225,15 @@ collects (see `/public/privacy.html`). MoonPay/Coinbase collect card & KYC data
 ## (f) Pre-submit QA checklist
 
 **Links & content**
-- [ ] No dead links anywhere. `/privacy.html` and `/terms.html` resolve on the
-      production domain and are linked from **inside the app** (Settings/You) and
-      from store metadata.
-- [ ] Footer "Back to Divvy" (`/`) works from both policy pages.
-- [ ] No placeholder text ships to users. **Fill `[State], USA`** in
-      `terms.html` governing-law before store submission, and have counsel review
-      both policy pages (they're marked TEMPLATE).
+- [ ] No dead links anywhere. `/terms`, `/privacy`, and `/support` (server-rendered,
+      `src/legal.ts`) resolve on the production domain and are linked from **inside
+      the app** (You → help & support sheet, and the policy links on the You screen)
+      and from store metadata. Legacy `/privacy.html` / `/terms.html` still resolve.
+- [ ] Footer "back to divvy" (`/`) + the "terms · privacy · support" footer work on
+      all three server-rendered pages (and on the `/pay/:id` tab-landing page).
+- [ ] No placeholder text ships to users. **Fill `[YOUR JURISDICTION]`** in the
+      governing-law section of `src/legal.ts` (`GET /terms`) before store
+      submission, and have counsel review both policy pages.
 - [ ] `support@divvysol.com` inbox is live and monitored.
 
 **Account deletion (Apple REQUIRES in-app)**
@@ -276,8 +278,11 @@ collects (see `/public/privacy.html`). MoonPay/Coinbase collect card & KYC data
 
 ## Appendix — quick reference
 
-- Privacy Policy: `/public/privacy.html` → https://divvysol.com/privacy.html
-- Terms of Service: `/public/terms.html` → https://divvysol.com/terms.html
+- Support / FAQ: `GET /support` (`src/legal.ts`) → https://app.divvysol.com/support
+- Privacy Policy: `GET /privacy` (`src/legal.ts`) → https://app.divvysol.com/privacy
+  (legacy static `/public/privacy.html` still served as a fallback)
+- Terms of Service: `GET /terms` (`src/legal.ts`) → https://app.divvysol.com/terms
+  (legacy static `/public/terms.html` still served as a fallback)
 - Web app assets: `/public/` (`index.html`, `manifest.webmanifest`, `sw.js`,
   `icon.svg`)
 - Existing mobile scaffold to audit: `/mobile/`

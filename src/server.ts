@@ -105,6 +105,9 @@ import { ogMeta, tripShareHtml, OG_CARD_PATH } from "./og";
 import { referralsRouter, setRefCookie, readRefCookie, recordReferral } from "./referrals";
 import { rateLimit, moneyRateLimit, writeRateLimit, spamRateLimit } from "./ratelimit";
 import { telemetryRouter } from "./telemetry";
+// Server-rendered legal + support pages (GET /terms, /privacy, /support). Static,
+// no SPA. See src/legal.ts.
+import { legalRouter } from "./legal";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
@@ -231,6 +234,8 @@ app.use(reactionsRouter);
 app.use(nudgesRouter);
 app.use(pushRouter);
 app.use(referralsRouter);
+// Legal + support pages: /terms, /privacy, /support (server-rendered, static).
+app.use(legalRouter);
 // First-party error + analytics ingest. Reuses the shared IP rate limiter
 // (12/min per IP). authOptional (above) sets req.userId; telemetry stores only
 // a hash of it, never the id. See src/telemetry.ts.
@@ -1933,6 +1938,13 @@ function renderBillLanding(bill: Bill, baseUrl = ""): string {
   <div class="sec">tap your name to pay</div>
   ${rows}
   <p class="foot muted">no app needed — pay your share with a card or a wallet.<br/>dollars, just faster.</p>
+  <p class="foot" style="margin-top:14px; font-size:.72rem;">
+    <a href="/terms" style="color:rgba(244,247,250,.45); text-decoration:none;">terms</a>
+    <span style="color:rgba(244,247,250,.25);"> · </span>
+    <a href="/privacy" style="color:rgba(244,247,250,.45); text-decoration:none;">privacy</a>
+    <span style="color:rgba(244,247,250,.25);"> · </span>
+    <a href="/support" style="color:rgba(244,247,250,.45); text-decoration:none;">support</a>
+  </p>
 </body></html>`;
 }
 

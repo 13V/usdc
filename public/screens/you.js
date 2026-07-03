@@ -265,13 +265,15 @@
         row("yRecurring", "🔁", "rgba(61,232,199,0.14)", "recurring") + divider() +
         row("ySaved", "🧾", "rgba(255,198,92,0.16)", "saved tabs") + divider() +
         // notifications taps through to the activity feed; an unread count badge
-        // is patched in after render (best-effort, see wireNotifBadge). help isn't
-        // wired yet — render it as "soon" so it reads as not-yet-available.
+        // is patched in after render (best-effort, see wireNotifBadge).
         row("yNotif", "🔔", "rgba(255,107,94,0.14)", "notifications") + divider() +
         row("yPush", "📣", "rgba(139,92,246,0.16)", "push notifications", '<span id="yPushState" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.4); margin-right:2px;">off</span>') + divider() +
         row("ySound", "🔊", "rgba(61,232,199,0.14)", "sounds", '<span id="ySoundState" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.4); margin-right:2px;">on</span>') + divider() +
         row("yNet", "🌐", "rgba(39,117,202,0.16)", "network", netTag) + divider() +
-        row("yHelp", "💁", "rgba(43,33,24,0.07)", "help", null, true) +
+        // export a CSV of the user's history (built client-side from /api/activity)
+        // and help & support (FAQs + contact + links to /terms and /privacy).
+        row("yExport", "📄", "rgba(255,198,92,0.16)", "export my history (csv)") + divider() +
+        row("yHelp", "💁", "rgba(43,33,24,0.07)", "help & support") +
       '</div>';
   }
 
@@ -507,6 +509,110 @@
     if (more) more.onclick = function () { app.closeSheet(); app.depositSheet(); };
   }
 
+  // ── help & support ───────────────────────────────────────────────────────────
+  // A journal-styled sheet: a "where's my money" explainer, a handful of honest
+  // FAQs (non-custodial in plain words), a mailto to support, and links out to
+  // the server-rendered /terms and /privacy pages (new tab). Self-contained.
+  var SUPPORT_EMAIL = "support@divvysol.com";
+
+  function faqBlock(q, a) {
+    return '' +
+      '<div style="border-top:1px solid rgba(43,33,24,0.08); padding:13px 2px 3px;">' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:#2B2118;">' + q + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; line-height:1.55; color:rgba(43,33,24,0.66); margin-top:5px;">' + a + '</div>' +
+      '</div>';
+  }
+
+  function openHelpSheet() {
+    app.haptic && app.haptic();
+    var faqs =
+      faqBlock("where does my money live?",
+        "in your own wallet — never with divvy. we're non-custodial, so we never hold your funds or your keys. your balance is USDC, a digital dollar, and only you can move it.") +
+      faqBlock("how do i get paid?",
+        "when a friend settles up, the money lands straight in your wallet, usually within seconds. your balance here updates automatically, and you can cash out to your bank or card any time.") +
+      faqBlock("what does it cost?",
+        "splitting and settling is free. the network fee is a fraction of a cent. if you add or cash out money with a card, our partner moonpay charges a small fee, shown before you confirm.") +
+      faqBlock("is this a bank?",
+        "no. divvy isn't a bank and doesn't hold your money. it's a tool for splitting bills and settling up in USDC, a digital dollar, that stays in your own wallet the whole time.") +
+      faqBlock("how do i delete my account?",
+        "scroll to the bottom of this screen and tap “delete account.” that removes your login and profile — your wallet and any money in it stay yours.");
+
+    app.sheet(
+      '<div style="padding:4px 20px 28px; max-height:72vh; overflow:auto;">' +
+        '<div style="text-align:center; margin-bottom:6px;">' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">HELP &amp; SUPPORT</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118; margin-top:4px;">how divvy works</div>' +
+        '</div>' +
+        // "where's my money" explainer
+        '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:15px 16px; margin-top:12px;">' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.2px; color:rgba(43,33,24,0.45);">WHERE’S MY MONEY?</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; line-height:1.55; color:rgba(43,33,24,0.72); margin-top:7px;">your money lives in <b>your own wallet</b>, not with divvy. every balance is <b>USDC — a digital dollar</b> — sitting in a wallet only you control. divvy just does the math and helps you send. spend it with any card, cash out to your bank, or send it to a friend.</div>' +
+        '</div>' +
+        // FAQs
+        '<div style="margin-top:16px;">' + faqs + '</div>' +
+        // mailto
+        '<a href="mailto:' + SUPPORT_EMAIL + '" style="display:flex; align-items:center; justify-content:center; gap:9px; text-decoration:none; margin-top:20px; min-height:50px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; box-shadow:3px 3px 0 rgba(43,33,24,0.9); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff;">email support</a>' +
+        // legal links (new tab)
+        '<div style="display:flex; gap:14px; justify-content:center; margin-top:16px;">' +
+          '<a href="/terms" target="_blank" rel="noopener" style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.4px; color:rgba(43,33,24,0.5); text-decoration:none;">terms</a>' +
+          '<span style="color:rgba(43,33,24,0.25);">·</span>' +
+          '<a href="/privacy" target="_blank" rel="noopener" style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.4px; color:rgba(43,33,24,0.5); text-decoration:none;">privacy</a>' +
+          '<span style="color:rgba(43,33,24,0.25);">·</span>' +
+          '<a href="/support" target="_blank" rel="noopener" style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.4px; color:rgba(43,33,24,0.5); text-decoration:none;">support page</a>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  // ── export my history (client-side CSV) ──────────────────────────────────────
+  // Builds a CSV from GET /api/activity and downloads it via a Blob link. Fields
+  // are escaped per RFC-4180 (quotes doubled, commas/newlines quoted) AND guarded
+  // against spreadsheet formula injection: any cell beginning with = + - @ (or a
+  // control char) is prefixed with a single quote so Excel/Sheets treats it as
+  // text, not a formula.
+  function csvCell(v) {
+    var s = (v == null) ? "" : String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;           // formula-injection guard
+    if (/[",\n\r]/.test(s) || s.charAt(0) === "'") {   // RFC-4180 quoting
+      s = '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  function activityToCsv(events) {
+    var rows = [["date", "type", "description", "amount", "group"]];
+    if (Array.isArray(events)) {
+      events.forEach(function (e) {
+        if (!e) return;
+        rows.push([e.at || "", e.type || "", e.text || "", e.amountFmt || "", e.tripName || ""]);
+      });
+    }
+    return rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n");
+  }
+
+  function exportHistoryCsv() {
+    app.haptic && app.haptic();
+    app.toast("preparing your history…");
+    Promise.resolve().then(function () { return app.api.get("/api/activity"); })
+      .then(function (events) {
+        var csv = activityToCsv(events);
+        var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "divvy-history-" + new Date().toISOString().slice(0, 10) + ".csv";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+          try { a.remove(); } catch (_) {}
+          try { URL.revokeObjectURL(url); } catch (_) {}
+        }, 0);
+        var n = Array.isArray(events) ? events.length : 0;
+        app.toast(n ? ("exported " + n + " row" + (n === 1 ? "" : "s") + " ✨") : "no history yet — empty file saved");
+      })
+      .catch(function (e) { app.toast((e && e.message) || "couldn't export history"); });
+  }
+
   function wireSettings() {
     var wal = document.getElementById("yWallet");
     if (wal) wal.onclick = function () {
@@ -560,7 +666,12 @@
         app.toast(ok ? "notifications on 🔔" : "couldn't turn on notifications");
       });
     };
-    // help is a "soon" row — intentionally not wired (no no-op tap).
+    // export my history → client-side CSV download from /api/activity.
+    var exp = document.getElementById("yExport");
+    if (exp) exp.onclick = exportHistoryCsv;
+    // help & support → journal-styled FAQ sheet (+ mailto, /terms, /privacy).
+    var help = document.getElementById("yHelp");
+    if (help) help.onclick = openHelpSheet;
     var net = document.getElementById("yNet");
     if (net) net.onclick = function () { app.toast("devnet · usdc on solana 🌐"); };
     var so = document.getElementById("ySignOut");

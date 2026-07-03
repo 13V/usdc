@@ -25,6 +25,7 @@ import * as crypto from "crypto";
 import { Router, Request, Response, RequestHandler } from "express";
 import { db } from "./db";
 import { usingSupabase, supabase } from "./supabase";
+import { sendPush } from "./push";
 
 // ---- Schema (idempotent, dual-store) --------------------------------------
 // Ring buffer: rows older than 14 days are deleted on insert (see pruneOld).
@@ -243,6 +244,146 @@ function forward(rows: TelemetryRow[]): void {
   }
 }
 
+// ---- Alerting (rolling error-rate → one page) ------------------------------
+//
+// A lightweight paging layer distinct from the money-path alerts in src/alerts.ts
+// (which watch settlement anomalies). This one watches the *client error rate*:
+// it keeps a 10-minute rolling count of ingested `error` rows and, when the count
+// crosses a threshold, fires exactly ONE alert, then stays quiet for a cooldown
+// so a sustained outage pages once — not on every batch.
+//
+// Two independent, both-optional sinks, both inert without their env:
+//   • ALERT_WEBHOOK          — generic JSON POST { text } (Slack/Discord/etc.)
+//   • ALERT_PUSH_USER_ID     — a user id (the founder's account); delivered via
+//                              the app's own sendPush(), so the founder's phone
+//                              buzzes the same way a "you got paid" push does.
+//
+// Config (env, all optional):
+//   ALERT_ERROR_THRESHOLD  errors-in-10m that trip an alert (default 25)
+//   ALERT_WEBHOOK          webhook URL for the JSON POST
+//   ALERT_PUSH_USER_ID     founder user id for the push
+//
+// Everything is injectable (poster / pusher / clock / config) so the selftest can
+// drive the threshold crossing and cooldown deterministically with a stubbed
+// poster and no network. Plain fetch, no npm dependency.
+
+/** A recorded client error, kept only long enough to age out of the window. */
+interface ErrHit {
+  t: number;
+  name: string;
+}
+
+export interface AlertDeps {
+  /** Webhook poster. Default: plain fetch to `webhookUrl`. Injected in tests. */
+  post?: (url: string, body: string) => void | Promise<void>;
+  /** Founder push. Default: the app's sendPush(). Injected in tests. */
+  push?: (userId: string, payload: { title: string; body: string; url?: string; tag?: string }) => void | Promise<void>;
+  /** Clock, for deterministic tests. Default: Date.now. */
+  now?: () => number;
+  /** Overrides for the env-derived config (tests pass these explicitly). */
+  webhookUrl?: string;
+  pushUserId?: string;
+  threshold?: number;
+  windowMs?: number;
+  cooldownMs?: number;
+}
+
+export interface ErrorAlerter {
+  /** Record a batch of error names; returns whether this call fired an alert. */
+  record(names: string[]): { fired: boolean; count: number };
+}
+
+const DEFAULT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const DEFAULT_COOLDOWN_MS = 60 * 60 * 1000; // 60 minutes
+
+/** Default webhook poster: fire-and-forget JSON POST, never throws. */
+function defaultPost(url: string, body: string): void {
+  try {
+    void fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+    }).catch(() => {
+      /* alerting is best-effort */
+    });
+  } catch {
+    /* never let alerting break ingest */
+  }
+}
+
+/**
+ * Build an error-rate alerter. Reads config from env unless overridden. Both
+ * sinks are optional and independent — an alerter with neither configured still
+ * counts (and reports `fired`) but delivers nothing.
+ */
+export function makeErrorAlerter(deps: AlertDeps = {}): ErrorAlerter {
+  const threshold =
+    deps.threshold ?? Math.max(1, Math.floor(Number(process.env.ALERT_ERROR_THRESHOLD) || 25));
+  const windowMs = deps.windowMs ?? DEFAULT_WINDOW_MS;
+  const cooldownMs = deps.cooldownMs ?? DEFAULT_COOLDOWN_MS;
+  const webhookUrl = deps.webhookUrl ?? process.env.ALERT_WEBHOOK ?? "";
+  const pushUserId = deps.pushUserId ?? process.env.ALERT_PUSH_USER_ID ?? "";
+  const now = deps.now ?? Date.now;
+  const post = deps.post ?? defaultPost;
+  const push = deps.push ?? sendPush;
+
+  let hits: ErrHit[] = [];
+  let lastFired = 0;
+
+  function topName(): { name: string; count: number } {
+    const counts: Record<string, number> = {};
+    for (const h of hits) counts[h.name] = (counts[h.name] || 0) + 1;
+    let best = { name: "error", count: 0 };
+    for (const name of Object.keys(counts)) {
+      if (counts[name] > best.count) best = { name, count: counts[name] };
+    }
+    return best;
+  }
+
+  function fire(count: number): void {
+    const top = topName();
+    const text = `divvy: ${count} errors in 10m — top: ${top.name} (${top.count})`;
+    if (webhookUrl) {
+      try {
+        void post(webhookUrl, JSON.stringify({ text }));
+      } catch {
+        /* best-effort */
+      }
+    }
+    if (pushUserId) {
+      try {
+        void push(pushUserId, {
+          title: "divvy: error spike",
+          body: text,
+          url: "/#/activity",
+          tag: "alert:errors",
+        });
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+
+  function record(names: string[]): { fired: boolean; count: number } {
+    const t = now();
+    for (const n of names) hits.push({ t, name: n });
+    const cutoff = t - windowMs;
+    // Keep the buffer bounded and windowed (cheap reassign, like alerts.ts).
+    if (hits.length > 4096 || (hits.length && hits[0].t < cutoff)) {
+      hits = hits.filter((h) => h.t >= cutoff);
+    }
+    const count = hits.length;
+    if (count >= threshold && t - lastFired >= cooldownMs) {
+      lastFired = t;
+      fire(count);
+      return { fired: true, count };
+    }
+    return { fired: false, count };
+  }
+
+  return { record };
+}
+
 // ---- Router ----------------------------------------------------------------
 
 /**
@@ -251,6 +392,8 @@ function forward(rows: TelemetryRow[]): void {
  */
 export function telemetryRouter(rateLimitMw: RequestHandler): Router {
   const router = Router();
+  // One rolling error-rate alerter for the process, configured from env at mount.
+  const alerter = makeErrorAlerter();
 
   /**
    * POST /api/telemetry — ingest a small batch of client events.
@@ -299,6 +442,15 @@ export function telemetryRouter(rateLimitMw: RequestHandler): Router {
       }
       void pruneOld(); // ring-buffer housekeeping, non-blocking
       forward(rows); // optional Sentry/PostHog, non-blocking
+      // Feed the error-rate alerter (non-blocking, never throws).
+      const errorNames = rows.filter((r) => r.kind === "error").map((r) => r.name);
+      if (errorNames.length) {
+        try {
+          alerter.record(errorNames);
+        } catch {
+          /* alerting must never break ingest */
+        }
+      }
       res.json({ ok: true, stored: rows.length });
     }
   );
