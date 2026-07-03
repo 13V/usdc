@@ -253,45 +253,153 @@
     '</button>';
   }
 
-  // ---- new group sheet (POST /api/trips) — kept from existing wiring -----
+  // ---- new group sheet (POST /api/trips) ---------------------------------
+  // Members are chips: you + friends picked from /api/friends (linked by
+  // userId/wallet so balances follow their account) + free-text guests.
   function openNewGroup() {
-    var rows = "";
-    for (var i = 0; i < 3; i++) {
-      rows += '<input class="input gMember" placeholder="' + (i === 0 ? "you" : "member name") + '" style="margin-top:9px;">';
-    }
+    var me = meIdentity();
+    var members = [{ name: "you", you: true, emoji: me.emoji, color: me.color }];
+    var allFriends = null; // null = not loaded yet
+
     var el = app.sheet(
       '<h2 class="lower" style="font-size:22px;margin:2px 0 4px;">new group</h2>' +
       '<p class="hint" style="margin:0 0 16px;">a trip, the rent, or last night\'s dinner.</p>' +
       '<label>group name</label>' +
       '<input class="input" id="gName" placeholder="tokyo trip" autocomplete="off">' +
       '<label style="margin-top:16px;">who\'s in</label>' +
-      rows +
-      '<button class="pill" id="gAddMember" style="margin-top:11px;">+ add another</button>' +
+      '<div id="gChips" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;"></div>' +
+      '<div id="gPicker" style="display:none;"></div>' +
       '<button class="btn" id="gCreate" style="margin-top:20px;">start group 🎉</button>'
     );
-    var add = el.querySelector("#gAddMember");
-    if (add) add.onclick = function () {
-      var inp = document.createElement("input");
-      inp.className = "input gMember";
-      inp.placeholder = "member name";
-      inp.style.marginTop = "9px";
-      add.parentNode.insertBefore(inp, add);
-      inp.focus();
-    };
+    var chipsBox = el.querySelector("#gChips");
+    var pickerBox = el.querySelector("#gPicker");
+    var pickerOpen = false;
+
+    function chipAv(m) {
+      var face = m.emoji ? app.face(m.emoji) : app.esc((m.name || "?").trim()[0] || "?");
+      var bg = m.color || "#FFC65C";
+      return '<span style="width:22px; height:22px; border-radius:50%; background:' + bg + '; display:inline-flex; align-items:center; justify-content:center; font-size:12px; flex:none;">' + face + '</span>';
+    }
+
+    function renderChips() {
+      var html = members.map(function (m, i) {
+        return '<span style="display:inline-flex; align-items:center; gap:7px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; padding:6px 10px 6px 7px; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">' +
+          chipAv(m) +
+          '<span style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; color:#2B2118; max-width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name) + '</span>' +
+          (m.you ? "" : '<button class="gDrop" data-i="' + i + '" aria-label="remove ' + app.esc(m.name) + '" style="appearance:none; border:none; cursor:pointer; width:17px; height:17px; border-radius:50%; background:rgba(255,107,94,0.16); color:#FF6B5E; font-size:12px; line-height:1; display:inline-flex; align-items:center; justify-content:center; padding:0;">×</button>') +
+        '</span>';
+      }).join("") +
+      '<button id="gAddMember" style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:' + (pickerOpen ? "#3DE8C7" : "rgba(39,117,202,0.08)") + '; border:2px ' + (pickerOpen ? "solid" : "dashed") + ' #2B2118; border-radius:999px; padding:6px 13px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; color:#2B2118;' + (pickerOpen ? " box-shadow:2px 3px 0 rgba(43,33,24,0.85);" : "") + '">' +
+        (pickerOpen ? "done" : "+ add person") + '</button>';
+      chipsBox.innerHTML = html;
+      [].forEach.call(chipsBox.querySelectorAll(".gDrop"), function (b) {
+        b.onclick = function () {
+          members.splice(Number(b.getAttribute("data-i")), 1);
+          renderChips(); if (pickerOpen) paintList();
+        };
+      });
+      chipsBox.querySelector("#gAddMember").onclick = function () {
+        pickerOpen = !pickerOpen;
+        renderChips(); renderPicker();
+      };
+    }
+
+    function friendRow(f) {
+      var nm = f.displayName || f.handle || "friend";
+      var em = f.emoji || "🙂";
+      var col = f.color || "#2775CA";
+      var sub = f.handle ? ("@" + f.handle) : (f.primaryWallet ? (f.primaryWallet.slice(0, 4) + "…" + f.primaryWallet.slice(-4)) : "");
+      return '<div class="gFriend" data-uid="' + app.esc(f.id) + '" style="display:flex; align-items:center; gap:11px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.07); border-radius:13px; padding:9px 11px; cursor:pointer; margin-bottom:7px;">' +
+        '<span style="width:36px; height:36px; border-radius:12px; background:' + col + '; display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;">' + app.face(em) + '</span>' +
+        '<span style="flex:1; min-width:0;"><span style="display:block; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(nm) + '</span>' +
+        (sub ? '<span style="display:block; font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.4); margin-top:1px;">' + app.esc(sub) + '</span>' : "") + '</span>' +
+        '<span style="display:inline-flex; align-items:center; background:rgba(39,117,202,0.12); border:1px solid rgba(39,117,202,0.4); border-radius:999px; padding:4px 11px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:12px; color:#2775CA; flex:none;">+ add</span>' +
+      '</div>';
+    }
+
+    function paintList() {
+      var box = pickerBox.querySelector("#gList");
+      if (!box) return;
+      if (allFriends === null) {
+        box.innerHTML = '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.4); padding:6px 2px;">loading friends…</div>';
+        return;
+      }
+      var have = {};
+      members.forEach(function (m) { if (m.userId) have[m.userId] = 1; });
+      var q = ((pickerBox.querySelector("#gSearch") || {}).value || "").trim().toLowerCase();
+      var fs = allFriends.filter(function (f) {
+        if (have[f.id]) return false;
+        if (!q) return true;
+        return ((f.displayName || "") + " " + (f.handle || "")).toLowerCase().indexOf(q) >= 0;
+      });
+      if (!allFriends.length) {
+        box.innerHTML = '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; line-height:1.5; color:rgba(43,33,24,0.5); padding:4px 2px;">no friends yet — add people on the <span style="color:#2775CA; font-weight:600;">people</span> tab. for now, type their name below 👇</div>';
+        return;
+      }
+      box.innerHTML = fs.length ? fs.map(friendRow).join("")
+        : '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.4); padding:6px 2px;">' + (q ? "no match — add them as a guest below" : "everyone\'s already in 🎉") + '</div>';
+      [].forEach.call(box.querySelectorAll(".gFriend"), function (row) {
+        row.onclick = function () {
+          var f = null, uid = row.getAttribute("data-uid");
+          allFriends.forEach(function (x) { if (x.id === uid) f = x; });
+          if (!f) return;
+          members.push({ name: f.displayName || f.handle || "friend", userId: f.id, wallet: f.primaryWallet || undefined, emoji: f.emoji, color: f.color });
+          if (app.haptic) app.haptic();
+          renderChips(); paintList();
+        };
+      });
+    }
+
+    function renderPicker() {
+      if (!pickerOpen) { pickerBox.style.display = "none"; pickerBox.innerHTML = ""; return; }
+      pickerBox.style.display = "block";
+      pickerBox.style.cssText += "; margin-top:12px; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; padding:12px; box-shadow:3px 4px 0 rgba(43,33,24,0.85);";
+      pickerBox.innerHTML =
+        '<div style="display:flex; align-items:center; gap:9px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.1); border-radius:12px; padding:9px 12px;">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+          '<input id="gSearch" type="text" placeholder="find a friend…" autocomplete="off" style="flex:1; background:transparent; border:none; outline:none; color:#2B2118; font-family:\'Space Mono\',monospace; font-size:12px;">' +
+        '</div>' +
+        '<div id="gList" style="max-height:180px; overflow-y:auto; -webkit-overflow-scrolling:touch; margin-top:9px;"></div>' +
+        '<div style="display:flex; align-items:center; gap:10px; margin:10px 0 8px;"><div style="flex:1; height:1px; background:rgba(43,33,24,0.09);"></div><span style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:1px; color:rgba(43,33,24,0.4);">or add a guest</span><div style="flex:1; height:1px; background:rgba(43,33,24,0.09);"></div></div>' +
+        '<div style="display:flex; gap:8px;">' +
+          '<input id="gGuest" type="text" placeholder="guest name" autocomplete="off" style="flex:1; background:#FBF6EA; border:1px solid rgba(43,33,24,0.1); border-radius:12px; padding:10px 12px; outline:none; color:#2B2118; font-family:\'General Sans\',sans-serif; font-size:14.5px;">' +
+          '<button id="gGuestAdd" style="appearance:none; border:2px solid #2B2118; cursor:pointer; padding:0 17px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">add</button>' +
+        '</div>';
+      var search = pickerBox.querySelector("#gSearch");
+      search.oninput = function () { paintList(); };
+      function addGuest() {
+        var inp = pickerBox.querySelector("#gGuest");
+        var v = (inp.value || "").trim();
+        if (!v) { inp.focus(); return; }
+        members.push({ name: v });
+        inp.value = "";
+        if (app.haptic) app.haptic();
+        renderChips(); inp.focus();
+      }
+      pickerBox.querySelector("#gGuestAdd").onclick = addGuest;
+      pickerBox.querySelector("#gGuest").onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); addGuest(); } };
+      paintList();
+      if (allFriends === null) {
+        app.api.get("/api/friends").then(function (r) {
+          allFriends = (r && r.friends) || [];
+          paintList();
+        }).catch(function () { allFriends = []; paintList(); });
+      }
+    }
+
+    renderChips();
     var create = el.querySelector("#gCreate");
-    if (create) create.onclick = function () { submitNewGroup(el, create); };
+    if (create) create.onclick = function () { submitNewGroup(el, create, members); };
     var nameEl = el.querySelector("#gName");
     if (nameEl) nameEl.focus();
   }
 
-  async function submitNewGroup(el, btn) {
+  async function submitNewGroup(el, btn, list) {
     var nameEl = el.querySelector("#gName");
     var name = nameEl ? nameEl.value.trim() : "";
     if (!name) { app.toast("give it a name"); if (nameEl) nameEl.focus(); return; }
-    var members = [];
-    Array.prototype.forEach.call(el.querySelectorAll(".gMember"), function (inp) {
-      var v = inp.value.trim();
-      if (v) members.push({ name: v });
+    var members = list.map(function (m) {
+      return { name: m.name, userId: m.userId, wallet: m.wallet };
     });
     if (!members.length) members.push({ name: "you" });
     btn.disabled = true;

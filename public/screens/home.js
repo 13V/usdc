@@ -67,10 +67,19 @@
     "linear-gradient(135deg,#ffd98a,#FFC65C 60%,#e0a83c)",
     "linear-gradient(135deg,#a78bfa,#8B5CF6 60%,#6d28d9)",
   ];
+  // Stable per-item cover: hash the id/title so colors vary even when a list
+  // has one item (index-based picking made every first card blue).
+  function coverSeed(s) {
+    var h = 0, str = String(s || "");
+    for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    return h;
+  }
+  function coverFor(key, i) { return COVERS[(coverSeed(key) + (i || 0)) % COVERS.length]; }
   function groupCard(t, i) {
     var pos = t.netCents > 0, neg = t.netCents < 0, settled = t.netCents === 0;
-    var cover = COVERS[i % COVERS.length];
-    var emoji = t.emoji || groupEmoji(t.name);
+    var name = t.name || t.tripName || "group";
+    var cover = coverFor((t.tripId || t.id || name) + "g", i);
+    var emoji = t.emoji || groupEmoji(name);
     var right = settled
       ? '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.14); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:5px 11px; flex:none; font-family:\'Space Mono\',monospace; font-size:11px; color:#3DE8C7;">square ✨</span>'
       : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:' + (pos ? "#2775CA" : "#FF6B5E") + ';"><span style="opacity:.5;">' + (pos ? "+$" : "−$") + '</span>' + money3(Math.abs(t.netCents)) + '</div>';
@@ -81,7 +90,7 @@
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>' +
         '<span style="position:relative;">' + emoji + '</span></div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc(t.name) + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc(name) + '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + subcol + '; margin-top:3px;">' + sub + '</div>' +
       '</div>' + right + '</a>';
   }
@@ -164,7 +173,7 @@
   // A standalone "tab" (bill) the user sent — a shareable split that isn't a
   // persistent group. Tapping opens its collect screen to track who's paid.
   function billCard(b, i) {
-    var cover = COVERS[i % COVERS.length];
+    var cover = coverFor((b.id || b.title || "") + "b", i);
     var emoji = groupEmoji(b.title);
     var done = b.settled;
     var paid = b.paidCount || 0, ppl = b.peopleCount || 0;
@@ -187,7 +196,7 @@
   // Shows the title + your share, and a "pay" button that opens the in-app pay
   // flow (mine.payPath → /pay/<billId>/<yourName>). Paid shares show a chip.
   function incomingCard(b, i) {
-    var cover = COVERS[i % COVERS.length];
+    var cover = coverFor((b.id || b.title || "") + "b", i);
     var emoji = groupEmoji(b.title);
     var mine = b.mine || {};
     var paid = !!mine.paid;

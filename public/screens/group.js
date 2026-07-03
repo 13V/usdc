@@ -116,7 +116,7 @@
     var fs = Math.round(px * 0.5);
     return '<div style="width:' + px + 'px; height:' + px + 'px; border-radius:50%; background:' +
       memberGrad(m) + '; display:flex; align-items:center; justify-content:center; font-size:' + fs + 'px; flex:none;">' +
-      memberEmoji(m) + '</div>';
+      app.face(memberEmoji(m)) + '</div>';
   }
 
   // mono dollars: whole + lighter decimals (frame-style). cents -> inner HTML.
@@ -154,11 +154,11 @@
     var members = trip.members || [];
     var stack = members.slice(0, 5).map(function (m, i) {
       return '<div style="width:36px; height:36px; border-radius:50%; background:' + memberGrad(m) +
-        '; border:2px solid #2a72c0;' + (i ? " margin-left:-10px;" : "") +
-        ' display:flex; align-items:center; justify-content:center; font-size:17px;">' + memberEmoji(m) + '</div>';
+        '; border:2px solid #2B2118;' + (i ? " margin-left:-10px;" : "") +
+        ' display:flex; align-items:center; justify-content:center; font-size:17px;">' + app.face(memberEmoji(m)) + '</div>';
     }).join("");
     var more = members.length > 5
-      ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(255,255,255,0.8); margin-left:8px;">+' + (members.length - 5) + '</span>'
+      ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.55); margin-left:8px;">+' + (members.length - 5) + '</span>'
       : "";
 
     var since = "";
@@ -172,16 +172,17 @@
       " · " + ntabs + " " + (ntabs === 1 ? "TAB" : "TABS") + since;
 
     return '' +
-    '<div style="position:relative; margin:6px 16px 0; border-radius:22px; overflow:hidden; padding:18px 18px; background:linear-gradient(135deg,#2775CA 0%,#2f7fd6 55%,#1f63ab 100%); box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-      '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 10%, rgba(255,255,255,0.10) 0 1px, transparent 1px 9px); opacity:.5; pointer-events:none;"></div>' +
+    '<div style="position:relative; margin:14px 16px 0; border-radius:20px; padding:18px 18px 15px; background:#FFFDF7; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); transform:rotate(-0.4deg);">' +
+      // washi tape holding the card into the journal
+      '<div style="position:absolute; top:-11px; left:50%; width:88px; height:22px; transform:translateX(-50%) rotate(-2deg); background:rgba(61,232,199,0.75); opacity:.9; border-left:1.5px dashed rgba(43,33,24,0.25); border-right:1.5px dashed rgba(43,33,24,0.25);"></div>' +
       '<div style="position:relative; display:flex; align-items:center; justify-content:space-between;">' +
         '<div style="display:flex; align-items:center;">' + stack + more + '</div>' +
         '<div style="text-align:right;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(255,255,255,0.7);">GROUP TOTAL</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:22px; letter-spacing:-1px; color:#fff; margin-top:2px;"><span style="font-size:14px; opacity:.6;">$</span>' + moneyParts(trip.totalCents || 0, "14px", ".6") + '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">GROUP TOTAL</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:22px; letter-spacing:-1px; color:#2775CA; margin-top:2px;"><span style="font-size:14px; opacity:.55;">$</span>' + moneyParts(trip.totalCents || 0, "14px", ".55") + '</div>' +
         '</div>' +
       '</div>' +
-      '<div style="position:relative; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(255,255,255,0.78); margin-top:12px;">' + meta + '</div>' +
+      '<div style="position:relative; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.55); margin-top:12px;">' + meta + ' <span style="color:#FF6B5E;">!!</span></div>' +
     '</div>';
   }
 
@@ -359,15 +360,15 @@
 
   // ---------- quick pills: 💬 chat · ✨ recap · ↗ share ----------
   function pillRow() {
-    function pill(id, emoji, efs, label) {
-      return '<div id="' + id + '" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; min-height:42px; border-radius:13px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); cursor:pointer;">' +
+    function pill(id, emoji, efs, label, bg, tilt) {
+      return '<div id="' + id + '" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; min-height:42px; border-radius:13px; background:' + bg + '; border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); cursor:pointer; transform:rotate(' + tilt + 'deg);">' +
         '<span style="font-size:' + efs + ';">' + emoji + '</span>' +
-        '<span style="font-family:\'General Sans\',sans-serif; font-size:13px; font-weight:500; color:rgba(43,33,24,0.85);">' + label + '</span></div>';
+        '<span style="font-family:\'General Sans\',sans-serif; font-size:13px; font-weight:600; color:#2B2118;">' + label + '</span></div>';
     }
-    return '<div style="display:flex; gap:9px; margin-top:18px;">' +
-      pill("gChat", "💬", "14px", "chat") +
-      pill("gRecap", "✨", "14px", "recap") +
-      pill("gShare", "↗", "13px", "share") +
+    return '<div style="display:flex; gap:10px; margin-top:18px;">' +
+      pill("gChat", "💬", "14px", "chat", "rgba(39,117,202,0.13)", -0.6) +
+      pill("gRecap", "✨", "14px", "recap", "rgba(255,198,92,0.35)", 0.5) +
+      pill("gShare", "↗", "13px", "share", "rgba(61,232,199,0.28)", -0.4) +
     '</div>';
   }
 

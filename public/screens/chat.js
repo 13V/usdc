@@ -648,7 +648,7 @@
       "@keyframes gcRise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}" +
       "@keyframes gcShimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}" +
       ".gc-scroll::-webkit-scrollbar{width:0;height:0;}" +
-      ".gc-skel{height:46px;border-radius:20px;background:linear-gradient(100deg,#FFFDF7 30%,#1b2c3b 50%,#FFFDF7 70%);" +
+      ".gc-skel{height:46px;border-radius:20px;background:linear-gradient(100deg,#FFFDF7 30%,#EFE7D3 50%,#FFFDF7 70%);" +
         "background-size:200% 100%;animation:gcShimmer 1.3s linear infinite;}" +
       "@media (prefers-reduced-motion:reduce){.gc-scroll *{animation:none!important;}}";
     var style = document.createElement("style");
@@ -670,7 +670,7 @@
     if (!wrap) return;
     if (!pendingImage) {
       wrap.style.display = "none"; wrap.innerHTML = "";
-      if (btn) { btn.style.background = "#FFFDF7"; btn.style.borderColor = "rgba(43,33,24,0.1)"; }
+      if (btn) { btn.style.background = "rgba(255,198,92,0.55)"; btn.style.borderColor = "#2B2118"; }
       return;
     }
     wrap.style.display = "flex"; wrap.innerHTML = "";
@@ -680,7 +680,7 @@
     var x = el('<button type="button" style="margin-left:auto; appearance:none; background:none; border:0; color:rgba(43,33,24,0.6); font-family:' + MONO + '; font-size:11px; cursor:pointer; padding:4px 8px;">✕ remove</button>');
     x.addEventListener("click", function () { pendingImage = null; renderPreview(); });
     wrap.appendChild(im); wrap.appendChild(lbl); wrap.appendChild(x);
-    if (btn) { btn.style.background = "#2775CA"; btn.style.borderColor = "#2775CA"; }
+    if (btn) { btn.style.background = "#2775CA"; btn.style.borderColor = "#2B2118"; }
   }
   async function onPhotoPicked(ev) {
     var file = ev.target.files && ev.target.files[0];
@@ -835,32 +835,32 @@
         '<div style="position:absolute; left:-60px; top:380px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.13) 0%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>' +
 
         // top bar
-        '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:11px; height:58px; padding:0 14px; flex:none; background:rgba(247,241,227,0.88); border-bottom:1.5px dashed rgba(43,33,24,0.2); backdrop-filter:blur(8px);">' +
-          '<button class="gc-back" type="button" aria-label="back" style="appearance:none; width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;">' +
+        '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:11px; height:58px; padding:0 14px; flex:none; background:#F7F1E3; border-bottom:1.5px dashed rgba(43,33,24,0.22);">' +
+          '<button class="gc-back" type="button" aria-label="back" style="appearance:none; width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;">' +
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
           '<div style="position:relative; width:40px; height:40px; flex:none;">' +
-            '<div class="gc-gavatar-emoji" style="width:40px; height:40px; border-radius:13px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); display:flex; align-items:center; justify-content:center; font-size:20px; overflow:hidden;">👥</div>' +
+            '<div class="gc-gavatar-emoji" style="width:40px; height:40px; border-radius:13px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; font-size:19px; overflow:hidden;">👥</div>' +
             '<div style="position:absolute; right:-2px; bottom:-2px; width:14px; height:14px; border-radius:50%; background:#3DE8C7; border:2.5px solid #2B2118; box-shadow:0 0 8px rgba(61,232,199,0.7);"></div>' +
           '</div>' +
           '<div style="flex:1; min-width:0;">' +
             '<div class="gc-name" style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">group</div>' +
-            '<div class="gc-online" style="font-family:' + MONO + '; font-size:9.5px; letter-spacing:.5px; color:rgba(61,232,199,0.85); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">loading…</div>' +
+            '<div class="gc-online" style="font-family:' + MONO + '; font-size:9.5px; letter-spacing:.5px; color:#17a98c; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">loading…</div>' +
           '</div>' +
-          '<div style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; flex:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
+          '<div style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; flex:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
         '</div>' +
 
         // feed (scroll)
         '<div class="gc-scroll gc-feed" style="position:relative; z-index:2; flex:1; overflow-y:auto; scrollbar-width:none; padding:16px 16px 14px; display:flex; flex-direction:column; gap:14px;"></div>' +
 
         // status line (sending / errors)
-        '<div class="gc-status" style="position:relative; z-index:6; display:none; flex:none; font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.6); padding:6px 16px 0; text-align:center; background:rgba(8,17,26,0.96);"></div>' +
+        '<div class="gc-status" style="position:relative; z-index:6; display:none; flex:none; font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.6); padding:6px 16px 0; text-align:center; background:rgba(247,241,227,0.96);"></div>' +
 
         // photo preview strip
-        '<div class="gc-preview" style="position:relative; z-index:6; display:none; flex:none; align-items:center; gap:8px; padding:8px 16px; background:rgba(8,17,26,0.96); border-top:1px solid rgba(43,33,24,0.07);"></div>' +
+        '<div class="gc-preview" style="position:relative; z-index:6; display:none; flex:none; align-items:center; gap:8px; padding:8px 16px; background:rgba(247,241,227,0.96); border-top:1.5px dashed rgba(43,33,24,0.18);"></div>' +
 
         // composer (lifted: 📷 circle, input pill w/ "＋ tab", glowing send)
-        '<div style="position:relative; z-index:6; flex:none; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); background:rgba(8,17,26,0.96); border-top:1px solid rgba(43,33,24,0.07); display:flex; align-items:center; gap:9px;">' +
-          '<button class="gc-attach" type="button" aria-label="attach receipt" style="appearance:none; width:40px; height:40px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer; flex:none; padding:0;">📷</button>' +
+        '<div style="position:relative; z-index:6; flex:none; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); background:#F7F1E3; border-top:1.5px dashed rgba(43,33,24,0.2); display:flex; align-items:center; gap:9px;">' +
+          '<button class="gc-attach" type="button" aria-label="attach receipt" style="appearance:none; width:40px; height:40px; border-radius:50%; background:rgba(255,198,92,0.55); border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer; flex:none; padding:0;">📷</button>' +
           '<input class="gc-file" type="file" accept="image/*" capture="environment" style="display:none" />' +
           '<div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:0 6px 0 16px; min-height:44px;">' +
             '<input class="gc-input" type="text" placeholder="message…" aria-label="message" style="flex:1; min-width:0; border:0; outline:none; background:transparent; color:#2B2118; font-family:' + SANS + '; font-size:15px; padding:11px 0;" />' +
@@ -868,7 +868,7 @@
               '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
               '<span style="font-family:' + MONO + '; font-weight:700; font-size:10.5px; color:#2775CA;">tab</span></button>' +
           '</div>' +
-          '<button class="gc-send" type="button" aria-label="send" style="appearance:none; width:46px; height:46px; border-radius:50%; border:0; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+          '<button class="gc-send" type="button" aria-label="send" style="appearance:none; width:46px; height:46px; border-radius:50%; border:2px solid #2B2118; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
             '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>' +
         '</div>' +
       '</div>');
