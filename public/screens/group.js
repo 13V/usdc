@@ -702,7 +702,7 @@
         right = '<button class="gsRemove" data-mid="' + app.esc(m.id) + '" data-name="' + app.esc(m.name || "") + '" ' +
           'style="appearance:none; cursor:pointer; border:1px solid rgba(255,107,94,0.5); background:rgba(255,107,94,0.1); color:#FF6B5E; border-radius:999px; padding:5px 12px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; flex:none;">remove</button>';
       } else {
-        right = '<span style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.6); text-align:right; max-width:110px; flex:none;">in the money history</span>';
+        right = '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5); text-align:right; flex:none; white-space:nowrap;">in a tab</span>';
       }
       return '<div style="display:flex; align-items:center; gap:11px; padding:9px 2px;">' +
         gavatar(m, 32) +

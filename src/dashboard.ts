@@ -37,6 +37,9 @@ interface Counterparty {
   fmt: string;
   direction: "owed" | "owes";
   wallet: string | null;
+  /** Member's chosen avatar (emoji or meme token) + color, when set. */
+  emoji: string | null;
+  color: string | null;
 }
 
 /** Accumulator for a counterparty aggregated across trips. */
@@ -46,6 +49,8 @@ interface CounterpartyAcc {
   wallet: string | null;
   /** True once we've seen a claimed (userId-keyed) member, whose name wins. */
   claimed: boolean;
+  emoji: string | null;
+  color: string | null;
 }
 
 dashboardRouter.get(
@@ -137,7 +142,7 @@ dashboardRouter.get(
         const isClaimed = !!other.userId;
         if (existing) {
           existing.cents += signForMe;
-          // Prefer a claimed member's name/wallet if we now have one.
+          // Prefer a claimed member's name/wallet/avatar if we now have one.
           if (isClaimed && !existing.claimed) {
             existing.name = other.name;
             existing.claimed = true;
@@ -145,12 +150,16 @@ dashboardRouter.get(
           if (!existing.wallet && other.wallet) {
             existing.wallet = other.wallet;
           }
+          if (!existing.emoji && other.emoji) existing.emoji = other.emoji;
+          if (!existing.color && other.color) existing.color = other.color;
         } else {
           counterparties.set(key, {
             cents: signForMe,
             name: other.name,
             wallet: other.wallet ?? null,
             claimed: isClaimed,
+            emoji: other.emoji ?? null,
+            color: other.color ?? null,
           });
         }
       }
@@ -167,6 +176,8 @@ dashboardRouter.get(
         fmt: fmt(Math.abs(acc.cents)),
         direction: acc.cents > 0 ? "owed" : "owes",
         wallet: acc.wallet,
+        emoji: acc.emoji ?? null,
+        color: acc.color ?? null,
       });
     }
     // Largest absolute exposure first.

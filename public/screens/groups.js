@@ -77,8 +77,8 @@
     var owees = counterparties.filter(function (c) { return c.direction === "owes"; });
     function ridingAv(list) {
       return list.slice(0, 3).map(function (c, i) {
-        var face = c.emoji || (c.name ? c.name.trim()[0] : "?");
-        return '<div style="width:23px; height:23px; border-radius:50%; background:rgba(11,22,34,0.55); border:2px solid rgba(255,255,255,0.85);' + (i ? " margin-left:-8px;" : "") + ' display:flex; align-items:center; justify-content:center; font-size:12px;">' + app.esc(face) + '</div>';
+        var face = c.emoji || (c.name ? c.name.trim()[0].toUpperCase() : "?");
+        return '<div style="width:23px; height:23px; border-radius:50%; background:rgba(11,22,34,0.55); border:2px solid rgba(255,255,255,0.85);' + (i ? " margin-left:-8px;" : "") + ' display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; font-family:\'Space Mono\',monospace; font-weight:700;">' + app.esc(face) + '</div>';
       }).join("");
     }
     var owedSeg = Math.max(owed, 1), oweSeg = Math.max(owe, 1);
@@ -147,7 +147,7 @@
       html += '<div style="width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:rgba(11,22,34,0.55); border:2px solid ' + border + ';' + (i ? " margin-left:-10px;" : "") + ' display:flex; align-items:center; justify-content:center; font-size:' + fs + 'px;">' + face + '</div>';
     }
     if (n > max) {
-      html += '<div style="width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:rgba(11,22,34,0.7); border:2px solid ' + border + '; margin-left:-10px; display:flex; align-items:center; justify-content:center; font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; color:#2B2118;">+' + (n - max) + '</div>';
+      html += '<div style="width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:rgba(11,22,34,0.7); border:2px solid ' + border + '; margin-left:-10px; display:flex; align-items:center; justify-content:center; font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; color:#fff;">+' + (n - max) + '</div>';
     }
     return '<div style="display:flex;">' + html + '</div>';
   }

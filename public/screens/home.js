@@ -134,7 +134,7 @@
     // avatars riding the bar (those who owe you on blue, you-owe on coral)
     function av(list) {
       return list.slice(0, 3).map(function (c, i) {
-        return '<div style="width:23px;height:23px;border-radius:50%;background:rgba(11,22,34,0.5);border:2px solid rgba(255,255,255,0.85);' + (i ? "margin-left:-8px;" : "") + 'display:flex;align-items:center;justify-content:center;font-size:12px;">' + app.face(c.emoji || (c.name || "?")[0]) + '</div>';
+        return '<div style="width:23px;height:23px;border-radius:50%;background:rgba(11,22,34,0.5);border:2px solid rgba(255,255,255,0.85);' + (i ? "margin-left:-8px;" : "") + 'display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-family:\'Space Mono\',monospace;font-weight:700;">' + app.face(c.emoji || (c.name || "?")[0].toUpperCase()) + '</div>';
       }).join("");
     }
     var owers = ppl.filter(function (c) { return c.direction === "owed"; });
