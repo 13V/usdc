@@ -178,6 +178,75 @@
     return w;
   }
 
+  // Up to 3 "superlatives" derived from the trip data the card already has.
+  // Rules (each only included when the data supports it, then deduped by the
+  // member it lands on so different people get a shout-out where possible):
+  //   🐋 big spender   — most total paid
+  //   🧾 most tabs      — most expenses started (needs a real leader, >= 2)
+  //   🍔 biggest tab    — who paid for the single largest expense
+  //   🫠 owes the most  — biggest debtor, only while the trip isn't fully settled
+  // Skipped entirely for tiny trips (<2 members or <2 expenses) — a settlement's
+  // stored data has no per-member paid time, so a "fastest settler" superlative
+  // isn't supported; "most tabs" / "biggest tab" stand in for it.
+  function computeSuperlatives(trip) {
+    const members = Array.isArray(trip.members) ? trip.members : [];
+    const expenses = Array.isArray(trip.expenses) ? trip.expenses : [];
+    if (members.length < 2 || expenses.length < 2) return [];
+
+    const nameById = {};
+    const stat = {};
+    for (const m of members) { nameById[m.id] = m.name; stat[m.id] = { paid: 0, count: 0 }; }
+
+    let biggest = null;
+    for (const e of expenses) {
+      const c = Number(e.amountCents);
+      const pid = e.paidBy;
+      if (pid != null && stat[pid]) {
+        if (isFinite(c)) stat[pid].paid += c;
+        stat[pid].count += 1;
+      }
+      if (isFinite(c) && (!biggest || c > Number(biggest.amountCents))) biggest = e;
+    }
+
+    const cands = [];
+    let topPaid = null;
+    for (const m of members) {
+      if (stat[m.id].paid > 0 && (topPaid == null || stat[m.id].paid > stat[topPaid].paid)) topPaid = m.id;
+    }
+    if (topPaid != null) cands.push({ emoji: "🐋", label: "big spender", name: nameById[topPaid], key: topPaid });
+
+    let topCount = null;
+    for (const m of members) {
+      if (stat[m.id].count > 0 && (topCount == null || stat[m.id].count > stat[topCount].count)) topCount = m.id;
+    }
+    if (topCount != null && stat[topCount].count >= 2) cands.push({ emoji: "🧾", label: "most tabs", name: nameById[topCount], key: topCount });
+
+    if (biggest && biggest.paidBy != null && nameById[biggest.paidBy]) {
+      cands.push({ emoji: "🍔", label: "biggest tab", name: nameById[biggest.paidBy], key: biggest.paidBy });
+    }
+
+    if (!allSettled(trip)) {
+      const balances = Array.isArray(trip.balances) ? trip.balances : [];
+      let debtor = null;
+      for (const b of balances) {
+        if (b.direction === "owes" && (debtor == null || Math.abs(b.cents) > Math.abs(debtor.cents))) debtor = b;
+      }
+      if (debtor && debtor.name) cands.push({ emoji: "🫠", label: "owes the most", name: debtor.name, key: debtor.memberId });
+    }
+
+    const seen = {};
+    const out = [];
+    for (const c of cands) {
+      if (!c.name) continue;
+      const memberKey = String(c.key);
+      if (seen[memberKey]) continue;
+      seen[memberKey] = true;
+      out.push(c);
+      if (out.length >= 3) break;
+    }
+    return out;
+  }
+
   function drawCard(canvas, trip) {
     const W = 1080, H = 1080;
     canvas.width = W; canvas.height = H;
@@ -270,23 +339,53 @@
       drawChip(ctx, chipX, y, "~$" + avg.toFixed(2) + " each", "rgba(39,117,202,0.18)");
     }
 
-    // Biggest expense line.
-    let biggest = null;
-    for (const e of expenses) {
-      const c = Number(e.amountCents);
-      if (!biggest || (isFinite(c) && c > Number(biggest.amountCents))) biggest = e;
-    }
-    if (biggest) {
-      y += 150;
-      ctx.fillStyle = MUTED;
-      ctx.font = "500 34px " + SANS;
-      const label = "biggest: " + clean(biggest.title || "expense") +
-        (biggest.amountFmt ? " — " + clean(biggest.amountFmt) : "") + " 🏆";
-      y = wrapText(ctx, label, cx, y, W - cx * 2, 44, 2);
+    // ── Lower section — superlatives (fun trips) or the biggest-expense line ──
+    const supers = computeSuperlatives(trip);
+    const settled = allSettled(trip);
+
+    if (supers.length) {
+      // Awards block. Its dashed rule doubles as the footer perforation.
+      y += 92;                                    // clear the stat-chip row
+      ctx.strokeStyle = LINE; ctx.lineWidth = 3; ctx.setLineDash([14, 12]);
+      ctx.beginPath(); ctx.moveTo(cx, y); ctx.lineTo(W - cx, y); ctx.stroke();
+      ctx.setLineDash([]);
+
+      y += 34;
+      ctx.fillStyle = TERRA; ctx.font = "700 24px " + MONO;
+      ctx.fillText("T H E   A W A R D S 🏅", cx, y);
+
+      y += 36;
+      ctx.font = "700 30px " + MONO;
+      // Keep award text clear of the bottom-right "all settled" stamp when shown.
+      const awMax = settled ? 360 : (W - cx - 168);
+      for (const s of supers) {
+        let line = s.emoji + "  " + s.label + ": " + clean(s.name);
+        let cut = false;
+        while (ctx.measureText(line + "…").width > awMax && line.length > 6) { line = line.slice(0, -1); cut = true; }
+        ctx.fillStyle = CREAM;
+        ctx.fillText(line + (cut ? "…" : ""), cx, y);
+        y += 38;
+      }
+    } else {
+      // Biggest expense line (single-stat fallback for tiny trips).
+      let biggest = null;
+      for (const e of expenses) {
+        const c = Number(e.amountCents);
+        if (!biggest || (isFinite(c) && c > Number(biggest.amountCents))) biggest = e;
+      }
+      if (biggest) {
+        y += 150;
+        ctx.fillStyle = MUTED;
+        ctx.font = "500 34px " + SANS;
+        const label = "biggest: " + clean(biggest.title || "expense") +
+          (biggest.amountFmt ? " — " + clean(biggest.amountFmt) : "") + " 🏆";
+        y = wrapText(ctx, label, cx, y, W - cx * 2, 44, 2);
+      }
     }
 
-    // "All settled" stamp — mint ink stamp, tilted like it was pressed on.
-    if (allSettled(trip)) {
+    // "All settled" stamp — mint ink stamp, tilted like it was pressed on. Drawn
+    // on top of the section above so it reads as pressed onto the card.
+    if (settled) {
       ctx.save();
       ctx.translate(W - 340, H - 300);
       ctx.rotate(-0.12);
@@ -308,19 +407,22 @@
       ctx.textBaseline = "alphabetic";
     }
 
-    // Footer: dashed perforation + tagline.
-    ctx.strokeStyle = LINE;
-    ctx.lineWidth = 3;
-    ctx.setLineDash([14, 12]);
-    ctx.beginPath();
-    ctx.moveTo(cx, H - 236);
-    ctx.lineTo(W - cx, H - 236);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    // Footer: dashed perforation + tagline. In the awards layout the perforation
+    // is the awards rule drawn above, and the tagline follows the awards list.
+    if (!supers.length) {
+      ctx.strokeStyle = LINE;
+      ctx.lineWidth = 3;
+      ctx.setLineDash([14, 12]);
+      ctx.beginPath();
+      ctx.moveTo(cx, H - 236);
+      ctx.lineTo(W - cx, H - 236);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
 
     ctx.fillStyle = FAINT;
     ctx.font = "500 28px " + SANS;
-    ctx.fillText("split the bill. settle in dollars, instantly. ✨", cx, H - 176);
+    ctx.fillText("split the bill. settle in dollars, instantly. ✨", cx, supers.length ? y + 4 : H - 176);
 
     return canvas;
   }

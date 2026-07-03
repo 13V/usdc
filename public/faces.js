@@ -27,6 +27,19 @@
     grem: '<circle cx="24" cy="25" r="16" ' + S + '/><path ' + S + ' d="M13 17l7 4M35 17l-7 4"/><circle cx="18" cy="24" r="2" ' + F + '/><circle cx="30" cy="24" r="2" ' + F + '/><path ' + S + ' d="M14 32h20M17 32l2 4 3-4 2 4 3-4 2 4 2-4"/>',
     ghost: '<path ' + S + ' d="M24 6c-9 0-13 7-13 14v18l4-3 4 3 5-3 5 3 4-3 4 3V20c0-7-4-14-13-14z"/><path ' + S + ' d="M16 20l5 5M21 20l-5 5M28 20l5 5M33 20l-5 5"/><path ' + S + ' d="M19 32q5 3 10 0"/>',
     cat: '<path ' + S + ' d="M11 15 8 5l8 5M37 15l3-10-8 5"/><circle cx="24" cy="26" r="15" ' + S + '/><path ' + S + ' d="M15 24q3-3 6 0M28 24q3-3 6 0"/><path ' + S + ' d="M21 33q3 2 6 0"/><path ' + S + ' d="M4 26h7M4 31l7-2M37 26h7M37 29l7 2"/><path ' + S + ' d="M31 29q2 5 0 9" stroke="#2775CA"/>',
+    // ── pack 2 ──────────────────────────────────────────────────────────────
+    // pepe-adjacent sad frog: mint head, droopy eyes, a frown + one blue tear.
+    sad: '<ellipse cx="24" cy="26" rx="17" ry="14" fill="#3DE8C7" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/><circle cx="16" cy="19" r="5" fill="#FFFDF7" stroke="' + INK + '" stroke-width="2.5"/><circle cx="32" cy="19" r="5" fill="#FFFDF7" stroke="' + INK + '" stroke-width="2.5"/><circle cx="16" cy="21" r="2" ' + F + '/><circle cx="32" cy="21" r="2" ' + F + '/><path ' + S + ' d="M16 34q8-6 16 0"/><path ' + S + ' d="M12 27q-2 5 0 9" stroke="#2775CA"/>',
+    // chad: side-profile with a heroic jaw, blonde fill, tiny confident eye.
+    chad: '<path fill="#FFC65C" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round" d="M17 9Q33 8 33 22L37 26L33 29Q34 41 22 42L17 42"/><path ' + S + ' d="M17 9q2-4 12-2"/><path ' + S + ' d="M27 14l5 1"/><circle cx="30" cy="19" r="1.8" ' + F + '/><path ' + S + ' d="M29 32l6 1"/>',
+    // npc: rectangular gray head, flat brows, dead blank stare.
+    npc: '<rect x="12" y="8" width="24" height="33" rx="5" fill="rgba(43,33,24,0.22)" stroke="' + INK + '" stroke-width="3" stroke-linejoin="round"/><path ' + S + ' d="M16 18h6M26 18h6"/><circle cx="19" cy="23" r="1.9" ' + F + '/><circle cx="29" cy="23" r="1.9" ' + F + '/><path ' + S + ' d="M19 33h10"/>',
+    // based: dark shades + a knowing smirk.
+    base: '<circle cx="24" cy="24" r="17" ' + S + '/><path ' + F + ' d="M8 19h13v5q-6 3-13 0z"/><path ' + F + ' d="M27 19h13v5q-7 3-13 0z"/><path ' + S + ' d="M21 20h6"/><path ' + S + ' d="M17 33q7 3 13-1"/>',
+    // rage-comic REEE face: red, slanted brows, gritted teeth.
+    rage: '<circle cx="24" cy="24" r="17" fill="#FF6B5E" stroke="' + INK + '" stroke-width="3"/><path ' + S + ' d="M12 16l10 5M36 16l-10 5"/><circle cx="18" cy="24" r="2" ' + F + '/><circle cx="30" cy="24" r="2" ' + F + '/><rect x="15" y="31" width="18" height="8" rx="1.5" fill="#FFFDF7" stroke="' + INK + '" stroke-width="2.5"/><path ' + S + ' d="M20 31v8M25 31v8M29 31v8" stroke-width="2"/>',
+    // sob: squeezed-shut eyes + two blue tear rivers + a wailing mouth.
+    sob: '<circle cx="24" cy="24" r="17" fill="#FFC65C" stroke="' + INK + '" stroke-width="3"/><path ' + S + ' d="M13 20q4 4 8 0M27 20q4 4 8 0"/><path fill="#2775CA" stroke="' + INK + '" stroke-width="2" stroke-linejoin="round" d="M14 24q-4 8-1 15q3-4 6 0q0-8 2-13z"/><path fill="#2775CA" stroke="' + INK + '" stroke-width="2" stroke-linejoin="round" d="M34 24q4 8 1 15q-3-4-6 0q0-8-2-13z"/><ellipse cx="24" cy="34" rx="5" ry="4" ' + F + '/>',
   };
 
   var LIST = [
@@ -42,6 +55,12 @@
     { id: "grem", name: "gremlin" },
     { id: "ghost", name: "gone" },
     { id: "cat", name: "sad cat" },
+    { id: "sad", name: "sad frog" },
+    { id: "chad", name: "chad" },
+    { id: "npc", name: "npc" },
+    { id: "base", name: "based" },
+    { id: "rage", name: "rage" },
+    { id: "sob", name: "bawling" },
   ];
 
   function idOf(token) {

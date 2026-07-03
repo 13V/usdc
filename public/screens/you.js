@@ -11,10 +11,86 @@
   var app = window.app;
 
   var PROFILE_KEY = "divvy.profile"; // local emoji/color, bridged from /api/me
+  var STREAK_KEY = "divvy.settleStreak"; // per-session cache of the computed streak
 
   function localProfile() {
     try { return JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}") || {}; }
     catch (_) { return {}; }
+  }
+
+  // ── settle streak ────────────────────────────────────────────────────────────
+  // Metric: consecutive-WEEK settle streak. Each settle-up in /api/activity carries
+  // a reliable `at` timestamp; we bucket those into Monday-based weeks and count the
+  // run of consecutive weeks (back from the most recent settle) that each had a
+  // settlement. A settlement's stored data has only a single createdAt and no
+  // per-transfer/per-member paid time, so a "settled within 24h" metric would be
+  // noisier — weekly buckets give a clean, Duolingo-style "N-week settle streak".
+  // Only counts as live if the latest settle week is this week or last week, so a
+  // long-abandoned streak doesn't linger; the chip shows only when streak >= 2.
+  function weekIndex(dateLike) {
+    var d = new Date(dateLike);
+    if (isNaN(d.getTime())) return null;
+    // Monday-based, in UTC to avoid timezone drift across the bucket edges.
+    var day = (d.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+    var mondayMs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - day * 86400000;
+    return Math.floor(mondayMs / (7 * 86400000));
+  }
+
+  function streakFromEvents(events) {
+    if (!Array.isArray(events)) return 0;
+    var weeks = {};
+    for (var i = 0; i < events.length; i++) {
+      var e = events[i];
+      if (!e || e.type !== "settlement" || !e.at) continue;
+      var w = weekIndex(e.at);
+      if (w != null) weeks[w] = true;
+    }
+    var keys = Object.keys(weeks).map(Number).sort(function (a, b) { return a - b; });
+    if (!keys.length) return 0;
+    var latest = keys[keys.length - 1];
+    var now = weekIndex(Date.now());
+    if (now != null && now - latest > 1) return 0; // stale — streak has lapsed
+    var streak = 1, w = latest;
+    while (weeks[w - 1]) { streak++; w--; }
+    return streak;
+  }
+
+  // Cached per session (sessionStorage): the streak is computed once and reused
+  // across re-renders/nav within the session. Never rejects — resolves 0 on error.
+  function computeSettleStreak() {
+    try {
+      var cached = sessionStorage.getItem(STREAK_KEY);
+      if (cached != null) return Promise.resolve(parseInt(cached, 10) || 0);
+    } catch (_) {}
+    return Promise.resolve()
+      .then(function () { return app.api.get("/api/activity"); })
+      .then(function (events) {
+        var n = streakFromEvents(events);
+        try { sessionStorage.setItem(STREAK_KEY, String(n)); } catch (_) {}
+        return n;
+      })
+      .catch(function () { return 0; });
+  }
+
+  function streakChipHtml(n) {
+    return '' +
+      '<div style="display:inline-flex; align-items:center; gap:8px; padding:6px 12px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); transform:rotate(-1.2deg);">' +
+        '<span style="font-size:14px; line-height:1;">🔥</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; letter-spacing:.4px; color:#2B2118;">' + n + '-week settle streak</span>' +
+      '</div>';
+  }
+
+  // best-effort: fill the streak slot after render if the streak is >= 2. Mirrors
+  // wireNotifBadge — non-blocking and silent if the activity feed is empty/absent.
+  function wireStreak() {
+    var slot = document.getElementById("yStreakSlot");
+    if (!slot) return;
+    computeSettleStreak().then(function (n) {
+      if (!(n >= 2)) return;
+      if (!document.body.contains(slot)) return; // re-rendered out from under us
+      slot.style.margin = "10px 2px 0";
+      slot.innerHTML = streakChipHtml(n);
+    }).catch(function () {});
   }
 
   // the signed-in user's real identity (emoji/color come from /api/me or local).
@@ -215,6 +291,9 @@
         header() +
         '<div style="position:relative; z-index:2; flex:1; padding:8px 18px 104px;">' +
           identityRow(id) +
+          // settle-streak chip slot — filled by wireStreak() only when streak >= 2
+          // (stays a zero-height empty div otherwise, so it never shows a sad zero).
+          '<div id="yStreakSlot"></div>' +
           balanceCard(balance) +
           settingsList() +
           signOutCard() +
@@ -225,6 +304,7 @@
     wireIdentity(id);
     wireBalance();
     wireSettings();
+    wireStreak();     // non-blocking; drops in the settle-streak chip when >= 2
     wireNotifBadge(); // non-blocking; patches an unread badge in after render
     if (app.countUp && typeof balance === "number") {
       var balEl = document.getElementById("yBalance");
