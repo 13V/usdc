@@ -335,11 +335,11 @@
     for (const e of expenses) { const c = Number(e.amountCents); if (isFinite(c)) totalCents += c; }
     y += 66;
     let chipX = cx;
-    chipX += drawChip(ctx, chipX, y, members.length + " " + (members.length === 1 ? "person" : "people"), "rgba(255,198,92,0.55)") + 26;
-    chipX += drawChip(ctx, chipX, y, expenses.length + " " + (expenses.length === 1 ? "tab" : "tabs"), "rgba(61,232,199,0.5)") + 26;
+    chipX += drawChip(ctx, chipX, y, members.length + " " + (members.length === 1 ? "person" : "people"), "#FFE2A8") + 26;
+    chipX += drawChip(ctx, chipX, y, expenses.length + " " + (expenses.length === 1 ? "tab" : "tabs"), "#C6F4E7") + 26;
     if (members.length > 0 && totalCents > 0) {
       const avg = totalCents / members.length / 100;
-      drawChip(ctx, chipX, y, "~$" + avg.toFixed(2) + " each", "rgba(39,117,202,0.18)");
+      drawChip(ctx, chipX, y, "~$" + avg.toFixed(2) + " each", "#D8E7F8");
     }
 
     // ── Lower section — superlatives (fun trips) or the biggest-expense line ──

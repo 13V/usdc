@@ -27,6 +27,8 @@ type ActivityType = "trip_created" | "expense" | "settlement" | "paid";
 
 interface ActivityEvent {
   type: ActivityType;
+  /** Display name of who did it, when known (e.g. the group's creator). */
+  actor?: string;
   tripId: string;
   tripName: string;
   text: string;
@@ -54,12 +56,16 @@ async function eventsForTrip(trip: Trip): Promise<ActivityEvent[]> {
   const tripName = trip.name || "Untitled trip";
   const members = Array.isArray(trip.members) ? trip.members : [];
 
-  // trip created
+  // trip created — name the owner's member slot so the feed can say who.
   if (trip.createdAt) {
+    const owner = trip.ownerUserId
+      ? members.find((m) => m && m.userId === trip.ownerUserId)
+      : undefined;
     out.push({
       type: "trip_created",
       tripId,
       tripName,
+      actor: owner?.name,
       text: `Trip "${tripName}" created`,
       at: trip.createdAt,
     });

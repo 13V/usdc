@@ -285,7 +285,7 @@
       line = (actor ? app.esc(lc(actor)) : "someone") + " is waiting on you 👀";
       detail = trip ? app.esc(lc(trip)) : "";
     } else if (/trip|create|new|group/.test(type)) {
-      var c = actor && isYou(actor) ? "you" : "someone";
+      var c = actor ? (isYou(actor) ? "you" : app.esc(lc(actor))) : "someone";
       line = c + " started " + bold(trip || "a group") + " 🎉";
       detail = "new group";
     } else if (/join|member|invite/.test(type)) {
