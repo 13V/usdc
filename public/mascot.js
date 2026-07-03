@@ -57,7 +57,34 @@
       ".mq-arm-r{transform-box:fill-box;transform-origin:0% 0%;animation:mqArm 4.2s ease-in-out infinite .3s}",
       ".mq-arm-r.mq-waving{animation:mqWave 1.5s ease-in-out infinite}",
       ".mq-sweat{transform-box:fill-box;animation:mqSweat 2.2s ease-in-out infinite}",
-      "@media (prefers-reduced-motion: reduce){.dmascot *{animation:none!important}.mzz{animation:none!important}}",
+      // ---- life engine: random micro-behaviors ----
+      // pupils glance (wrapper so it composes with the blink animation)
+      ".mq-pupilbox{transform-box:fill-box;transform-origin:center;transition:transform .22s ease}",
+      ".mlook-l .mq-pupilbox{transform:translateX(-4.5px)}",
+      ".mlook-r .mq-pupilbox{transform:translateX(4.5px)}",
+      // quick double-blink
+      "@keyframes mBlink2{0%,100%{transform:scaleY(1)}25%{transform:scaleY(.08)}50%{transform:scaleY(1)}75%{transform:scaleY(.08)}}",
+      ".mblink2 .mq-pupil{animation:mBlink2 .55s ease-in-out}",
+      // little excited hop (squash -> leap -> land)
+      "@keyframes mHop{0%,100%{transform:translateY(0) scale(1,1)}22%{transform:translateY(1px) scale(1.09,.86)}45%{transform:translateY(-13px) scale(.95,1.07)}70%{transform:translateY(0) scale(1.07,.9)}85%{transform:translateY(-2px) scale(.99,1.02)}}",
+      ".mhop{animation:mHop .75s cubic-bezier(.4,0,.35,1)}",
+      // croak: throat puffs twice
+      ".mq-throat{transform-box:fill-box;transform-origin:center}",
+      "@keyframes mCroak{0%{opacity:0;transform:scale(.6)}25%{opacity:1;transform:scale(1.15)}45%{transform:scale(.85)}65%{transform:scale(1.15)}85%{transform:scale(.9)}100%{opacity:0;transform:scale(.6)}}",
+      ".mcroak .mq-throat{animation:mCroak 1.15s ease-in-out}",
+      // tongue zap (fly catch)
+      ".mq-tongue{opacity:0;transform-box:fill-box;transform-origin:0% 100%}",
+      "@keyframes mTongue{0%{opacity:1;transform:scale(.05)}40%{opacity:1;transform:scale(1)}65%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.1)}}",
+      ".mzap .mq-tongue{animation:mTongue .5s cubic-bezier(.2,.85,.3,1)}",
+      // the fly
+      ".mfly{position:absolute;right:7%;top:4%;z-index:4;pointer-events:none;animation:mFlyBuzz .5s ease-in-out infinite}",
+      "@keyframes mFlyBuzz{0%,100%{transform:translate(0,0)}25%{transform:translate(-2px,1.5px)}50%{transform:translate(1.5px,-2px)}75%{transform:translate(-1px,-1px)}}",
+      "@keyframes mFlyPop{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.2)}}",
+      ".mfly.mgone{animation:mFlyPop .18s ease-out forwards}",
+      // settle-up cheer: three happy bounces (triggered by app.celebrate)
+      "@keyframes mCheer{0%,100%{transform:translateY(0) scale(1)}30%{transform:translateY(-10px) scale(.97,1.05)}60%{transform:translateY(0) scale(1.06,.92)}}",
+      ".mcheer{animation:mCheer .5s ease-in-out 3}",
+      "@media (prefers-reduced-motion: reduce){.dmascot *{animation:none!important}.mzz{animation:none!important}.mfly{display:none!important}}",
     ].join("");
     document.head.appendChild(s);
   }
@@ -115,6 +142,88 @@
     wake();
   }
 
+  // ---- life engine: every 6-13s one visible mochi does something small ------
+  // (double-blink, glance, hop, croak — and, rarely, catches a fly with a
+  // tongue zap). Mascots also glance toward taps. Paused when the tab is
+  // hidden; disabled entirely under prefers-reduced-motion.
+  if (!window.__divvyMascotLife) {
+    window.__divvyMascotLife = true;
+    var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    var visibleMascots = function () {
+      var out = [];
+      document.querySelectorAll(".dmascot").forEach(function (m) {
+        var r = m.getBoundingClientRect();
+        if (r.width > 44 && r.bottom > 0 && r.top < window.innerHeight) out.push(m);
+      });
+      return out;
+    };
+    var timed = function (el, cls, ms) {
+      el.classList.remove(cls);
+      void el.offsetWidth;
+      el.classList.add(cls);
+      setTimeout(function () { el.classList.remove(cls); }, ms);
+    };
+
+    var flyCatch = function (host) {
+      var drawn = host.querySelector(".dmascot-drawn");
+      if (!drawn || host.querySelector(".mfly")) return;
+      var fly = document.createElement("span");
+      fly.className = "mfly";
+      fly.innerHTML = '<svg width="13" height="11" viewBox="0 0 13 11"><ellipse cx="6.5" cy="7" rx="3.4" ry="2.6" fill="#2B2118"/><path d="M4,4 q-3,-3 -1,-4 M9,4 q3,-3 1,-4" stroke="rgba(39,117,202,.75)" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>';
+      host.appendChild(fly);
+      timed(drawn, "mlook-r", 1400);                                     // spot it…
+      setTimeout(function () { timed(drawn, "mzap", 520); }, 850);       // …zap!
+      setTimeout(function () { fly.classList.add("mgone"); }, 1060);
+      setTimeout(function () { fly.remove(); }, 1400);
+      setTimeout(function () { if (window.app && app.haptic) app.haptic(12); }, 1000);
+    };
+
+    var tick = function () {
+      setTimeout(tick, 6000 + Math.random() * 7000);
+      if (reducedMotion || document.hidden) return;
+      var ms = visibleMascots();
+      if (!ms.length) return;
+      var host = ms[Math.floor(Math.random() * ms.length)];
+      var drawn = host.querySelector(".dmascot-drawn");
+      if (!drawn) return;
+      var r = Math.random();
+      if (r < 0.13) flyCatch(host);
+      else if (r < 0.30) timed(drawn, "mhop", 800);
+      else if (r < 0.48) timed(drawn, "mcroak", 1200);
+      else if (r < 0.66) timed(drawn, "mblink2", 600);
+      else if (r < 0.83) timed(drawn, "mlook-l", 1100);
+      else timed(drawn, "mlook-r", 1100);
+    };
+    setTimeout(tick, 3500);
+
+    // Glance toward taps elsewhere on the page (poking the mascot itself is
+    // handled by the tap-squash handler above).
+    document.addEventListener("pointerdown", function (e) {
+      if (reducedMotion) return;
+      if (e.target && e.target.closest && e.target.closest(".dmascot")) return;
+      visibleMascots().forEach(function (m) {
+        var drawn = m.querySelector(".dmascot-drawn");
+        if (!drawn) return;
+        var r = m.getBoundingClientRect();
+        var cx = r.left + r.width / 2;
+        drawn.classList.remove("mlook-l", "mlook-r");
+        timed(drawn, e.clientX < cx - 20 ? "mlook-l" : e.clientX > cx + 20 ? "mlook-r" : "mblink2", 900);
+      });
+    }, { passive: true });
+  }
+
+  // Every mochi on screen does three happy bounces — app.celebrate calls this
+  // on settle-up success so the mascot parties with the confetti.
+  function cheer() {
+    document.querySelectorAll(".dmascot-drawn").forEach(function (m) {
+      m.classList.remove("mcheer");
+      void m.offsetWidth;
+      m.classList.add("mcheer");
+      setTimeout(function () { m.classList.remove("mcheer"); }, 1600);
+    });
+  }
+
   var INK = "#2B2118", MINT = "#3DE8C7", CORAL = "#FF6B5E", BLUE = "#2775CA";
   var STROKE = 'stroke="' + INK + '" stroke-linecap="round" stroke-linejoin="round"';
 
@@ -133,11 +242,11 @@
         inner = '<path class="mq-lid-' + side + '" d="M' + (cx - 9) + ',34 q9,8 18,0" fill="none" ' + STROKE + ' stroke-width="3.4"/>';
       } else if (mood === "watching") {
         // pupils track something off to the side
-        inner = '<circle class="mq-pupil mq-pupil-' + side + '" cx="' + (cx + 5.5) + '" cy="35" r="5.6" fill="' + INK + '"/>' +
-          '<circle cx="' + (cx + 7.5) + '" cy="33" r="1.8" fill="#fff"/>';
+        inner = '<g class="mq-pupilbox"><circle class="mq-pupil mq-pupil-' + side + '" cx="' + (cx + 5.5) + '" cy="35" r="5.6" fill="' + INK + '"/>' +
+          '<circle cx="' + (cx + 7.5) + '" cy="33" r="1.8" fill="#fff"/></g>';
       } else {
-        inner = '<circle class="mq-pupil mq-pupil-' + side + '" cx="' + cx + '" cy="34" r="5.6" fill="' + INK + '"/>' +
-          '<circle cx="' + (cx + 2) + '" cy="32" r="1.8" fill="#fff"/>';
+        inner = '<g class="mq-pupilbox"><circle class="mq-pupil mq-pupil-' + side + '" cx="' + cx + '" cy="34" r="5.6" fill="' + INK + '"/>' +
+          '<circle cx="' + (cx + 2) + '" cy="32" r="1.8" fill="#fff"/></g>';
       }
       var brow = mood === "worried"
         ? '<path d="M' + (cx - 8) + ',18 q8,-4 15,-1" fill="none" ' + STROKE + ' stroke-width="3"/>'
@@ -180,12 +289,14 @@
         '<path class="mq-body" d="M25,96 Q25,50 85,50 Q145,50 145,96 L145,102 Q145,132 85,132 Q25,132 25,102 Z" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/>' +
         '<path d="M42,64 q16,-9 32,-7" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="4.6" stroke-linecap="round"/>' +
         // face
+        '<ellipse class="mq-throat" cx="85" cy="112" rx="15" ry="9" fill="#8bf2dd" ' + STROKE + ' stroke-width="3" opacity="0"/>' +
         '<g class="mq-face">' +
           mouthFor(mood) +
           '<ellipse class="mq-blush-l" cx="44" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>' +
           '<ellipse class="mq-blush-r" cx="126" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>' +
         '</g>' +
         sweat +
+        '<g class="mq-tongue"><path d="M95,90 Q120,60 146,28" fill="none" stroke="' + CORAL + '" stroke-width="5.5" stroke-linecap="round"/><circle cx="146" cy="28" r="4.5" fill="' + CORAL + '"/></g>' +
       '</g>' +
     '</svg>';
   }
@@ -240,5 +351,5 @@
     return d.firstElementChild;
   }
 
-  window.Mascot = { html: html, el: el, mini: mini };
+  window.Mascot = { html: html, el: el, mini: mini, cheer: cheer };
 })();

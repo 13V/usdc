@@ -814,6 +814,8 @@
     haptic([0, 35, 30, 45, 25, 70]);
     sound("win");
     if (prefersReduced()) return;
+    // mochi parties with the confetti
+    if (window.Mascot && window.Mascot.cheer) window.Mascot.cheer();
     var COLORS = ["#2775CA", "#3DE8C7", "#FF6B5E", "#FFC65C", "#8B5CF6"];
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     var canvas = document.createElement("canvas");
