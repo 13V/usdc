@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Divvy — mascot round 3: fresh angles</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 26px 18px 60px;
+    background: #F7F1E3;
+    background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(39,117,202,0.10) 27px 28px);
+    font-family: -apple-system, "General Sans", system-ui, sans-serif;
+    color: #2B2118;
+  }
+  h1 { font-size: 27px; letter-spacing: -0.5px; margin: 0 0 4px; }
+  .sub { font-family: ui-monospace, monospace; font-size: 11px; color: #FF6B5E; font-weight: 700; margin-bottom: 22px; }
+  .card {
+    position: relative; background: #FFFDF7; border: 2px solid #2B2118; border-radius: 18px;
+    box-shadow: 3px 4px 0 rgba(43,33,24,0.85); padding: 16px 16px 14px; margin-bottom: 24px;
+  }
+  .card:nth-child(odd) { transform: rotate(-0.5deg); }
+  .card:nth-child(even) { transform: rotate(0.4deg); }
+  .tape { position: absolute; top: -11px; left: 50%; width: 74px; height: 20px; transform: translateX(-50%) rotate(-2deg);
+    opacity: .85; border-left: 1.5px dashed rgba(43,33,24,0.25); border-right: 1.5px dashed rgba(43,33,24,0.25); }
+  .tag { position: absolute; top: -12px; left: 12px; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 10px; background: #FF6B5E;
+    border: 2px solid #2B2118; box-shadow: 2px 3px 0 rgba(43,33,24,0.85); color: #fff; font-weight: 800; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; transform: rotate(-4deg); }
+  .row { display: flex; align-items: center; gap: 14px; }
+  .big { flex: none; filter: drop-shadow(3px 4px 0 rgba(43,33,24,0.5)); }
+  .info { flex: 1; min-width: 0; }
+  .name { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
+  .pitch { font-size: 13px; line-height: 1.45; color: rgba(43,33,24,0.62); margin-top: 4px; }
+  .moods { display: flex; align-items: flex-end; gap: 14px; margin-top: 12px; }
+  .mood { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .mood span { font-family: ui-monospace, monospace; font-size: 9px; color: rgba(43,33,24,0.45); }
+</style>
+</head>
+<body>
+<h1>fresh angles</h1>
+<div class="sub">stuff you actually split with friends</div>
+<div id="cards"></div>
+
+<script>
+const INK = "#2B2118", BLUE = "#2775CA", MINT = "#3DE8C7", CORAL = "#FF6B5E", SUN = "#FFC65C", CARD = "#FFFDF7";
+const S = `stroke="${INK}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
+
+function smol(cx, cy, mood, scale = 1) {
+  const g = 12 * scale;
+  let eyes, mouth;
+  if (mood === "worried") {
+    eyes = `<circle cx="${cx-g}" cy="${cy}" r="${3.4*scale}" fill="${INK}"/><circle cx="${cx+g}" cy="${cy}" r="${3.4*scale}" fill="${INK}"/>
+      <circle cx="${cx-g+1.1*scale}" cy="${cy-1.1*scale}" r="${1.1*scale}" fill="#fff"/><circle cx="${cx+g+1.1*scale}" cy="${cy-1.1*scale}" r="${1.1*scale}" fill="#fff"/>
+      <path d="M${cx-g-4*scale},${cy-7*scale} q${4*scale},${-3*scale} ${8*scale},${-0.5*scale}" fill="none" ${S} stroke-width="${2*scale}"/>
+      <path d="M${cx+g+4*scale},${cy-7*scale} q${-4*scale},${-3*scale} ${-8*scale},${-0.5*scale}" fill="none" ${S} stroke-width="${2*scale}"/>`;
+    mouth = `<circle cx="${cx}" cy="${cy+7.5*scale}" r="${1.9*scale}" fill="${INK}"/>`;
+  } else if (mood === "party") {
+    eyes = `<path d="M${cx-g-3.4*scale},${cy} q${3.4*scale},${-4.4*scale} ${6.8*scale},0" fill="none" ${S} stroke-width="${2.3*scale}"/>
+      <path d="M${cx+g-3.4*scale},${cy} q${3.4*scale},${-4.4*scale} ${6.8*scale},0" fill="none" ${S} stroke-width="${2.3*scale}"/>`;
+    mouth = `<path d="M${cx-4.2*scale},${cy+4.6*scale} q${4.2*scale},${5.6*scale} ${8.4*scale},0 z" fill="${INK}"/>`;
+  } else {
+    eyes = `<circle cx="${cx-g}" cy="${cy}" r="${2.8*scale}" fill="${INK}"/><circle cx="${cx+g}" cy="${cy}" r="${2.8*scale}" fill="${INK}"/>`;
+    mouth = `<path d="M${cx-4.2*scale},${cy+4.6*scale} q${2.1*scale},${2.8*scale} ${4.2*scale},0 q${2.1*scale},${2.8*scale} ${4.2*scale},0" fill="none" ${S} stroke-width="${2.1*scale}"/>`;
+  }
+  const blush = `<ellipse cx="${cx-g-7.5*scale}" cy="${cy+5.5*scale}" rx="${4.3*scale}" ry="${2.8*scale}" fill="${CORAL}" opacity=".42"/>
+    <ellipse cx="${cx+g+7.5*scale}" cy="${cy+5.5*scale}" rx="${4.3*scale}" ry="${2.8*scale}" fill="${CORAL}" opacity=".42"/>`;
+  return eyes + mouth + blush;
+}
+const hat = (x, y) => `<path d="M${x},${y} l9,-19 l9,19 z" fill="${SUN}" ${S} stroke-width="2.4"/>
+  <circle cx="${x+9}" cy="${y-20}" r="3" fill="${CORAL}" ${S} stroke-width="2"/>`;
+const confetti = `<circle cx="12" cy="20" r="3" fill="${MINT}"/><rect x="100" y="14" width="6" height="6" rx="1" fill="${CORAL}" transform="rotate(20 103 17)"/>
+  <path d="M16,44 q4,-4 8,0" fill="none" stroke="${SUN}" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="108" cy="46" r="2.6" fill="${BLUE}"/>`;
+
+// V — Boba: the group order itself
+function boba(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M66,6 l4,18" ${S} stroke-width="5" stroke="${CORAL}"/>
+    <path d="M38,30 Q60,18 82,30" fill="none" ${S} stroke-width="3"/>
+    <path d="M36,32 h48 l-6,66 q-1,8 -9,8 h-18 q-8,0 -9,-8 Z" fill="rgba(255,253,247,0.9)" ${S}/>
+    <path d="M39,58 q21,8 42,0" fill="none" stroke="rgba(39,117,202,0.25)" stroke-width="2.4"/>
+    <circle cx="48" cy="92" r="4.6" fill="${INK}"/>
+    <circle cx="60" cy="95" r="4.6" fill="${INK}"/>
+    <circle cx="72" cy="92" r="4.6" fill="${INK}"/>
+    <path d="M36,52 q-9,2 -10,10 M84,52 q9,2 10,10" fill="none" ${S} stroke-width="2.8"/>
+    ${mood === "party" ? hat(51, 26) : ""}
+    ${smol(60, 62, mood, 0.92)}
+  </svg>`;
+}
+
+// W — The Pod: two peas that split everything evenly (duo mascot)
+function pod(mood, px) {
+  const mood2 = mood === "worried" ? "happy" : mood; // second pea keeps vibes up
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M14,74 Q14,44 60,44 Q106,44 106,74 Q106,92 60,92 Q14,92 14,74 Z" fill="rgba(61,232,199,0.35)" ${S}/>
+    <path d="M60,44 q-4,-10 4,-16" fill="none" ${S} stroke-width="2.8"/>
+    <circle cx="38" cy="66" r="17" fill="${MINT}" ${S}/>
+    <circle cx="82" cy="66" r="17" fill="${MINT}" ${S}/>
+    ${mood === "party" ? hat(29, 46) : ""}
+    ${smol(38, 64, mood, 0.52)}
+    ${smol(82, 64, mood2, 0.52)}
+  </svg>`;
+}
+
+// X — Lucky: the fortune cookie you crack in half
+function lucky(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M22,66 Q22,34 60,34 Q98,34 98,66 Q98,72 92,72 Q78,60 60,60 Q42,60 28,72 Q22,72 22,66 Z" fill="${SUN}" ${S}/>
+    <path d="M28,72 Q42,62 60,62 Q78,62 92,72 Q80,92 60,92 Q40,92 28,72 Z" fill="#eab04d" ${S}/>
+    <g transform="rotate(4 60 74)">
+      <rect x="44" y="66" width="32" height="13" rx="3" fill="${CARD}" ${S} stroke-width="2.4"/>
+      <path d="M49,72.5 h14" stroke="${CORAL}" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+    <path d="M22,58 q-8,2 -9,9 M98,58 q8,2 9,9" fill="none" ${S} stroke-width="2.8"/>
+    ${mood === "party" ? hat(51, 34) : ""}
+    ${smol(60, 48, mood, 0.8)}
+  </svg>`;
+}
+
+// Y — Printy: the tab machine
+function printy(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <rect x="20" y="34" width="80" height="52" rx="16" fill="${BLUE}" ${S}/>
+    <path d="M34,86 v10 M86,86 v10" ${S} stroke-width="3.4" fill="none"/>
+    <g transform="rotate(-2 60 96)">
+      <path d="M42,84 h36 v20 l-6,5 l-6,-5 l-6,5 l-6,-5 l-6,5 l-6,-5 z" fill="${CARD}" ${S} stroke-width="2.4"/>
+      <path d="M48,92 h18" stroke="rgba(43,33,24,0.35)" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M48,98 h12" stroke="${CORAL}" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+    <rect x="40" y="80" width="40" height="7" rx="3.5" fill="${INK}"/>
+    <circle cx="88" cy="44" r="3.4" fill="${MINT}"/>
+    <path d="M20,56 q-8,2 -9,9 M100,56 q8,2 9,9" fill="none" ${S} stroke-width="2.8"/>
+    ${mood === "party" ? hat(51, 34) : ""}
+    ${(() => {
+      const f = smol(60, 56, mood, 0.82);
+      // white features on blue body
+      return f.replaceAll(`fill="${INK}"`, 'fill="#fff"').replaceAll(`stroke="${INK}"`, 'stroke="#fff"');
+    })()}
+  </svg>`;
+}
+
+// Z — Octo: settles the whole group at once
+function octo(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M24,58 Q24,26 60,26 Q96,26 96,58 L96,74 Q96,80 90,78 Q84,90 74,82 Q68,92 60,84 Q52,92 46,82 Q36,90 30,78 Q24,80 24,74 Z" fill="${CORAL}" ${S}/>
+    <path d="M20,64 q-9,-2 -12,4 M100,64 q9,-2 12,4" fill="none" ${S} stroke-width="2.8"/>
+    <g transform="rotate(-14 12 58)"><rect x="2" y="52" width="17" height="11" rx="2.5" fill="${MINT}" ${S} stroke-width="2.2"/><text x="6" y="61" font-size="9" font-weight="700" fill="${INK}">$</text></g>
+    <g transform="rotate(14 110 58)"><rect x="101" y="52" width="17" height="11" rx="2.5" fill="${MINT}" ${S} stroke-width="2.2"/><text x="105" y="61" font-size="9" font-weight="700" fill="${INK}">$</text></g>
+    ${mood === "party" ? hat(51, 22) : ""}
+    ${smol(60, 52, mood, 0.94)}
+  </svg>`;
+}
+
+// AA — Calcy: does the awkward math
+function calcy(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <rect x="28" y="14" width="64" height="92" rx="16" fill="${MINT}" ${S}/>
+    <rect x="38" y="24" width="44" height="30" rx="8" fill="${CARD}" ${S} stroke-width="2.6"/>
+    <circle cx="46" cy="68" r="5.5" fill="${CARD}" stroke="rgba(43,33,24,0.55)" stroke-width="2"/>
+    <circle cx="60" cy="68" r="5.5" fill="${CARD}" stroke="rgba(43,33,24,0.55)" stroke-width="2"/>
+    <circle cx="74" cy="68" r="5.5" fill="${CARD}" stroke="rgba(43,33,24,0.55)" stroke-width="2"/>
+    <circle cx="46" cy="84" r="5.5" fill="${CARD}" stroke="rgba(43,33,24,0.55)" stroke-width="2"/>
+    <circle cx="60" cy="84" r="5.5" fill="${CARD}" stroke="rgba(43,33,24,0.55)" stroke-width="2"/>
+    <rect x="68" y="78" width="14" height="12" rx="6" fill="${CORAL}" stroke="rgba(43,33,24,0.55)" stroke-width="2"/>
+    <path d="M72,84 h6 M75,81 v6" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+    <path d="M28,52 q-9,2 -10,10 M92,52 q9,2 10,10" fill="none" ${S} stroke-width="2.8"/>
+    <path d="M46,106 v6 M74,106 v6" ${S} stroke-width="3" fill="none"/>
+    ${mood === "party" ? hat(51, 14) : ""}
+    ${smol(60, 38, mood, 0.62)}
+  </svg>`;
+}
+
+const CANDIDATES = [
+  { tag: "V", fn: boba, tape: "rgba(255,107,94,0.6)", name: "boba — the group order",
+    pitch: "the drink your users are literally splitting the bill for. pearls for feet vibes, straw antenna. “who's paying for boba” is the app's origin story." },
+  { tag: "W", fn: pod, tape: "rgba(61,232,199,0.7)", name: "the pod — two peas, split evenly",
+    pitch: "a DUO mascot: two peas in a pod who split everything 50/50. it's about the friendship, not the money — and duo mascots own stickers." },
+  { tag: "X", fn: lucky, tape: "rgba(255,198,92,0.75)", name: "lucky — the fortune cookie",
+    pitch: "the snack you crack in half to share, with a fortune inside. every balance update becomes a fortune: “you will receive $12 from maya.”" },
+  { tag: "Y", fn: printy, tape: "rgba(39,117,202,0.4)", name: "printy — the tab machine",
+    pitch: "a chubby little receipt printer that goes brrr. spits out a fresh tab when you create one, sticks its paper tongue out when someone owes." },
+  { tag: "Z", fn: octo, tape: "rgba(255,107,94,0.6)", name: "octo — settles everyone at once",
+    pitch: "eight arms, zero excuses — pays the whole group in one go, exactly like settle-up does. holds a bill in every tentacle on payday." },
+  { tag: "AA", fn: calcy, tape: "rgba(61,232,199,0.7)", name: "calcy — does the awkward math",
+    pitch: "the calculator nobody wants to be at dinner. face lives on the screen, coral ÷ button is its favorite. divvy's whole job in one object." },
+];
+
+document.getElementById("cards").innerHTML = CANDIDATES.map(c => `
+  <div class="card">
+    <div class="tape" style="background:${c.tape}"></div>
+    <div class="tag">${c.tag}</div>
+    <div class="row">
+      <div class="big">${c.fn("happy", 116)}</div>
+      <div class="info">
+        <div class="name">${c.name}</div>
+        <div class="pitch">${c.pitch}</div>
+      </div>
+    </div>
+    <div class="moods">
+      <div class="mood">${c.fn("happy", 52)}<span>happy</span></div>
+      <div class="mood">${c.fn("worried", 52)}<span>worried</span></div>
+      <div class="mood">${c.fn("party", 52)}<span>party</span></div>
+    </div>
+  </div>`).join("");
+</script>
+</body>
+</html>
