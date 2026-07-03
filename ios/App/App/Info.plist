@@ -34,6 +34,8 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Divvy uses the camera to snap a photo of a receipt so it can split the bill for you.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

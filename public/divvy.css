@@ -5,22 +5,23 @@
 @import url("/fonts.css");
 
 :root {
-  /* surfaces */
-  --ink: #0B1622;
-  --ink-deep: #050d15;
-  --card: #13212E;
-  --card-2: #0e2734;
-  --line: rgba(244, 247, 250, 0.10);
-  --line-2: rgba(244, 247, 250, 0.18);
+  /* surfaces — JOURNAL theme: warm notebook paper + hand-inked chrome */
+  --ink: #F7F1E3;        /* paper */
+  --ink-deep: #EFE7D3;   /* deep paper (page edges) */
+  --card: #FFFDF7;       /* white card stock */
+  --card-2: #FBF6EA;
+  --line: rgba(43, 33, 24, 0.12);
+  --line-2: rgba(43, 33, 24, 0.22);
+  --pen: #2B2118;        /* the ink everything is drawn with */
 
   /* text */
-  --text: #F4F7FA;
-  --muted: rgba(244, 247, 250, 0.60);
-  --faint: rgba(244, 247, 250, 0.40);
+  --text: #2B2118;
+  --muted: rgba(43, 33, 24, 0.60);
+  --faint: rgba(43, 33, 24, 0.42);
 
   /* brand + accents (money rule: owed-to-you = blue, you-owe = coral, settled = mint) */
   --blue: #2775CA;
-  --blue-bright: #7fc0ff;
+  --blue-bright: #2775CA;
   --blue-grad: linear-gradient(120deg, #3286db, #2775CA);
   --mint: #3DE8C7;
   --coral: #FF6B5E;
@@ -114,15 +115,15 @@ div[style*="cursor:pointer"]:active:not([style*="transform"]) {
   .appscroll a[style]:active, a[style*="color:inherit"]:active,
   a[style*="cursor:pointer"]:active, div[style*="cursor:pointer"]:active { transform: none; }
 }
-.btn.ghost { background: transparent; border: 1px solid var(--line-2); color: var(--text);
+.btn.ghost { background: var(--card); border: 2px solid var(--pen); color: var(--text);
   box-shadow: none; font-family: var(--sans); font-weight: 500; }
-.btn.ghost:hover { background: rgba(244,247,250,0.05); border-color: rgba(244,247,250,0.3); filter: none; }
+.btn.ghost:hover { background: var(--card-2); filter: none; }
 .btn.coral { background: linear-gradient(120deg, #ff7d72, #FF6B5E); box-shadow: 0 10px 30px rgba(255,107,94,0.35); }
 .btn.sm { width: auto; min-height: 0; padding: 9px 16px; font-size: 14px; }
 
 /* small inline pill / chip */
 .pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
-  background: rgba(244,247,250,0.06); border: 1px solid var(--line); color: var(--text);
+  background: var(--card); border: 1.5px solid var(--line-2); color: var(--text);
   font-family: var(--sans); font-weight: 500; font-size: 13px; cursor: pointer; }
 .chip { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px;
   background: var(--card-2); border: 1px solid var(--line); color: var(--text); font-size: 14px; cursor: pointer; }
@@ -181,13 +182,13 @@ label { display: block; font-family: var(--mono); font-size: 11px; letter-spacin
 @keyframes dRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { @keyframes dRise { from { opacity: 1; } to { opacity: 1; } } }
 
-/* ---- ambient aurora: a barely-perceptible drifting glow behind every screen
+/* ---- ambient wash: barely-perceptible drifting watercolor blots on the paper
    (screens with their own opaque backgrounds simply cover it) ---- */
-#aurora { position: absolute; inset: -22%; z-index: 0; pointer-events: none; opacity: .55;
+#aurora { position: absolute; inset: -22%; z-index: 0; pointer-events: none; opacity: .5;
   background:
-    radial-gradient(38% 30% at 22% 16%, rgba(39,117,202,0.15), transparent 70%),
+    radial-gradient(38% 30% at 22% 16%, rgba(39,117,202,0.10), transparent 70%),
     radial-gradient(30% 26% at 80% 72%, rgba(61,232,199,0.09), transparent 70%),
-    radial-gradient(26% 22% at 68% 26%, rgba(139,92,246,0.09), transparent 70%);
+    radial-gradient(26% 22% at 68% 26%, rgba(255,198,92,0.10), transparent 70%);
   animation: auroraDrift 48s ease-in-out infinite alternate; will-change: transform; }
 @keyframes auroraDrift {
   from { transform: translate3d(-2%, -1.5%, 0) rotate(0deg) scale(1); }
@@ -220,28 +221,31 @@ button:active, .tabbar a:active { transform: scale(.96); }
 .topbar { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 20px; }
 .appscroll { padding: 0 20px calc(120px + env(safe-area-inset-bottom)); }
 
-/* Content-height bar: padding (not a fixed height) so the home-indicator
-   safe area extends it instead of squeezing the icons. */
-.tabbar { position: fixed; left: 0; right: 0; bottom: 0;
-  background: rgba(11,22,34,0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--line);
-  display: flex; align-items: flex-start; justify-content: space-around;
-  /* labels sit just above the home indicator, like a native tab bar */
-  padding: 10px 10px calc(4px + env(safe-area-inset-bottom)); z-index: 50; }
-.tabbar a { display: flex; flex-direction: column; align-items: center; gap: 5px; text-decoration: none;
+/* JOURNAL tab bar: white card stock, hand-inked 2px border with an offset
+   solid shadow, mint active pill, tilted coral + key. Content-height (padding,
+   not fixed height) so the home-indicator safe area extends it. */
+.tabbar { position: fixed; left: 10px; right: 10px; bottom: calc(8px + env(safe-area-inset-bottom));
+  background: var(--card); border: 2px solid var(--pen); border-radius: 999px;
+  box-shadow: 3px 4px 0 rgba(43,33,24,0.9);
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 9px 10px; z-index: 50; }
+.tabbar a { display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none;
   color: var(--faint); font-family: var(--mono); font-size: 10px; letter-spacing: 0.5px; flex: 1; cursor: pointer;
-  padding: 8px 0 7px; margin: 0 5px; border-radius: 15px; transition: color .18s, background .18s, transform .13s; }
-.tabbar a.active { color: var(--blue-bright); background: rgba(39,117,202,0.16); }
-.tabbar a svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
-.tabbar .fab { margin-top: -6px; width: 56px; height: 56px; border-radius: 18px; background: var(--blue-grad);
-  display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 22px rgba(39,117,202,0.5);
-  color: #fff; flex: none; padding: 0; }
-.tabbar .fab svg { width: 26px; height: 26px; stroke: #fff; stroke-width: 2.4; }
+  padding: 7px 0 6px; margin: 0 4px; border-radius: 999px; transition: color .18s, background .18s, transform .13s; }
+.tabbar a.active { color: var(--pen); background: #3DE8C7; border: 2px solid var(--pen); padding: 5px 0 4px; }
+.tabbar a svg { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.9; }
+.tabbar .fab { margin-top: -18px; width: 52px; height: 52px; border-radius: 16px;
+  background: #FF6B5E; border: 2px solid var(--pen); box-shadow: 3px 3px 0 rgba(43,33,24,0.9);
+  display: flex; align-items: center; justify-content: center;
+  color: #FFFDF7; flex: none; padding: 0; transform: rotate(-3deg); }
+.tabbar .fab:active { transform: rotate(-3deg) scale(.92); }
+.tabbar .fab svg { width: 25px; height: 25px; stroke: #FFFDF7; stroke-width: 2.6; }
 
 /* ---- bottom sheet ---- */
 .sheet-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 60; }
 .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 61; background: var(--card);
-  border-radius: 24px 24px 0 0; border: 1px solid var(--line);
+  border-radius: 24px 24px 0 0; border: 2px solid var(--pen); border-bottom: none;
+  box-shadow: 0 -4px 0 rgba(43,33,24,0.15);
   padding: 8px 20px calc(28px + env(safe-area-inset-bottom)); }
 .sheet .grab { width: 38px; height: 4px; border-radius: 999px; background: var(--line-2); margin: 8px auto 14px; }
 
@@ -249,4 +253,13 @@ button:active, .tabbar a:active { transform: scale(.96); }
 .glow-blue { box-shadow: 0 0 40px rgba(39,117,202,0.25); }
 
 /* subtle dotted "paper" texture overlay (use on hero areas) */
-.paper { background-image: repeating-radial-gradient(circle at 80% 4%, rgba(244,247,250,0.03) 0 1px, transparent 1px 7px); }
+/* notebook paper: faint ruled lines across the whole shell */
+.paper { background-image: repeating-linear-gradient(0deg, transparent 0 30px, rgba(43,33,24,0.05) 30px 31px); }
+
+/* ---- journal utilities (the hand-drawn signatures) ---- */
+.jcard { background: var(--card); border: 2px solid var(--pen); border-radius: 16px;
+  box-shadow: 3.5px 4.5px 0 rgba(43,33,24,0.9); }
+.jtape { position: absolute; width: 86px; height: 24px; background: rgba(61,232,199,0.55);
+  transform: rotate(-5deg); pointer-events: none;
+  border-left: 1.5px dashed rgba(43,33,24,0.25); border-right: 1.5px dashed rgba(43,33,24,0.25); }
+.jdoodle { text-decoration: underline wavy rgba(255,107,94,0.75) 2.5px; text-underline-offset: 5px; }

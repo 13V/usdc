@@ -21,7 +21,7 @@
       '<div style="width:36px; height:36px; border-radius:11px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(39,117,202,0.4), inset 0 1px 0 rgba(255,255,255,0.25);">' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:24px; line-height:1; color:#fff; transform:translateY(-1px);">/</span>' +
       '</div>' +
-      '<a href="#/you" style="text-decoration:none; width:36px; height:36px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(0,0,0,0.3);">' + app.esc(me.emoji) + '</a>' +
+      '<a href="#/you" style="text-decoration:none; width:36px; height:36px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(43,33,24,0.13);">' + app.esc(me.emoji) + '</a>' +
     '</div>';
   }
 
@@ -29,8 +29,8 @@
   function header(count) {
     var sub = count === 1 ? "1 active" : count + " active";
     return '<div style="display:flex; align-items:baseline; gap:11px; margin-top:20px;">' +
-      '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:33px; line-height:1; letter-spacing:-0.5px; margin:0; color:#F4F7FA;">your groups</h1>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:12px; font-weight:400; color:rgba(244,247,250,0.5);">' + sub + '</span>' +
+      '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:33px; line-height:1; letter-spacing:-0.5px; margin:0; color:#2B2118;">your groups</h1>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:12px; font-weight:400; color:rgba(43,33,24,0.5);">' + sub + '</span>' +
     '</div>';
   }
 
@@ -46,7 +46,7 @@
   function hero(totals, counterparties) {
     var net = totals.netCents || 0, owed = totals.owedCents || 0, owe = totals.owesCents || 0;
     var pos = net >= 0;
-    var col = pos ? "#3B92E8" : "#FF6B5E";
+    var col = pos ? "#2775CA" : "#FF6B5E";
     var label = pos ? "you're up" : "you're down";
     var signPrefix = net < 0 ? "−$" : "+$";
 
@@ -88,15 +88,15 @@
           (owe > 0 ? '<div style="flex:' + oweSeg + '; background:linear-gradient(90deg,#FF6B5E,#ff8073); display:flex; align-items:center; justify-content:flex-end; padding-right:7px;">' + ridingAv(owees) + '</div>' : '') +
         '</div>' +
         '<div style="display:flex; justify-content:space-between; margin-top:9px;">' +
-          (owed > 0 ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:#3B92E8;"><span style="opacity:.55;">$</span>' + money3(owed) + ' owed</span>' : '<span></span>') +
+          (owed > 0 ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:#2775CA;"><span style="opacity:.55;">$</span>' + money3(owed) + ' owed</span>' : '<span></span>') +
           (owe > 0 ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:#FF6B5E;"><span style="opacity:.55;">$</span>' + money3(owe) + ' owe</span>' : '<span></span>') +
         '</div>'
       : "";
 
     return '<div style="margin-top:24px;">' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:12.5px; letter-spacing:0.2px; color:rgba(244,247,250,0.5);">' + label + '</div>' +
-      '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:62px; line-height:1; letter-spacing:-2.5px; color:' + col + '; text-shadow:0 0 34px ' + (pos ? "rgba(59,146,232,0.45)" : "rgba(255,107,94,0.4)") + '; margin-top:6px;"><span style="font-size:33px; opacity:.5;">' + signPrefix + '</span>' + money3(net).replace('opacity:.55;', 'font-size:33px; opacity:.5;') + '</div>' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14px; color:rgba(244,247,250,0.55); margin-top:11px;">' + subline + '</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:12.5px; letter-spacing:0.2px; color:rgba(43,33,24,0.5);">' + label + '</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:62px; line-height:1; letter-spacing:-2.5px; color:' + col + '; text-shadow:0 0 34px ' + (pos ? "rgba(39,117,202,0.45)" : "rgba(255,107,94,0.4)") + '; margin-top:6px;"><span style="font-size:33px; opacity:.5;">' + signPrefix + '</span>' + money3(net).replace('opacity:.55;', 'font-size:33px; opacity:.5;') + '</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14px; color:rgba(43,33,24,0.55); margin-top:11px;">' + subline + '</div>' +
       bar +
     '</div>';
   }
@@ -146,7 +146,7 @@
       html += '<div style="width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:rgba(11,22,34,0.55); border:2px solid ' + border + ';' + (i ? " margin-left:-10px;" : "") + ' display:flex; align-items:center; justify-content:center; font-size:' + fs + 'px;">' + face + '</div>';
     }
     if (n > max) {
-      html += '<div style="width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:rgba(11,22,34,0.7); border:2px solid ' + border + '; margin-left:-10px; display:flex; align-items:center; justify-content:center; font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; color:#F4F7FA;">+' + (n - max) + '</div>';
+      html += '<div style="width:' + size + 'px; height:' + size + 'px; border-radius:50%; background:rgba(11,22,34,0.7); border:2px solid ' + border + '; margin-left:-10px; display:flex; align-items:center; justify-content:center; font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; color:#2B2118;">+' + (n - max) + '</div>';
     }
     return '<div style="display:flex;">' + html + '</div>';
   }
@@ -167,9 +167,9 @@
       '</span>';
     }
     var pos = t.netCents > 0;
-    var col = pos ? "#3B92E8" : "#FF6B5E";
+    var col = pos ? "#2775CA" : "#FF6B5E";
     var label = pos ? "you're owed" : "you owe";
-    var labelCol = pos ? "rgba(244,247,250,0.45)" : "rgba(255,107,94,0.85)";
+    var labelCol = pos ? "rgba(43,33,24,0.45)" : "rgba(255,107,94,0.85)";
     var sign = pos ? "+$" : "−$";
     var amtFs = big ? "25px" : "21px";
     return '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:' + (big ? "11px" : "10.5px") + '; color:' + labelCol + '; margin-bottom:2px;">' + label + '</div>' +
@@ -180,7 +180,7 @@
   function heroCard(t) {
     var cov = coverFor(t);
     var emoji = groupEmoji(t, cov);
-    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; background:#13212E; border-radius:23px; overflow:hidden; border:1px solid rgba(244,247,250,0.06); box-shadow:0 10px 28px rgba(0,0,0,0.28); display:block;">' +
+    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; background:#FFFDF7; border-radius:23px; overflow:hidden; border:1px solid rgba(43,33,24,0.06); box-shadow:0 10px 28px rgba(43,33,24,0.13); display:block;">' +
       '<div style="position:relative; height:84px; background:' + cov.grad + '; display:flex; align-items:center; padding:0 18px; overflow:hidden;">' +
         coverDeco("74px", cov.dark) +
         '<span style="position:relative; font-size:38px; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.3));">' + emoji + '</span>' +
@@ -188,8 +188,8 @@
       '</div>' +
       '<div style="padding:15px 18px 17px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px;">' +
         '<div style="min-width:0;">' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#F4F7FA;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:13.5px; color:rgba(244,247,250,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + '</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:13.5px; color:rgba(43,33,24,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + '</div>' +
         '</div>' +
         '<div style="text-align:right; flex:none;">' + netBlock(t, true) + '</div>' +
       '</div>' +
@@ -200,14 +200,14 @@
   function bentoCard(t) {
     var cov = coverFor(t);
     var emoji = groupEmoji(t, cov);
-    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="text-decoration:none; color:inherit; background:#13212E; border-radius:23px; overflow:hidden; border:1px solid rgba(244,247,250,0.06); box-shadow:0 8px 22px rgba(0,0,0,0.24); display:block;">' +
+    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="text-decoration:none; color:inherit; background:#FFFDF7; border-radius:23px; overflow:hidden; border:1px solid rgba(43,33,24,0.06); box-shadow:0 8px 22px rgba(43,33,24,0.13); display:block;">' +
       '<div style="position:relative; height:62px; background:' + cov.grad + '; display:flex; align-items:center; padding:0 16px; overflow:hidden;">' +
         coverDeco("14px", cov.dark) +
         '<span style="position:relative; font-size:30px; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.28));">' + emoji + '</span>' +
       '</div>' +
       '<div style="padding:13px 16px 15px;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#F4F7FA;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12px; color:rgba(244,247,250,0.55); margin-top:3px;">' + app.esc(metaLine(t)) + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12px; color:rgba(43,33,24,0.55); margin-top:3px;">' + app.esc(metaLine(t)) + '</div>' +
         '<div style="margin-top:12px;">' + netBlock(t, false) + '</div>' +
       '</div>' +
     '</a>';
@@ -217,15 +217,15 @@
   function rowCard(t) {
     var cov = coverFor(t);
     var emoji = groupEmoji(t, cov);
-    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; display:flex; background:#13212E; border-radius:23px; overflow:hidden; border:1px solid rgba(244,247,250,0.06); box-shadow:0 8px 22px rgba(0,0,0,0.24); min-height:92px;">' +
+    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; display:flex; background:#FFFDF7; border-radius:23px; overflow:hidden; border:1px solid rgba(43,33,24,0.06); box-shadow:0 8px 22px rgba(43,33,24,0.13); min-height:92px;">' +
       '<div style="position:relative; width:98px; flex:none; background:' + cov.grad + '; display:flex; align-items:center; justify-content:center; overflow:hidden;">' +
         coverDeco("0", cov.dark) +
         '<span style="position:relative; font-size:34px; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.18));">' + emoji + '</span>' +
       '</div>' +
       '<div style="flex:1; min-width:0; padding:15px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;">' +
         '<div style="min-width:0;">' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#F4F7FA;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(244,247,250,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + '</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + '</div>' +
         '</div>' +
         '<div style="text-align:right; flex:none;">' + netBlock(t, false) + '</div>' +
       '</div>' +
@@ -319,8 +319,8 @@
       brandRow() + header(0) +
       '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:50px 30px 0;">' +
         app.mascot({ size: 116, mood: "happy", glow: true }) +
-        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:24px 0 0; color:#F4F7FA;">connect to see your groups</h2>' +
-        '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(244,247,250,0.55);">your tabs, trips and roommates live here — split now, settle later.</p>' +
+        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:24px 0 0; color:#2B2118;">connect to see your groups</h2>' +
+        '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(43,33,24,0.55);">your tabs, trips and roommates live here — split now, settle later.</p>' +
         '<button class="btn" id="gConnect" style="max-width:300px; margin-top:24px;">connect a wallet</button>' +
       '</div></div>';
     var c = document.getElementById("gConnect");
@@ -335,8 +335,8 @@
       brandRow() + header(0) +
       '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:66px 30px 0;">' +
         app.mascot({ size: 108, mood: "happy", glow: true }) +
-        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:30px 0 0; color:#F4F7FA;">no tabs yet — start one 🎉</h2>' +
-        '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(244,247,250,0.55);">split a trip, the rent, or last night\'s dinner. settle in dollars, just faster.</p>' +
+        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:30px 0 0; color:#2B2118;">no tabs yet — start one 🎉</h2>' +
+        '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(43,33,24,0.55);">split a trip, the rent, or last night\'s dinner. settle in dollars, just faster.</p>' +
         '<button id="gNew" style="appearance:none; border:none; cursor:pointer; min-height:54px; margin-top:26px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); padding:0 26px; display:flex; align-items:center; gap:9px; box-shadow:0 8px 26px rgba(39,117,202,0.45);">' +
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16.5px; color:#fff;">start a tab</span>' +

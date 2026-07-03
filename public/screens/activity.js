@@ -35,15 +35,15 @@
   // ---- header (lifted: big "activity" 30px Clash + search/filter circles) ----
   function header() {
     var chip = function (path) {
-      return '<div style="width:38px; height:38px; border-radius:50%; background:#13212E; ' +
-        'border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
-        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.75)" ' +
+      return '<div style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; ' +
+        'border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.75)" ' +
         'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg></div>';
     };
     return '<div style="position:relative; z-index:6; display:flex; align-items:flex-end; ' +
       'justify-content:space-between; padding:6px 20px 14px; flex:none;">' +
       '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; ' +
-      'font-size:30px; letter-spacing:-0.8px; margin:0; color:#F4F7FA;">activity</h1>' +
+      'font-size:30px; letter-spacing:-0.8px; margin:0; color:#2B2118;">activity</h1>' +
       '<div style="display:flex; align-items:center; gap:9px;">' +
         chip('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/>') +
         chip('<path d="M4 6h16M7 12h10M10 18h4"/>') +
@@ -53,7 +53,7 @@
   // faint money texture + the single soft blue glow from the frame.
   function ambient() {
     return '<div style="position:absolute; inset:0; z-index:0; pointer-events:none; ' +
-      'background-image:repeating-radial-gradient(circle at 84% 2%, rgba(244,247,250,0.028) 0 1px, transparent 1px 8px); opacity:.6;"></div>' +
+      'background-image:repeating-radial-gradient(circle at 84% 2%, rgba(43,33,24,0.028) 0 1px, transparent 1px 8px); opacity:.6;"></div>' +
       '<div style="position:absolute; left:-40px; top:90px; width:340px; height:300px; border-radius:50%; z-index:0; pointer-events:none; ' +
       'background:radial-gradient(circle, rgba(39,117,202,0.16) 0%, rgba(39,117,202,0) 70%);"></div>';
   }
@@ -108,7 +108,7 @@
   // ---- emoji avatars: deterministic per identity (frame uses 🍜🦊🏝️🐢🐯…) --
   var AV_GRADS = [
     "linear-gradient(150deg,#3DE8C7,#2775CA)",
-    "linear-gradient(150deg,#7fc0ff,#2775CA)",
+    "linear-gradient(150deg,#2775CA,#2775CA)",
     "linear-gradient(150deg,#FFC65C,#FF6B5E)",
     "linear-gradient(150deg,#8B5CF6,#2775CA)",
     "linear-gradient(150deg,#5cf0d4,#3DE8C7 55%,#1fbfa3)",
@@ -154,7 +154,7 @@
   function amountHtml(cents, settled) {
     if (cents == null) return "";
     var pos = cents > 0, zero = cents === 0;
-    var col = zero ? "rgba(244,247,250,0.5)" : pos ? "#3B92E8" : "#FF6B5E";
+    var col = zero ? "rgba(43,33,24,0.5)" : pos ? "#2775CA" : "#FF6B5E";
     var sign = zero ? "$" : pos ? "+$" : "−$";
     var size = zero ? "15px" : "17px";
     var n = Math.abs(cents) / 100;
@@ -178,20 +178,20 @@
   // mono meta line (sep with grey dots) used under one-liners.
   function metaMono(text) {
     return '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; ' +
-      'color:rgba(244,247,250,0.42); margin-top:3px;">' + text + '</div>';
+      'color:rgba(43,33,24,0.42); margin-top:3px;">' + text + '</div>';
   }
   // "view ↗" link → the receipt route when the backend gives us a real
   // signature/reference; otherwise fall back to the relevant settle/group
   // screen rather than pointing at a dead #/receipt/ route.
   function viewLink(sig, fallbackHref) {
-    var style = 'font-family:\'Space Mono\',monospace; font-size:10px; color:#7fc0ff; cursor:pointer;';
+    var style = 'font-family:\'Space Mono\',monospace; font-size:10px; color:#2775CA; cursor:pointer;';
     var href = sig ? ("#/receipt/" + encodeURIComponent(sig)) : (fallbackHref || "");
     if (href) return '<a href="' + href + '" style="' + style + ' text-decoration:none;">view ↗</a>';
     return '<span style="' + style + '">view ↗</span>';
   }
   // blue "chip in" pill (open requests show this instead of an amount).
   function chipInPill(href) {
-    var inner = '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; color:#7fc0ff;">chip in</span>';
+    var inner = '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; color:#2775CA;">chip in</span>';
     var css = 'display:inline-flex; align-items:center; gap:6px; background:rgba(39,117,202,0.14); ' +
       'border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:6px 13px; cursor:pointer; flex:none;';
     if (href) return '<a href="' + href + '" style="' + css + ' text-decoration:none;">' + inner + '</a>';
@@ -202,10 +202,10 @@
     if (!rs || typeof rs !== "object") return "";
     var chips = [];
     var push = function (emoji, count) {
-      chips.push('<div style="display:inline-flex; align-items:center; gap:4px; background:#13212E; ' +
-        'border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:2px 8px;">' +
+      chips.push('<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; ' +
+        'border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:2px 8px;">' +
         '<span style="font-size:11px;">' + app.esc(emoji) + '</span>' +
-        '<span style="font-family:\'Space Mono\',monospace; font-size:9px; color:rgba(244,247,250,0.6);">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:9px; color:rgba(43,33,24,0.6);">' +
         app.esc(String(count)) + '</span></div>');
     };
     if (Array.isArray(rs)) rs.forEach(function (r) { if (r && r.emoji) push(r.emoji, r.count != null ? r.count : 1); });
@@ -328,7 +328,7 @@
       bits.push(app.esc(relTime(ev.at)));
       subRow = '<div style="display:flex; align-items:center; gap:7px; margin-top:3px; flex-wrap:wrap;">' +
         settledTag(d.settleLabel) +
-        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(244,247,250,0.42);">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.42);">' +
         bits.join(" · ") + '</span>' +
         (d.settleLabel === "ALL SETTLED" ? "" : viewLink(sig, ev.tripId ? "#/settle/" + encodeURIComponent(ev.tripId) : "")) +
         '</div>';
@@ -355,7 +355,7 @@
     return '<div style="display:flex; align-items:' + align + '; gap:13px; padding:11px 4px;">' +
       avatarHtml +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' + d.line + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + d.line + '</div>' +
         subRow + reacts +
       '</div>' +
       right +
@@ -372,7 +372,7 @@
         if (lastDay !== null) html += '</div>';
         lastDay = k;
         html += '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; ' +
-          'color:rgba(244,247,250,0.4); padding:' + (html ? "20px" : "8px") + ' 2px 10px;">' +
+          'color:rgba(43,33,24,0.4); padding:' + (html ? "20px" : "8px") + ' 2px 10px;">' +
           app.esc(dayLabel(ev.at)) + '</div>' +
           '<div style="display:flex; flex-direction:column; gap:3px;">';
       }
@@ -390,7 +390,7 @@
 
   // ---- LOADING (shimmer skeleton rows, ~1.3s sweep) — lifted from the frame ----
   function skeletonBlock(extra) {
-    return 'background:#13212E; background-image:linear-gradient(90deg, transparent 0, rgba(244,247,250,0.10) 50%, transparent 100%); ' +
+    return 'background:#FFFDF7; background-image:linear-gradient(90deg, transparent 0, rgba(43,33,24,0.10) 50%, transparent 100%); ' +
       'background-size:260px 100%; background-repeat:no-repeat; animation:acShimmer 1.3s ease-in-out infinite; ' + (extra || "");
   }
   function skeletonRow(round, w1, w2) {
@@ -432,7 +432,7 @@
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
           'justify-content:center; gap:18px; padding:40px 44px; text-align:center;">' +
           app.mascot({ size: 96, mood: "sleepy", glow: true }) +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(244,247,250,0.65);">' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(43,33,24,0.65);">' +
             'nothing\'s happened yet 🫥<br>start a tab and the feed wakes up</div>' +
           '<button id="acNew" style="appearance:none; border:none; cursor:pointer; min-height:50px; padding:0 26px; ' +
             'border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); ' +
@@ -453,7 +453,7 @@
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
           'justify-content:center; gap:16px; padding:40px 44px; text-align:center;">' +
           app.mascot({ size: 104, mood: "happy", glow: true }) +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(244,247,250,0.65);">' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(43,33,24,0.65);">' +
             'your feed lives here<br>connect a wallet to see who chipped in 💸</div>' +
           '<button id="acConnect" style="appearance:none; border:none; cursor:pointer; min-height:50px; padding:0 26px; ' +
             'border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); ' +
@@ -474,8 +474,8 @@
         '<div style="position:relative; z-index:2;">' + header() + '</div>' +
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
           'justify-content:center; gap:10px; padding:40px 44px; text-align:center;">' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; color:rgba(244,247,250,0.65);">couldn\'t load activity</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(244,247,250,0.42);">' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; color:rgba(43,33,24,0.65);">couldn\'t load activity</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.42);">' +
             app.esc(msg || "try again") + '</div>' +
         '</div>' +
       '</div>';

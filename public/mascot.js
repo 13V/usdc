@@ -37,7 +37,7 @@
       ".dmascot-drawn.mflip{animation:mFlip .7s cubic-bezier(.34,1.56,.64,1)}",
       // idle: after ~40s of stillness the blob nods off (floating z z)
       "@keyframes mZz{0%{opacity:0;transform:translateY(4px) scale(.8)}25%{opacity:1}100%{opacity:0;transform:translateY(-16px) scale(1.1)}}",
-      ".mzz{position:absolute;right:6%;top:2%;font-family:'Space Mono',monospace;font-weight:700;font-size:13px;color:rgba(127,192,255,0.85);animation:mZz 2.4s ease-in-out infinite;pointer-events:none;z-index:5}",
+      ".mzz{position:absolute;right:6%;top:2%;font-family:'Space Mono',monospace;font-weight:700;font-size:13px;color:rgba(39,117,202,0.85);animation:mZz 2.4s ease-in-out infinite;pointer-events:none;z-index:5}",
       "@media (prefers-reduced-motion: reduce){.dmascot *{animation:none!important}.mzz{animation:none!important}}",
     ].join("");
     document.head.appendChild(s);
@@ -96,7 +96,7 @@
     wake();
   }
 
-  var INK = "#0B1622";
+  var INK = "#2B2118";
 
   function eyes(mood) {
     var blink = "animation:mBlink 5s ease-in-out infinite;";
@@ -108,7 +108,7 @@
     var w = mood === "watching" ? 12 : 14;
     var h = 18;
     var pupil = mood === "watching"
-      ? '<div style="position:absolute;right:2px;bottom:3px;width:6px;height:6px;border-radius:50%;background:#7fc0ff;"></div>'
+      ? '<div style="position:absolute;right:2px;bottom:3px;width:6px;height:6px;border-radius:50%;background:#2775CA;"></div>'
       : "";
     var eye = '<div style="position:relative;width:' + w + 'px;height:' + h + 'px;border-radius:50%;background:' + INK + ';' + (mood === "watching" ? "" : blink) + '">' + pupil + "</div>";
     return eye + eye;
@@ -139,7 +139,7 @@
         '<span style="position:absolute;right:-4px;top:18px;font-size:' + px(15) + 'px;animation:mSpark 1.8s ease-in-out infinite .3s;">✨</span>'
       : "";
     var sweat = mood === "worried"
-      ? '<div style="position:absolute;right:' + px(14) + 'px;top:' + px(20) + 'px;width:' + px(9) + 'px;height:' + px(13) + 'px;border-radius:60% 60% 60% 60%/70% 70% 40% 40%;background:linear-gradient(160deg,#7fc0ff,#3de8c7);"></div>'
+      ? '<div style="position:absolute;right:' + px(14) + 'px;top:' + px(20) + 'px;width:' + px(9) + 'px;height:' + px(13) + 'px;border-radius:60% 60% 60% 60%/70% 70% 40% 40%;background:linear-gradient(160deg,#2775CA,#3de8c7);"></div>'
       : "";
 
     var glowEl = glow

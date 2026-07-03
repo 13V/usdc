@@ -10,11 +10,11 @@ import { safeReturnPath } from "./safeReturn";
 
 const wrap: React.CSSProperties = {
   position: "relative", width: "100%", maxWidth: 430, margin: "0 auto", minHeight: "100vh",
-  background: "#0B1622", color: "#F4F7FA", fontFamily: "'General Sans',sans-serif",
+  background: "#2B2118", color: "#2B2118", fontFamily: "'General Sans',sans-serif",
   display: "flex", flexDirection: "column", padding: "0 22px", boxSizing: "border-box",
 };
 const card: React.CSSProperties = {
-  background: "#13212E", border: "1px solid rgba(244,247,250,0.09)", borderRadius: 18,
+  background: "#FFFDF7", border: "1px solid rgba(43,33,24,0.09)", borderRadius: 18,
   padding: 18, width: "100%", margin: "11px 0", boxSizing: "border-box",
 };
 const primary: React.CSSProperties = {
@@ -25,7 +25,7 @@ const primary: React.CSSProperties = {
 };
 const ghost: React.CSSProperties = {
   appearance: "none", cursor: "pointer", width: "100%", minHeight: 52, borderRadius: 999,
-  background: "transparent", border: "1px solid rgba(244,247,250,0.18)", color: "#F4F7FA",
+  background: "transparent", border: "1px solid rgba(43,33,24,0.18)", color: "#2B2118",
   fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16, marginTop: 12,
 };
 const mono = "'Space Mono',monospace";
@@ -74,31 +74,31 @@ export function Wallet() {
     <div style={wrap}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, height: 60, flex: "none" }}>
         <div onClick={() => (window.location.href = ret)} title="back"
-          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(244,247,250,0.05)", border: "1px solid rgba(244,247,250,0.08)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-          <span style={{ color: "rgba(244,247,250,0.6)", fontSize: 18 }}>‹</span>
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(43,33,24,0.05)", border: "1px solid rgba(43,33,24,0.08)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <span style={{ color: "rgba(43,33,24,0.6)", fontSize: 18 }}>‹</span>
         </div>
         <span style={{ fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 19 }}>wallet & recovery</span>
       </div>
 
       {!ready ? (
-        <p style={{ color: "rgba(244,247,250,0.5)", marginTop: 24 }}>starting…</p>
+        <p style={{ color: "rgba(43,33,24,0.5)", marginTop: 24 }}>starting…</p>
       ) : !authenticated ? (
         <button style={primary} onClick={() => login()}>sign in to manage your wallet</button>
       ) : !wallet ? (
-        <p style={{ color: "rgba(244,247,250,0.5)", marginTop: 24 }}>setting up your wallet…</p>
+        <p style={{ color: "rgba(43,33,24,0.5)", marginTop: 24 }}>setting up your wallet…</p>
       ) : (
         <>
           <div style={card}>
-            <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 1, color: "rgba(244,247,250,0.4)" }}>YOUR WALLET</div>
+            <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 1, color: "rgba(43,33,24,0.4)" }}>YOUR WALLET</div>
             <div style={{ fontFamily: mono, fontWeight: 700, fontSize: 16, marginTop: 6 }}>{short}</div>
-            <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 12.5, color: "rgba(244,247,250,0.5)", marginTop: 6 }}>
+            <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 12.5, color: "rgba(43,33,24,0.5)", marginTop: 6 }}>
               self-custodial · created for you, controlled by you
             </div>
           </div>
 
           <div style={card}>
             <div style={{ fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16 }}>back up your wallet</div>
-            <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(244,247,250,0.55)", marginTop: 6 }}>
+            <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(43,33,24,0.55)", marginTop: 6 }}>
               export your private key and store it somewhere safe. it's the only way to move this wallet outside divvy — never share it with anyone.
             </div>
             <button style={primary} onClick={doExport} disabled={busy != null}>
@@ -108,7 +108,7 @@ export function Wallet() {
 
           <div style={card}>
             <div style={{ fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16 }}>add a recovery password</div>
-            <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(244,247,250,0.55)", marginTop: 6 }}>
+            <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(43,33,24,0.55)", marginTop: 6 }}>
               set a password only you know. then you can recover your wallet even if you lose access to your email or phone login.
             </div>
             <button style={ghost} onClick={doRecovery} disabled={busy != null}>
@@ -116,7 +116,7 @@ export function Wallet() {
             </button>
           </div>
 
-          <div style={{ fontFamily: mono, fontSize: 10.5, lineHeight: 1.6, color: "rgba(244,247,250,0.4)", marginTop: 8 }}>
+          <div style={{ fontFamily: mono, fontSize: 10.5, lineHeight: 1.6, color: "rgba(43,33,24,0.4)", marginTop: 8 }}>
             lost access to your login? with a backup or recovery password you can always restore this wallet. without one, recovery depends on your login method — so set one up now.
           </div>
 

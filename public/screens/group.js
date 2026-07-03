@@ -24,7 +24,7 @@
     return '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid ' + col + '55; background:' + col + '1f; border-radius:999px; padding:5px 12px;">' +
       '<span style="width:6px; height:6px; border-radius:50%; background:' + col + '; box-shadow:0 0 7px ' + col + 'cc;"></span>' +
       '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; color:' + col + ';">' + dollars + '</span>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.55);">' + label + '</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.55);">' + label + '</span>' +
     '</div>';
   }
   var REACTS = ["😋", "🔥", "🫡"]; // the receipt-sheet chip set (frame style)
@@ -47,15 +47,15 @@
     Object.keys(state).forEach(function (e) { if (keys.indexOf(e) < 0) keys.push(e); });
     var chips = {};
     keys.forEach(function (emoji) {
-      var chip = elFrom('<div style="display:inline-flex; align-items:center; gap:5px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:999px; padding:5px 11px; cursor:pointer;"></div>');
+      var chip = elFrom('<div style="display:inline-flex; align-items:center; gap:5px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:5px 11px; cursor:pointer;"></div>');
       chips[emoji] = chip;
       function paint() {
         var st = state[emoji] || { count: 0, mine: false };
         chip.innerHTML = '<span style="font-size:13px;">' + emoji + '</span>' +
-          (st.count > 0 ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(244,247,250,0.7);">' + st.count + '</span>' : '');
+          (st.count > 0 ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.7);">' + st.count + '</span>' : '');
         var on = st.count > 0;
-        chip.style.borderColor = st.mine ? "rgba(39,117,202,0.8)" : (on ? "rgba(39,117,202,0.45)" : "rgba(244,247,250,0.1)");
-        chip.style.background = st.mine ? "rgba(39,117,202,0.22)" : (on ? "rgba(39,117,202,0.12)" : "#13212E");
+        chip.style.borderColor = st.mine ? "rgba(39,117,202,0.8)" : (on ? "rgba(39,117,202,0.45)" : "rgba(43,33,24,0.1)");
+        chip.style.background = st.mine ? "rgba(39,117,202,0.22)" : (on ? "rgba(39,117,202,0.12)" : "#FFFDF7");
       }
       chip.onclick = function () {
         app.api.post("/api/trips/" + encodeURIComponent(tripId) + "/reactions", { target: target, emoji: emoji })
@@ -85,7 +85,7 @@
   var MEMBER_GRAD = [
     "linear-gradient(150deg,#FFC65C,#FF6B5E)",
     "linear-gradient(150deg,#3DE8C7,#2775CA)",
-    "linear-gradient(150deg,#7fc0ff,#2775CA)",
+    "linear-gradient(150deg,#2775CA,#2775CA)",
     "linear-gradient(150deg,#FF8A7E,#FF6B5E)",
     "linear-gradient(150deg,#a78bfa,#8B5CF6)",
     "linear-gradient(150deg,#5cf0d4,#3DE8C7)",
@@ -134,14 +134,14 @@
   function topbar(trip, emoji) {
     return '' +
     '<div style="display:flex; align-items:center; justify-content:space-between; height:56px; padding:0 16px; flex:none;">' +
-      '<div id="gBack" style="width:38px; height:38px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4F7FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<div id="gBack" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
       '<div style="display:flex; align-items:center; gap:7px; min-width:0;">' +
-        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#F4F7FA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((trip && trip.name) || "group") + '</span>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((trip && trip.name) || "group") + '</span>' +
         '<span style="font-size:16px;">' + emoji + '</span>' +
       '</div>' +
-      '<div id="gMore" style="width:38px; height:38px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4F7FA" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
+      '<div id="gMore" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
     '</div>';
   }
   function wireBack() {
@@ -218,9 +218,9 @@
     var slots = unclaimedSlots(trip);
     var rows = slots.map(function (m) {
       return '<div class="gClaimSlot" data-mid="' + app.esc(m.id) + '" role="button" tabindex="0" ' +
-        'style="display:flex; align-items:center; gap:12px; background:#0B1622; border:1px solid rgba(61,232,199,0.28); border-radius:14px; padding:11px 14px; cursor:pointer;">' +
+        'style="display:flex; align-items:center; gap:12px; background:#F7F1E3; border:1px solid rgba(61,232,199,0.28); border-radius:14px; padding:11px 14px; cursor:pointer;">' +
         gavatar(m, 34) +
-        '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name || "someone") + '</span>' +
+        '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name || "someone") + '</span>' +
         '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:#3DE8C7;">claim →</span>' +
       '</div>';
     }).join("");
@@ -231,9 +231,9 @@
       'border:1px solid rgba(61,232,199,0.35); box-shadow:0 12px 30px rgba(61,232,199,0.12);">' +
       '<div style="display:flex; align-items:center; gap:9px;">' +
         '<span style="font-size:20px;">✨</span>' +
-        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.3px; color:#F4F7FA;">is one of these you?</span>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.3px; color:#2B2118;">is one of these you?</span>' +
       '</div>' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(244,247,250,0.65); margin-top:6px;">claim your spot so the group can settle up to your wallet.</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(43,33,24,0.65); margin-top:6px;">claim your spot so the group can settle up to your wallet.</div>' +
       '<div style="display:flex; flex-direction:column; gap:9px; margin-top:14px;">' + rows + '</div>' +
     '</div>';
 
@@ -310,7 +310,7 @@
       bigSign = net > 0 ? "+$" : net < 0 ? "−$" : "$";
     } else {
       eyebrow = "GROUP TOTAL";
-      col = "#F4F7FA";
+      col = "#2B2118";
       label = "across this group";
       bigSign = "$";
       net = trip.totalCents || 0;
@@ -334,20 +334,20 @@
           (fOwe ? '<div style="flex:' + fOwe + '; background:#FF6B5E;"></div>' : "") +
         '</div>' +
         '<div style="display:flex; justify-content:space-between; margin-top:9px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#7fc0ff;">＋ ' + plain(owed) + ' owed to you</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#2775CA;">＋ ' + plain(owed) + ' owed to you</span>' +
           '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#FF6B5E;">− ' + plain(owe) + ' you owe</span>' +
         '</div>' +
       '</div>';
     } else {
-      bar = '<div style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(244,247,250,0.5); margin-top:14px;">no open tabs yet — start one below ✨</div>';
+      bar = '<div style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(43,33,24,0.5); margin-top:14px;">no open tabs yet — start one below ✨</div>';
     }
 
     return '' +
     '<div style="padding:22px 22px 0;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">' + eyebrow + '</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">' + eyebrow + '</span>' +
       '<div style="display:flex; align-items:baseline; gap:11px; margin-top:9px;">' +
-        '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:' + col + '; text-shadow:0 0 26px rgba(39,117,202,0.45);"><span style="font-size:25px; opacity:.55;">' + bigSign + '</span>' + moneyParts(bigCents, "25px", ".55") + '</div>' +
-        '<span style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.55);">' + label + '</span>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:' + col + '; text-shadow:none;"><span style="font-size:25px; opacity:.55;">' + bigSign + '</span>' + moneyParts(bigCents, "25px", ".55") + '</div>' +
+        '<span style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.55);">' + label + '</span>' +
       '</div>' +
       bar +
       ((haveNet && net < 0) ? walletReadyChip(Math.abs(net)) : "") +
@@ -360,9 +360,9 @@
   // ---------- quick pills: 💬 chat · ✨ recap · ↗ share ----------
   function pillRow() {
     function pill(id, emoji, efs, label) {
-      return '<div id="' + id + '" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; min-height:42px; border-radius:13px; background:#13212E; border:1px solid rgba(244,247,250,0.09); cursor:pointer;">' +
+      return '<div id="' + id + '" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; min-height:42px; border-radius:13px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); cursor:pointer;">' +
         '<span style="font-size:' + efs + ';">' + emoji + '</span>' +
-        '<span style="font-family:\'General Sans\',sans-serif; font-size:13px; font-weight:500; color:rgba(244,247,250,0.85);">' + label + '</span></div>';
+        '<span style="font-family:\'General Sans\',sans-serif; font-size:13px; font-weight:500; color:rgba(43,33,24,0.85);">' + label + '</span></div>';
     }
     return '<div style="display:flex; gap:9px; margin-top:18px;">' +
       pill("gChat", "💬", "14px", "chat") +
@@ -391,7 +391,7 @@
     return edges.slice(0, 6);
   }
   function arrowSvg() {
-    return '<svg width="20" height="11" viewBox="0 0 26 14" fill="none" stroke="rgba(244,247,250,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>';
+    return '<svg width="20" height="11" viewBox="0 0 26 14" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>';
   }
   function whoOwesWho(trip, me) {
     var edges = settleEdges(trip.balances);
@@ -405,12 +405,12 @@
       // amount color: getting paid to you = blue, you paying out = coral, else blue
       var amtColor = toYou ? "#2775CA" : fromYou ? "#FF6B5E" : "#2775CA";
       var fromNameStyle = fromYou
-        ? 'font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(244,247,250,0.5);'
-        : 'font-family:\'General Sans\',sans-serif; font-size:14px; font-weight:500; color:#F4F7FA;';
+        ? 'font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.5);'
+        : 'font-family:\'General Sans\',sans-serif; font-size:14px; font-weight:500; color:#2B2118;';
       var toNameStyle = toYou
-        ? 'font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(244,247,250,0.5);'
-        : 'font-family:\'General Sans\',sans-serif; font-size:14px; font-weight:500; color:#F4F7FA;';
-      return '<div style="display:flex; align-items:center; gap:10px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:14px; padding:11px 14px;">' +
+        ? 'font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.5);'
+        : 'font-family:\'General Sans\',sans-serif; font-size:14px; font-weight:500; color:#2B2118;';
+      return '<div style="display:flex; align-items:center; gap:10px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:14px; padding:11px 14px;">' +
         gavatar(fromM, 28) +
         '<span style="' + fromNameStyle + '">' + app.esc(fromName) + '</span>' +
         arrowSvg() +
@@ -420,7 +420,7 @@
       '</div>';
     }).join("");
     return '' +
-    '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5); margin:24px 0 11px;">WHO OWES WHO</div>' +
+    '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); margin:24px 0 11px;">WHO OWES WHO</div>' +
     '<div style="display:flex; flex-direction:column; gap:9px;">' + rows + '</div>';
   }
 
@@ -476,16 +476,16 @@
       ? '<div style="font-family:\'Space Mono\',monospace; font-size:9px; color:' + d.color + '; margin-top:2px;">' + d.sign + (d.cents / 100).toFixed(2) + '</div>'
       : "";
     return '' +
-    '<div class="gTab" data-eid="' + app.esc(e.id) + '" style="display:flex; align-items:center; gap:13px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:16px; padding:13px 15px; cursor:pointer;">' +
-      '<div style="width:42px; height:42px; border-radius:13px; background:#0B1622; display:flex; align-items:center; justify-content:center; font-size:21px; flex:none;">' + tabEmoji(e.title) + '</div>' +
+    '<div class="gTab" data-eid="' + app.esc(e.id) + '" style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:16px; padding:13px 15px; cursor:pointer;">' +
+      '<div style="width:42px; height:42px; border-radius:13px; background:#F7F1E3; display:flex; align-items:center; justify-content:center; font-size:21px; flex:none;">' + tabEmoji(e.title) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="display:flex; align-items:center; gap:7px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#F4F7FA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(e.title || "a tab") + '</span></div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.45); margin-top:3px;">' +
+        '<div style="display:flex; align-items:center; gap:7px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(e.title || "a tab") + '</span></div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.45); margin-top:3px;">' +
           app.esc((e.paidByName || "someone").toLowerCase()) + ' paid · split ' + n + (t ? ' · ' + t : "") +
         '</div>' +
       '</div>' +
       '<div style="text-align:right;">' +
-        '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#F4F7FA;">' + plain(e.amountCents || 0) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#2B2118;">' + plain(e.amountCents || 0) + '</div>' +
         delta +
       '</div>' +
     '</div>';
@@ -498,12 +498,12 @@
       return '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:30px 20px 6px; gap:8px;">' +
         app.mascot({ size: 90, mood: "happy" }) +
         '<div style="font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:18px;">no tabs yet</div>' +
-        '<div style="color:rgba(244,247,250,0.6); font-size:14px;">add the first one and start splitting 🎉</div>' +
+        '<div style="color:rgba(43,33,24,0.6); font-size:14px;">add the first one and start splitting 🎉</div>' +
       '</div>';
     }
     var header = '<div style="display:flex; align-items:center; justify-content:space-between; margin:24px 0 11px;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">TABS</span>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.4);">' + exp.length + ' TOTAL</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">TABS</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.4);">' + exp.length + ' TOTAL</span>' +
     '</div>';
     return header + '<div style="display:flex; flex-direction:column; gap:9px;">' + exp.map(function (e) { return tabRow(e, me); }).join("") + '</div>';
   }
@@ -511,8 +511,8 @@
   // ---------- sticky bottom: settle up + add a tab ----------
   function stickyBar() {
     return '' +
-    '<div style="position:fixed; left:0; right:0; bottom:0; z-index:40; padding:12px 18px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(11,22,34,0) 0%, #0B1622 26%); display:flex; gap:11px; max-width:520px; margin:0 auto;">' +
-      '<button id="gSettle" style="appearance:none; cursor:pointer; flex:none; width:128px; min-height:54px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">settle up</button>' +
+    '<div style="position:fixed; left:0; right:0; bottom:0; z-index:40; padding:12px 18px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(11,22,34,0) 0%, #2B2118 26%); display:flex; gap:11px; max-width:520px; margin:0 auto;">' +
+      '<button id="gSettle" style="appearance:none; cursor:pointer; flex:none; width:128px; min-height:54px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">settle up</button>' +
       '<button id="gAdd" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:54px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 10px 26px rgba(39,117,202,0.45);">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">add a tab</span>' +
@@ -545,15 +545,15 @@
       var isPayer = pid === e.paidBy; // payer fronted the money
       var amtColor, tag;
       if (isPayer) {
-        amtColor = "rgba(244,247,250,0.85)";
-        tag = '<span style="display:inline-flex; align-items:center; gap:4px; flex:none; white-space:nowrap; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#7fc0ff;">PAID</span></span>';
+        amtColor = "rgba(43,33,24,0.85)";
+        tag = '<span style="display:inline-flex; align-items:center; gap:4px; flex:none; white-space:nowrap; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#2775CA;">PAID</span></span>';
       } else if (isYou) {
         youOwe = each;
         amtColor = "#FF6B5E";
         tag = '<span style="display:inline-flex; align-items:center; gap:4px; flex:none; white-space:nowrap; background:rgba(255,107,94,0.14); border:1px solid rgba(255,107,94,0.5); border-radius:999px; padding:3px 9px;"><span style="font-size:9px;">👀</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#FF6B5E;">YOU OWE</span></span>';
       } else {
         amtColor = "#2775CA";
-        tag = '<span style="display:inline-flex; align-items:center; gap:4px; flex:none; white-space:nowrap; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#7fc0ff;">SQUARED</span></span>';
+        tag = '<span style="display:inline-flex; align-items:center; gap:4px; flex:none; white-space:nowrap; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#2775CA;">SQUARED</span></span>';
       }
 
       var avatar = '<div style="width:34px; height:34px; border-radius:50%; background:' + memberGrad(pm) + '; display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">' + memberEmoji(pm) + '</div>';
@@ -562,48 +562,48 @@
         // highlighted "you owe" row
         return '<div style="display:flex; align-items:center; gap:11px; padding:11px 8px; margin:4px -4px 0; border-radius:13px; background:rgba(255,107,94,0.07); border:1px solid rgba(255,107,94,0.22);">' +
           avatar +
-          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">you</span>' +
+          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">you</span>' +
           '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:14px; color:' + amtColor + ';">' + plain(each) + '</span>' +
           tag +
         '</div>';
       }
       return '<div style="display:flex; align-items:center; gap:11px; padding:9px 4px;">' +
           avatar +
-          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' + app.esc(name) + '</span>' +
+          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + app.esc(name) + '</span>' +
           '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:14px; color:' + amtColor + ';">' + plain(each) + '</span>' +
           tag +
         '</div>' +
-        '<div style="height:1px; background:rgba(244,247,250,0.06); margin:0 4px;"></div>';
+        '<div style="height:1px; background:rgba(43,33,24,0.06); margin:0 4px;"></div>';
     }).join("");
 
     var settleBtn = youOwe > 0
       ? '<button id="gTabSettle" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#FF8A7E,#FF6B5E); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 12px 30px rgba(255,107,94,0.38); margin-top:14px;">' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">settle your ' + plain(youOwe) + '</span>' +
         '</button>'
-      : '<button id="gTabSettle" style="appearance:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#F4F7FA; margin-top:14px;">settle up</button>';
+      : '<button id="gTabSettle" style="appearance:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; margin-top:14px;">settle up</button>';
 
     var html = '' +
     '<div style="margin:0 -20px;">' +
       // receipt sheet
-      '<div style="position:relative; background:#13212E; border-radius:24px; border:1px solid rgba(244,247,250,0.08); box-shadow:0 18px 44px rgba(0,0,0,0.36); overflow:hidden; margin:0 20px;">' +
+      '<div style="position:relative; background:#FFFDF7; border-radius:24px; border:1px solid rgba(43,33,24,0.08); box-shadow:0 18px 44px rgba(43,33,24,0.13); overflow:hidden; margin:0 20px;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 4%, rgba(255,255,255,0.045) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
         '<div style="position:absolute; left:0; right:0; top:0; height:5px; background:linear-gradient(90deg,#2775CA,#3DE8C7);"></div>' +
         // head
         '<div style="position:relative; padding:24px 22px 16px; text-align:center;">' +
-          '<div style="width:60px; height:60px; border-radius:18px; background:#0B1622; display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto;">' + tabEmoji(e.title) + '</div>' +
-          '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:22px; letter-spacing:-0.3px; margin:13px 0 0; color:#F4F7FA;">' + app.esc(e.title || "a tab") + '</h2>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:1px; color:rgba(244,247,250,0.5); margin-top:4px;">' + app.esc(subline) + '</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:#F4F7FA; margin-top:16px;"><span style="font-size:25px; opacity:.5;">$</span>' + moneyParts(e.amountCents || 0, "25px", ".5") + '</div>' +
-          '<div style="display:inline-flex; align-items:center; gap:8px; margin-top:12px; background:#0B1622; border:1px solid rgba(244,247,250,0.09); border-radius:999px; padding:5px 12px;">' +
+          '<div style="width:60px; height:60px; border-radius:18px; background:#F7F1E3; display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto;">' + tabEmoji(e.title) + '</div>' +
+          '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:22px; letter-spacing:-0.3px; margin:13px 0 0; color:#2B2118;">' + app.esc(e.title || "a tab") + '</h2>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:1px; color:rgba(43,33,24,0.5); margin-top:4px;">' + app.esc(subline) + '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:#2B2118; margin-top:16px;"><span style="font-size:25px; opacity:.5;">$</span>' + moneyParts(e.amountCents || 0, "25px", ".5") + '</div>' +
+          '<div style="display:inline-flex; align-items:center; gap:8px; margin-top:12px; background:#F7F1E3; border:1px solid rgba(43,33,24,0.09); border-radius:999px; padding:5px 12px;">' +
             '<div style="width:20px; height:20px; border-radius:50%; background:' + memberGrad(payerM) + '; display:flex; align-items:center; justify-content:center; font-size:11px;">' + memberEmoji(payerM) + '</div>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.7);">' + app.esc(payerName + " paid" + when) + '</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.7);">' + app.esc(payerName + " paid" + when) + '</span>' +
           '</div>' +
         '</div>' +
         // perforation
-        '<div style="position:relative; height:1px; margin:6px 0 0; border-top:1.5px dashed rgba(244,247,250,0.14);"><div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#0B1622;"></div><div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#0B1622;"></div></div>' +
+        '<div style="position:relative; height:1px; margin:6px 0 0; border-top:1.5px dashed rgba(43,33,24,0.14);"><div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div><div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div></div>' +
         // per-person
         '<div style="position:relative; padding:8px 16px 16px;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(244,247,250,0.42); padding:8px 4px 4px;">SPLIT ' + n + ' · ' + plain(each) + ' EACH</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); padding:8px 4px 4px;">SPLIT ' + n + ' · ' + plain(each) + ' EACH</div>' +
           rowsHtml +
         '</div>' +
       '</div>' +
@@ -612,9 +612,9 @@
       // actions
       '<div style="margin:0 20px;">' + settleBtn + '</div>' +
       '<div style="display:flex; align-items:center; justify-content:center; gap:22px; margin-top:14px;">' +
-        '<span id="gTabEdit" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.5); cursor:pointer;">edit</span>' +
-        '<span style="width:3px; height:3px; border-radius:50%; background:rgba(244,247,250,0.3);"></span>' +
-        '<span id="gTabDelete" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.5); cursor:pointer;">delete</span>' +
+        '<span id="gTabEdit" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">edit</span>' +
+        '<span style="width:3px; height:3px; border-radius:50%; background:rgba(43,33,24,0.3);"></span>' +
+        '<span id="gTabDelete" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">delete</span>' +
       '</div>' +
     '</div>';
 
@@ -642,14 +642,14 @@
           armed = true;
           del.textContent = "tap again to delete";
           del.style.color = "#FF6B5E";
-          armTimer = setTimeout(function () { armed = false; del.textContent = "delete"; del.style.color = "rgba(244,247,250,0.5)"; }, 3000);
+          armTimer = setTimeout(function () { armed = false; del.textContent = "delete"; del.style.color = "rgba(43,33,24,0.5)"; }, 3000);
           return;
         }
         if (armTimer) clearTimeout(armTimer);
         del.textContent = "deleting…";
         app.api.del("/api/trips/" + encodeURIComponent(trip.id) + "/expenses/" + encodeURIComponent(e.id))
           .then(function () { app.closeSheet(); app.toast("tab deleted"); load(view_, trip.id); })
-          .catch(function (err) { app.toast(err.message); del.textContent = "delete"; del.style.color = "rgba(244,247,250,0.5)"; armed = false; });
+          .catch(function (err) { app.toast(err.message); del.textContent = "delete"; del.style.color = "rgba(43,33,24,0.5)"; armed = false; });
       };
     }
   }

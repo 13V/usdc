@@ -97,10 +97,10 @@
         '<div style="position:absolute; right:-7px; top:6px; width:8px; height:15px; border-radius:999px; background:linear-gradient(160deg,#4a9ff0,#2a6fc0); transform:rotate(-26deg); z-index:-1;"></div>' +
         '<div style="position:absolute; right:-9px; top:1px; font-size:11px; z-index:1;">👍</div>' +
         '<div style="display:flex; gap:6.5px; margin-top:-3px;">' +
-          '<div style="width:5px; height:6.5px; border-radius:50%; background:#0B1622; animation:cpBlink 5s infinite;"></div>' +
-          '<div style="width:5px; height:6.5px; border-radius:50%; background:#0B1622; animation:cpBlink 5s infinite;"></div>' +
+          '<div style="width:5px; height:6.5px; border-radius:50%; background:#F7F1E3; animation:cpBlink 5s infinite;"></div>' +
+          '<div style="width:5px; height:6.5px; border-radius:50%; background:#F7F1E3; animation:cpBlink 5s infinite;"></div>' +
         '</div>' +
-        '<div style="position:absolute; bottom:13px; width:11px; height:5.5px; border:2.2px solid #0B1622; border-top:none; border-radius:0 0 7px 7px;"></div>' +
+        '<div style="position:absolute; bottom:13px; width:11px; height:5.5px; border:2.2px solid #2B2118; border-top:none; border-radius:0 0 7px 7px;"></div>' +
       '</div>' +
     '</div>';
   }
@@ -108,15 +108,15 @@
   // top bar lifted from the frame (back ‹ + centered "make it yours" + blue save)
   function topbar() {
     return '<div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 16px; flex:none;">' +
-      '<div id="cpBack" style="width:38px; height:38px; border-radius:50%; background:#13212E; border:1px solid rgba(244,247,250,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4F7FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
-      '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#F4F7FA;">make it yours</span>' +
-      '<span id="cpSaveTop" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#3B92E8; cursor:pointer; padding:8px 6px;">save</span>' +
+      '<div id="cpBack" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118;">make it yours</span>' +
+      '<span id="cpSaveTop" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2775CA; cursor:pointer; padding:8px 6px;">save</span>' +
     '</div>';
   }
 
   // texture + glow layers lifted from the frame
   function backdrop() {
-    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(244,247,250,0.025) 0 1px, transparent 1px 8px); opacity:.55; pointer-events:none;"></div>' +
+    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(43,33,24,0.025) 0 1px, transparent 1px 8px); opacity:.55; pointer-events:none;"></div>' +
       '<div style="position:absolute; left:50%; top:90px; width:380px; height:260px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.18) 0%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>';
   }
 
@@ -162,7 +162,7 @@
           '<div style="display:flex; align-items:center; justify-content:center; gap:14px; padding:10px 0 6px;">' +
             '<div class="cp-anim" style="position:relative; width:132px; height:132px; flex:none; animation:cpHero 5s ease-in-out infinite;">' +
               '<div style="position:absolute; inset:-14px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.4) 0%, rgba(39,117,202,0) 70%); animation:cpPulse 3.4s ease-in-out infinite;"></div>' +
-              '<div style="position:relative; width:132px; height:132px; border-radius:36px; overflow:hidden; box-shadow:0 18px 40px rgba(0,0,0,0.4), inset 0 2px 0 rgba(255,255,255,0.18);">' +
+              '<div style="position:relative; width:132px; height:132px; border-radius:36px; overflow:hidden; box-shadow:0 18px 40px rgba(43,33,24,0.13), inset 0 2px 0 rgba(255,255,255,0.18);">' +
                 '<div id="cpHeroBg" style="position:absolute; inset:0; background:' + colorBg(state.colorId) + ';"></div>' +
                 '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 80% 110%, rgba(255,255,255,0.1) 0 1px, transparent 1px 7px); opacity:.5;"></div>' +
                 '<div id="cpHeroEmoji" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:68px;">' + app.esc(state.emoji) + '</div>' +
@@ -170,8 +170,8 @@
             '</div>' +
 
             '<div style="display:flex; flex-direction:column; align-items:flex-start; gap:8px; flex:none;">' +
-              '<div style="background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:14px 14px 14px 4px; padding:7px 11px;">' +
-                '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(244,247,250,0.75);">looking good 😎</span>' +
+              '<div style="background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); border-radius:14px 14px 14px 4px; padding:7px 11px;">' +
+                '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.75);">looking good 😎</span>' +
               '</div>' +
               thumbMascot() +
             '</div>' +
@@ -179,33 +179,33 @@
 
           // ===== YOUR EMOJI =====
           '<div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 12px;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45);">YOUR EMOJI</span>' +
-            '<div style="display:inline-flex; align-items:center; gap:7px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:999px; padding:5px 12px;">' +
-              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
-              '<input id="cpSearch" placeholder="search" style="border:none; outline:none; background:transparent; color:#F4F7FA; font-family:\'Space Mono\',monospace; font-size:10.5px; width:62px; padding:0;" />' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">YOUR EMOJI</span>' +
+            '<div style="display:inline-flex; align-items:center; gap:7px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:999px; padding:5px 12px;">' +
+              '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+              '<input id="cpSearch" placeholder="search" style="border:none; outline:none; background:transparent; color:#2B2118; font-family:\'Space Mono\',monospace; font-size:10.5px; width:62px; padding:0;" />' +
             '</div>' +
           '</div>' +
           '<div id="cpEmojiGrid" style="display:grid; grid-template-columns:repeat(6, 1fr); gap:9px;"></div>' +
 
           // ===== YOUR COLOR =====
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45); margin:24px 2px 12px;">YOUR COLOR</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin:24px 2px 12px;">YOUR COLOR</div>' +
           '<div id="cpColors" style="display:flex; flex-wrap:wrap; gap:11px;"></div>' +
 
           // ===== NAME + HANDLE =====
           '<div style="margin-top:26px; display:flex; flex-direction:column; gap:13px;">' +
             '<div>' +
-              '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45); margin-bottom:8px;">NAME</div>' +
-              '<div style="display:flex; align-items:center; gap:10px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:16px; padding:15px 16px;">' +
-                '<input id="cpName" placeholder="your name" value="' + app.esc(state.name) + '" style="flex:1; border:none; outline:none; background:transparent; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#F4F7FA; padding:0;" />' +
-                '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' +
+              '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin-bottom:8px;">NAME</div>' +
+              '<div style="display:flex; align-items:center; gap:10px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); border-radius:16px; padding:15px 16px;">' +
+                '<input id="cpName" placeholder="your name" value="' + app.esc(state.name) + '" style="flex:1; border:none; outline:none; background:transparent; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; padding:0;" />' +
+                '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' +
               '</div>' +
             '</div>' +
             '<div>' +
-              '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.45); margin-bottom:8px;">HANDLE</div>' +
-              '<div style="display:flex; align-items:center; gap:6px; background:#13212E; border:1px solid rgba(39,117,202,0.3); border-radius:16px; padding:15px 16px;">' +
-                '<span style="font-family:\'Space Mono\',monospace; font-size:15px; color:rgba(127,192,255,0.7);">@</span>' +
+              '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin-bottom:8px;">HANDLE</div>' +
+              '<div style="display:flex; align-items:center; gap:6px; background:#FFFDF7; border:1px solid rgba(39,117,202,0.3); border-radius:16px; padding:15px 16px;">' +
+                '<span style="font-family:\'Space Mono\',monospace; font-size:15px; color:rgba(39,117,202,0.7);">@</span>' +
                 '<div style="flex:1; display:flex; align-items:center; min-width:0;">' +
-                  '<input id="cpHandle" placeholder="handle" value="' + app.esc(state.handle) + '" style="flex:1; min-width:0; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-size:15px; color:#F4F7FA; padding:0;" />' +
+                  '<input id="cpHandle" placeholder="handle" value="' + app.esc(state.handle) + '" style="flex:1; min-width:0; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-size:15px; color:#2B2118; padding:0;" />' +
                   '<span id="cpCaret" style="display:inline-block; width:2px; height:17px; background:#2775CA; margin-left:2px; animation:cpCaret 1s steps(1) infinite; flex:none;"></span>' +
                 '</div>' +
                 '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.1); border:1px solid rgba(61,232,199,0.35); border-radius:999px; padding:3px 9px; flex:none;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; color:#3DE8C7;">free</span></span>' +
@@ -217,7 +217,7 @@
         '</div>' +
 
         // ── sticky save ──
-        '<div style="position:relative; z-index:6; flex:none; padding:12px 18px calc(16px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(11,22,34,0) 0%, #0B1622 24%);">' +
+        '<div style="position:relative; z-index:6; flex:none; padding:12px 18px calc(16px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(11,22,34,0) 0%, #2B2118 24%);">' +
           '<button id="cpSave" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 12px 30px rgba(39,117,202,0.5), inset 0 1px 0 rgba(255,255,255,0.25);">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">save</span>' +
             '<span style="font-size:15px;">✨</span>' +
@@ -241,12 +241,12 @@
         return !q || e.t.indexOf(q) >= 0 || e.c === q;
       });
       if (!list.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:12px 0; font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.5);">no emoji like that 🤔</div>';
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:12px 0; font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5);">no emoji like that 🤔</div>';
         return;
       }
       grid.innerHTML = list.map(function (e) {
         var sel = e.c === state.emoji;
-        return '<div data-emoji="' + app.esc(e.c) + '" style="position:relative; aspect-ratio:1; border-radius:14px; background:#13212E; border:1px solid rgba(244,247,250,0.06); display:flex; align-items:center; justify-content:center; font-size:23px; cursor:pointer;">' +
+        return '<div data-emoji="' + app.esc(e.c) + '" style="position:relative; aspect-ratio:1; border-radius:14px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.06); display:flex; align-items:center; justify-content:center; font-size:23px; cursor:pointer;">' +
           app.esc(e.c) +
           (sel ? '<div style="position:absolute; inset:-2px; border-radius:16px; border:2px solid #2775CA; box-shadow:0 0 14px rgba(39,117,202,0.6); pointer-events:none;"></div>' : '') +
           '</div>';

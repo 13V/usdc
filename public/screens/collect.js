@@ -61,29 +61,29 @@
   // dead-end after a tab is sent.
   function titleStrip(label) {
     return '<div style="position:relative; z-index:3; display:flex; align-items:center; justify-content:center; height:48px; flex:none; padding:6px 16px 0;">' +
-      '<div onclick="window.app.go(\'home\')" style="position:absolute; left:16px; top:6px; width:34px; height:34px; border-radius:50%; background:rgba(244,247,250,0.05); border:1px solid rgba(244,247,250,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer;" aria-label="close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(244,247,250,0.5);">' + app.esc(label) + '</span>' +
+      '<div onclick="window.app.go(\'home\')" style="position:absolute; left:16px; top:6px; width:34px; height:34px; border-radius:50%; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer;" aria-label="close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">' + app.esc(label) + '</span>' +
     '</div>';
   }
 
   // canvas texture + accent glow lifted from the frame backdrop
   function backdrop(glowOpacity) {
-    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 20%, rgba(244,247,250,0.024) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>' +
+    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 20%, rgba(43,33,24,0.024) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>' +
       '<div style="position:absolute; left:50%; top:40px; width:440px; height:380px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,' + glowOpacity + ') 0%, rgba(39,117,202,0) 60%); pointer-events:none;"></div>';
   }
 
   // status pill — squared (blue, ✓) vs waiting (faint, 👀) — lifted verbatim
   function statusPill(paid) {
     if (paid) {
-      return '<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7fc0ff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#7fc0ff;">SQUARED</span></span>';
+      return '<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#2775CA;">SQUARED</span></span>';
     }
-    return '<span style="display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(244,247,250,0.16); border-radius:999px; padding:3px 9px;"><span style="font-size:10px;">👀</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(244,247,250,0.6);">WAITING</span></span>';
+    return '<span style="display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(43,33,24,0.16); border-radius:999px; padding:3px 9px;"><span style="font-size:10px;">👀</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.6);">WAITING</span></span>';
   }
 
   // a soft per-person avatar gradient (the frame uses warm/cool gradient tiles)
   var AV_GRADS = [
     "linear-gradient(150deg,#FFC65C,#FF6B5E)",
-    "linear-gradient(150deg,#7fc0ff,#2775CA)",
+    "linear-gradient(150deg,#2775CA,#2775CA)",
     "linear-gradient(150deg,#FFC65C,#FFB23E)",
     "linear-gradient(150deg,#3DE8C7,#2775CA)",
     "linear-gradient(150deg,#8B5CF6,#2775CA)",
@@ -97,11 +97,11 @@
   // a normal (non-highlighted) person row, lifted verbatim — squared rows are
   // full opacity, waiting rows dim to .5 in frame 1 (mirrors "tab sent")
   function personRow(p, i, isYou, dimWaiting) {
-    var amtCol = p.paid ? "#2775CA" : "rgba(244,247,250,0.6)";
+    var amtCol = p.paid ? "#2775CA" : "rgba(43,33,24,0.6)";
     var dim = (dimWaiting && !p.paid) ? " opacity:.5;" : "";
     return '<div style="display:flex; align-items:center; gap:11px; padding:9px 4px;' + dim + '">' +
       '<div style="width:34px; height:34px; border-radius:50%; background:' + avGrad(i) + '; display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">' + app.esc(avFace(p, i)) + '</div>' +
-      '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' + app.esc(p.name) + (isYou ? " (you)" : "") + '</span>' +
+      '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + app.esc(p.name) + (isYou ? " (you)" : "") + '</span>' +
       '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:14px; color:' + amtCol + ';">' + app.esc(p.amountFmt || "") + '</span>' +
       statusPill(p.paid) +
     '</div>';
@@ -114,33 +114,33 @@
     return '<div style="display:flex; align-items:center; gap:11px; padding:11px 10px; margin:4px -6px 0; border-radius:14px; background:rgba(255,198,92,0.08); border:1px solid rgba(255,198,92,0.28);">' +
       '<div style="width:34px; height:34px; border-radius:50%; background:' + avGrad(i) + '; display:flex; align-items:center; justify-content:center; font-size:17px; flex:none;">' + app.esc(avFace(p, i)) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' + app.esc(p.name) + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + app.esc(p.name) + '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(255,198,92,0.85); margin-top:1px;">' + app.esc(p.amountFmt || "") + ' · still waiting</div>' +
       '</div>' +
       '<button class="tcNudge" data-nudge-idx="' + i + '" style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; background:#FFC65C; border:none; border-radius:999px; padding:8px 13px;">' +
         '<span style="font-size:11px; animation:tcNudge 2.2s ease-in-out infinite;">👀</span>' +
-        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:#0B1622;">nudge ' + app.esc(p.name) + '</span>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:#2B2118;">nudge ' + app.esc(p.name) + '</span>' +
       '</button>' +
     '</div>';
   }
 
   // the receipt card (header + perforation + member rows) — lifted verbatim
   function receiptCard(bill, ps, eachFmt, rowsHtml) {
-    return '<div style="position:relative; width:100%; background:#13212E; border-radius:22px; border:1px solid rgba(244,247,250,0.08); box-shadow:0 16px 40px rgba(0,0,0,0.34); overflow:hidden;">' +
+    return '<div style="position:relative; width:100%; background:#FFFDF7; border-radius:22px; border:1px solid rgba(43,33,24,0.08); box-shadow:0 16px 40px rgba(43,33,24,0.13); overflow:hidden;">' +
       '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 5%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
       '<div style="position:relative; padding:18px 18px 6px;">' +
         '<div style="display:flex; align-items:center; justify-content:space-between;">' +
           '<div style="display:flex; align-items:center; gap:10px;">' +
             '<span style="font-size:24px;">' + titleEmoji(bill.title) + '</span>' +
-            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:19px; color:#F4F7FA;">' + app.esc((bill.title || "tab").toLowerCase()) + '</span>' +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:19px; color:#2B2118;">' + app.esc((bill.title || "tab").toLowerCase()) + '</span>' +
           '</div>' +
-          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:24px; letter-spacing:-1px; color:#F4F7FA;">' + money(bill.totalCents, 15) + '</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:24px; letter-spacing:-1px; color:#2B2118;">' + money(bill.totalCents, 15) + '</span>' +
         '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.5px; color:rgba(244,247,250,0.45); margin-top:5px;">split ' + ps.length + ' · ' + app.esc(eachFmt) + ' each</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-top:5px;">split ' + ps.length + ' · ' + app.esc(eachFmt) + ' each</div>' +
       '</div>' +
-      '<div style="position:relative; height:1px; margin:12px 0; border-top:1.5px dashed rgba(244,247,250,0.14);">' +
-        '<div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#0B1622;"></div>' +
-        '<div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#0B1622;"></div>' +
+      '<div style="position:relative; height:1px; margin:12px 0; border-top:1.5px dashed rgba(43,33,24,0.14);">' +
+        '<div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div>' +
+        '<div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div>' +
       '</div>' +
       '<div style="position:relative; padding:2px 14px 14px; display:flex; flex-direction:column;">' + rowsHtml + '</div>' +
     '</div>';
@@ -160,16 +160,16 @@
     var pct = total > 0 ? Math.round((squared / total) * 100) : 0;
     return '<div style="width:100%; margin-top:16px;">' +
       '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">' +
-        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(244,247,250,0.5);">' + squared + ' OF ' + total + ' SQUARED</span>' +
-        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#7fc0ff;">' + app.esc(collectedFmt) + ' / ' + app.esc(totalFmt) + '</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">' + squared + ' OF ' + total + ' SQUARED</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#2775CA;">' + app.esc(collectedFmt) + ' / ' + app.esc(totalFmt) + '</span>' +
       '</div>' +
-      '<div style="height:8px; border-radius:6px; background:#13212E; overflow:hidden;"><div style="width:' + pct + '%; height:100%; background:linear-gradient(90deg,#2775CA,#3a93e4); border-radius:6px; transition:width .5s ease;"></div></div>' +
+      '<div style="height:8px; border-radius:6px; background:#FFFDF7; overflow:hidden;"><div style="width:' + pct + '%; height:100%; background:linear-gradient(90deg,#2775CA,#3a93e4); border-radius:6px; transition:width .5s ease;"></div></div>' +
     '</div>';
   }
 
   // shared phone frame wrapper (390-wide column inside #view)
   function phone(inner, glowOpacity) {
-    return '<div class="vfill" style="position:relative; display:flex; flex-direction:column; background:#0B1622; color:#F4F7FA; font-family:\'General Sans\',sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden;">' +
+    return '<div class="vfill" style="position:relative; display:flex; flex-direction:column; background:#F7F1E3; color:#2B2118; font-family:\'General Sans\',sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden;">' +
       backdrop(glowOpacity) + inner + '</div>';
   }
 
@@ -203,11 +203,11 @@
     if (some) {
       actions =
         '<div style="width:100%; display:flex; flex-direction:column; gap:10px; margin-top:16px;">' +
-          '<button class="tcShare" style="appearance:none; cursor:pointer; width:100%; min-height:52px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.16); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' +
+          '<button class="tcShare" style="appearance:none; cursor:pointer; width:100%; min-height:52px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' +
             '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>' +
             're-share tab' +
           '</button>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.36); text-align:center;">' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.36); text-align:center;">' +
             (nudgeName ? 'almost there — just ' + app.esc(nudgeName) + ' left 👀' : 'almost there 👀') +
           '</div>' +
         '</div>';
@@ -218,11 +218,11 @@
             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">share tab</span>' +
           '</button>' +
-          '<button class="tcCopy" style="appearance:none; cursor:pointer; width:100%; min-height:48px; border-radius:999px; background:transparent; border:1px solid rgba(244,247,250,0.16); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#F4F7FA;">' +
+          '<button class="tcCopy" style="appearance:none; cursor:pointer; width:100%; min-height:48px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' +
             '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>' +
             'copy link' +
           '</button>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.36); text-align:center; margin-top:2px;">they\'ll each get a link — no app needed. dollars, just faster.</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.36); text-align:center; margin-top:2px;">they\'ll each get a link — no app needed. dollars, just faster.</div>' +
         '</div>';
     }
 
@@ -286,7 +286,7 @@
             '<span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:1.5px; color:rgba(255,255,255,0.8);">' + app.esc((bill.title || "tab").toUpperCase()) + ' ' + titleEmoji(bill.title) + ' · ' + n + ' PEOPLE</span>' +
             '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:30px; line-height:1.08; letter-spacing:-0.6px; margin:9px 0 0; color:#fff;">everyone\'s<br>square ✨</h2>' +
             '<div style="display:flex; align-items:baseline; gap:9px; margin-top:18px;">' +
-              '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:50px; line-height:1; letter-spacing:-2px; color:#fff; text-shadow:0 2px 20px rgba(0,0,0,0.18);">' + money(bill.totalCents, 27) + '</div>' +
+              '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:50px; line-height:1; letter-spacing:-2px; color:#fff; text-shadow:none;">' + money(bill.totalCents, 27) + '</div>' +
               '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:rgba(255,255,255,0.82);">collected</span>' +
             '</div>' +
             '<div style="display:flex; align-items:center; gap:0; margin-top:18px;">' + avatars +
@@ -296,15 +296,15 @@
         '</div>' +
         '<div style="display:flex; gap:11px; width:100%; margin-top:14px;">' +
           '<button class="tcShareDone" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:0 8px 22px rgba(61,232,199,0.3);">' +
-            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B1622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5 8.6 10.5"/></svg>' +
-            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#0B1622;">share ✨</span>' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5 8.6 10.5"/></svg>' +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">share ✨</span>' +
           '</button>' +
-          '<button class="tcDone" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:#13212E; border:1px solid rgba(244,247,250,0.1); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#F4F7FA;">done</button>' +
+          '<button class="tcDone" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">done</button>' +
         '</div>' +
       '</div>';
 
     // success glow is centered/larger; reuse phone() backdrop then add the warm halo
-    view.innerHTML = '<div class="vfill" style="position:relative; display:flex; flex-direction:column; background:#0B1622; color:#F4F7FA; font-family:\'General Sans\',sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden;">' +
+    view.innerHTML = '<div class="vfill" style="position:relative; display:flex; flex-direction:column; background:#F7F1E3; color:#2B2118; font-family:\'General Sans\',sans-serif; -webkit-font-smoothing:antialiased; overflow:hidden;">' +
       '<div style="position:absolute; left:50%; top:42%; width:480px; height:480px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.20) 0%, rgba(39,117,202,0.13) 40%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>' +
       inner + '</div>';
 
@@ -400,7 +400,7 @@
         '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; text-align:center; padding:40px 30px;">' +
           app.mascot({ size: 92, mood: "worried", glow: true }) +
           '<div style="font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:21px; margin-top:6px;">couldn\'t find that tab</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.6); margin-top:8px;">' + app.esc(e.status === 404 ? "it may have expired or never existed." : e.message) + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.6); margin-top:8px;">' + app.esc(e.status === 404 ? "it may have expired or never existed." : e.message) + '</div>' +
           '<button style="appearance:none; border:none; cursor:pointer; max-width:240px; width:100%; min-height:52px; border-radius:999px; margin-top:18px; background:linear-gradient(120deg,#3286db,#2775CA); color:#fff; font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:16px;" onclick="location.hash=\'#/home\'">back home</button>' +
         '</div>';
       view.innerHTML = phone(inner, "0.16");
@@ -432,7 +432,7 @@
           '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; text-align:center; padding:40px 30px;">' +
             app.mascot({ size: 92, mood: "sleepy", glow: true }) +
             '<div style="font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:21px; margin-top:6px;">no tab to collect</div>' +
-            '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.6); margin-top:8px;">start a tab and we\'ll chase everyone down 👀</div>' +
+            '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.6); margin-top:8px;">start a tab and we\'ll chase everyone down 👀</div>' +
             '<button style="appearance:none; border:none; cursor:pointer; max-width:240px; width:100%; min-height:52px; border-radius:999px; margin-top:18px; background:linear-gradient(120deg,#3286db,#2775CA); color:#fff; font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:16px;" onclick="location.hash=\'#/new\'">new tab</button>' +
           '</div>';
         view.innerHTML = phone(inner, "0.16");

@@ -48,7 +48,7 @@
         // welcome-only celebration decoration.
         '<div style="position:relative; display:flex; align-items:center; justify-content:center;">' +
           (window.Mascot ? window.Mascot.html({ size: 132, mood: "sparkle", glow: false }) : "") +
-          '<div style="position:absolute; right:24px; bottom:28px; width:40px; height:40px; border-radius:50%; background:linear-gradient(150deg,#5ff0d4,#2bccae); border:3px solid #0B1622; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(61,232,199,0.5); animation:wrPop .5s ease-out both; animation-delay:.35s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B1622" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
+          '<div style="position:absolute; right:24px; bottom:28px; width:40px; height:40px; border-radius:50%; background:linear-gradient(150deg,#5ff0d4,#2bccae); border:3px solid #2B2118; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px rgba(61,232,199,0.5); animation:wrPop .5s ease-out both; animation-delay:.35s;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' +
         '</div>' +
       '</div>';
   }
@@ -70,37 +70,37 @@
     var reassure = connected ? "powered by phantom" : "secured by privy";
 
     view.innerHTML = '' +
-      '<div class="vfill" style="position:relative; display:flex; flex-direction:column; background:#0B1622; overflow:hidden;">' +
+      '<div class="vfill" style="position:relative; display:flex; flex-direction:column; background:#F7F1E3; overflow:hidden;">' +
         // texture + ambient glow
-        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 4%, rgba(244,247,250,0.022) 0 1px, transparent 1px 9px); opacity:.6; pointer-events:none;"></div>' +
+        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 4%, rgba(43,33,24,0.022) 0 1px, transparent 1px 9px); opacity:.6; pointer-events:none;"></div>' +
         '<div style="position:absolute; left:50%; top:300px; width:520px; height:520px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.13) 0%, rgba(39,117,202,0.08) 38%, rgba(39,117,202,0) 66%); pointer-events:none;"></div>' +
 
         // close
         '<div style="position:relative; z-index:6; padding:8px 16px 2px; flex:none;">' +
-          '<div id="wClose" style="width:36px; height:36px; border-radius:50%; background:rgba(244,247,250,0.05); border:1px solid rgba(244,247,250,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+          '<div id="wClose" style="width:36px; height:36px; border-radius:50%; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
         '</div>' +
 
         // main
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 26px 8px; text-align:center;">' +
           mascotHtml() +
           '<div style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; letter-spacing:3px; color:#3DE8C7; margin-top:16px;">' + kicker + '</div>' +
-          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:46px; letter-spacing:-1.4px; margin:8px 0 0; color:#F4F7FA;">' + headline + '</h1>' +
-          '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.5; color:rgba(244,247,250,0.55); max-width:300px; margin:12px 0 0; text-wrap:pretty;">' + sub + '</p>' +
+          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:46px; letter-spacing:-1.4px; margin:8px 0 0; color:#2B2118;">' + headline + '</h1>' +
+          '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.5; color:rgba(43,33,24,0.55); max-width:300px; margin:12px 0 0; text-wrap:pretty;">' + sub + '</p>' +
 
           // wallet identity card
           '<div style="width:100%; max-width:320px; margin-top:26px;">' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(244,247,250,0.42); text-align:left; margin:0 4px 9px;">YOUR WALLET</div>' +
-            '<div style="display:flex; align-items:center; gap:13px; background:#13212E; border:1px solid rgba(244,247,250,0.09); border-radius:20px; padding:14px 15px; box-shadow:0 14px 32px rgba(0,0,0,0.3);">' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); text-align:left; margin:0 4px 9px;">YOUR WALLET</div>' +
+            '<div style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.09); border-radius:20px; padding:14px 15px; box-shadow:0 14px 32px rgba(43,33,24,0.13);">' +
               '<div style="width:46px; height:46px; border-radius:15px; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; box-shadow:0 6px 16px rgba(39,117,202,0.4);">' + app.esc(emoji) + '</div>' +
               '<div style="flex:1; text-align:left; min-width:0;">' +
-                '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(244,247,250,0.4);">SOLANA</div>' +
-                '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:.5px; color:#F4F7FA; margin-top:3px;">' + app.esc(trunc(wallet)) + '</div>' +
+                '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(43,33,24,0.4);">SOLANA</div>' +
+                '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:.5px; color:#2B2118; margin-top:3px;">' + app.esc(trunc(wallet)) + '</div>' +
               '</div>' +
-              '<div id="wCopy" title="copy address" style="width:38px; height:38px; border-radius:11px; background:rgba(244,247,250,0.05); border:1px solid rgba(244,247,250,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></div>' +
+              '<div id="wCopy" title="copy address" style="width:38px; height:38px; border-radius:11px; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></div>' +
             '</div>' +
             '<div style="display:flex; align-items:center; justify-content:center; gap:7px; margin-top:12px;">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' +
-              '<span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(244,247,250,0.45);">' + reassure + '</span>' +
+              '<span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(43,33,24,0.45);">' + reassure + '</span>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -110,7 +110,7 @@
           '<button id="wStart" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:58px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 14px 34px rgba(39,117,202,0.55), inset 0 1px 0 rgba(255,255,255,0.28);">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">start splitting</span><span style="font-size:15px;">✨</span>' +
           '</button>' +
-          '<div style="text-align:center; margin-top:14px;"><span id="wView" style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(244,247,250,0.5); cursor:pointer;">view my wallet</span></div>' +
+          '<div style="text-align:center; margin-top:14px;"><span id="wView" style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">view my wallet</span></div>' +
         '</div>' +
       '</div>';
 

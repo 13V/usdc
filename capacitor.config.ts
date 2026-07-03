@@ -23,7 +23,7 @@ const config: CapacitorConfig = {
   // Required even when loading a remote URL: `cap copy` stages this dir. It holds
   // the app shell / offline fallback.
   webDir: "public",
-  backgroundColor: "#0B1622",
+  backgroundColor: "#F7F1E3",
   server: {
     url: SERVER_URL,
     // Never allow plaintext HTTP — money app.
@@ -32,7 +32,7 @@ const config: CapacitorConfig = {
     iosScheme: "https",
   },
   ios: {
-    backgroundColor: "#0B1622",
+    backgroundColor: "#F7F1E3",
     // The SPA handles safe areas itself (env() insets) and the document never
     // scrolls (#view scrolls internally) — no automatic content insets, and
     // disable the WKWebView scroll view so the whole app can't be dragged /
@@ -41,7 +41,7 @@ const config: CapacitorConfig = {
     scrollEnabled: false,
   },
   android: {
-    backgroundColor: "#0B1622",
+    backgroundColor: "#F7F1E3",
   },
 };
 

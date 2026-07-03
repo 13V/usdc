@@ -230,7 +230,7 @@
     t.textContent = msg;
     t.style.cssText = "position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:200;" +
       "background:var(--card);border:1px solid var(--line);color:var(--text);font-family:var(--mono);" +
-      "font-size:13px;padding:11px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .2s;";
+      "font-size:13px;padding:11px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(43,33,24,0.13);opacity:0;transition:opacity .2s;";
     toastRegion().appendChild(t);
     requestAnimationFrame(function () { t.style.opacity = "1"; });
     setTimeout(function () { t.style.opacity = "0"; setTimeout(function () { t.remove(); }, 250); }, 2200);
@@ -340,8 +340,8 @@
       'background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697);' +
       'box-shadow:0 4px 12px rgba(39,117,202,.5), inset 0 2px 4px rgba(255,255,255,.28);' +
       'display:flex;align-items:center;justify-content:center;gap:4px;">' +
-      '<span style="width:4px;height:6px;border-radius:50%;background:#0B1622;"></span>' +
-      '<span style="width:4px;height:6px;border-radius:50%;background:#0B1622;"></span></div>';
+      '<span style="width:4px;height:6px;border-radius:50%;background:#F7F1E3;"></span>' +
+      '<span style="width:4px;height:6px;border-radius:50%;background:#F7F1E3;"></span></div>';
     if (!document.getElementById("divvy-ptr-css")) {
       var s = document.createElement("style");
       s.id = "divvy-ptr-css";
@@ -535,20 +535,20 @@
         'style="appearance:none; cursor:pointer; flex:1; min-height:46px; border-radius:14px; ' +
         'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; ' +
         (on
-          ? 'background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); color:#7FC0FF;'
-          : 'background:#13212E; border:1px solid rgba(244,247,250,0.1); color:#F4F7FA;') +
+          ? 'background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); color:#2775CA;'
+          : 'background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); color:#2B2118;') +
         '">' + dollarsLabel(c) + '</button>';
     }).join("");
     var maxHint = (typeof opts.maxCents === "number" && opts.maxCents > 0)
-      ? '<div id="' + idp + '-max" style="text-align:center; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.42); margin-top:9px;">balance ' + dollarsLabel(opts.maxCents) + ' available</div>'
+      ? '<div id="' + idp + '-max" style="text-align:center; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.42); margin-top:9px;">balance ' + dollarsLabel(opts.maxCents) + ' available</div>'
       : '';
     return '' +
       '<div style="display:flex; align-items:center; justify-content:center; gap:4px; margin:6px 0 2px;">' +
-        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:34px; color:rgba(244,247,250,0.4);">$</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:34px; color:rgba(43,33,24,0.4);">$</span>' +
         '<input id="' + idp + '-input" inputmode="decimal" autocomplete="off" value="' + (def / 100) + '" ' +
           'style="width:auto; max-width:200px; min-width:60px; background:transparent; border:none; outline:none; ' +
           'font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; letter-spacing:-2px; ' +
-          'color:#F4F7FA; text-align:center;">' +
+          'color:#2B2118; text-align:center;">' +
       '</div>' +
       maxHint +
       '<div style="display:flex; gap:9px; margin-top:18px;">' + chips + '</div>';
@@ -572,11 +572,11 @@
         if (on) {
           b.style.background = "rgba(39,117,202,0.16)";
           b.style.border = "1px solid rgba(39,117,202,0.5)";
-          b.style.color = "#7FC0FF";
+          b.style.color = "#2775CA";
         } else {
-          b.style.background = "#13212E";
-          b.style.border = "1px solid rgba(244,247,250,0.1)";
-          b.style.color = "#F4F7FA";
+          b.style.background = "#FFFDF7";
+          b.style.border = "1px solid rgba(43,33,24,0.1)";
+          b.style.color = "#2B2118";
         }
       });
     }
@@ -625,7 +625,7 @@
   // Small honest "test mode" line, shown when the provider keys aren't live yet.
   function testModeNote() {
     return '<div style="text-align:center; margin-top:12px;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.4);">test mode · no real charge yet</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.4);">test mode · no real charge yet</span>' +
       '</div>';
   }
 
@@ -642,8 +642,8 @@
     } catch (_) {}
     if (!wallet) {
       sheet('<div style="padding:8px 20px 26px; text-align:center;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:#F4F7FA;">add money</div>' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(244,247,250,0.6); margin-top:10px;">create or connect a wallet first, then come back to fund it.</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:#2B2118;">add money</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.6); margin-top:10px;">create or connect a wallet first, then come back to fund it.</div>' +
         '</div>');
       return;
     }
@@ -655,8 +655,8 @@
     sheet(
       '<div style="padding:4px 20px 26px;">' +
         '<div style="text-align:center; margin-bottom:6px;">' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#F4F7FA;">add money</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(244,247,250,0.55); margin-top:4px;">straight to your balance — dollars, just faster.</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118;">add money</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:4px;">straight to your balance — dollars, just faster.</div>' +
         '</div>' +
         amountEntryHtml({ idp: "dep", default: DEFAULT }) +
         '<button id="depCard" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 8px 24px rgba(39,117,202,0.45), inset 0 1px 0 rgba(255,255,255,0.25);">' +
@@ -664,24 +664,24 @@
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">add with card</span>' +
         '</button>' +
         '<div style="text-align:center; margin-top:9px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.5);">apple pay · debit · credit</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">apple pay · debit · credit</span>' +
         '</div>' +
         '<div id="depTestNote"></div>' +
-        '<button id="depMore" type="button" style="appearance:none; border:none; cursor:pointer; background:transparent; display:block; width:100%; text-align:center; margin-top:16px; padding:6px; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(127,192,255,0.75);">or receive usdc directly ▾</button>' +
+        '<button id="depMore" type="button" style="appearance:none; border:none; cursor:pointer; background:transparent; display:block; width:100%; text-align:center; margin-top:16px; padding:6px; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(39,117,202,0.75);">or receive usdc directly ▾</button>' +
         // crypto-native receive block — hidden until "more options" is tapped.
         '<div id="depRecv" style="display:none; margin-top:6px;">' +
           '<div style="text-align:center;">' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(244,247,250,0.5);">receive usdc · ' + esc(cluster) + '</div>' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">receive usdc · ' + esc(cluster) + '</div>' +
           '</div>' +
           '<div id="depQrWrap" style="width:206px; margin:14px auto 0; background:#fff; border-radius:16px; padding:8px;">' +
             '<img id="depQr" alt="your wallet qr" width="190" height="190" style="display:block; border-radius:8px;" src="' + esc(qrImg(solUrl)) + '">' +
           '</div>' +
-          '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:16px auto 0; max-width:300px; background:#13212E; border:1px solid rgba(244,247,250,0.1); border-radius:13px; padding:12px 14px; cursor:pointer;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(244,247,250,0.85);">' + esc(short) + '</span>' +
-            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(244,247,250,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
+          '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:16px auto 0; max-width:300px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); border-radius:13px; padding:12px 14px; cursor:pointer;">' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(43,33,24,0.85);">' + esc(short) + '</span>' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
           '</div>' +
           '<div style="text-align:center; margin-top:12px;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(244,247,250,0.42);">send usdc to this address — it shows up in your balance.</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.42);">send usdc to this address — it shows up in your balance.</span>' +
           '</div>' +
         '</div>' +
       '</div>'
@@ -737,13 +737,13 @@
     if (qr) qr.onerror = function () {
       var wrap = document.getElementById("depQrWrap");
       if (!wrap) return;
-      wrap.style.background = "#13212E";
-      wrap.style.border = "1px solid rgba(244,247,250,0.1)";
+      wrap.style.background = "#FFFDF7";
+      wrap.style.border = "1px solid rgba(43,33,24,0.1)";
       wrap.style.width = "auto";
       wrap.style.padding = "16px";
       wrap.innerHTML =
         '<div style="font-family:\'Space Mono\',monospace; font-size:11px; line-height:1.5; ' +
-        'word-break:break-all; text-align:center; color:rgba(244,247,250,0.9);">' + esc(wallet) + '</div>';
+        'word-break:break-all; text-align:center; color:rgba(43,33,24,0.9);">' + esc(wallet) + '</div>';
     };
   }
 

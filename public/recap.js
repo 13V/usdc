@@ -12,17 +12,19 @@
 (function () {
   "use strict";
 
-  // Brand tokens mirrored from divvy.css :root (canvas can't read CSS vars).
-  const GREEN = "#2775CA";          // USDC blue; name kept for API/back-compat
-  const INK = "#0B1622";            // app background
-  const SURFACE = "#13212E";        // cards
-  const SURFACE_2 = "#182838";      // raised rows
-  const CREAM = "#F4F7FA";          // primary text; name kept for back-compat
-  const MUTED = "rgba(244,247,250,0.55)";
-  const FAINT = "rgba(244,247,250,0.38)";
+  // Brand tokens mirrored from divvy.css :root — JOURNAL theme (canvas can't
+  // read CSS vars). Names kept for API/back-compat: INK is the page bg, CREAM
+  // is the primary text ink.
+  const GREEN = "#2775CA";
+  const INK = "#F7F1E3";            // paper background
+  const SURFACE = "#FFFDF7";        // card stock
+  const SURFACE_2 = "#FBF6EA";      // raised rows
+  const CREAM = "#2B2118";          // primary text (warm ink)
+  const MUTED = "rgba(43,33,24,0.60)";
+  const FAINT = "rgba(43,33,24,0.42)";
   const TERRA = "#FF6B5E";          // you-owe / debit (coral)
-  const ACCENT_SOFT = "rgba(39,117,202,0.14)";
-  const LINE = "rgba(244,247,250,0.10)";
+  const ACCENT_SOFT = "rgba(39,117,202,0.12)";
+  const LINE = "rgba(43,33,24,0.15)";
   const SANS = "'Clash Display', 'General Sans', -apple-system, system-ui, sans-serif";
   const MONO = "'Space Mono', ui-monospace, monospace";
 
