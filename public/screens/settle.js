@@ -81,9 +81,9 @@
     '<path fill="#fff" d="M12 3.2C7.7 3.2 4.2 6.6 4.2 10.9V19c0 .8.9 1.2 1.5.7l1.3-1.1c.3-.3.8-.3 1.1 0l1.2 1.1c.3.3.8.3 1.1 0l1.2-1.1c.3-.3.8-.3 1.1 0l1.2 1.1c.3.3.8.3 1.1 0l1.3-1.1c.3-.3.8-.3 1.1 0l1.3 1.1c.6.5 1.5.1 1.5-.7v-8.1c0-4.3-3.5-7.7-7.8-7.7z"/>' +
     '<circle cx="9.4" cy="11" r="1.35" fill="#2775CA"/><circle cx="14.6" cy="11" r="1.35" fill="#2775CA"/></svg>';
   var ARROW_SVG =
-    '<svg width="24" height="13" viewBox="0 0 26 14" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>';
+    '<svg width="24" height="13" viewBox="0 0 26 14" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>';
   var SHARE_SVG =
-    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5 8.6 10.5"/></svg>';
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5 8.6 10.5"/></svg>';
 
   // ---- chrome (lifted: settle-up status row + optional cancel) ----
   function header(showCancel) {
@@ -359,7 +359,7 @@
           '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(43,33,24,0.5); margin-top:11px;">' +
             esc(t.amountFmt || "") + ' → ' + esc(S.toName) + (t.toWallet ? ' · ' + esc(trunc(t.toWallet)) : '') + '</div>' +
           // truthful reassurance — we're watching, nothing's confirmed yet.
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.42); margin-top:8px; max-width:280px;">hang tight — we check automatically every few seconds.</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.6); margin-top:8px; max-width:280px;">hang tight — we check automatically every few seconds.</div>' +
           '<div style="width:100%; max-width:340px; margin-top:30px; display:flex; flex-direction:column; gap:11px;">' +
             '<button id="stCheck" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">i\'ve paid — check now</button>' +
             '<button id="stWalletAgain" style="appearance:none; background:transparent; border:none; cursor:pointer; width:100%; min-height:44px; font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5);">open wallet again</button>' +

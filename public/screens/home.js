@@ -21,7 +21,7 @@
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:21px; color:#fff; transform:translateY(-1px);">/</span></div>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.5px; color:#2B2118;">divvy</span>' +
       '</div>' +
-      '<a href="#/you" style="text-decoration:none; width:34px; height:34px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:17px; border:2px solid #2B2118;">' + app.face(me.emoji) + '</a>' +
+      '<a href="#/you" aria-label="your profile" style="text-decoration:none; width:34px; height:34px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:17px; border:2px solid #2B2118;">' + app.face(me.emoji) + '</a>' +
     '</div>';
   }
 
@@ -30,7 +30,7 @@
     var pos = c.direction === "owed", neg = c.direction === "owes";
     var col = pos ? "#2775CA" : neg ? "#FF6B5E" : "rgba(43,33,24,0.5)";
     var sub = pos ? "owes you" : neg ? "you owe" : "square ✨";
-    var subcol = neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.4)";
+    var subcol = neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.6)";
     var av = app.avatar({ name: c.name, emoji: c.emoji, color: c.color });
     // recolor the avatar bg to a soft tint like the frame
     var amt = c.direction === "settled" ? '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:#3DE8C7;">square ✨</span>'
@@ -49,7 +49,7 @@
     return '<' + tag + tapAttrs + ' display:flex; align-items:center; gap:13px; padding:11px 4px;">' +
       '<div style="width:40px;height:40px;border-radius:50%;background:rgba(39,117,202,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;">' + app.face(c.emoji || (c.name||"?")[0]) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118;">' + app.esc(c.name) + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(c.name) + '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + subcol + '; margin-top:2px;">' + sub + '</div>' +
       '</div>' + amt + affordance + '</' + tag + '>';
   }
@@ -84,13 +84,13 @@
       ? '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.14); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:5px 11px; flex:none; font-family:\'Space Mono\',monospace; font-size:11px; color:#3DE8C7;">square ✨</span>'
       : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:' + (pos ? "#2775CA" : "#FF6B5E") + ';"><span style="opacity:.5;">' + (pos ? "+$" : "−$") + '</span>' + money3(Math.abs(t.netCents)) + '</div>';
     var sub = settled ? (t.memberCount ? t.memberCount + " people" : "all square") : (pos ? "owed to you" : "you owe");
-    var subcol = neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.42)";
+    var subcol = neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.6)";
     return '<a href="#/group/' + encodeURIComponent(t.tripId || t.id) + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px 11px 11px;">' +
       '<div style="position:relative; width:48px; height:48px; border-radius:13px; background:' + cover + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; overflow:hidden;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>' +
         '<span style="position:relative;">' + emoji + '</span></div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc(name) + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + subcol + '; margin-top:3px;">' + sub + '</div>' +
       '</div>' + right + '</a>';
   }
@@ -151,7 +151,7 @@
         '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">' + (pos ? "the squad owes u" : "u owe the squad") + ' · ' + (window.__grpCount || 0) + ' groups</div>' +
         '<div style="display:flex; align-items:baseline; gap:9px; margin-top:10px;">' +
           '<div id="hBalance" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:64px; line-height:.9; letter-spacing:-2.5px; color:' + col + ';">' + heroBalanceInner(Math.abs(net), pos) + '</div>' +
-          '<span style="font-family:\'Space Mono\',monospace; font-weight:400; font-size:12px; letter-spacing:1px; color:rgba(43,33,24,0.4);">usdc</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-weight:400; font-size:12px; letter-spacing:1px; color:rgba(43,33,24,0.6);">usdc</span>' +
         '</div>' +
         (owe > 0 && pos ? '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14px; color:rgba(43,33,24,0.55); margin-top:12px;">you owe <span style="font-family:\'Space Mono\',monospace; font-weight:700; color:#FF6B5E;">$' + (owe / 100).toFixed(2) + '</span> elsewhere</div>' : '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.55); margin-top:12px;">' + (net === 0 ? "you're all square ✨" : pos ? "everyone owes you 🤑" : "time to settle up 💸") + '</div>') +
         '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid rgba(39,117,202,0.4); background:rgba(39,117,202,0.10); border-radius:999px; padding:4px 11px;">' +

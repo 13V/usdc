@@ -38,6 +38,19 @@
     return (window.Auth && window.Auth.authFetch) ? window.Auth.authFetch : fetch;
   }
   async function req(method, path, body) {
+    // Offline fast-fail: if the browser knows it's offline, don't hang on a
+    // fetch that will time out — surface a friendly toast and reject fast so
+    // callers' .catch paths unstick the UI (re-enable buttons) immediately.
+    try {
+      if (navigator.onLine === false) {
+        try { toast("you're offline — try again when you're back 📡"); } catch (_) {}
+        var offErr = new Error("offline");
+        offErr.offline = true;
+        throw offErr;
+      }
+    } catch (e) {
+      if (e && e.offline) throw e; // rethrow our own offline error; ignore navigator quirks
+    }
     var headers = { "content-type": "application/json" };
     // For trip paths we know a share token for, attach X-Trip-Token so an
     // unclaimed visitor can view + claim. Merged below so it rides alongside
@@ -521,7 +534,7 @@
       you: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
       plus: '<path d="M12 5v14M5 12h14"/>',
     };
-    return '<svg viewBox="0 0 24 24">' + p[name] + "</svg>";
+    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + p[name] + "</svg>";
   }
   function renderTabbar(active) {
     var bar = document.getElementById("tabbar");
@@ -599,7 +612,7 @@
         '">' + dollarsLabel(c) + '</button>';
     }).join("");
     var maxHint = (typeof opts.maxCents === "number" && opts.maxCents > 0)
-      ? '<div id="' + idp + '-max" style="text-align:center; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.42); margin-top:9px;">balance ' + dollarsLabel(opts.maxCents) + ' available</div>'
+      ? '<div id="' + idp + '-max" style="text-align:center; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6); margin-top:9px;">balance ' + dollarsLabel(opts.maxCents) + ' available</div>'
       : '';
     return '' +
       '<div style="display:flex; align-items:center; justify-content:center; gap:4px; margin:6px 0 2px;">' +
@@ -684,7 +697,7 @@
   // Small honest "test mode" line, shown when the provider keys aren't live yet.
   function testModeNote() {
     return '<div style="text-align:center; margin-top:12px;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.4);">test mode · no real charge yet</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6);">test mode · no real charge yet</span>' +
       '</div>';
   }
 
@@ -704,7 +717,7 @@
   // broken widget link, the money buttons show a soft "coming soon" line.
   function comingSoonNote() {
     return '<div style="text-align:center; margin-top:12px;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">coming soon in your region ✨</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(43,33,24,0.6);">coming soon in your region ✨</span>' +
       '</div>';
   }
   // Visually disable a primary money button (used when the rails aren't live).
@@ -831,7 +844,7 @@
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">' + payLabel + '</span>' +
         '</button>' +
         '<div style="text-align:center; margin-top:9px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">takes ~1 min · card fees may apply</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6);">takes ~1 min · card fees may apply</span>' +
         '</div>' +
         '<div id="depTestNote"></div>' +
         '<button id="depMore" type="button" style="appearance:none; border:none; cursor:pointer; background:transparent; display:block; width:100%; text-align:center; margin-top:16px; padding:6px; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(39,117,202,0.75);">or receive usdc directly ▾</button>' +
@@ -845,10 +858,10 @@
           '</div>' +
           '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:16px auto 0; max-width:300px; background:#FFFDF7; border:2px solid #2B2118; border-radius:13px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:12px 14px; cursor:pointer;">' +
             '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(43,33,24,0.85);">' + esc(short) + '</span>' +
-            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
           '</div>' +
           '<div style="text-align:center; margin-top:12px;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.42);">send usdc to this address — it shows up in your balance.</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6);">send usdc to this address — it shows up in your balance.</span>' +
           '</div>' +
         '</div>' +
       '</div>'

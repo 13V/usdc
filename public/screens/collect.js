@@ -61,7 +61,7 @@
   // dead-end after a tab is sent.
   function titleStrip(label) {
     return '<div style="position:relative; z-index:3; display:flex; align-items:center; justify-content:center; height:48px; flex:none; padding:6px 16px 0;">' +
-      '<div onclick="window.app.go(\'home\')" style="position:absolute; left:16px; top:6px; width:34px; height:34px; border-radius:50%; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer;" aria-label="close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
+      '<div onclick="window.app.go(\'home\')" role="button" aria-label="close" tabindex="0" style="position:absolute; left:16px; top:6px; width:34px; height:34px; border-radius:50%; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
       '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">' + app.esc(label) + '</span>' +
     '</div>';
   }
@@ -75,7 +75,7 @@
   // status pill — squared (blue, ✓) vs waiting (faint, 👀) — lifted verbatim
   function statusPill(paid) {
     if (paid) {
-      return '<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#2775CA;">SQUARED</span></span>';
+      return '<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#2775CA;">SQUARED</span></span>';
     }
     return '<span style="display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(43,33,24,0.16); border-radius:999px; padding:3px 9px;"><span style="font-size:10px;">👀</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.6);">WAITING</span></span>';
   }
@@ -220,7 +220,7 @@
       actions =
         '<div style="width:100%; display:flex; flex-direction:column; gap:10px; margin-top:16px;">' +
           '<button class="tcShare" style="appearance:none; cursor:pointer; width:100%; min-height:52px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' +
-            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>' +
             're-share tab' +
           '</button>' +
           '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.36); text-align:center;">' +
@@ -231,7 +231,7 @@
       actions =
         '<div style="width:100%; display:flex; flex-direction:column; gap:10px; margin-top:16px;">' +
           '<button class="tcShare" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
-            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">share tab</span>' +
           '</button>' +
           '<button class="tcCopy" style="appearance:none; cursor:pointer; width:100%; min-height:48px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' +
