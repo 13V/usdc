@@ -1,5 +1,5 @@
 // Divvy service worker — minimal app-shell cache.
-const CACHE = "divvy-v47";
+const CACHE = "divvy-v48";
 const SHELL = [
   "/", "/divvy.css", "/manifest.webmanifest", "/icon.svg",
   // Core runtime scripts.
