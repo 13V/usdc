@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Divvy — Slash, the logo come alive</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 26px 18px 60px;
+    background: #F7F1E3;
+    background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(39,117,202,0.10) 27px 28px);
+    font-family: -apple-system, "General Sans", system-ui, sans-serif;
+    color: #2B2118;
+  }
+  h1 { font-size: 27px; letter-spacing: -0.5px; margin: 0 0 4px; }
+  .sub { font-family: ui-monospace, monospace; font-size: 11px; color: #FF6B5E; font-weight: 700; margin-bottom: 22px; }
+  .card {
+    position: relative; background: #FFFDF7; border: 2px solid #2B2118; border-radius: 18px;
+    box-shadow: 3px 4px 0 rgba(43,33,24,0.85); padding: 16px 16px 14px; margin-bottom: 24px;
+  }
+  .card:nth-child(odd) { transform: rotate(-0.5deg); }
+  .card:nth-child(even) { transform: rotate(0.4deg); }
+  .tape { position: absolute; top: -11px; left: 50%; width: 74px; height: 20px; transform: translateX(-50%) rotate(-2deg);
+    opacity: .85; border-left: 1.5px dashed rgba(43,33,24,0.25); border-right: 1.5px dashed rgba(43,33,24,0.25); }
+  .tag { position: absolute; top: -12px; left: 12px; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 10px; background: #FF6B5E;
+    border: 2px solid #2B2118; box-shadow: 2px 3px 0 rgba(43,33,24,0.85); color: #fff; font-weight: 800; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; transform: rotate(-4deg); }
+  .row { display: flex; align-items: center; gap: 14px; }
+  .big { flex: none; filter: drop-shadow(3px 4px 0 rgba(43,33,24,0.5)); }
+  .info { flex: 1; min-width: 0; }
+  .name { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
+  .pitch { font-size: 13px; line-height: 1.45; color: rgba(43,33,24,0.62); margin-top: 4px; }
+  .moods { display: flex; align-items: flex-end; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+  .mood { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .mood span { font-family: ui-monospace, monospace; font-size: 9px; color: rgba(43,33,24,0.45); }
+</style>
+</head>
+<body>
+<h1>slash — the logo, alive</h1>
+<div class="sub">divvy's "/" is the division sign. give it a face.</div>
+<div id="cards"></div>
+
+<script>
+const INK = "#2B2118", BLUE = "#2775CA", MINT = "#3DE8C7", CORAL = "#FF6B5E", SUN = "#FFC65C", CARD = "#FFFDF7";
+const S = `stroke="${INK}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
+
+function slashFace(cx, cy, mood, scale = 1, tilt = -14) {
+  const g = 8.5 * scale;
+  let eyes, mouth;
+  if (mood === "worried") {
+    eyes = `<circle cx="${cx-g}" cy="${cy}" r="${2.5*scale}" fill="#fff"/><circle cx="${cx+g}" cy="${cy}" r="${2.5*scale}" fill="#fff"/>
+      <path d="M${cx-g-4*scale},${cy-7*scale} q${4*scale},${-3.4*scale} ${8*scale},${-1*scale}" fill="none" stroke="#fff" stroke-width="${2.1*scale}" stroke-linecap="round"/>
+      <path d="M${cx+g+4*scale},${cy-7*scale} q${-4*scale},${-3.4*scale} ${-8*scale},${-1*scale}" fill="none" stroke="#fff" stroke-width="${2.1*scale}" stroke-linecap="round"/>
+      <path d="M${cx-5*scale},${cy+9*scale} q${2.5*scale},${-2.6*scale} ${5*scale},0 q${2.5*scale},${2.6*scale} ${5*scale},0" fill="none" stroke="#fff" stroke-width="${2.2*scale}" stroke-linecap="round"/>`;
+  } else if (mood === "party") {
+    eyes = `<path d="M${cx-g-3.4*scale},${cy} q${3.4*scale},${-4.4*scale} ${6.8*scale},0" fill="none" stroke="#fff" stroke-width="${2.4*scale}" stroke-linecap="round"/>
+      <path d="M${cx+g-3.4*scale},${cy} q${3.4*scale},${-4.4*scale} ${6.8*scale},0" fill="none" stroke="#fff" stroke-width="${2.4*scale}" stroke-linecap="round"/>
+      <path d="M${cx-6*scale},${cy+6*scale} q${6*scale},${8*scale} ${12*scale},0 z" fill="#fff"/>`;
+  } else {
+    eyes = `<circle cx="${cx-g}" cy="${cy}" r="${2.7*scale}" fill="#fff"/><circle cx="${cx+g}" cy="${cy}" r="${2.7*scale}" fill="#fff"/>
+      <path d="M${cx-5*scale},${cy+7*scale} q${5*scale},${5*scale} ${10*scale},0" fill="none" stroke="#fff" stroke-width="${2.4*scale}" stroke-linecap="round"/>`;
+  }
+  const blush = `<circle cx="${cx-g-6*scale}" cy="${cy+6*scale}" r="${2.6*scale}" fill="${MINT}" opacity=".55"/>
+    <circle cx="${cx+g+6*scale}" cy="${cy+6*scale}" r="${2.6*scale}" fill="${MINT}" opacity=".55"/>`;
+  return `<g transform="rotate(${tilt} ${cx} ${cy})">${eyes}${blush}</g>`;
+}
+const hat = (x, y) => `<path d="M${x},${y} l9,-19 l9,19 z" fill="${SUN}" ${S} stroke-width="2.4"/>
+  <circle cx="${x+9}" cy="${y-20}" r="3" fill="${CORAL}" ${S} stroke-width="2"/>`;
+const confetti = `<circle cx="12" cy="20" r="3" fill="${MINT}"/><rect x="100" y="14" width="6" height="6" rx="1" fill="${CORAL}" transform="rotate(20 103 17)"/>
+  <path d="M16,44 q4,-4 8,0" fill="none" stroke="${SUN}" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="108" cy="46" r="2.6" fill="${BLUE}"/>`;
+
+// M1 — Slash: the "/" glyph itself, chunky, with a face
+function slash(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M74,10 L98,18 L46,110 L22,102 Z" fill="${BLUE}" ${S}/>
+    <path d="M79,16 L92,20 L44,104 L31,100 Z" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="2.4"/>
+    <path d="M38,64 q-10,0 -13,8 M82,48 q10,-2 14,5" fill="none" ${S} stroke-width="2.8"/>
+    <path d="M40,110 q-1,6 -6,8 M56,112 q2,6 7,7" fill="none" ${S} stroke-width="2.6" display="none"/>
+    ${mood === "party" ? hat(52, 14) : ""}
+    ${slashFace(62, 52, mood, 1, -18)}
+  </svg>`;
+}
+
+// M2 — Slash cutting a receipt in half (the story pose)
+function slashCut(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <g transform="rotate(-7 34 70)">
+      <path d="M16,44 h34 v44 l-6,6 l-6,-6 l-5,6 l-6,-6 l-5,6 l-6,-6 z" fill="${CARD}" ${S} stroke-width="2.6"/>
+      <path d="M22,53 h20 M22,60 h14" stroke="rgba(43,33,24,0.4)" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M22,68 h16" stroke="${CORAL}" stroke-width="2.6" stroke-linecap="round"/>
+    </g>
+    <g transform="rotate(9 88 70) translate(4 6)">
+      <path d="M64,40 h34 v44 l-6,6 l-6,-6 l-5,6 l-6,-6 l-5,6 l-6,-6 z" fill="${CARD}" ${S} stroke-width="2.6"/>
+      <path d="M70,49 h20 M70,56 h13" stroke="rgba(43,33,24,0.4)" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M70,64 h15" stroke="${CORAL}" stroke-width="2.6" stroke-linecap="round"/>
+    </g>
+    <path d="M68,6 L88,13 L48,106 L28,99 Z" fill="${BLUE}" ${S}/>
+    <path d="M52,20 l6,-8 M64,22 l8,-6 M42,34 l-8,-4" stroke="${SUN}" stroke-width="3" stroke-linecap="round" fill="none"/>
+    ${mood === "party" ? hat(46, 10) : ""}
+    ${slashFace(56, 46, mood, 0.94, -18)}
+  </svg>`;
+}
+
+// M3 — Sticker mode: the app-icon square with slash peeking out
+function slashSticker(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <rect x="18" y="18" width="84" height="84" rx="24" fill="${BLUE}" ${S}/>
+    <path d="M70,30 L84,35 L50,90 L36,85 Z" fill="#fff" opacity=".95" ${S} stroke-width="2.6"/>
+    <path d="M18,58 q-9,2 -9,10 M102,58 q9,2 9,10" fill="none" ${S} stroke-width="2.8"/>
+    <path d="M44,102 v8 M76,102 v8" ${S} stroke-width="3" fill="none"/>
+    ${mood === "party" ? hat(51, 18) : ""}
+    ${(() => {
+      // face on the white slash, ink-colored features
+      const cx = 62, cy = 52, g = 8;
+      if (mood === "worried") return `<g transform="rotate(-16 ${cx} ${cy})"><circle cx="${cx-g}" cy="${cy}" r="2.5" fill="${INK}"/><circle cx="${cx+g}" cy="${cy}" r="2.5" fill="${INK}"/>
+        <path d="M${cx-g-4},${cy-7} q4,-3.4 8,-1 M${cx+g+4},${cy-7} q-4,-3.4 -8,-1" fill="none" ${S} stroke-width="2.1"/>
+        <path d="M${cx-5},${cy+9} q2.5,-2.6 5,0 q2.5,2.6 5,0" fill="none" ${S} stroke-width="2.2"/></g>`;
+      if (mood === "party") return `<g transform="rotate(-16 ${cx} ${cy})"><path d="M${cx-g-3.4},${cy} q3.4,-4.4 6.8,0 M${cx+g-3.4},${cy} q3.4,-4.4 6.8,0" fill="none" ${S} stroke-width="2.4"/>
+        <path d="M${cx-6},${cy+6} q6,8 12,0 z" fill="${INK}"/></g>`;
+      return `<g transform="rotate(-16 ${cx} ${cy})"><circle cx="${cx-g}" cy="${cy}" r="2.7" fill="${INK}"/><circle cx="${cx+g}" cy="${cy}" r="2.7" fill="${INK}"/>
+        <path d="M${cx-5},${cy+7} q5,5 10,0" fill="none" ${S} stroke-width="2.4"/>
+        <circle cx="${cx-g-6}" cy="${cy+6}" r="2.6" fill="${CORAL}" opacity=".4"/><circle cx="${cx+g+6}" cy="${cy+6}" r="2.6" fill="${CORAL}" opacity=".4"/></g>`;
+    })()}
+  </svg>`;
+}
+
+const CANDIDATES = [
+  { tag: "M", fn: slash, tape: "rgba(39,117,202,0.4)", name: "slash — the wordmark with a face",
+    pitch: "your logo IS the division sign. chunky inked “/” with paper-white eyes and mint blush. every place the logo appears, the mascot already lives." },
+  { tag: "M+", fn: slashCut, tape: "rgba(255,198,92,0.75)", name: "slash, doing its job",
+    pitch: "the story pose: slash karate-chops a receipt clean in half. this is the settle animation, the empty state, the app-store screenshot." },
+  { tag: "M²", fn: slashSticker, tape: "rgba(61,232,199,0.7)", name: "sticker mode — the app icon, alive",
+    pitch: "the blue app-icon square grows arms and legs, the white slash becomes the face. mascot and icon are literally the same asset." },
+];
+
+document.getElementById("cards").innerHTML = CANDIDATES.map(c => `
+  <div class="card">
+    <div class="tape" style="background:${c.tape}"></div>
+    <div class="tag">${c.tag}</div>
+    <div class="row">
+      <div class="big">${c.fn("happy", 116)}</div>
+      <div class="info">
+        <div class="name">${c.name}</div>
+        <div class="pitch">${c.pitch}</div>
+      </div>
+    </div>
+    <div class="moods">
+      <div class="mood">${c.fn("happy", 52)}<span>happy</span></div>
+      <div class="mood">${c.fn("worried", 52)}<span>worried</span></div>
+      <div class="mood">${c.fn("party", 52)}<span>party</span></div>
+    </div>
+  </div>`).join("");
+</script>
+</body>
+</html>

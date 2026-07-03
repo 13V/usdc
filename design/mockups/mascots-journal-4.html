@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Divvy — the cute committee</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 26px 18px 60px;
+    background: #F7F1E3;
+    background-image: repeating-linear-gradient(180deg, transparent 0 27px, rgba(39,117,202,0.10) 27px 28px);
+    font-family: -apple-system, "General Sans", system-ui, sans-serif;
+    color: #2B2118;
+  }
+  h1 { font-size: 27px; letter-spacing: -0.5px; margin: 0 0 4px; }
+  .sub { font-family: ui-monospace, monospace; font-size: 11px; color: #FF6B5E; font-weight: 700; margin-bottom: 22px; }
+  .card {
+    position: relative; background: #FFFDF7; border: 2px solid #2B2118; border-radius: 18px;
+    box-shadow: 3px 4px 0 rgba(43,33,24,0.85); padding: 16px 16px 14px; margin-bottom: 24px;
+  }
+  .card:nth-child(odd) { transform: rotate(-0.5deg); }
+  .card:nth-child(even) { transform: rotate(0.4deg); }
+  .tape { position: absolute; top: -11px; left: 50%; width: 74px; height: 20px; transform: translateX(-50%) rotate(-2deg);
+    opacity: .85; border-left: 1.5px dashed rgba(43,33,24,0.25); border-right: 1.5px dashed rgba(43,33,24,0.25); }
+  .tag { position: absolute; top: -12px; left: 12px; min-width: 30px; height: 30px; padding: 0 8px; border-radius: 10px; background: #FF6B5E;
+    border: 2px solid #2B2118; box-shadow: 2px 3px 0 rgba(43,33,24,0.85); color: #fff; font-weight: 800; font-size: 15px;
+    display: flex; align-items: center; justify-content: center; transform: rotate(-4deg); }
+  .row { display: flex; align-items: center; gap: 14px; }
+  .big { flex: none; filter: drop-shadow(3px 4px 0 rgba(43,33,24,0.5)); }
+  .info { flex: 1; min-width: 0; }
+  .name { font-size: 18px; font-weight: 700; letter-spacing: -0.2px; }
+  .pitch { font-size: 13px; line-height: 1.45; color: rgba(43,33,24,0.62); margin-top: 4px; }
+  .moods { display: flex; align-items: flex-end; gap: 14px; margin-top: 12px; }
+  .mood { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .mood span { font-family: ui-monospace, monospace; font-size: 9px; color: rgba(43,33,24,0.45); }
+</style>
+</head>
+<body>
+<h1>the cute committee</h1>
+<div class="sub">smol, round, extremely gen z — pick your fighter!!</div>
+<div id="cards"></div>
+
+<script>
+const INK = "#2B2118", BLUE = "#2775CA", MINT = "#3DE8C7", CORAL = "#FF6B5E", SUN = "#FFC65C", CARD = "#FFFDF7";
+const TAN = "#D9A36A", TAN2 = "#c08b52";
+const S = `stroke="${INK}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"`;
+
+// smol face: wide-set dot eyes, tiny mouth, BIG blush. that's the whole trick.
+function smol(cx, cy, mood, scale = 1) {
+  const g = 14 * scale;
+  let eyes, mouth;
+  if (mood === "worried") {
+    eyes = `<circle cx="${cx-g}" cy="${cy}" r="${2.6*scale}" fill="${INK}"/><circle cx="${cx+g}" cy="${cy}" r="${2.6*scale}" fill="${INK}"/>
+      <path d="M${cx-g-4*scale},${cy-6.5*scale} q${4*scale},${-3*scale} ${8*scale},${-0.5*scale}" fill="none" ${S} stroke-width="${2*scale}"/>
+      <path d="M${cx+g+4*scale},${cy-6.5*scale} q${-4*scale},${-3*scale} ${-8*scale},${-0.5*scale}" fill="none" ${S} stroke-width="${2*scale}"/>`;
+    mouth = `<path d="M${cx-4*scale},${cy+7*scale} q${2*scale},${-2.2*scale} ${4*scale},0 q${2*scale},${2.2*scale} ${4*scale},0" fill="none" ${S} stroke-width="${2.2*scale}"/>`;
+  } else if (mood === "party") {
+    eyes = `<path d="M${cx-g-3.6*scale},${cy} q${3.6*scale},${-4.6*scale} ${7.2*scale},0" fill="none" ${S} stroke-width="${2.4*scale}"/>
+      <path d="M${cx+g-3.6*scale},${cy} q${3.6*scale},${-4.6*scale} ${7.2*scale},0" fill="none" ${S} stroke-width="${2.4*scale}"/>`;
+    mouth = `<path d="M${cx-4.5*scale},${cy+5*scale} q${4.5*scale},${6*scale} ${9*scale},0 z" fill="${INK}"/>`;
+  } else {
+    eyes = `<circle cx="${cx-g}" cy="${cy}" r="${2.8*scale}" fill="${INK}"/><circle cx="${cx+g}" cy="${cy}" r="${2.8*scale}" fill="${INK}"/>`;
+    // the "w" cat mouth — maximum cute
+    mouth = `<path d="M${cx-4.5*scale},${cy+5*scale} q${2.2*scale},${3*scale} ${4.5*scale},0 q${2.2*scale},${3*scale} ${4.5*scale},0" fill="none" ${S} stroke-width="${2.2*scale}"/>`;
+  }
+  const blush = `<ellipse cx="${cx-g-8*scale}" cy="${cy+6*scale}" rx="${4.6*scale}" ry="${3*scale}" fill="${CORAL}" opacity=".42"/>
+    <ellipse cx="${cx+g+8*scale}" cy="${cy+6*scale}" rx="${4.6*scale}" ry="${3*scale}" fill="${CORAL}" opacity=".42"/>`;
+  return eyes + mouth + blush;
+}
+const hat = (x, y) => `<path d="M${x},${y} l9,-19 l9,19 z" fill="${SUN}" ${S} stroke-width="2.4"/>
+  <circle cx="${x+9}" cy="${y-20}" r="3" fill="${CORAL}" ${S} stroke-width="2"/>`;
+const confetti = `<circle cx="12" cy="20" r="3" fill="${MINT}"/><rect x="100" y="14" width="6" height="6" rx="1" fill="${CORAL}" transform="rotate(20 103 17)"/>
+  <path d="M16,44 q4,-4 8,0" fill="none" stroke="${SUN}" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="108" cy="46" r="2.6" fill="${BLUE}"/>`;
+
+// N — Capy: unbothered capybara with a tiny orange on its head
+function capy(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M24,52 Q24,30 60,30 Q96,30 96,52 L96,80 Q96,100 60,100 Q24,100 24,80 Z" fill="${TAN}" ${S}/>
+    <path d="M34,32 q-2,-8 6,-9 q6,-1 7,5 M86,32 q2,-8 -6,-9 q-6,-1 -7,5" fill="${TAN2}" ${S} stroke-width="2.6"/>
+    <path d="M52,66 q0,6 8,6 q8,0 8,-6" fill="none" stroke="rgba(43,33,24,0.35)" stroke-width="2.2" stroke-linecap="round" display="none"/>
+    <circle cx="60" cy="18" r="9" fill="#FF8C42" ${S} stroke-width="2.6"/>
+    <path d="M60,9 q1,-4 5,-5" fill="none" ${S} stroke-width="2.2"/>
+    <path d="M63,13 q3,2 2,5" fill="none" stroke="rgba(43,33,24,0.3)" stroke-width="1.8"/>
+    <path d="M36,100 v6 M52,100 v7 M68,100 v7 M84,100 v6" ${S} stroke-width="3" fill="none"/>
+    ${mood === "party" ? hat(38, 22) : ""}
+    ${smol(60, 62, mood)}
+    <path d="M56,72 h8" stroke="rgba(43,33,24,0.35)" stroke-width="2" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// O — Boo v2: rounder, smaller, cuter ghost
+function boo2(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <path d="M60,18 C84,18 94,38 94,58 L94,92 Q88,86 82,92 Q76,98 70,92 Q65,87 60,92 Q55,97 50,92 Q44,86 38,92 Q32,98 26,92 L26,58 C26,38 36,18 60,18 Z" fill="${CARD}" ${S}/>
+    <path d="M30,54 q-9,4 -8,13 M90,54 q9,4 8,13" fill="none" ${S} stroke-width="2.8"/>
+    <path d="M74,26 q6,-8 12,-4" fill="none" stroke="rgba(43,33,24,0.3)" stroke-width="2.2" stroke-linecap="round"/>
+    ${mood === "party" ? hat(51, 18) : ""}
+    ${smol(60, 52, mood)}
+  </svg>`;
+}
+
+// P — Mochi: a mint meme frog
+function mochi(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <circle cx="40" cy="30" r="13" fill="${MINT}" ${S}/>
+    <circle cx="80" cy="30" r="13" fill="${MINT}" ${S}/>
+    <path d="M20,62 Q20,34 60,34 Q100,34 100,62 L100,76 Q100,98 60,98 Q20,98 20,76 Z" fill="${MINT}" ${S}/>
+    <circle cx="40" cy="28" r="4" fill="${INK}"/>
+    <circle cx="80" cy="28" r="4" fill="${INK}"/>
+    <path d="M20,68 q-8,3 -8,10 M100,68 q8,3 8,10" fill="none" ${S} stroke-width="2.8"/>
+    <path d="M38,98 v7 M78,98 v7 M32,105 h11 M72,105 h11" ${S} stroke-width="2.8" fill="none"/>
+    ${mood === "party" ? hat(51, 22) : ""}
+    ${(() => {
+      const cx = 60, cy = 62;
+      if (mood === "worried") return `<path d="M${cx-10},${cy+8} q5,-4 10,0 q5,4 10,0" fill="none" ${S} stroke-width="2.4" transform="translate(-10 0)"/>
+        <ellipse cx="${cx-24}" cy="${cy+4}" rx="5" ry="3.2" fill="${CORAL}" opacity=".42"/><ellipse cx="${cx+24}" cy="${cy+4}" rx="5" ry="3.2" fill="${CORAL}" opacity=".42"/>`;
+      if (mood === "party") return `<path d="M${cx-7},${cy+2} q7,9 14,0 z" fill="${INK}"/>
+        <ellipse cx="${cx-24}" cy="${cy+4}" rx="5" ry="3.2" fill="${CORAL}" opacity=".42"/><ellipse cx="${cx+24}" cy="${cy+4}" rx="5" ry="3.2" fill="${CORAL}" opacity=".42"/>`;
+      return `<path d="M${cx-14},${cy+4} q7,7 14,0 q7,7 14,0" fill="none" ${S} stroke-width="2.4" transform="translate(-7 0)"/>
+        <ellipse cx="${cx-24}" cy="${cy+4}" rx="5" ry="3.2" fill="${CORAL}" opacity=".42"/><ellipse cx="${cx+24}" cy="${cy+4}" rx="5" ry="3.2" fill="${CORAL}" opacity=".42"/>`;
+    })()}
+  </svg>`;
+}
+
+// Q — Hammy: the hamster that saw the bill
+function hammy(mood, px) {
+  return `<svg width="${px}" height="${px}" viewBox="0 0 120 120">
+    ${mood === "party" ? confetti : ""}
+    <circle cx="60" cy="62" r="42" fill="${SUN}" ${S}/>
+    <path d="M34,28 q-4,-12 8,-12 q9,0 9,9 M86,28 q4,-12 -8,-12 q-9,0 -9,9" fill="${SUN}" ${S} stroke-width="2.6"/>
+    <circle cx="38" cy="22" r="3.4" fill="${CORAL}" opacity=".5"/>
+    <circle cx="82" cy="22" r="3.4" fill="${CORAL}" opacity=".5"/>
+    <path d="M18,66 q-7,2 -7,8 M102,66 q7,2 7,8" fill="none" ${S} stroke-width="2.6"/>
+    <path d="M46,102 v5 M74,102 v5" ${S} stroke-width="3" fill="none"/>
+    ${mood === "party" ? hat(51, 20) : ""}
+    ${(() => {
+      const cx = 60, cy = 58;
+      if (mood === "worried") {
+        // the meme stare: huge sparkle eyes, tiny mouth
+        return `<circle cx="${cx-15}" cy="${cy}" r="8" fill="${INK}"/><circle cx="${cx+15}" cy="${cy}" r="8" fill="${INK}"/>
+          <circle cx="${cx-12.5}" cy="${cy-3}" r="2.6" fill="#fff"/><circle cx="${cx+17.5}" cy="${cy-3}" r="2.6" fill="#fff"/>
+          <circle cx="${cx-17}" cy="${cy+3}" r="1.4" fill="#fff"/><circle cx="${cx+13}" cy="${cy+3}" r="1.4" fill="#fff"/>
+          <circle cx="${cx}" cy="${cy+11}" r="2.2" fill="${INK}"/>
+          <ellipse cx="${cx-26}" cy="${cy+8}" rx="5" ry="3.4" fill="${CORAL}" opacity=".42"/><ellipse cx="${cx+26}" cy="${cy+8}" rx="5" ry="3.4" fill="${CORAL}" opacity=".42"/>`;
+      }
+      return smol(cx, cy, mood);
+    })()}
+    <path d="M54,74 q6,5 12,0" fill="none" stroke="rgba(43,33,24,0.3)" stroke-width="2" stroke-linecap="round" display="${mood==='happy'?'inline':'none'}"/>
+  </svg>`;
+}
+
+const CANDIDATES = [
+  { tag: "N", fn: capy, tape: "rgba(255,198,92,0.75)", name: "capy — unbothered king",
+    pitch: "the internet's favorite animal, with the little orange on its head. the pitch writes itself: money between friends is awkward — capy has never been awkward in its life." },
+  { tag: "O", fn: boo2, tape: "rgba(61,232,199,0.7)", name: "boo v2 — smol ghost",
+    pitch: "rounder, softer remix of the ghost of unpaid bills. “don't ghost the group chat” is already how your users talk. haunts debtors, celebrates settles." },
+  { tag: "P", fn: mochi, tape: "rgba(39,117,202,0.4)", name: "mochi the frog",
+    pitch: "meme frog in divvy mint. periscope eyes peek over cards and sheets. gen z has never once scrolled past a frog." },
+  { tag: "Q", fn: hammy, tape: "rgba(255,107,94,0.6)", name: "hammy — saw the bill",
+    pitch: "round hamster whose worried mood is the sad-hamster meme stare — huge sparkle eyes when the bill drops. cheeks stuffed with savings when you get paid back." },
+];
+
+document.getElementById("cards").innerHTML = CANDIDATES.map(c => `
+  <div class="card">
+    <div class="tape" style="background:${c.tape}"></div>
+    <div class="tag">${c.tag}</div>
+    <div class="row">
+      <div class="big">${c.fn("happy", 116)}</div>
+      <div class="info">
+        <div class="name">${c.name}</div>
+        <div class="pitch">${c.pitch}</div>
+      </div>
+    </div>
+    <div class="moods">
+      <div class="mood">${c.fn("happy", 52)}<span>happy</span></div>
+      <div class="mood">${c.fn("worried", 52)}<span>worried</span></div>
+      <div class="mood">${c.fn("party", 52)}<span>party</span></div>
+    </div>
+  </div>`).join("");
+</script>
+</body>
+</html>
