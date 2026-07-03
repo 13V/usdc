@@ -939,6 +939,7 @@
           } else {
             await app.api.post("/api/trips/" + encodeURIComponent(groupId) + "/expenses", payload);
             app.toast("added to the tab ✨");
+            if (app.maybeAskPush) setTimeout(function () { app.maybeAskPush("bill_created"); }, 700);
           }
           location.hash = "#/group/" + encodeURIComponent(groupId);
         } else {
@@ -958,6 +959,7 @@
           if (!id) throw new Error("no bill id");
           app.track && app.track("tab_sent");
           location.hash = "#/collect/" + encodeURIComponent(id);
+          if (app.maybeAskPush) setTimeout(function () { app.maybeAskPush("bill_created"); }, 700);
         }
       } catch (e) {
         if (send) { send.disabled = false; send.style.opacity = "1"; }

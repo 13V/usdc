@@ -68,6 +68,9 @@
       ? "you're all linked up — settle up straight from divvy, in dollars."
       : "your account's ready — no passwords, no seed phrase. recover anytime with your email.";
     var reassure = connected ? "powered by phantom" : "secured by privy";
+    // On the primary (just-created) path, lead with a plain "account" label
+    // instead of chain jargon; the connect-a-wallet path keeps "solana".
+    var idLabel = connected ? "SOLANA" : "ACCOUNT";
 
     view.innerHTML = '' +
       '<div class="vfill" style="position:relative; display:flex; flex-direction:column; background:#F7F1E3; overflow:hidden;">' +
@@ -90,10 +93,10 @@
           // wallet identity card
           '<div style="width:100%; max-width:320px; margin-top:26px;">' +
             '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); text-align:left; margin:0 4px 9px;">YOUR ACCOUNT</div>' +
-            '<div style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:14px 15px; box-shadow:0 14px 32px rgba(43,33,24,0.13);">' +
+            '<div style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85), 0 14px 32px rgba(43,33,24,0.10); padding:14px 15px;">' +
               '<div style="width:46px; height:46px; border-radius:15px; background:' + color + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + app.face(emoji) + '</div>' +
               '<div style="flex:1; text-align:left; min-width:0;">' +
-                '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(43,33,24,0.4);">SOLANA</div>' +
+                '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(43,33,24,0.4);">' + idLabel + '</div>' +
                 '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:.5px; color:#2B2118; margin-top:3px;">' + app.esc(trunc(wallet)) + '</div>' +
               '</div>' +
               '<div id="wCopy" role="button" aria-label="copy address" tabindex="0" title="copy address" style="width:38px; height:38px; border-radius:11px; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></div>' +

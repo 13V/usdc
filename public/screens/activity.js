@@ -34,8 +34,9 @@
 
   // ---- header (lifted: big "activity" 30px Clash + search/filter circles) ----
   function header() {
-    var chip = function (path) {
-      return '<div style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; ' +
+    var chip = function (path, id) {
+      return '<div ' + (id ? 'id="' + id + '" role="button" tabindex="0" aria-label="search" ' : "") +
+        'style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; ' +
         'border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
         '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.75)" ' +
         'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg></div>';
@@ -45,9 +46,19 @@
       '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; ' +
       'font-size:30px; letter-spacing:-0.8px; margin:0; color:#2B2118;" class="jdoodle">activity</h1>' +
       '<div style="display:flex; align-items:center; gap:9px;">' +
-        chip('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/>') +
+        chip('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/>', "acSearch") +
         chip('<path d="M4 6h16M7 12h10M10 18h4"/>') +
-      '</div></div>';
+      '</div></div>' +
+      // collapsible search bar — expands when the search chip is tapped.
+      '<div id="acSearchBar" style="display:none; position:relative; z-index:6; padding:0 20px 12px; flex:none;">' +
+        '<div style="display:flex; align-items:center; gap:9px; background:#FFFDF7; border:2px solid #2B2118; ' +
+          'border-radius:14px; box-shadow:3px 3px 0 rgba(43,33,24,0.85); padding:9px 13px;">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+          '<input id="acSearchInput" type="text" placeholder="search your feed…" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
+            'style="flex:1; min-width:0; background:transparent; border:none; outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:#2B2118; padding:2px 0;" />' +
+          '<span id="acSearchClear" role="button" tabindex="0" aria-label="clear search" style="cursor:pointer; flex:none; line-height:0; display:inline-flex; color:rgba(43,33,24,0.5);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></span>' +
+        '</div>' +
+      '</div>';
   }
 
   // faint money texture + the single soft blue glow from the frame.
@@ -363,7 +374,10 @@
   }
 
   // ---- FEED render ----
-  function feed(view, items) {
+  // Build the grouped (by day) list HTML for a set of events. Split out so the
+  // search filter can re-render just the list without disturbing the header /
+  // search input.
+  function buildFeedHtml(items) {
     var html = "", lastDay = null;
     items.forEach(function (ev) {
       if (!ev || typeof ev !== "object") return;
@@ -379,13 +393,73 @@
       try { html += row(ev); } catch (_) { /* one bad event never sinks the feed */ }
     });
     if (lastDay !== null) html += '</div>';
+    return html;
+  }
 
+  // Plain-text, lowercased searchable string for an event (name / title / trip).
+  function searchText(ev) {
+    try {
+      var d = describe(ev);
+      var s = (d.line || "") + " " + (d.detail || "") + " " + (ev.tripName || "") +
+        " " + (ev.text || "") + " " + (d.actor || "") + " " + (d.title || "") + " " + (d.to || "");
+      return s.replace(/<[^>]*>/g, " ").toLowerCase();
+    } catch (_) { return String((ev && ev.text) || "").toLowerCase(); }
+  }
+
+  // last rendered feed items — kept so the search filter can operate on them.
+  var lastItems = [];
+
+  function feed(view, items) {
+    lastItems = Array.isArray(items) ? items : [];
     view.innerHTML =
       '<div class="vfill" style="position:relative; flex:1; display:flex; flex-direction:column;">' +
         ambient() +
         '<div style="position:relative; z-index:2;">' + header() + '</div>' +
-        '<div class="ac-scroll" style="position:relative; z-index:2; padding:2px 18px 104px;">' + html + '</div>' +
+        '<div class="ac-scroll" style="position:relative; z-index:2; padding:2px 18px 104px;">' + buildFeedHtml(lastItems) + '</div>' +
       '</div>';
+    wireSearch(view);
+  }
+
+  // ---- live search filtering ----
+  function wireSearch(view) {
+    var chip = view.querySelector("#acSearch");
+    var bar = view.querySelector("#acSearchBar");
+    var input = view.querySelector("#acSearchInput");
+    var clear = view.querySelector("#acSearchClear");
+    var scroll = view.querySelector(".ac-scroll");
+    if (!chip || !bar || !input || !scroll) return;
+    function apply() {
+      var q = (input.value || "").trim().toLowerCase();
+      var list = q ? lastItems.filter(function (ev) { return searchText(ev).indexOf(q) >= 0; }) : lastItems;
+      if (q && !list.length) {
+        scroll.innerHTML = '<div style="text-align:center; padding:44px 20px; font-family:\'General Sans\',sans-serif; ' +
+          'font-size:15px; color:rgba(43,33,24,0.5);">no activity matches “' + app.esc(q) + '” 🔍</div>';
+      } else {
+        scroll.innerHTML = buildFeedHtml(list);
+      }
+    }
+    function open() {
+      bar.style.display = "block";
+      chip.style.background = "#2B2118";
+      var svg = chip.querySelector("svg"); if (svg) svg.style.stroke = "#F7F1E3";
+      try { input.focus(); } catch (_) {}
+    }
+    function close() {
+      bar.style.display = "none";
+      chip.style.background = "#FFFDF7";
+      var svg = chip.querySelector("svg"); if (svg) svg.style.stroke = "rgba(43,33,24,0.75)";
+      input.value = "";
+      apply();
+    }
+    function toggle() { if (bar.style.display === "none" || !bar.style.display) open(); else close(); }
+    chip.onclick = toggle;
+    chip.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } };
+    input.oninput = apply;
+    input.onkeydown = function (e) { if (e.key === "Escape") { e.preventDefault(); close(); } };
+    if (clear) {
+      clear.onclick = function () { input.value = ""; apply(); try { input.focus(); } catch (_) {} };
+      clear.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.value = ""; apply(); } };
+    }
   }
 
   // ---- LOADING (shimmer skeleton rows, ~1.3s sweep) — lifted from the frame ----

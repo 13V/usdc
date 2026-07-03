@@ -250,6 +250,133 @@
       }).catch(function () { return false; });
     },
   };
+  // ---- PWA install (Android / desktop Chrome & Edge) ----
+  // We stash the beforeinstallprompt event and surface it through a small,
+  // dismissible journal chip on the YOU screen (see screens/you.js) rather than
+  // firing a browser popup. iOS Safari can't prompt programmatically, so there
+  // the chip opens a tiny "share → add to home screen" instructions sheet.
+  var deferredInstall = null;
+  window.addEventListener("beforeinstallprompt", function (e) {
+    try { e.preventDefault(); } catch (_) {}
+    deferredInstall = e;
+    // A YOU screen already painted before the event arrived can re-check now.
+    try { window.dispatchEvent(new Event("divvy:installready")); } catch (_) {}
+  });
+  window.addEventListener("appinstalled", function () {
+    deferredInstall = null;
+    try { localStorage.setItem("divvy.installed", "1"); } catch (_) {}
+  });
+  function isStandalone() {
+    try {
+      return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+        window.navigator.standalone === true;
+    } catch (_) { return false; }
+  }
+  function isNativeShell() {
+    try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+    catch (_) { return false; }
+  }
+  function isIOSBrowser() { return isIOS() && !isNativeShell() && !isStandalone(); }
+  var install = {
+    available: function () { return !!deferredInstall; },
+    standalone: isStandalone,
+    iosManual: isIOSBrowser,
+    // Offer the chip only when installable, not already installed / native, and
+    // not previously dismissed.
+    shouldOffer: function () {
+      if (isStandalone() || isNativeShell()) return false;
+      try { if (localStorage.getItem("divvy.installed") === "1") return false; } catch (_) {}
+      try { if (localStorage.getItem("divvy.installDismissed") === "1") return false; } catch (_) {}
+      return !!deferredInstall || isIOSBrowser();
+    },
+    dismiss: function () { try { localStorage.setItem("divvy.installDismissed", "1"); } catch (_) {} },
+    prompt: function () {
+      if (!deferredInstall) return Promise.resolve(false);
+      var e = deferredInstall;
+      try { e.prompt(); } catch (_) {}
+      return Promise.resolve(e.userChoice).then(function (c) {
+        deferredInstall = null;
+        return !!(c && c.outcome === "accepted");
+      }).catch(function () { deferredInstall = null; return false; });
+    },
+    iosSheet: function () {
+      var stepRow = function (n, html) {
+        return '<div style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:11px 13px;">' +
+          '<span style="width:24px; height:24px; border-radius:50%; background:#2775CA; color:#fff; font-family:\'Space Mono\',monospace; font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; flex:none;">' + n + '</span>' +
+          '<span style="font-family:\'General Sans\',sans-serif; font-size:14px; color:var(--text);">' + html + '</span>' +
+        '</div>';
+      };
+      sheet(
+        '<div style="padding:2px 20px 26px; text-align:center;">' +
+          '<div style="font-size:36px; margin:2px 0 6px;">📲</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:var(--text); margin-bottom:6px;">add divvy to your home screen</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; line-height:1.5; color:var(--muted); max-width:300px; margin:0 auto 16px;">two taps in safari and divvy opens like a real app — full screen, no address bar.</div>' +
+          '<div style="text-align:left; display:flex; flex-direction:column; gap:9px; max-width:320px; margin:0 auto;">' +
+            stepRow("1", 'tap the <b>share</b> icon ⬆️ in the toolbar') +
+            stepRow("2", 'scroll down, tap <b>add to home screen</b>') +
+            stepRow("3", 'tap <b>add</b> — done ✨') +
+          '</div>' +
+        '</div>'
+      );
+    },
+  };
+
+  // ---- notification permission moment (contextual, not at boot) ----
+  // Called right after the user creates their FIRST bill/group (see groups.js /
+  // new.js). Shows a dismissible journal chip with allow/later — never a popup at
+  // launch. "later" is honored for 7 days via a localStorage timestamp, and once
+  // permission is granted or denied we stop asking entirely.
+  var PUSH_LATER_KEY = "divvy.pushLaterAt";
+  var PUSH_ASKED_KEY = "divvy.pushAsked";
+  var PUSH_LATER_MS = 7 * 24 * 60 * 60 * 1000;
+  function pushLaterActive() {
+    try {
+      var t = parseInt(localStorage.getItem(PUSH_LATER_KEY) || "0", 10);
+      return t > 0 && (Date.now() - t) < PUSH_LATER_MS;
+    } catch (_) { return false; }
+  }
+  function maybeAskPush(reason) {
+    if (!push.supported || !push.supported()) return;   // no push here
+    var perm = push.permission();
+    if (perm === "granted" || perm === "denied") return; // already decided
+    if (pushLaterActive()) return;                        // within 7 days of "later"
+    if (document.getElementById("divvyPushChip")) return; // already showing
+    showPushChip(reason);
+  }
+  function showPushChip(reason) {
+    var wrap = document.createElement("div");
+    wrap.id = "divvyPushChip";
+    wrap.setAttribute("role", "region");
+    wrap.setAttribute("aria-label", "turn on notifications");
+    wrap.style.cssText = "position:fixed; left:12px; right:12px; bottom:calc(84px + env(safe-area-inset-bottom)); z-index:150; " +
+      "display:flex; align-items:center; gap:11px; padding:12px 12px 12px 14px; border:2px solid #2B2118; border-radius:16px; " +
+      "background:#FFC65C; box-shadow:3px 4px 0 rgba(43,33,24,0.85); max-width:406px; margin:0 auto; " +
+      "opacity:0; transform:translateY(8px); transition:opacity .22s, transform .22s;";
+    wrap.innerHTML =
+      '<span style="font-size:20px; flex:none;">🔔</span>' +
+      '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; line-height:1.3; color:#2B2118;">wanna know when they pay you? turn on notifications.</span>' +
+      '<button id="divvyPushAllow" style="appearance:none; border:2px solid #2B2118; cursor:pointer; flex:none; background:#2775CA; color:#fff; border-radius:999px; padding:8px 13px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; box-shadow:2px 2px 0 rgba(43,33,24,0.85);">turn on</button>' +
+      '<button id="divvyPushLater" aria-label="later" style="appearance:none; border:none; cursor:pointer; flex:none; background:transparent; padding:4px; display:flex; align-items:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.6)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
+    document.body.appendChild(wrap);
+    requestAnimationFrame(function () { wrap.style.opacity = "1"; wrap.style.transform = "translateY(0)"; });
+    function close() { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }
+    var allow = wrap.querySelector("#divvyPushAllow");
+    var later = wrap.querySelector("#divvyPushLater");
+    if (allow) allow.onclick = function () {
+      try { localStorage.setItem(PUSH_ASKED_KEY, "1"); } catch (_) {}
+      try { localStorage.removeItem(PUSH_LATER_KEY); } catch (_) {}
+      close();
+      toast("turning on notifications…");
+      push.enable().then(function (ok) { toast(ok ? "notifications on 🔔" : "maybe later then"); });
+      track("push_chip_allow", reason);
+    };
+    if (later) later.onclick = function () {
+      try { localStorage.setItem(PUSH_LATER_KEY, String(Date.now())); } catch (_) {}
+      close();
+      track("push_chip_later", reason);
+    };
+  }
+
   // ---- Native iOS APNs token bridge ----
   // The native shell (AppDelegate.swift) registers for remote notifications,
   // receives the APNs device token, and injects it into this WKWebView as
@@ -289,8 +416,25 @@
   }
 
   // ---- bottom sheet ----
+  // Opening a sheet pushes a single history entry so the Android system Back
+  // button / back-gesture (and desktop Back) closes the SHEET instead of leaving
+  // the screen underneath. app._sheetHist tracks whether we currently own that
+  // pushed entry: a normal tap-out / Escape / swipe close unwinds it exactly once
+  // (history.back), while Back closing the sheet consumes it via onSheetPop so we
+  // never double-pop. Re-opening a sheet while one is open reuses the single
+  // entry (no stacking, no leaked entries).
+  function onSheetPop() {
+    // Back button consumed our history entry → just tear the UI down.
+    window.removeEventListener("popstate", onSheetPop);
+    app._sheetHist = false;
+    teardownSheet();
+  }
+  function teardownSheet() {
+    if (app._sheetKey) { document.removeEventListener("keydown", app._sheetKey); app._sheetKey = null; }
+    if (app._sheet) { app._sheet.forEach(function (n) { n.remove(); }); app._sheet = null; }
+  }
   function sheet(innerHtml) {
-    closeSheet();
+    teardownSheet(); // replace any open sheet's UI, but keep the single history entry
     var scrim = document.createElement("div"); scrim.className = "sheet-scrim";
     var el = document.createElement("div"); el.className = "sheet";
     el.setAttribute("role", "dialog");
@@ -313,6 +457,14 @@
     document.body.appendChild(scrim); document.body.appendChild(el);
     app._sheet = [scrim, el];
     app._sheetKey = onKey;
+    // Capture the Back button: one history entry per open sheet, reused across a
+    // replace so we never stack entries. pushState with an empty URL keeps the
+    // current URL (no hashchange, so no re-render of the screen behind).
+    if (!app._sheetHist) {
+      try { history.pushState({ divvySheet: true }, ""); app._sheetHist = true; }
+      catch (_) { app._sheetHist = false; }
+      window.addEventListener("popstate", onSheetPop);
+    }
     // Swipe-to-dismiss: drag the sheet down past ~90px (or a quick flick) to
     // close; otherwise it springs back. Honors prefers-reduced-motion (no
     // transform follow — tap-out close stays the only path).
@@ -362,9 +514,26 @@
     return el;
   }
   function closeSheet() {
-    if (app._sheetKey) { document.removeEventListener("keydown", app._sheetKey); app._sheetKey = null; }
-    if (app._sheet) { app._sheet.forEach(function (n) { n.remove(); }); app._sheet = null; }
+    // Tap-out / Escape / swipe / programmatic close: tear the UI down but KEEP
+    // our single pushed history entry (same-URL) and its popstate listener. That
+    // way (a) a subsequent sheet reuses the entry instead of stacking a new one,
+    // and (b) closing can't race a navigation that runs immediately after (e.g.
+    // groups.js does `closeSheet(); location.hash = "#/group/…"`). The entry is
+    // reconciled later: a real navigation abandons it (hashchange handler below),
+    // or a Back press consumes it (onSheetPop, a harmless no-op if already torn).
+    teardownSheet();
   }
+  // A real navigation buries any pushed sheet entry, so stop tracking it — the
+  // next sheet then pushes a fresh entry and Back-to-close keeps working. (Back
+  // that merely closes a sheet keeps the same URL, so it fires popstate without
+  // hashchange and never reaches here.)
+  window.addEventListener("hashchange", function () {
+    if (app._sheetHist) {
+      window.removeEventListener("popstate", onSheetPop);
+      app._sheetHist = false;
+    }
+    teardownSheet();
+  });
 
   // ---- pull-to-refresh ----
   // pullToRefresh(scrollEl, onRefresh): when the user drags down at the very top
@@ -1237,7 +1406,8 @@
     openProvider: openProvider, testModeNote: testModeNote, dollarsLabel: dollarsLabel,
     isAppleClient: isAppleClient, watchBalance: watchBalance,
     track: track, signIn: signIn, isIOS: isIOS,
-    _sheet: null, _sheetKey: null,
+    install: install, maybeAskPush: maybeAskPush,
+    _sheet: null, _sheetKey: null, _sheetHist: false,
   };
   window.app = app;
 

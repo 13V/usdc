@@ -441,6 +441,9 @@
       app.closeSheet();
       app.toast("group started ✨");
       location.hash = "#/group/" + encodeURIComponent(trip.id);
+      // Contextual notification moment: after the group lands, offer to turn on
+      // notifications ("wanna know when they pay you?"). Honors the 7-day rule.
+      if (app.maybeAskPush) setTimeout(function () { app.maybeAskPush("group_created"); }, 700);
     } catch (e) {
       btn.disabled = false;
       btn.textContent = "start group 🎉";

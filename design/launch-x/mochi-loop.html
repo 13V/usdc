@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mochi — launch loop</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; height: 100%; }
+  body {
+    background: #F7F1E3;
+    background-image: repeating-linear-gradient(180deg, transparent 0 46px, rgba(39,117,202,0.09) 46px 47px);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', ui-monospace, monospace; color: #2B2118;
+    overflow: hidden;
+  }
+  /* coral margin rule, like the meme paper */
+  body::before { content:""; position: fixed; top:0; bottom:0; left: 84px; width: 3px; background: rgba(255,107,94,0.30); }
+  .wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 26px; }
+  .wordmark { display: flex; align-items: center; gap: 12px; }
+  .wordmark .dot { width: 26px; height: 26px; border-radius: 8px; background: #2775CA; border: 2px solid #2B2118; box-shadow: 3px 3px 0 rgba(43,33,24,0.85); }
+  .wordmark .name { font-family: 'Clash Display', 'General Sans', sans-serif; font-weight: 700; font-size: 34px; letter-spacing: -1px; }
+  .stage {
+    width: 420px; height: 400px;
+    filter: drop-shadow(6px 8px 0 rgba(43,33,24,0.35));
+  }
+  .stage svg { overflow: visible; display: block; width: 100%; height: 100%; }
+  .mood {
+    font-size: 15px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    color: #FF6B5E; min-height: 20px; transition: opacity .3s;
+  }
+  .tape { position: absolute; width: 150px; height: 40px; opacity: .85; box-shadow: 0 5px 14px rgba(43,33,24,0.14);
+    background: repeating-linear-gradient(45deg, rgba(255,255,255,.28) 0 12px, rgba(255,255,255,0) 12px 24px); }
+  .tape.a { background-color: #3DE8C7; transform: rotate(-7deg); top: 40px; left: -30px; }
+  .tape.b { background-color: #FFC65C; transform: rotate(6deg); top: 30px; right: -26px; }
+
+  /* ---- rig targets (same class names the app uses) ---- */
+  .mq-bodygroup { transform-box: fill-box; transform-origin: 50% 100%; }
+  .mq-eye-l, .mq-eye-r { transform-box: fill-box; transform-origin: 50% 100%; }
+  .mq-pupil { transform-box: fill-box; transform-origin: center; }
+  .mq-arm-r { transform-box: fill-box; transform-origin: 0% 0%; }
+
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-10px) rotate(1.5deg); } }
+  @keyframes squish { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.035,.96); } }
+  @keyframes blink { 0%,91%,100% { transform: scaleY(1); } 93% { transform: scaleY(.06); } 95% { transform: scaleY(.06); } 97.5% { transform: scaleY(1.08); } }
+  @keyframes peekL { 0%,100% { transform: translateY(0); } 30% { transform: translateY(-3px); } 60% { transform: translateY(0); } }
+  @keyframes peekR { 0%,100% { transform: translateY(0); } 45% { transform: translateY(-3px); } 75% { transform: translateY(0); } }
+  .anim-idle { animation: float 5s ease-in-out infinite; }
+  .anim-idle .mq-bodygroup { animation: squish 4.5s ease-in-out infinite; }
+  .anim-idle .mq-pupil { animation: blink 5s ease-in-out infinite; }
+  .anim-idle .mq-eye-l { animation: peekL 6s ease-in-out infinite; }
+  .anim-idle .mq-eye-r { animation: peekR 6s ease-in-out infinite .4s; }
+
+  @keyframes wave { 0%,100% { transform: rotate(0); } 12% { transform: rotate(6deg); animation-timing-function: cubic-bezier(.34,1.56,.64,1); } 55% { transform: rotate(-46deg); animation-timing-function: cubic-bezier(.34,1.56,.64,1); } 88% { transform: rotate(3deg); } }
+  .anim-wave { animation: float 5s ease-in-out infinite; }
+  .anim-wave .mq-arm-r { animation: wave 1.5s linear infinite; }
+  .anim-wave .mq-pupil { animation: blink 5s ease-in-out infinite; }
+
+  @keyframes hopBody {
+    0% { transform: translateY(0) scale(1,1); animation-timing-function: cubic-bezier(.5,0,.7,.3); }
+    16% { transform: translateY(4px) scale(1.13,.83); animation-timing-function: cubic-bezier(.2,.7,.35,1); }
+    34% { transform: translateY(-40px) scale(.93,1.11); animation-timing-function: cubic-bezier(.4,0,.8,.6); }
+    48% { transform: translateY(-48px) scale(.99,1.02); animation-timing-function: cubic-bezier(.5,0,.75,.45); }
+    64% { transform: translateY(0) scale(1.14,.84); animation-timing-function: cubic-bezier(.2,.8,.3,1); }
+    78% { transform: translateY(-7px) scale(.965,1.05); animation-timing-function: cubic-bezier(.4,0,.6,1); }
+    89% { transform: translateY(0) scale(1.03,.98); }
+    100% { transform: translateY(0) scale(1,1); }
+  }
+  .anim-hop { animation: hopBody 1.4s linear infinite; }
+  .anim-hop .mq-pupil { animation: blink 5s linear infinite; }
+
+  @keyframes bounce {
+    0% { transform: translateY(0) rotate(0) scale(1); animation-timing-function: cubic-bezier(.5,0,.7,.3); }
+    9% { transform: translateY(3px) rotate(0) scale(1.1,.86); animation-timing-function: cubic-bezier(.2,.7,.35,1); }
+    23% { transform: translateY(-26px) rotate(-3deg) scale(.94,1.08); animation-timing-function: cubic-bezier(.5,0,.75,.45); }
+    36% { transform: translateY(0) rotate(0) scale(1.1,.88); animation-timing-function: cubic-bezier(.2,.7,.35,1); }
+    48% { transform: translateY(-15px) rotate(2.5deg) scale(.96,1.05); animation-timing-function: cubic-bezier(.5,0,.75,.45); }
+    60% { transform: translateY(0) rotate(0) scale(1.07,.92); animation-timing-function: cubic-bezier(.2,.7,.35,1); }
+    71% { transform: translateY(-6px) rotate(-1.5deg) scale(.98,1.02); animation-timing-function: cubic-bezier(.5,0,.75,.45); }
+    81% { transform: translateY(0) rotate(0) scale(1.03,.975); }
+    100% { transform: translateY(0) rotate(0) scale(1); }
+  }
+  @keyframes confetti { 0% { opacity: 1; transform: translateY(-6px) rotate(0); } 100% { opacity: 0; transform: translateY(40px) rotate(160deg); } }
+  .anim-party { animation: bounce 1.5s linear infinite; }
+  .anim-party .cf { animation: confetti 1.4s linear infinite; }
+  .anim-party .cf:nth-child(2) { animation-delay: .3s; }
+  .anim-party .cf:nth-child(3) { animation-delay: .7s; }
+  .anim-party .cf:nth-child(4) { animation-delay: 1s; }
+  .anim-party .cf:nth-child(5) { animation-delay: .5s; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="tape a"></div>
+  <div class="tape b"></div>
+  <div class="wordmark"><span class="dot"></span><span class="name">divvy</span></div>
+  <div class="stage anim-idle" id="stage"></div>
+  <div class="mood" id="mood">gm</div>
+</div>
+
+<script>
+const INK = "#2B2118", MINT = "#3DE8C7", CORAL = "#FF6B5E", BLUE = "#2775CA", SUN = "#FFC65C";
+const S = `stroke="${INK}" stroke-linecap="round" stroke-linejoin="round"`;
+
+function frog({ mood = "happy", waving = false, hat = false, confetti = false } = {}) {
+  const pupil = (cx) => `<circle class="mq-pupil" cx="${cx}" cy="34" r="5.6" fill="${INK}"/><circle cx="${cx+2}" cy="32" r="1.8" fill="#fff"/>`;
+  const eye = (cls, cx) => `<g class="${cls}">
+    <circle cx="${cx}" cy="34" r="17" fill="${MINT}" ${S} stroke-width="4"/>
+    ${pupil(cx)}
+  </g>`;
+  const mouth = mood === "party"
+    ? `<path d="M74,90 q11,13 22,0 z" fill="${INK}"/>`
+    : `<path d="M63,92 q11,10 22,0 q11,10 22,0" fill="none" ${S} stroke-width="3.6"/>`;
+  return `<svg viewBox="0 0 170 158">
+    ${confetti ? `
+      <rect class="cf" x="20" y="8" width="8" height="8" rx="1.5" fill="${CORAL}"/>
+      <circle class="cf" cx="86" cy="2" r="4.5" fill="${BLUE}"/>
+      <rect class="cf" x="140" y="10" width="8" height="8" rx="1.5" fill="${SUN}"/>
+      <circle class="cf" cx="120" cy="4" r="3.6" fill="${MINT}" stroke="${INK}" stroke-width="1.4"/>
+      <rect class="cf" x="52" y="4" width="7" height="7" rx="1.5" fill="${SUN}"/>` : ""}
+    <g class="mq-leg-l"><path d="M60,132 v9 M51,141 h15" fill="none" ${S} stroke-width="4"/></g>
+    <g class="mq-leg-r"><path d="M110,132 v9 M104,141 h15" fill="none" ${S} stroke-width="4"/></g>
+    <g class="mq-bodygroup">
+      <g class="mq-arm-l"><path d="M27,98 q-11,3 -13,13" fill="none" ${S} stroke-width="4"/></g>
+      <g class="mq-arm-r"><path d="${waving ? "M143,94 q13,-7 15,-18" : "M143,98 q11,3 13,13"}" fill="none" ${S} stroke-width="4"/></g>
+      ${eye("mq-eye-l", 60)}
+      ${eye("mq-eye-r", 110)}
+      <path class="mq-body" d="M25,96 Q25,50 85,50 Q145,50 145,96 L145,102 Q145,132 85,132 Q25,132 25,102 Z" fill="${MINT}" ${S} stroke-width="4"/>
+      <path d="M42,64 q16,-9 32,-7" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="4.6" stroke-linecap="round"/>
+      ${mouth}
+      <ellipse cx="44" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>
+      <ellipse cx="126" cy="90" rx="9" ry="5.4" fill="#FF9C8F"/>
+      ${hat ? `<path d="M76,16 l9,-19 l9,19 z" fill="${SUN}" ${S} stroke-width="2.4"/><circle cx="85" cy="-4" r="3.4" fill="${CORAL}" ${S} stroke-width="2"/>` : ""}
+    </g>
+  </svg>`;
+}
+
+// one choreographed cycle: idle → wave → hop → party → (loop)
+const BEATS = [
+  { cls: "anim-idle",  label: "gm",                 opts: {},                                    ms: 2200 },
+  { cls: "anim-wave",  label: "split the bill",     opts: { waving: true },                      ms: 2000 },
+  { cls: "anim-hop",   label: "settle in seconds",  opts: {},                                    ms: 2100 },
+  { cls: "anim-party", label: "gg — everyone paid", opts: { hat: true, confetti: true, mood: "party" }, ms: 2600 },
+];
+
+const stage = document.getElementById("stage");
+const moodEl = document.getElementById("mood");
+let i = 0;
+function apply(b) {
+  stage.className = "stage " + b.cls;
+  stage.innerHTML = frog(b.opts);
+  moodEl.textContent = b.label;
+}
+apply(BEATS[0]);
+function tick() {
+  i = (i + 1) % BEATS.length;
+  apply(BEATS[i]);
+  setTimeout(tick, BEATS[i].ms);
+}
+setTimeout(tick, BEATS[0].ms);
+window.__mochiReady = true;
+</script>
+</body>
+</html>

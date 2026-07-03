@@ -328,6 +328,9 @@
           '<div id="yStreakSlot"></div>' +
           // invites chip slot — filled by wireInvites() only when count > 0.
           '<div id="yInvitesSlot"></div>' +
+          // "add to home screen" chip slot — filled by wireInstall() only when
+          // the app is installable and not already installed/dismissed.
+          '<div id="yInstallSlot"></div>' +
           balanceCard(balance) +
           settingsList() +
           signOutCard() +
@@ -341,6 +344,7 @@
     wireStreak();     // non-blocking; drops in the settle-streak chip when >= 2
     wireInvites();    // non-blocking; drops in the "friends brought: N" chip when > 0
     wireNotifBadge(); // non-blocking; patches an unread badge in after render
+    wireInstall();    // "add to home screen" chip when installable
     if (app.countUp && typeof balance === "number") {
       var balEl = document.getElementById("yBalance");
       if (balEl) app.countUp(balEl, Math.abs(balance), moneyBig);
@@ -366,6 +370,50 @@
         row.insertBefore(badge, row.lastChild);
       })
       .catch(function () { /* endpoint missing or failed — leave row badge-free */ });
+  }
+
+  // "add divvy to your home screen" — a small dismissible journal chip (not a
+  // popup). Renders only when the app is installable and hasn't been installed
+  // or dismissed. On Android/desktop it triggers the stashed native install
+  // prompt; on iOS Safari it opens the share → add-to-home-screen steps sheet.
+  function renderInstallChip() {
+    var slot = document.getElementById("yInstallSlot");
+    if (!slot) return;
+    if (!app.install || !app.install.shouldOffer()) { slot.innerHTML = ""; return; }
+    var ios = app.install.iosManual && app.install.iosManual();
+    slot.innerHTML =
+      '<div id="yInstallChip" style="display:flex; align-items:center; gap:11px; margin:2px 0 14px; padding:11px 11px 11px 13px; ' +
+        'border:2px solid #2B2118; border-radius:15px; background:#FFFDF7; box-shadow:3px 3px 0 rgba(43,33,24,0.85);">' +
+        '<span style="font-size:19px; flex:none;">📲</span>' +
+        '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; line-height:1.3; color:#2B2118;">add divvy to your home screen</span>' +
+        '<button id="yInstallGo" style="appearance:none; border:2px solid #2B2118; cursor:pointer; flex:none; background:#2775CA; color:#fff; border-radius:999px; padding:7px 13px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; box-shadow:2px 2px 0 rgba(43,33,24,0.85);">' + (ios ? "how" : "add") + '</button>' +
+        '<button id="yInstallX" aria-label="dismiss" style="appearance:none; border:none; cursor:pointer; flex:none; background:transparent; padding:4px; display:flex; align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' +
+      '</div>';
+    var go = document.getElementById("yInstallGo");
+    var x = document.getElementById("yInstallX");
+    if (go) go.onclick = function () {
+      app.track && app.track("install_chip_go", ios ? "ios" : "prompt");
+      if (ios) { app.install.iosSheet(); return; }
+      app.install.prompt().then(function (ok) {
+        if (ok) { app.toast("installing divvy ✨"); renderInstallChip(); }
+      });
+    };
+    if (x) x.onclick = function () {
+      app.install.dismiss();
+      app.track && app.track("install_chip_dismiss");
+      renderInstallChip();
+    };
+  }
+  function wireInstall() {
+    renderInstallChip();
+    // If beforeinstallprompt lands after this screen painted, re-render the chip.
+    window.addEventListener("divvy:installready", function onReady() {
+      if (!document.getElementById("yInstallSlot")) {
+        window.removeEventListener("divvy:installready", onReady);
+        return;
+      }
+      renderInstallChip();
+    });
   }
 
   // ── signed-out (mascot + connect) ────────────────────────────────────────────

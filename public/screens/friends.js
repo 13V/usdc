@@ -20,8 +20,21 @@
         '<h1 class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:30px; letter-spacing:-0.8px; margin:0; color:#2B2118;">your people</h1>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.45); margin-top:3px;">' + app.esc(sub) + '</div>' +
       '</div>' +
-      '<div id="frSearch" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+      '<div id="frSearch" role="button" tabindex="0" aria-label="search your people" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
         '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.75)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // collapsible search bar — expands under the header when the search chip is
+  // tapped; filters the people list live (name / @handle / wallet).
+  function searchBar() {
+    return '<div id="frSearchBar" style="display:none; position:relative; z-index:5; margin:0 16px 8px;">' +
+      '<div style="display:flex; align-items:center; gap:9px; background:#FFFDF7; border:2px solid #2B2118; border-radius:14px; box-shadow:3px 3px 0 rgba(43,33,24,0.85); padding:9px 13px;">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+        '<input id="frSearchInput" type="text" placeholder="search your people…" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
+          'style="flex:1; min-width:0; background:transparent; border:none; outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:#2B2118; padding:2px 0;" />' +
+        '<span id="frSearchClear" role="button" tabindex="0" aria-label="clear search" style="cursor:pointer; flex:none; line-height:0; display:inline-flex; color:rgba(43,33,24,0.5);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></span>' +
       '</div>' +
     '</div>';
   }
@@ -255,6 +268,59 @@
     return n + (n === 1 ? " person" : " people") + " · " + owe + " you owe · " + owed + " owe you";
   }
 
+  // last rendered friends — kept so the search filter can re-render the list.
+  var lastFriends = [];
+
+  function friendSearchText(f) {
+    return (nameOf(f) + " " + (f.displayName || "") + " " + (f.handle || "") +
+      " " + (f.primaryWallet || "")).toLowerCase();
+  }
+
+  // ---- live search filtering (people list) --------------------------------
+  function wireSearch(view) {
+    var chip = view.querySelector("#frSearch");
+    var bar = view.querySelector("#frSearchBar");
+    var input = view.querySelector("#frSearchInput");
+    var clear = view.querySelector("#frSearchClear");
+    if (!chip || !bar || !input) return;
+    function listEl() { return view.querySelector("#frPeopleList"); }
+    function apply() {
+      var list = listEl();
+      if (!list) return; // no people section (empty state) — nothing to filter
+      var q = (input.value || "").trim().toLowerCase();
+      var matched = q ? lastFriends.filter(function (f) { return friendSearchText(f).indexOf(q) >= 0; }) : lastFriends;
+      if (q && !matched.length) {
+        list.innerHTML = '<div style="text-align:center; padding:30px 16px; font-family:\'General Sans\',sans-serif; ' +
+          'font-size:15px; color:rgba(43,33,24,0.5);">no one matches “' + app.esc(q) + '” 🔍</div>';
+      } else {
+        list.innerHTML = matched.map(friendRow).join("");
+        wireRows(view); // re-bind copy buttons on the freshly rendered rows
+      }
+    }
+    function open() {
+      bar.style.display = "block";
+      chip.style.background = "#2B2118";
+      var svg = chip.querySelector("svg"); if (svg) svg.style.stroke = "#F7F1E3";
+      try { input.focus(); } catch (_) {}
+    }
+    function close() {
+      bar.style.display = "none";
+      chip.style.background = "#FFFDF7";
+      var svg = chip.querySelector("svg"); if (svg) svg.style.stroke = "rgba(43,33,24,0.75)";
+      input.value = "";
+      apply();
+    }
+    function toggle() { if (bar.style.display === "none" || !bar.style.display) open(); else close(); }
+    chip.onclick = toggle;
+    chip.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } };
+    input.oninput = apply;
+    input.onkeydown = function (e) { if (e.key === "Escape") { e.preventDefault(); close(); } };
+    if (clear) {
+      clear.onclick = function () { input.value = ""; apply(); try { input.focus(); } catch (_) {} };
+      clear.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.value = ""; apply(); } };
+    }
+  }
+
   function wireRows(view) {
     Array.prototype.forEach.call(view.querySelectorAll(".frCopy"), function (btn) {
       btn.onclick = function (e) {
@@ -353,19 +419,21 @@
                 '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42);">PEOPLE</span>' +
                 '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.38);">A–Z</span>' +
               '</div>' +
-              '<div style="display:flex; flex-direction:column; gap:9px;">' + friends.map(friendRow).join("") + '</div>'
+              '<div id="frPeopleList" style="display:flex; flex-direction:column; gap:9px;">' + friends.map(friendRow).join("") + '</div>'
             : '') +
         '</div>';
     } else {
       body = emptyState();
     }
 
-    view.innerHTML = canvas(header(sub) + addWell() + sendBar() + body);
+    lastFriends = friends;
+    view.innerHTML = canvas(header(sub) + searchBar() + addWell() + sendBar() + body);
 
     var refresh = function () { return signedIn(view); };
     wireAdd(view, refresh);
     wireRows(view);
     wireRequests(view, refresh);
+    wireSearch(view);
     if (app.enter) app.enter(view.querySelector(".appscroll"));
     var sb = view.querySelector("#frSend");
     if (sb) sb.onclick = function () { sendSheet(); };
