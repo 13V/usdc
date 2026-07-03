@@ -27,6 +27,8 @@ interface TripEntry {
   fmt: string;
   direction: "owed" | "owes" | "settled";
   shareUrlPath: string;
+  emoji: string | null;
+  archived: boolean;
 }
 
 interface Counterparty {
@@ -94,6 +96,8 @@ dashboardRouter.get(
         direction:
           yourNetCents > 0 ? "owed" : yourNetCents < 0 ? "owes" : "settled",
         shareUrlPath: `/t/${trip.shareToken}`,
+        emoji: trip.emoji || null,
+        archived: !!trip.archived,
       });
 
       // ---- Counterparties (best-effort) ----

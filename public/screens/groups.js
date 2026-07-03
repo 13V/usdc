@@ -116,6 +116,7 @@
   }
   function coverFor(t) { return COVERS[seed(t.id) % COVERS.length]; }
   function groupEmoji(t, cov) {
+    if (t && t.emoji) return t.emoji;
     var n = (t.name || "").toLowerCase();
     if (/tokyo|japan|trip|travel|flight/.test(n)) return "🗼";
     if (/apart|rent|house|home|flat/.test(n)) return "🏠";
@@ -230,6 +231,36 @@
         '<div style="text-align:right; flex:none;">' + netBlock(t, false) + '</div>' +
       '</div>' +
     '</a>';
+  }
+
+  // dimmed compact card for an archived group (still tappable → open to unarchive).
+  function archivedCard(t) {
+    var cov = coverFor(t);
+    var emoji = groupEmoji(t, cov);
+    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; display:flex; align-items:center; gap:12px; background:#FFFDF7; border-radius:16px; border:1px solid rgba(43,33,24,0.08); padding:11px 14px; opacity:0.62;">' +
+      '<span style="width:40px; height:40px; border-radius:12px; background:' + cov.grad + '; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none;">' + emoji + '</span>' +
+      '<div style="flex:1; min-width:0;">' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); margin-top:2px;">' + app.esc(metaLine(t)) + '</div>' +
+      '</div>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.5); border:1px solid rgba(43,33,24,0.2); border-radius:999px; padding:3px 9px; flex:none;">archived</span>' +
+    '</a>';
+  }
+
+  // archived groups live behind a small "archived (N)" toggle at the bottom.
+  var showArchived = false;
+  function renderArchived(view, archivedTrips) {
+    var wrap = view.querySelector("#gArchivedWrap");
+    if (!wrap) return;
+    if (!archivedTrips.length) { wrap.innerHTML = ""; return; }
+    var link = '<div id="gArchToggle" style="text-align:center; margin-top:20px; cursor:pointer; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">' +
+      (showArchived ? "hide archived" : "archived (" + archivedTrips.length + ")") + '</div>';
+    var list = showArchived
+      ? '<div style="display:grid; grid-template-columns:1fr; gap:9px; margin-top:14px;">' + archivedTrips.map(archivedCard).join("") + '</div>'
+      : "";
+    wrap.innerHTML = link + list;
+    var toggle = wrap.querySelector("#gArchToggle");
+    if (toggle) toggle.onclick = function () { showArchived = !showArchived; renderArchived(view, archivedTrips); };
   }
 
   // bento rhythm: first = hero; every 3rd compact slot becomes a wide row.
@@ -471,9 +502,11 @@
     skeleton(view);
 
     // Primary source: the trips list (member/expense meta). Keep this wiring.
+    // Pull archived too (one fetch) and partition client-side, so the main list
+    // hides them behind an "archived (N)" toggle.
     var trips;
     try {
-      trips = await app.api.get("/api/trips?mine=1");
+      trips = await app.api.get("/api/trips?mine=1&archived=1");
     } catch (e) {
       view.innerHTML = '<div class="appscroll" style="padding:14px 18px 112px;">' +
         brandRow() + header(0) +
@@ -483,10 +516,13 @@
       return;
     }
     trips = Array.isArray(trips) ? trips : [];
-    if (!trips.length) { emptyState(view); return; }
+    var archivedTrips = trips.filter(function (t) { return t && t.archived; });
+    trips = trips.filter(function (t) { return !(t && t.archived); });
+    if (!trips.length && !archivedTrips.length) { emptyState(view); return; }
 
     // newest first
     trips.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    archivedTrips.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
 
     // Overlay cross-trip net balance for the hero + per-card +/− chips.
     // Best-effort: never crash the screen if this secondary call fails.
@@ -509,8 +545,10 @@
       (totals ? hero(totals, counterparties) : "") +
       bento(trips) +
       newGroupBtn() +
+      '<div id="gArchivedWrap"></div>' +
     '</div>';
     wireNew(view);
+    renderArchived(view, archivedTrips);
     if (app.enter) app.enter(view.querySelector(".appscroll"));
     // pull down at the top to re-pull trips + balances and re-render.
     app.pullToRefresh(view.querySelector(".appscroll"), function () { return signedIn(view); });

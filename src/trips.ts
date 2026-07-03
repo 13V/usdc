@@ -55,6 +55,8 @@ export interface Trip {
   members: TripMember[];
   expenses: TripExpense[];
   ownerUserId?: string;
+  emoji?: string;
+  archived?: boolean;
 }
 
 /** A persisted settlement transfer (Transfer + payment-request fields). */
@@ -130,6 +132,10 @@ if (!hasColumn("expenses", "voided")) {
 // Emoji + color avatar identity per member (additive; NULL → deterministic).
 if (!hasColumn("trip_members", "emoji")) db.exec("ALTER TABLE trip_members ADD COLUMN emoji TEXT");
 if (!hasColumn("trip_members", "color")) db.exec("ALTER TABLE trip_members ADD COLUMN color TEXT");
+// Group quality-of-life: a chosen group emoji + archive flag (additive). NULL
+// emoji → the client falls back to its name-derived emoji; archived defaults 0.
+if (!hasColumn("trips", "emoji")) db.exec("ALTER TABLE trips ADD COLUMN emoji TEXT");
+if (!hasColumn("trips", "archived")) db.exec("ALTER TABLE trips ADD COLUMN archived INTEGER NOT NULL DEFAULT 0");
 
 // ---- Row hydration ---------------------------------------------------------
 
@@ -175,6 +181,8 @@ function buildTrip(row: any, members: TripMember[], expenses: TripExpense[]): Tr
     members,
     expenses,
     ownerUserId: row.owner_user_id ?? undefined,
+    emoji: row.emoji ?? undefined,
+    archived: row.archived == null ? false : !!Number(row.archived),
   };
 }
 
@@ -485,6 +493,65 @@ export async function updateMember(
       memberId,
       tripId
     );
+  }
+  return (await getTrip(tripId)) as Trip;
+}
+
+/**
+ * Update group-level fields: name, chosen emoji, or archived flag. Only the
+ * provided fields change. Emoji is capped at 8 chars (same as member emoji);
+ * an empty emoji clears it back to the name-derived fallback.
+ */
+export async function updateTrip(
+  tripId: string,
+  patch: { name?: string; emoji?: string | null; archived?: boolean }
+): Promise<Trip> {
+  const trip = await getTrip(tripId);
+  if (!trip) throw new Error("updateTrip: trip not found");
+
+  const name =
+    patch.name !== undefined ? String(patch.name).trim() || trip.name : trip.name;
+  const emoji =
+    patch.emoji !== undefined
+      ? (patch.emoji ? String(patch.emoji).slice(0, 8) : null)
+      : trip.emoji ?? null;
+  const archived =
+    patch.archived !== undefined ? (patch.archived ? 1 : 0) : trip.archived ? 1 : 0;
+
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("trips")
+      .update({ name, emoji, archived })
+      .eq("id", tripId);
+    if (error) throw new Error(`updateTrip: ${error.message}`);
+  } else {
+    db.prepare("UPDATE trips SET name = ?, emoji = ?, archived = ? WHERE id = ?").run(
+      name,
+      emoji,
+      archived,
+      tripId
+    );
+  }
+  return (await getTrip(tripId)) as Trip;
+}
+
+/**
+ * Hard-remove a member slot. Callers MUST guard first that the member has a zero
+ * balance and appears in no expense (paidBy/participants) — money history must
+ * never dangle a reference to a deleted member.
+ */
+export async function removeMember(tripId: string, memberId: string): Promise<Trip> {
+  const trip = await getTrip(tripId);
+  if (!trip) throw new Error("removeMember: trip not found");
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("trip_members")
+      .delete()
+      .eq("id", memberId)
+      .eq("trip_id", tripId);
+    if (error) throw new Error(`removeMember: ${error.message}`);
+  } else {
+    db.prepare("DELETE FROM trip_members WHERE id = ? AND trip_id = ?").run(memberId, tripId);
   }
   return (await getTrip(tripId)) as Trip;
 }

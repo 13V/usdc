@@ -15,6 +15,17 @@
   var S = null; // { view, tripId, state, transfer, toName, fromName, trip, pollTimer, polling, tries }
 
   function esc(s) { return app.esc(s); }
+  // parse a dollar string -> integer cents (best effort, never NaN-explodes).
+  // Mirrors screens/new.js toCents so money parsing is consistent app-wide.
+  function toCents(str) {
+    var v = String(str == null ? "" : str).replace(/[^0-9.]/g, "");
+    var parts = v.split(".");
+    if (parts.length > 2) v = parts[0] + "." + parts.slice(1).join("");
+    var n = parseFloat(v);
+    if (!isFinite(n) || n < 0) return 0;
+    return Math.round(n * 100);
+  }
+  function dollarsOf(cents) { return (Math.max(0, cents | 0) / 100).toFixed(2); }
   function trunc(s) {
     s = String(s || "");
     if (s.length <= 11) return s;
@@ -138,6 +149,68 @@
       '<span style="font-size:' + decPx + 'px; opacity:.5;">−$</span>' + whole + '<span style="font-size:' + decPx + 'px; opacity:.5;">' + dec + '</span></div>';
   }
 
+  // ---- partial payments -------------------------------------------------------
+  // "pay part of it": an inline amount input clamped to (0, owed]. Choosing a
+  // partial re-builds the settlement leg at that amount server-side (fresh
+  // reference + Solana Pay url), so every pay path here targets the partial cents.
+  // The debt is expense-derived, so the remainder stays owed for a later settle.
+  function partialAffordance() {
+    var full = S.fullOwedCents != null ? S.fullOwedCents : Math.abs((S.transfer && S.transfer.amountCents) || 0);
+    var isPartial = S.partialCents != null && S.partialCents < full;
+    if (isPartial) {
+      return '<div style="margin-top:12px; display:flex; flex-direction:column; align-items:center; gap:4px;">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#e0a63a;">paying $' + dollarsOf(S.partialCents) + ' of $' + dollarsOf(full) + '</span>' +
+        '<span id="stPartialReset" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">pay the full amount instead</span>' +
+      '</div>';
+    }
+    return '<div style="margin-top:12px;">' +
+      '<span id="stPartialToggle" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:#2775CA; cursor:pointer;">pay part of it →</span>' +
+      '<div id="stPartialBox" style="display:none; margin-top:10px;">' +
+        '<div style="display:flex; align-items:center; justify-content:center; gap:8px;">' +
+          '<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; border:2px solid #2B2118; border-radius:12px; box-shadow:2px 3px 0 rgba(43,33,24,0.85); padding:8px 12px;">' +
+            '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(43,33,24,0.5);">$</span>' +
+            '<input id="stPartialInput" inputmode="decimal" enterkeyhint="done" placeholder="0.00" style="width:80px; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#2B2118;">' +
+          '</div>' +
+          '<button id="stPartialSet" style="appearance:none; border:2px solid #2B2118; cursor:pointer; padding:0 14px; min-height:40px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">set</button>' +
+        '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:7px;">the rest stays owed</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  // Re-build the current leg at a partial amount (clamped to what's owed).
+  function rebuildPartial(cents) {
+    if (!S || !S.transfer) return;
+    var full = S.fullOwedCents != null ? S.fullOwedCents : Math.abs(S.transfer.amountCents || 0);
+    cents = Math.max(1, Math.min(cents | 0, full));
+    var restore = busy(document.getElementById("stPartialSet"), "setting…");
+    app.api.post("/api/trips/" + encodeURIComponent(S.tripId) + "/settle", {
+      partial: { from: S.transfer.from, to: S.transfer.to, amountCents: cents },
+    }).then(function (trip) {
+      S.trip = trip;
+      var mine = findMyTransfer(trip);
+      if (mine) S.transfer = mine;
+      S.partialCents = cents < full ? cents : null;
+      go("ready");
+    }).catch(function (err) {
+      restore();
+      app.toast((err && err.message) || "couldn't set that amount");
+    });
+  }
+
+  // Reset back to the full owed amount (plain rebuild, no partial override).
+  function rebuildFull() {
+    if (!S) return;
+    app.api.post("/api/trips/" + encodeURIComponent(S.tripId) + "/settle", {})
+      .then(function (trip) {
+        S.trip = trip;
+        var mine = findMyTransfer(trip);
+        if (mine) S.transfer = mine;
+        S.partialCents = null;
+        go("ready");
+      }).catch(function (err) { app.toast((err && err.message) || "couldn't reset"); });
+  }
+
   // ---- STATE: ready / choose (lifted FRAME 1) ----------------------------------
   function renderReady() {
     var t = S.transfer;
@@ -165,6 +238,7 @@
               '<span style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.5);">you owe ' + esc(S.toName) + '</span>' +
               '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(43,33,24,0.4); border:1px solid rgba(43,33,24,0.16); border-radius:5px; padding:1px 5px;">IN USDC</span>' +
             '</div>' +
+            partialAffordance() +
           '</div>' +
           // pay paths
           '<div style="display:flex; flex-direction:column; gap:9px; margin-top:18px;">' +
@@ -210,6 +284,32 @@
         ) +
       '</div>';
     wireCancel();
+
+    // partial-payment controls
+    var pToggle = document.getElementById("stPartialToggle");
+    if (pToggle) pToggle.onclick = function () {
+      var box = document.getElementById("stPartialBox");
+      if (box) box.style.display = "block";
+      pToggle.style.display = "none";
+      var inp = document.getElementById("stPartialInput");
+      if (inp) inp.focus();
+    };
+    function commitPartial() {
+      var inp = document.getElementById("stPartialInput");
+      if (!inp) return;
+      var cents = toCents(inp.value);
+      var full = S.fullOwedCents != null ? S.fullOwedCents : Math.abs(t.amountCents || 0);
+      if (!(cents > 0)) { app.toast("enter an amount"); inp.focus(); return; }
+      if (cents > full) cents = full; // clamp to what's owed
+      rebuildPartial(cents);
+    }
+    var pSet = document.getElementById("stPartialSet");
+    if (pSet) pSet.onclick = function () { tap(); commitPartial(); };
+    var pInp = document.getElementById("stPartialInput");
+    if (pInp) pInp.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); commitPartial(); } };
+    var pReset = document.getElementById("stPartialReset");
+    if (pReset) pReset.onclick = function () { tap(); rebuildFull(); };
+
     var inapp = document.getElementById("stInApp");
     if (inapp) inapp.onclick = function () {
       tap();
@@ -634,6 +734,9 @@
       return;
     }
     S.transfer = mine;
+    // Remember the full owed amount so partial-payment clamping + "of $Y" labels
+    // survive a partial re-build (which shrinks S.transfer.amountCents).
+    if (S.fullOwedCents == null) S.fullOwedCents = Math.abs(mine.amountCents || 0);
     if (mine.paid) { go("settled"); return; }
     if (mine.needsWallet || !mine.url) {
       friendly("can't build a payment yet", "the person you owe hasn't added a wallet — nudge them to claim their spot.", "back to groups");
@@ -669,6 +772,7 @@
         view: view, tripId: tripId, state: "loading",
         transfer: null, trip: null, balanceCents: null,
         pollTimer: null, polling: false, tries: 0,
+        partialCents: null, fullOwedCents: null,
       };
       // keep toName fresh from whatever transfer is current
       Object.defineProperty(S, "toName", {

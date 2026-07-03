@@ -47,8 +47,11 @@ import {
   createTrip,
   getTrip,
   getTripByIdOrToken,
+  getTripByToken,
   addMember,
   updateMember,
+  updateTrip,
+  removeMember,
   addExpense,
   editExpense,
   deleteExpense,
@@ -97,6 +100,9 @@ import { chatRouter } from "./chat";
 import { reactionsRouter } from "./reactions";
 import { nudgesRouter } from "./nudges";
 import { pushRouter, sendPush } from "./push";
+// Growth loops: OG share cards (og.ts) + invite attribution (referrals.ts).
+import { ogMeta, tripShareHtml, OG_CARD_PATH } from "./og";
+import { referralsRouter, setRefCookie, readRefCookie, recordReferral } from "./referrals";
 
 const PORT = Number(process.env.PORT || 3000);
 const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
@@ -250,6 +256,7 @@ app.use(chatRouter);
 app.use(reactionsRouter);
 app.use(nudgesRouter);
 app.use(pushRouter);
+app.use(referralsRouter);
 
 // ---- Auth & identity (progressive, optional) ------------------------------
 
@@ -983,6 +990,21 @@ function canMutateExpense(req: Request, trip: Trip, paidBy: string): boolean {
   return !!payer && payer.userId === uid;
 }
 
+/**
+ * Group-settings auth (rename / emoji / archive / remove-member): the trip owner
+ * OR any claimed member may administer the group. Keyless/anonymous trips stay
+ * open to any authorized (share-token) caller, matching the collaborative
+ * expense model.
+ */
+function canAdminTrip(req: Request, trip: Trip): boolean {
+  if (!authorizeTrip(req, trip)) return false;
+  if (!trip.ownerUserId) return true; // keyless/anonymous — open collaboration
+  const uid = req.userId;
+  if (!uid) return false;
+  if (trip.ownerUserId === uid) return true;
+  return trip.members.some((m) => m.userId === uid);
+}
+
 /** Validate a Solana wallet string; throws a 400-style Error on bad input. */
 function assertValidWallet(wallet: string): void {
   try {
@@ -1036,7 +1058,7 @@ async function serializeSettlement(trip: Trip) {
   return { transfers, allPaid, createdAt: stored.createdAt };
 }
 
-async function serializeTrip(trip: Trip) {
+async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
   const memberIds = trip.members.map((m) => m.id);
   const balances = computeBalances(
     memberIds,
@@ -1052,10 +1074,19 @@ async function serializeTrip(trip: Trip) {
     id: trip.id,
     name: trip.name,
     shareToken: trip.shareToken,
-    shareUrlPath: `/t/${trip.shareToken}`,
+    // Invite attribution: when an authenticated user loads their trip to share
+    // it, stamp their id onto the share path so a friend who opens the link gets
+    // a `divvy_ref` cookie and this user gets credit. The URL is capability-safe
+    // (userId is already surfaced as ownerUserId/member.userId), self-referrals
+    // are dropped at record time.
+    shareUrlPath: `/t/${trip.shareToken}${
+      opts && opts.refUserId ? `?ref=${encodeURIComponent(opts.refUserId)}` : ""
+    }`,
     cluster: trip.cluster,
     createdAt: trip.createdAt,
     ownerUserId: trip.ownerUserId || null,
+    emoji: trip.emoji || null,
+    archived: !!trip.archived,
     members: await Promise.all(trip.members.map(async (m) => {
       // A linked member shows that account's chosen emoji/color; otherwise the
       // member's own deterministic identity.
@@ -1132,7 +1163,7 @@ app.post("/api/trips", async (req: Request, res: Response) => {
     }
     // Record ownership so this trip shows up in "my trips".
     const trip = await createTrip(name, cluster, members, req.userId);
-    res.json(await serializeTrip(trip));
+    res.json(await serializeTrip(trip, { refUserId: req.userId }));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
@@ -1161,13 +1192,19 @@ function tripSummary(trip: Trip) {
     totalFmt: fmt(totalCents),
     settledUp: balances.every((b) => b.cents === 0),
     ownerUserId: trip.ownerUserId || null,
+    emoji: trip.emoji || null,
+    archived: !!trip.archived,
   };
 }
 
 app.get("/api/trips", requireAuth, async (req: Request, res: Response) => {
   // Privacy-scoped: only trips the caller owns or has claimed a spot in.
   // (?mine is accepted harmlessly; it's now the only behavior.)
-  const trips = await listTripsForUser(req.userId as string);
+  // Archived trips are hidden by default; ?archived=1 includes them (so the
+  // groups screen can offer an "archived (N)" toggle from a single fetch).
+  const includeArchived = req.query.archived === "1" || req.query.archived === "true";
+  let trips = await listTripsForUser(req.userId as string);
+  if (!includeArchived) trips = trips.filter((t) => !t.archived);
   res.json(trips.map(tripSummary));
 });
 
@@ -1180,8 +1217,87 @@ app.get("/api/trips/:idOrToken", async (req: Request, res: Response) => {
   if (!pathIsToken && !authorizeTrip(req, trip)) {
     return res.status(403).json({ error: "not authorized for this trip" });
   }
-  // They have access, so the full trip MAY include the shareToken.
-  res.json(await serializeTrip(trip));
+  // They have access, so the full trip MAY include the shareToken. Stamp the
+  // requester's ref onto shareUrlPath so a link they share attributes back.
+  res.json(await serializeTrip(trip, { refUserId: req.userId }));
+});
+
+// Group settings: rename, set emoji, archive/unarchive. Owner or any claimed
+// member (see canAdminTrip). Only provided fields change.
+app.patch("/api/trips/:id", async (req: Request, res: Response) => {
+  try {
+    const existing = await getTrip(req.params.id);
+    if (!existing) return res.status(404).json({ error: "not found" });
+    if (!canAdminTrip(req, existing)) {
+      return res.status(403).json({ error: "not authorized for this trip" });
+    }
+    const body = req.body as { name?: string; emoji?: string; archived?: boolean };
+    const patch: { name?: string; emoji?: string | null; archived?: boolean } = {};
+    if (body.name !== undefined) {
+      patch.name = assertLen(String(body.name), "trip name", 1, MAX_TRIP_NAME);
+    }
+    if (body.emoji !== undefined) {
+      // Same constraint style as member emoji: coerce + cap at 8 chars; empty clears.
+      const e = String(body.emoji || "").slice(0, 8);
+      patch.emoji = e || null;
+    }
+    if (body.archived !== undefined) {
+      patch.archived = !!body.archived;
+    }
+    const trip = await updateTrip(req.params.id, patch);
+    res.json(await serializeTrip(trip));
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+// Remove a member slot. Allowed for the trip owner OR a member removing
+// THEMSELVES. HARD RULE: refuse (409) if that member carries a nonzero balance
+// or appears in any expense (paidBy/participants) — money history must never
+// dangle a reference to a deleted member.
+app.delete("/api/trips/:id/members/:mid", async (req: Request, res: Response) => {
+  try {
+    const existing = await getTrip(req.params.id);
+    if (!existing) return res.status(404).json({ error: "not found" });
+    if (!authorizeTrip(req, existing)) {
+      return res.status(403).json({ error: "not authorized for this trip" });
+    }
+    const member = existing.members.find((m) => m.id === req.params.mid);
+    if (!member) return res.status(404).json({ error: "member not found" });
+
+    const uid = req.userId;
+    const isOwner = !!uid && existing.ownerUserId === uid;
+    const isSelf = !!uid && member.userId === uid;
+    // Keyless/anonymous trips have no owner/identity to protect — stay open.
+    const openTrip = !existing.ownerUserId;
+    if (!isOwner && !isSelf && !openTrip) {
+      return res.status(403).json({ error: "only the owner can remove another member" });
+    }
+
+    // Guard: no dangling money history.
+    const inExpense = existing.expenses.some(
+      (e) => e.paidBy === member.id || e.participants.includes(member.id)
+    );
+    const balances = computeBalances(
+      existing.members.map((m) => m.id),
+      existing.expenses.map((e) => ({
+        amountCents: e.amountCents,
+        paidBy: e.paidBy,
+        participants: e.participants,
+      }))
+    );
+    const bal = balances.find((b) => b.memberId === member.id);
+    if (inExpense || (bal && bal.cents !== 0)) {
+      return res.status(409).json({
+        error: "this person is in the money history — settle up and remove their tabs first",
+      });
+    }
+
+    const trip = await removeMember(req.params.id, req.params.mid);
+    res.json(await serializeTrip(trip));
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
 });
 
 app.post("/api/trips/:id/members", async (req: Request, res: Response) => {
@@ -1265,7 +1381,14 @@ app.post("/api/trips/:id/members/:mid/claim", requireAuth, async (req: Request, 
     const wallet = await getPrimaryWallet(userId);
     if (!wallet) return res.status(400).json({ error: "link a wallet first" });
     const trip = await claimMember(req.params.id, req.params.mid, userId, wallet);
-    res.json(await serializeTrip(trip));
+    // Invite attribution: claiming a slot is an identity moment. If this visitor
+    // arrived via a ref link (divvy_ref cookie), credit the inviter — first wins,
+    // never a self-referral. Best-effort: never let attribution break a claim.
+    try {
+      const ref = readRefCookie(req);
+      if (ref) await recordReferral(ref, userId, "trip_claim");
+    } catch { /* attribution is best-effort */ }
+    res.json(await serializeTrip(trip, { refUserId: req.userId }));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
   }
@@ -1407,11 +1530,43 @@ app.post("/api/trips/:id/settle", moneyRateLimit, async (req: Request, res: Resp
     );
     const plan = minimalSettlement(balances);
 
-    // Signature pins the settlement to the current set of balances. If nothing
-    // material changed, reuse the stored transfers (preserving references/urls/paid).
-    const signature = JSON.stringify(
-      [...balances].sort((a, b) => (a.memberId < b.memberId ? -1 : a.memberId > b.memberId ? 1 : 0))
-    );
+    // Partial payment: the payer may choose to pay LESS than a full leg. We shrink
+    // that one leg's amount so the Solana Pay URL + on-chain validation target the
+    // partial cents. The debt is expense-derived (settlements never mutate the
+    // ledger), so the remainder stays owed — a later full /settle regenerates the
+    // outstanding leg. Only the payer themselves (or the owner / a keyless trip)
+    // may shrink a leg; the amount is clamped to (0, owed].
+    const partial = (req.body && (req.body as { partial?: unknown }).partial) as
+      | { from?: string; to?: string; amountCents?: number }
+      | undefined;
+    let partialTag = "";
+    if (partial && partial.to !== undefined) {
+      const pTo = String(partial.to || "");
+      const pFrom = partial.from !== undefined ? String(partial.from || "") : null;
+      const amt = Number(partial.amountCents);
+      const idx = plan.findIndex((e) => e.to === pTo && (pFrom == null || e.from === pFrom));
+      if (idx < 0) return res.status(400).json({ error: "no matching amount to settle partially" });
+      const edge = plan[idx];
+      if (!Number.isInteger(amt) || amt <= 0 || amt > edge.amountCents) {
+        return res.status(400).json({ error: "partial amount must be between 1 cent and the amount owed" });
+      }
+      const payer = trip.members.find((m) => m.id === edge.from);
+      const isOwner = !!req.userId && trip.ownerUserId === req.userId;
+      const isSelf = !!req.userId && !!payer && payer.userId === req.userId;
+      if (trip.ownerUserId && !isOwner && !isSelf) {
+        return res.status(403).json({ error: "you can only settle your own share" });
+      }
+      plan[idx] = { ...edge, amountCents: amt };
+      partialTag = `|partial:${edge.from}->${edge.to}:${amt}`;
+    }
+
+    // Signature pins the settlement to the current set of balances (plus any
+    // partial-amount override). If nothing material changed, reuse the stored
+    // transfers (preserving references/urls/paid).
+    const signature =
+      JSON.stringify(
+        [...balances].sort((a, b) => (a.memberId < b.memberId ? -1 : a.memberId > b.memberId ? 1 : 0))
+      ) + partialTag;
     const existing = await getSettlement(trip.id);
 
     // Index the prior settlement's legs by identity (from→to, amount). When the
@@ -1598,8 +1753,28 @@ app.get("/api/receipts/:ref", requireAuth, async (req: Request, res: Response) =
 
 // Shareable SPA link: the frontend reads the token from the path. Declared
 // before any catch-all; it doesn't shadow /api or static assets.
-app.get("/t/:token", (_req: Request, res: Response) => {
-  res.sendFile(path.resolve(process.cwd(), "public/index.html"));
+app.get("/t/:token", async (req: Request, res: Response) => {
+  // Invite attribution: if the link carried ?ref, drop the 30d divvy_ref cookie
+  // so a signup/claim from this device credits the inviter.
+  if (req.query.ref) setRefCookie(res, req.query.ref);
+  const base = `${req.protocol}://${req.get("host")}`;
+  // Server-render a trip-specific OG card into the SPA shell so the link unfurls
+  // beautifully in iMessage/WhatsApp/Slack/Twitter. Falls back to the plain shell
+  // if the token is unknown (the SPA renders its own not-found state).
+  const trip = await getTripByToken(req.params.token);
+  if (!trip) {
+    return res.sendFile(path.resolve(process.cwd(), "public/index.html"));
+  }
+  const totalCents = trip.expenses.reduce((a, e) => a + e.amountCents, 0);
+  res.type("html").send(
+    tripShareHtml({
+      name: trip.name,
+      token: trip.shareToken,
+      memberCount: trip.members.length,
+      totalCents,
+      base,
+    })
+  );
 });
 
 // ---- Pay page (server-rendered) -------------------------------------------
@@ -1609,6 +1784,7 @@ app.get("/t/:token", (_req: Request, res: Response) => {
 app.get("/pay/:id", async (req: Request, res: Response) => {
   const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).send("Tab not found");
+  if (req.query.ref) setRefCookie(res, req.query.ref); // invite attribution
   const base = `${req.protocol}://${req.get("host")}`;
   res.type("html").send(renderBillLanding(bill, base));
 });
@@ -1616,13 +1792,15 @@ app.get("/pay/:id", async (req: Request, res: Response) => {
 app.get("/pay/:id/:name", async (req: Request, res: Response) => {
   const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).send("Bill not found");
+  if (req.query.ref) setRefCookie(res, req.query.ref); // invite attribution
   const name = decodeURIComponent(req.params.name);
   const p = bill.participants.find((x) => x.name === name);
   if (!p) return res.status(404).send("Participant not found");
 
   const qr = await qrToDataUrl(p.url);
   const cards = cardOptions({ walletAddress: bill.collector, amountCents: p.amountCents });
-  res.type("html").send(renderPayPage(bill, name, p.url, p.amountCents, qr, cards, p.paid));
+  const base = `${req.protocol}://${req.get("host")}`;
+  res.type("html").send(renderPayPage(bill, name, p.url, p.amountCents, qr, cards, p.paid, base));
 });
 
 // ---- helpers --------------------------------------------------------------
@@ -1696,7 +1874,7 @@ function renderBillLanding(bill: Bill, baseUrl = ""): string {
     out > 0
       ? `${paidCount}/${bill.participants.length} paid · ${fmt(out)} left. Pay your share in seconds — no app, no crypto, just dollars.`
       : `All settled ✓ — ${esc(bill.title)} on Divvy.`;
-  const ogImage = `${baseUrl}/og.png`;
+  const ogImage = `${baseUrl}${OG_CARD_PATH}`;
   const ogUrl = `${baseUrl}/pay/${esc(bill.id)}`;
   return `<!doctype html>
 <html lang="en"><head>
@@ -1769,14 +1947,25 @@ function renderPayPage(
   amountCents: number,
   qrDataUrl: string,
   cards: { moonpay: string; coinbase: string },
-  paid: boolean
+  paid: boolean,
+  baseUrl = ""
 ): string {
+  // Rich link preview: "<name>, you owe <amount> 🧾" so the shared pay link
+  // unfurls with the ask front-and-center. ogMeta escapes every value.
+  const shareMeta = ogMeta({
+    title: paid
+      ? `${name} paid ${fmt(amountCents)} ✓`
+      : `${name}, you owe ${fmt(amountCents)} 🧾`,
+    description: `tap to pay your share of ${bill.title} on divvy`,
+    imageUrl: `${baseUrl}${OG_CARD_PATH}`,
+    url: `${baseUrl}/pay/${encodeURIComponent(bill.id)}/${encodeURIComponent(name)}`,
+  });
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${esc(bill.title)} — ${esc(name)}'s share</title>
+${shareMeta}
 <style>
   :root { color-scheme: light dark; }
   body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 24px;

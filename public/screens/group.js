@@ -98,8 +98,9 @@
     if (m && m.color) return m.color;
     return MEMBER_GRAD[hash((m && (m.id || m.name)) || "") % MEMBER_GRAD.length];
   }
-  // a friendly group emoji derived from the trip's name/cluster (api has none)
+  // the group's chosen emoji, else a friendly one derived from name/cluster
   function groupEmoji(t) {
+    if (t && t.emoji) return t.emoji;
     var n = String((t && (t.name || t.cluster)) || "").toLowerCase();
     if (/tokyo|japan|trip|travel|flight/.test(n)) return "🗼";
     if (/apart|rent|house|home|flat/.test(n)) return "🏠";
@@ -138,7 +139,7 @@
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
       '<div style="display:flex; align-items:center; gap:7px; min-width:0;">' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((trip && trip.name) || "group") + '</span>' +
-        '<span style="font-size:16px;">' + emoji + '</span>' +
+        '<span id="gEmoji" style="font-size:16px;">' + emoji + '</span>' +
       '</div>' +
       '<div id="gMore" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
@@ -655,6 +656,170 @@
     }
   }
 
+  // ====================== group settings (app.sheet) ======================
+  // the group emoji palette (chosen emoji is highlighted; current is included)
+  var GROUP_EMOJI = ["🧾", "🍜", "🏝️", "🎟️", "🏠", "🚗", "🍻", "⛺", "🎉", "🌮", "✈️", "🛒"];
+
+  // a member can be removed only with a clean money history: zero balance AND
+  // absent from every expense (mirrors the server's 409 guard).
+  function memberRemovable(trip, m) {
+    var bal = null;
+    (trip.balances || []).forEach(function (b) { if (b.memberId === m.id) bal = b; });
+    if (bal && bal.cents !== 0) return false;
+    var exps = trip.expenses || [];
+    for (var i = 0; i < exps.length; i++) {
+      var e = exps[i];
+      if (e.paidBy === m.id) return false;
+      if ((e.participants || []).indexOf(m.id) >= 0) return false;
+    }
+    return true;
+  }
+
+  function openSettings(trip) {
+    var me = findMe(trip);
+    var cur = groupEmoji(trip);
+    var emojiPool = GROUP_EMOJI.slice();
+    if (emojiPool.indexOf(cur) < 0) emojiPool.unshift(cur);
+
+    var emojiChips = emojiPool.map(function (em) {
+      var on = em === cur;
+      return '<button class="gsEmoji" data-em="' + app.esc(em) + '" style="appearance:none; cursor:pointer; width:44px; height:44px; border-radius:13px; background:' +
+        (on ? "#3DE8C7" : "#FFFDF7") + '; border:2px solid #2B2118; box-shadow:' + (on ? "3px 4px 0 rgba(43,33,24,0.85)" : "2px 3px 0 rgba(43,33,24,0.85)") +
+        '; font-size:22px; display:flex; align-items:center; justify-content:center; flex:none;">' + em + '</button>';
+    }).join("");
+
+    var memberRows = (trip.members || []).map(function (m) {
+      var canRemove = memberRemovable(trip, m);
+      var isMe = me && m.id === me.id;
+      var right;
+      if (canRemove) {
+        right = '<button class="gsRemove" data-mid="' + app.esc(m.id) + '" data-name="' + app.esc(m.name || "") + '" ' +
+          'style="appearance:none; cursor:pointer; border:1px solid rgba(255,107,94,0.5); background:rgba(255,107,94,0.1); color:#FF6B5E; border-radius:999px; padding:5px 12px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; flex:none;">remove</button>';
+      } else {
+        right = '<span style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.4); text-align:right; max-width:110px; flex:none;">in the money history</span>';
+      }
+      return '<div style="display:flex; align-items:center; gap:11px; padding:9px 2px;">' +
+        gavatar(m, 32) +
+        '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' +
+          app.esc(m.name || "someone") + (isMe ? ' <span style="color:rgba(43,33,24,0.4); font-size:12px;">· you</span>' : "") + '</span>' +
+        right +
+      '</div>';
+    }).join("");
+
+    var archived = !!trip.archived;
+    var archiveLabel = archived ? "unarchive group" : "archive group";
+
+    var html = '' +
+      '<h2 class="lower" style="font-size:22px; margin:2px 0 14px;">group settings</h2>' +
+      // rename
+      '<label style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">NAME</label>' +
+      '<div style="display:flex; gap:8px; margin-top:8px;">' +
+        '<input class="input" id="gsName" autocomplete="off" style="flex:1;" value="' + app.esc(trip.name || "") + '" placeholder="group name">' +
+        '<button id="gsSave" style="appearance:none; border:2px solid #2B2118; cursor:pointer; padding:0 16px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">save</button>' +
+      '</div>' +
+      // emoji
+      '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">EMOJI</label>' +
+      '<div id="gsEmojiRow" style="display:flex; flex-wrap:wrap; gap:9px; margin-top:9px;">' + emojiChips + '</div>' +
+      // members
+      '<label style="display:block; margin-top:20px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">MEMBERS</label>' +
+      '<div style="margin-top:6px; border:2px solid #2B2118; border-radius:16px; background:#FFFDF7; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:6px 12px;">' + memberRows + '</div>' +
+      // chat (keep the old ⋯ → chat path alive)
+      '<button id="gsChat" style="appearance:none; cursor:pointer; width:100%; margin-top:18px; min-height:48px; border-radius:14px; background:rgba(39,117,202,0.1); border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118;"><span style="font-size:16px;">💬</span> open chat</button>' +
+      // archive
+      '<button id="gsArchive" style="appearance:none; cursor:pointer; width:100%; margin-top:11px; min-height:48px; border-radius:14px; background:transparent; border:1px solid rgba(255,107,94,0.6); color:#FF6B5E; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px;">' + archiveLabel + '</button>';
+
+    var el = app.sheet(html);
+
+    // rename
+    var nameInp = el.querySelector("#gsName");
+    var saveBtn = el.querySelector("#gsSave");
+    if (saveBtn) saveBtn.onclick = function () {
+      var v = (nameInp.value || "").trim();
+      if (!v) { app.toast("give it a name"); nameInp.focus(); return; }
+      if (v === trip.name) { app.toast("that's already the name"); return; }
+      saveBtn.disabled = true; saveBtn.textContent = "…";
+      app.api.patch("/api/trips/" + encodeURIComponent(trip.id), { name: v })
+        .then(function (fresh) {
+          app.haptic && app.haptic(20);
+          app.toast("renamed ✨");
+          app.closeSheet();
+          paint(view_, fresh);
+        })
+        .catch(function (err) { saveBtn.disabled = false; saveBtn.textContent = "save"; app.toast((err && err.message) || "couldn't rename"); });
+    };
+
+    // emoji picker — set live, keep the sheet open so you can try a few
+    Array.prototype.forEach.call(el.querySelectorAll(".gsEmoji"), function (btn) {
+      btn.onclick = function () {
+        var em = btn.getAttribute("data-em");
+        app.api.patch("/api/trips/" + encodeURIComponent(trip.id), { emoji: em })
+          .then(function (fresh) {
+            app.haptic && app.haptic(15);
+            trip.emoji = fresh.emoji || em;
+            // re-highlight in the sheet
+            Array.prototype.forEach.call(el.querySelectorAll(".gsEmoji"), function (b) {
+              var on = b.getAttribute("data-em") === em;
+              b.style.background = on ? "#3DE8C7" : "#FFFDF7";
+              b.style.boxShadow = on ? "3px 4px 0 rgba(43,33,24,0.85)" : "2px 3px 0 rgba(43,33,24,0.85)";
+            });
+            // live-update the header emoji
+            var hdr = document.getElementById("gEmoji");
+            if (hdr) hdr.textContent = trip.emoji;
+          })
+          .catch(function (err) { app.toast((err && err.message) || "couldn't set emoji"); });
+      };
+    });
+
+    // remove member
+    Array.prototype.forEach.call(el.querySelectorAll(".gsRemove"), function (btn) {
+      btn.onclick = function () {
+        var mid = btn.getAttribute("data-mid");
+        var nm = btn.getAttribute("data-name") || "them";
+        btn.disabled = true; btn.textContent = "…";
+        app.api.del("/api/trips/" + encodeURIComponent(trip.id) + "/members/" + encodeURIComponent(mid))
+          .then(function (fresh) {
+            app.haptic && app.haptic(20);
+            app.toast("removed " + nm.toLowerCase());
+            app.closeSheet();
+            paint(view_, fresh);
+          })
+          .catch(function (err) {
+            btn.disabled = false; btn.textContent = "remove";
+            // 409 → they're in the money history
+            app.toast((err && err.message) || "couldn't remove them");
+          });
+      };
+    });
+
+    // chat
+    var chatBtn = el.querySelector("#gsChat");
+    if (chatBtn) chatBtn.onclick = function () { app.closeSheet(); location.hash = "#/chat/" + encodeURIComponent(trip.id); };
+
+    // archive / unarchive — confirm by second tap (mirrors the delete pattern)
+    var arch = el.querySelector("#gsArchive");
+    if (arch) {
+      var armed = false, armTimer = null;
+      arch.onclick = function () {
+        if (!archived && !armed) {
+          armed = true;
+          arch.textContent = "tap again to archive";
+          armTimer = setTimeout(function () { armed = false; arch.textContent = archiveLabel; }, 3000);
+          return;
+        }
+        if (armTimer) clearTimeout(armTimer);
+        arch.disabled = true; arch.textContent = archived ? "unarchiving…" : "archiving…";
+        app.api.patch("/api/trips/" + encodeURIComponent(trip.id), { archived: !archived })
+          .then(function () {
+            app.haptic && app.haptic([20, 30, 20]);
+            app.closeSheet();
+            if (!archived) { app.toast("archived — find it under archived"); location.hash = "#/groups"; }
+            else { app.toast("unarchived ✨"); load(view_, trip.id); }
+          })
+          .catch(function (err) { arch.disabled = false; arch.textContent = archiveLabel; app.toast((err && err.message) || "couldn't update"); });
+      };
+    }
+  }
+
   // ====================== states ======================
   function skeleton(view) {
     var rows = "";
@@ -705,7 +870,7 @@
     }
 
     var more = document.getElementById("gMore");
-    if (more) more.onclick = function () { location.hash = "#/chat/" + encodeURIComponent(trip.id); };
+    if (more) more.onclick = function () { openSettings(trip); };
 
     // quick pills
     var chat = document.getElementById("gChat");

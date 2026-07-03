@@ -347,7 +347,9 @@
     }
     catch (e) { view.innerHTML = topbar() + '<div class="empty"><div class="title lower">couldn\'t load balances</div><div class="hint">' + app.esc(e.message) + "</div></div>"; return; }
     var t = d.totals || {}, net = t.netCents || 0, owed = t.owedCents || 0, owe = t.owesCents || 0;
-    var ppl = d.counterparties || [], grp = d.trips || [];
+    // Archived groups stay out of the home hub (they live behind the groups
+    // screen's "archived" toggle).
+    var ppl = d.counterparties || [], grp = (d.trips || []).filter(function (g) { return !(g && g.archived); });
     window.__grpCount = grp.length;
 
     // Quick-settle: if you owe money in EXACTLY one group, the hero's settle

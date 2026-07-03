@@ -80,6 +80,34 @@
       '</div>';
   }
 
+  // ── invites (friends brought) ────────────────────────────────────────────────
+  // Growth loop: GET /api/me/invites → { count } of friends this user brought to
+  // Divvy via their share links. A little journal chip, shown only when count > 0
+  // (so a zero never nags). Mirrors the streak chip's look + wiring pattern.
+  function invitesChipHtml(n) {
+    return '' +
+      '<div style="display:inline-flex; align-items:center; gap:8px; padding:6px 12px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); transform:rotate(1deg);">' +
+        '<span style="font-size:14px; line-height:1;">🌱</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; letter-spacing:.4px; color:#2B2118;">friends brought: ' + n + '</span>' +
+      '</div>';
+  }
+
+  // best-effort: fill the invites slot after render when count > 0. Non-blocking;
+  // silent if the endpoint is missing/empty. Same shape as wireStreak/wireNotifBadge.
+  function wireInvites() {
+    var slot = document.getElementById("yInvitesSlot");
+    if (!slot) return;
+    Promise.resolve().then(function () { return app.api.get("/api/me/invites"); })
+      .then(function (res) {
+        var n = res && res.count;
+        if (typeof n !== "number" || !(n > 0)) return;
+        if (!document.body.contains(slot)) return; // re-rendered out from under us
+        slot.style.margin = "10px 2px 0";
+        slot.innerHTML = invitesChipHtml(n);
+      })
+      .catch(function () { /* endpoint missing or failed — leave slot empty */ });
+  }
+
   // best-effort: fill the streak slot after render if the streak is >= 2. Mirrors
   // wireNotifBadge — non-blocking and silent if the activity feed is empty/absent.
   function wireStreak() {
@@ -294,6 +322,8 @@
           // settle-streak chip slot — filled by wireStreak() only when streak >= 2
           // (stays a zero-height empty div otherwise, so it never shows a sad zero).
           '<div id="yStreakSlot"></div>' +
+          // invites chip slot — filled by wireInvites() only when count > 0.
+          '<div id="yInvitesSlot"></div>' +
           balanceCard(balance) +
           settingsList() +
           signOutCard() +
@@ -305,6 +335,7 @@
     wireBalance();
     wireSettings();
     wireStreak();     // non-blocking; drops in the settle-streak chip when >= 2
+    wireInvites();    // non-blocking; drops in the "friends brought: N" chip when > 0
     wireNotifBadge(); // non-blocking; patches an unread badge in after render
     if (app.countUp && typeof balance === "number") {
       var balEl = document.getElementById("yBalance");

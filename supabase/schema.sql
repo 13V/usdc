@@ -41,6 +41,11 @@ create table if not exists trips (
   created_at    text not null,
   owner_user_id text
 );
+-- Group quality-of-life (src/trips.ts): a chosen group emoji + archive flag.
+-- Additive: existing rows keep NULL emoji (client falls back to name-derived)
+-- and archived = 0.
+alter table trips add column if not exists emoji text;
+alter table trips add column if not exists archived integer not null default 0;
 create index if not exists trips_owner_idx on trips (owner_user_id);
 create index if not exists trips_created_at_idx on trips (created_at desc);
 
@@ -207,6 +212,19 @@ create table if not exists push_subscriptions (
   created_at text not null
 );
 create index if not exists push_subs_user_idx on push_subscriptions (user_id);
+
+-- ---- referrals (src/referrals.ts) -----------------------------------------
+-- Invite attribution: who brought whom. One row per invited user (first inviter
+-- wins — invited_user_id is UNIQUE). Mirrors the SQLite CREATE TABLE in
+-- src/referrals.ts. Separate table from trips; no trips-schema coupling.
+create table if not exists referrals (
+  id              text primary key,
+  inviter_user_id text not null,
+  invited_user_id text not null unique,
+  created_at      text not null,
+  source          text
+);
+create index if not exists referrals_inviter_idx on referrals (inviter_user_id);
 
 -- ---- additive column patches ----------------------------------------------
 -- `create table if not exists` above will NOT add columns to a table that
