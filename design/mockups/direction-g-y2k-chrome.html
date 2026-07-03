@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/fonts.css">
+<style>
+  * { margin:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+  body { color:#1A1030; font-family:'General Sans',sans-serif; height:100vh; overflow:hidden;
+    background:linear-gradient(160deg,#C7E5FF 0%,#E4D4FF 34%,#FFD6EC 66%,#CFF7EA 100%); }
+  .disp { font-family:'Clash Display','General Sans',sans-serif; font-weight:600; }
+  .mono { font-family:'Space Mono',monospace; }
+  .bubble { background:rgba(255,255,255,0.55); border:1px solid rgba(255,255,255,0.9);
+    box-shadow:0 14px 34px rgba(80,50,140,0.18), inset 0 2px 6px rgba(255,255,255,0.9); border-radius:26px;
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .chrome { background:linear-gradient(178deg,#FDFDFF 0%,#C9CEDC 38%,#8E96AC 50%,#E6E9F2 62%,#FFFFFF 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 2px 1px rgba(30,20,60,0.35)); }
+  .spark { position:absolute; color:#fff; text-shadow:0 0 8px rgba(255,255,255,0.9); }
+</style></head><body>
+<div style="position:relative; padding:62px 20px 0; display:flex; flex-direction:column; height:100%;">
+  <span class="spark" style="top:120px; right:34px; font-size:22px;">✦</span>
+  <span class="spark" style="top:300px; left:26px; font-size:14px;">✦</span>
+  <span class="spark" style="top:520px; right:60px; font-size:16px;">✧</span>
+
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <span class="disp chrome" style="font-size:30px; letter-spacing:-1px; font-weight:700;">div/vy</span>
+    <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(150deg,#FFC65C,#FF6B5E);border:2.5px solid #fff;box-shadow:0 6px 18px rgba(255,107,94,0.4);display:flex;align-items:center;justify-content:center;font-size:20px;">🦊</div>
+  </div>
+
+  <!-- hero: glossy bubble + liquid chrome money -->
+  <div class="bubble" style="margin-top:20px; padding:26px 24px; text-align:center; position:relative; overflow:hidden;">
+    <div style="position:absolute; left:12%; top:8px; right:12%; height:26px; border-radius:999px; background:linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0)); "></div>
+    <div class="mono" style="font-size:11px; letter-spacing:2.5px; color:rgba(26,16,48,0.55);">ur owed ✨</div>
+    <div class="mono chrome" style="font-weight:700; font-size:78px; line-height:1; letter-spacing:-3px; margin-top:8px;">$247.50</div>
+    <div class="mono" style="font-size:11px; color:rgba(26,16,48,0.5); margin-top:8px;">3 ppl · settles in seconds fr</div>
+    <div style="display:flex; gap:11px; margin-top:20px;">
+      <div class="disp" style="flex:1; background:linear-gradient(180deg,#8FD0FF,#2775CA); color:#fff; border:2px solid rgba(255,255,255,0.8); border-radius:999px; padding:14px 0; font-size:16px; box-shadow:0 10px 24px rgba(39,117,202,0.4), inset 0 2px 3px rgba(255,255,255,0.7);">settle up</div>
+      <div class="disp" style="flex:1; background:rgba(255,255,255,0.5); border:2px solid #fff; border-radius:999px; padding:14px 0; font-size:16px; color:#1A1030;">request</div>
+    </div>
+  </div>
+
+  <div style="display:flex; justify-content:space-between; align-items:baseline; margin:24px 6px 12px;">
+    <span class="disp" style="font-size:21px;">open tabs</span>
+    <span class="mono" style="font-size:11px; color:#7A3FD1;">2 live ✧</span>
+  </div>
+
+  <div class="bubble" style="padding:14px 16px; display:flex; align-items:center; gap:13px; border-radius:22px;">
+    <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(150deg,#FFE29A,#FF9A8C);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:0 5px 12px rgba(255,154,140,0.4);">🍜</div>
+    <div style="flex:1;"><div class="disp" style="font-size:16.5px;">dinner @ mano's</div><div class="mono" style="font-size:10.5px;color:rgba(26,16,48,0.5);margin-top:3px;">1 of 3 paid</div></div>
+    <span class="mono" style="font-weight:700;font-size:17px;color:#2775CA;">$64.20</span>
+  </div>
+  <div class="bubble" style="padding:14px 16px; display:flex; align-items:center; gap:13px; border-radius:22px; margin-top:12px;">
+    <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(150deg,#C9B4FF,#8FD0FF);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:21px;box-shadow:0 5px 12px rgba(143,120,255,0.4);">🏠</div>
+    <div style="flex:1;"><div class="disp" style="font-size:16.5px;">rent + utilities</div><div class="mono" style="font-size:10.5px;color:rgba(26,16,48,0.5);margin-top:3px;">due friday</div></div>
+    <span class="mono" style="font-weight:700;font-size:17px;color:#7A3FD1;">$183.30</span>
+  </div>
+
+  <div style="flex:1;"></div>
+
+  <div class="bubble" style="margin:0 8px 32px; border-radius:999px; display:flex; align-items:center; justify-content:space-around; padding:11px 12px;">
+    <span class="mono" style="font-size:10.5px; font-weight:700; color:#2775CA;">home</span>
+    <span class="mono" style="font-size:10.5px; color:rgba(26,16,48,0.45);">groups</span>
+    <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(180deg,#FDFDFF,#C9CEDC 45%,#8E96AC 55%,#E6E9F2);border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#1A1030;font-size:26px;font-weight:700;margin:-18px 0;box-shadow:0 10px 24px rgba(80,50,140,0.3);">+</div>
+    <span class="mono" style="font-size:10.5px; color:rgba(26,16,48,0.45);">feed</span>
+    <span class="mono" style="font-size:10.5px; color:rgba(26,16,48,0.45);">you</span>
+  </div>
+</div>
+</body></html>
