@@ -150,6 +150,37 @@ create table if not exists recurring (
 create index if not exists recurring_owner_idx on recurring (owner_user_id);
 create index if not exists recurring_due_idx on recurring (next_due);
 
+-- ---- shared subscriptions (src/subscriptions.ts) ---------------------------
+create table if not exists subscriptions (
+  id              text primary key,
+  owner_user_id   text not null,
+  trip_id         text not null,
+  name            text not null,
+  icon            text,
+  service         text,
+  amount_cents    bigint not null,
+  interval        text not null,
+  renewal_day     integer not null,
+  payer_member_id text not null,
+  members         jsonb not null,
+  shares          jsonb not null,
+  next_renewal    text not null,
+  created_at      text not null,
+  active          integer not null default 1
+);
+create index if not exists subscriptions_owner_idx on subscriptions (owner_user_id);
+create index if not exists subscriptions_trip_idx on subscriptions (trip_id);
+create index if not exists subscriptions_renewal_idx on subscriptions (next_renewal);
+
+create table if not exists subscription_renewals (
+  id              text primary key,
+  subscription_id text not null,
+  amount_cents    bigint not null,
+  period          text not null,
+  created_at      text not null
+);
+create index if not exists subscription_renewals_sub_idx on subscription_renewals (subscription_id);
+
 -- ---- trip chat messages (src/chat.ts) -------------------------------------
 create table if not exists trip_messages (
   id          text primary key,

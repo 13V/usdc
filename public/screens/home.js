@@ -402,6 +402,32 @@
       '<span style="display:flex; align-items:center; color:rgba(43,33,24,0.28); margin-left:2px; flex:none;"><svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
     '</a>';
   }
+  // ---- shared subscriptions (auto-split netflix & co — see screens/subscriptions.js) ----
+  // With none yet: a quiet dashed entry card. With some: a compact summary card
+  // showing the count and what they cost you per month.
+  function subsCard(subsData) {
+    var subs = (subsData && subsData.subscriptions) || [];
+    if (!subs.length) {
+      return '<a href="#/subscriptions" style="display:flex; align-items:center; gap:11px; margin-top:14px; padding:13px 15px; border:1.5px dashed rgba(43,33,24,0.28); border-radius:15px; text-decoration:none; cursor:pointer;">' +
+        '<span style="font-size:19px; flex:none;">🍿</span>' +
+        '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(43,33,24,0.7);">shared subscriptions — split netflix & co automatically</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2775CA; flex:none;">→</span>' +
+      '</a>';
+    }
+    var t = subsData.totals || {};
+    var mine = (t.yourMonthlyCents || 0) > 0;
+    var cents = mine ? t.yourMonthlyCents : (t.monthlyCents || 0);
+    var label = mine ? "cost you" : "run";
+    return '<a href="#/subscriptions" style="text-decoration:none; display:flex; align-items:center; gap:13px; margin-top:14px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px 11px 11px;">' +
+      '<div style="width:48px; height:48px; border-radius:13px; background:rgba(39,117,202,0.14); display:flex; align-items:center; justify-content:center; font-size:24px; flex:none;">🍿</div>' +
+      '<div style="flex:1; min-width:0;">' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118;">subscriptions</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(43,33,24,0.6); margin-top:3px;">' + subs.length + ' on autopilot · ' + label + '</div>' +
+      '</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:#FF6B5E;"><span style="opacity:.5;">$</span>' + money3(cents) + '<span style="font-size:10px; opacity:.45;">/mo</span></div>' +
+    '</a>';
+  }
+
   // quiet dashed entry point so tabs stay reachable from home before the first one
   function startTabCard() {
     return '<a href="#/tabs" style="display:flex; align-items:center; gap:11px; margin-top:26px; padding:13px 15px; border:1.5px dashed rgba(43,33,24,0.28); border-radius:15px; text-decoration:none; cursor:pointer;">' +
@@ -553,19 +579,21 @@
 
   async function signedIn(view) {
     view.innerHTML = topbar() + '<div class="appscroll"><div class="skeleton" style="height:230px;border-radius:23px;margin:14px 0;"></div><div class="skeleton" style="height:54px;margin:10px 0;"></div><div class="skeleton" style="height:54px;margin:10px 0;"></div></div>';
-    var d, bills = [], incoming = [], walletCents = null, friendTabs = [];
+    var d, bills = [], incoming = [], walletCents = null, friendTabs = [], subsData = null;
     try {
       var both = await Promise.all([
         app.api.get("/api/me/balances"),
         app.api.get("/api/me/bills").catch(function () { return { bills: [], incoming: [] }; }),
         app.api.get("/api/me/wallet").catch(function () { return null; }),
         app.api.get("/api/tabs").catch(function () { return { tabs: [] }; }),
+        app.api.get("/api/subscriptions").catch(function () { return null; }),
       ]);
       d = both[0];
       bills = (both[1] && both[1].bills) || [];
       incoming = (both[1] && both[1].incoming) || [];
       if (both[2] && typeof both[2].usdcCents === "number") walletCents = both[2].usdcCents;
       friendTabs = (both[3] && both[3].tabs) || [];
+      subsData = both[4];
     }
     catch (e) { view.innerHTML = topbar() + '<div class="empty"><div class="title lower">couldn\'t load balances</div><div class="hint">' + app.esc(e.message) + "</div></div>"; return; }
     var t = d.totals || {}, net = t.netCents || 0, owed = t.owedCents || 0, owe = t.owesCents || 0;
@@ -607,7 +635,7 @@
     // banner (injected by app.js) already carries the orientation, and stacking
     // both reads as clutter.
     var howHtml = (seenHow() || demoModeOn()) ? "" : howItWorksCard();
-    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + howHtml + hero(net, owed, owe, ppl, walletCents, quick) + incomingHtml + peopleHtml + friendTabsHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
+    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + howHtml + hero(net, owed, owe, ppl, walletCents, quick) + incomingHtml + peopleHtml + friendTabsHtml + subsCard(subsData) + billsHtml + groupsHtml + emptyHtml + "</div>";
     wireHowCard(view);
     // count the hero balance up from zero, and stagger the card list in.
     if (app.countUp) {
