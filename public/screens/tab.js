@@ -124,6 +124,19 @@
     var mine = e.signedCents >= 0; // they owe me
     var col = mine ? BLUE : CORAL;
     var paid = e.status !== "open";
+    if (e.payment) {
+      // a verified partial payment — money actually moved, the rest stayed on
+      // the tab. Render it as a payment, not an IOU: mint, no +/− sign.
+      var payWho = e.addedByMe ? "you" : firstName(d);
+      var INK = "#17A277"; // readable mint ink on the cream page
+      return '<div style="display:flex; align-items:center; gap:10px; height:' + ROW + 'px; padding:0 6px 0 46px;' + (paid ? ' opacity:.5;' : '') + '">' +
+        '<div style="flex:1; min-width:0;">' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:' + INK + '; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;' + (paid ? ' text-decoration:line-through rgba(43,33,24,0.35) 1.5px;' : '') + '">settled $' + (e.amountCents / 100).toFixed(2) + ' 💸</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.42); margin-top:1px;">' + app.esc(payWho) + ' paid · ' + relTime(e.createdAt) + '</div>' +
+        '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; letter-spacing:-0.4px; color:' + INK + '; flex:none;"><span style="font-size:11px; opacity:.5;">$</span>' + money3(e.amountCents) + '</div>' +
+      '</div>';
+    }
     var who = e.addedByMe ? "you" : firstName(d);
     var note = e.note || "(no note)";
     var del = (e.addedByMe && !paid)
@@ -244,9 +257,42 @@
 
   // ---- settle sheet (QR + open-in-wallet + verify poll, like settle.js) --------
   function stopPoll() { if (S && S.pollTimer) { clearInterval(S.pollTimer); S.pollTimer = null; } }
+  function dollarsOf(cents) { return (Math.abs(cents || 0) / 100).toFixed(2); }
   function openSettleSheet(s) {
     var iPay = !!s.iAmPayer;
     var name = firstName(S.d);
+    // The tab's CURRENT net — partial-payment clamping + "of $Y" labels are
+    // relative to it (a partial settlement's amountCents is smaller).
+    var fullCents = Math.abs((S.d && S.d.balanceCents) || 0);
+    if (s.amountCents > fullCents) fullCents = s.amountCents;
+    var isPartial = !!s.partial && s.amountCents < fullCents;
+
+    // "pay part of it →": same affordance as trips' settle.js — inline amount
+    // clamped to (0, net]; a partial shows "paying $X of $Y" + a reset link.
+    var partialHtml = "";
+    if (isPartial) {
+      partialHtml = '<div style="margin-top:10px; display:flex; flex-direction:column; align-items:center; gap:4px;">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#e0a63a;">paying $' + dollarsOf(s.amountCents) + ' of $' + dollarsOf(fullCents) + '</span>' +
+        (iPay
+          ? '<span id="t1PartialReset" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">pay the full amount instead</span>'
+          : '<span style="font-family:\'General Sans\',sans-serif; font-size:11.5px; color:rgba(43,33,24,0.45);">the rest stays on the tab</span>') +
+      '</div>';
+    } else if (iPay && s.amountCents > 1) {
+      partialHtml = '<div style="margin-top:10px;">' +
+        '<span id="t1PartialToggle" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:' + BLUE + '; cursor:pointer;">pay part of it →</span>' +
+        '<div id="t1PartialBox" style="display:none; margin-top:10px;">' +
+          '<div style="display:flex; align-items:center; justify-content:center; gap:8px;">' +
+            '<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; border:2px solid ' + PEN + '; border-radius:12px; box-shadow:2px 3px 0 rgba(43,33,24,0.85); padding:8px 12px;">' +
+              '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(43,33,24,0.5);">$</span>' +
+              '<input id="t1PartialInput" inputmode="decimal" enterkeyhint="done" placeholder="0.00" style="width:80px; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:' + PEN + ';">' +
+            '</div>' +
+            '<button id="t1PartialSet" type="button" style="appearance:none; border:2px solid ' + PEN + '; cursor:pointer; padding:0 14px; min-height:40px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:' + PEN + '; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">set</button>' +
+          '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:7px;">the rest stays on the tab</div>' +
+        '</div>' +
+      '</div>';
+    }
+
     var qr = s.url ? '<div style="width:196px; margin:14px auto 0; background:#fff; border-radius:16px; padding:8px;">' +
       '<img alt="payment qr" width="180" height="180" style="display:block; border-radius:8px;" src="' + app.esc(app.qrImg(s.url)) + '"></div>' : '';
     app.sheet('<div id="t1Sheet" style="padding:4px 4px 10px; text-align:center;">' +
@@ -255,12 +301,49 @@
       '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:40px; letter-spacing:-1.5px; color:' + (iPay ? CORAL : BLUE) + '; margin-top:8px;"><span style="font-size:20px; opacity:.5;">$</span>' + money3(s.amountCents) + '</div>' +
       '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:6px;">' +
         (iPay ? "pays their wallet directly — settles in seconds." : "show " + app.esc(name) + " the QR, or send them the link.") + '</div>' +
+      partialHtml +
       qr +
       (iPay && s.url ? '<button class="btn" id="t1Pay" style="margin-top:16px;">open in wallet</button>' : '') +
       (s.url ? '<button class="btn ghost" id="t1Copy" style="margin-top:10px;">copy payment link</button>' : '') +
       '<button class="btn ghost" id="t1Check" style="margin-top:10px;">' + (iPay ? "i paid — check ✓" : "check for payment ✓") + '</button>' +
     '</div>');
     S.checkLabel = iPay ? "i paid — check ✓" : "check for payment ✓";
+
+    // partial-payment controls — re-build the settlement at the chosen amount
+    // (fresh reference + Solana Pay url), then re-open the sheet on it.
+    function rebuildAt(cents) {
+      app.api.post("/api/tabs/" + encodeURIComponent(S.friendId) + "/settle", { partialCents: cents })
+        .then(function (next) { openSettleSheet(next); })
+        .catch(function (e) {
+          var btn = document.getElementById("t1PartialSet");
+          if (btn) { btn.disabled = false; btn.textContent = "set"; }
+          app.toast((e && e.message) || "couldn't set that amount");
+        });
+    }
+    var pToggle = document.getElementById("t1PartialToggle");
+    if (pToggle) pToggle.onclick = function () {
+      var box = document.getElementById("t1PartialBox");
+      if (box) box.style.display = "block";
+      pToggle.style.display = "none";
+      var inp = document.getElementById("t1PartialInput");
+      if (inp) inp.focus();
+    };
+    function commitPartial() {
+      var inp = document.getElementById("t1PartialInput");
+      if (!inp) return;
+      var cents = toCents(inp.value);
+      if (!(cents > 0)) { app.toast("enter an amount"); inp.focus(); return; }
+      if (cents > fullCents) cents = fullCents; // clamp to the net
+      var btn = document.getElementById("t1PartialSet");
+      if (btn) { btn.disabled = true; btn.textContent = "setting…"; }
+      rebuildAt(cents);
+    }
+    var pSet = document.getElementById("t1PartialSet");
+    if (pSet) pSet.onclick = commitPartial;
+    var pInp = document.getElementById("t1PartialInput");
+    if (pInp) pInp.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); commitPartial(); } };
+    var pReset = document.getElementById("t1PartialReset");
+    if (pReset) pReset.onclick = function () { rebuildAt(fullCents); }; // = the full net → plain settle
 
     var pay = document.getElementById("t1Pay");
     if (pay) pay.onclick = function () { try { window.location.href = s.url; } catch (_) {} };
@@ -291,7 +374,7 @@
         stopPoll();
         app.closeSheet();
         app.celebrate({ coins: true });
-        app.toast("tab settled 🎉");
+        app.toast(r.partial ? "payment in 💸 the rest stays on the tab" : "tab settled 🎉");
         return load();
       }
       if (check) { check.disabled = false; check.textContent = (S && S.checkLabel) || "check ✓"; }

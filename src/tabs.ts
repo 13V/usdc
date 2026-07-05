@@ -14,6 +14,14 @@
  * settle/verify machinery reuses the exact ious.ts/trips code path:
  * Solana Pay URL + throwaway reference, validatePayment, claimSignature.
  *
+ * PARTIAL PAYMENTS: settle may carry `partialCents` (payer-only, clamped to
+ * (0, net]) — the Solana Pay request is built at that amount (settlement
+ * status "open_partial"). A VERIFIED partial doesn't flip entries; it inserts
+ * a system "payment" ledger row that arithmetically reduces the net (pay $20
+ * of a $47 tab → tab shows $27, history shows the payment). A later full
+ * settle covers exactly the remainder and flips everything, payment rows
+ * included ("payment" → "payment_paid").
+ *
  * GUARDRAIL: ALL money is integer cents.
  *
  * Mount (integrator):
@@ -79,13 +87,15 @@ db.exec(`
 
 type Direction = "they_owe" | "i_owe";
 
-interface TabEntryRow {
+export interface TabEntryRow {
   id: string;
   created_by: string;
   friend_user_id: string;
   direction: string;
   amount_cents: number;
   note: string | null;
+  // 'open' | 'paid' | 'payment' (verified partial-settle offset, live) |
+  // 'payment_paid' (offset covered by a later settle)
   status: string;
   settlement_id: string | null;
   created_at: string;
@@ -98,6 +108,7 @@ interface TabSettlementRow {
   amount_cents: number;
   reference: string | null;
   pay_wallet: string | null;
+  // 'open' | 'open_partial' (pays less than the net) | 'paid' | 'cancelled'
   status: string;
   signature: string | null;
   created_at: string;
@@ -110,7 +121,7 @@ export interface TabEntryLike {
   created_by: string;
   direction: string; // 'they_owe' | 'i_owe', relative to created_by
   amount_cents: number;
-  status: string; // 'open' | 'paid'
+  status: string; // 'open' | 'paid' | 'payment' | 'payment_paid'
 }
 
 /**
@@ -133,11 +144,13 @@ export function signedCents(e: TabEntryLike, meId: string): number {
 /**
  * Net OPEN balance of a tab from `meId`'s perspective (integer cents).
  * + = the friend owes me, − = I owe the friend. Paid entries don't count.
+ * "payment" rows (a verified partial settlement's offset) DO count — that's
+ * how a $20 partial arithmetically shrinks a $47 tab to $27.
  */
 export function computeTabBalance(entries: TabEntryLike[], meId: string): number {
   let net = 0;
   for (const e of entries) {
-    if (e.status === "open") net += signedCents(e, meId);
+    if (e.status === "open" || e.status === "payment") net += signedCents(e, meId);
   }
   return net;
 }
@@ -155,6 +168,101 @@ export function settlementParties(
   return balanceCents > 0
     ? { payer: friendId, payee: meId }
     : { payer: meId, payee: friendId };
+}
+
+// ---- Pure settle-request math (exported for tabs.selftest.ts) ----------------
+
+/** What a settle request resolves to: who pays whom, how much, partial or not. */
+export interface SettleTarget {
+  payer: string;
+  payee: string;
+  amountCents: number;
+  /** true = pays less than the net; the remainder stays on the tab. */
+  partial: boolean;
+}
+export interface SettleReject {
+  status: number;
+  error: string;
+}
+
+/**
+ * Resolve a settle request against the CURRENT net. Optional `partialCents`
+ * asks to pay only part of it: integer cents in (0, net], and payer-only —
+ * you can part-pay what YOU owe, not shrink what a friend owes you. Paying
+ * exactly the net is just a full settle (entries get flipped, not offset).
+ */
+export function resolveSettleRequest(
+  balanceCents: number,
+  meId: string,
+  friendId: string,
+  partialCents?: unknown
+): SettleTarget | SettleReject {
+  const parties = settlementParties(balanceCents, meId, friendId);
+  if (!parties) return { status: 400, error: "you're square — nothing to settle" };
+  const net = Math.abs(balanceCents);
+  if (partialCents == null) return { ...parties, amountCents: net, partial: false };
+  const amt = Number(partialCents);
+  if (!Number.isInteger(amt) || amt < 1 || amt > net) {
+    return {
+      status: 400,
+      error: "partial amount must be between 1 cent and what's owed",
+    };
+  }
+  if (parties.payer !== meId) {
+    return { status: 403, error: "you can only part-pay a tab you owe" };
+  }
+  return { ...parties, amountCents: amt, partial: amt < net };
+}
+
+/**
+ * Can an existing open settlement serve `target`? The payer must match. An
+ * EXPLICIT amount must match exactly (same cents, same partial-ness) — else
+ * the request supersedes it (cancel + rebuild). A bare request reuses an
+ * exact full-net match, or keeps a pending PARTIAL alive as long as it still
+ * fits inside the net (`target.amountCents` IS the net for a bare request) —
+ * so reopening the sheet, or the payee requesting, never clobbers a partial
+ * payment already in flight against its reference.
+ */
+export function canReuseSettlement(
+  existing: { amount_cents: number; payer_user_id: string; status: string },
+  target: SettleTarget,
+  explicitAmount: boolean
+): boolean {
+  if (existing.payer_user_id !== target.payer) return false;
+  const existingPartial = existing.status === "open_partial";
+  if (explicitAmount) {
+    return existing.amount_cents === target.amountCents && existingPartial === target.partial;
+  }
+  if (!existingPartial) return existing.amount_cents === target.amountCents;
+  return existing.amount_cents <= target.amountCents;
+}
+
+/**
+ * The system-generated ledger row a VERIFIED partial payment leaves behind:
+ * money moved payer→payee on-chain, so from the payer's side "they owe me"
+ * that much back — the net arithmetically drops by the paid amount while the
+ * original entries stay open. Status "payment": counts toward the balance,
+ * can't be deleted (not "open"), and a later covering settle flips it to
+ * "payment_paid" together with the entries it helped pay down.
+ */
+export function paymentEntry(
+  payerId: string,
+  payeeId: string,
+  amountCents: number,
+  settlementId: string,
+  nowIso: string
+): TabEntryRow {
+  return {
+    id: crypto.randomUUID(),
+    created_by: payerId,
+    friend_user_id: payeeId,
+    direction: "they_owe",
+    amount_cents: amountCents,
+    note: `settled ${fmt(amountCents)} 💸`,
+    status: "payment",
+    settlement_id: settlementId,
+    created_at: nowIso,
+  };
 }
 
 // ---- Input validation --------------------------------------------------------
@@ -301,7 +409,10 @@ async function deleteOwnOpenEntry(id: string, meId: string): Promise<boolean> {
 /**
  * Mark the pair's open entries created at/before `cutoffIso` as paid via
  * `settlementId`. The cutoff keeps entries added AFTER the settlement request
- * was built out of it — they stay open on the fresh tab.
+ * was built out of it — they stay open on the fresh tab. Partial-payment
+ * offset rows ("payment") are part of the arithmetic being covered, so they
+ * flip too — to "payment_paid", keeping their OWN settlement_id so history
+ * still points at the payment that created them.
  */
 async function settlePairEntries(
   meId: string,
@@ -310,20 +421,28 @@ async function settlePairEntries(
   settlementId: string
 ): Promise<void> {
   if (usingSupabase) {
+    const pair = `and(created_by.eq.${meId},friend_user_id.eq.${friendId}),and(created_by.eq.${friendId},friend_user_id.eq.${meId})`;
     const { error } = await supabase()
       .from("tab_entries")
       .update({ status: "paid", settlement_id: settlementId })
       .eq("status", "open")
       .lte("created_at", cutoffIso)
-      .or(
-        `and(created_by.eq.${meId},friend_user_id.eq.${friendId}),and(created_by.eq.${friendId},friend_user_id.eq.${meId})`
-      );
+      .or(pair);
     if (error) throw new Error(`tabs.settlePairEntries: ${error.message}`);
+    const { error: e2 } = await supabase()
+      .from("tab_entries")
+      .update({ status: "payment_paid" })
+      .eq("status", "payment")
+      .lte("created_at", cutoffIso)
+      .or(pair);
+    if (e2) throw new Error(`tabs.settlePairEntries: ${e2.message}`);
     return;
   }
   db.prepare(
-    `UPDATE tab_entries SET status = 'paid', settlement_id = ?
-     WHERE status = 'open' AND created_at <= ?
+    `UPDATE tab_entries
+        SET status = CASE WHEN status = 'payment' THEN 'payment_paid' ELSE 'paid' END,
+            settlement_id = COALESCE(settlement_id, ?)
+     WHERE status IN ('open', 'payment') AND created_at <= ?
        AND ((created_by = ? AND friend_user_id = ?)
          OR (created_by = ? AND friend_user_id = ?))`
   ).run(settlementId, cutoffIso, meId, friendId, friendId, meId);
@@ -363,7 +482,7 @@ async function insertSettlement(row: TabSettlementRow): Promise<void> {
   );
 }
 
-/** Latest OPEN settlement between the pair (either payment direction). */
+/** Latest OPEN settlement (full or partial) between the pair (either direction). */
 async function getOpenSettlement(
   meId: string,
   friendId: string
@@ -372,7 +491,7 @@ async function getOpenSettlement(
     const { data, error } = await supabase()
       .from("tab_settlements")
       .select("*")
-      .eq("status", "open")
+      .in("status", ["open", "open_partial"])
       .or(
         `and(payer_user_id.eq.${meId},payee_user_id.eq.${friendId}),and(payer_user_id.eq.${friendId},payee_user_id.eq.${meId})`
       )
@@ -385,7 +504,7 @@ async function getOpenSettlement(
   return db
     .prepare(
       `SELECT * FROM tab_settlements
-       WHERE status = 'open'
+       WHERE status IN ('open', 'open_partial')
          AND ((payer_user_id = ? AND payee_user_id = ?)
            OR (payer_user_id = ? AND payee_user_id = ?))
        ORDER BY created_at DESC, rowid DESC LIMIT 1`
@@ -400,11 +519,13 @@ async function cancelSettlement(id: string): Promise<void> {
       .from("tab_settlements")
       .update({ status: "cancelled" })
       .eq("id", id)
-      .eq("status", "open");
+      .in("status", ["open", "open_partial"]);
     if (error) throw new Error(`tabs.cancelSettlement: ${error.message}`);
     return;
   }
-  db.prepare("UPDATE tab_settlements SET status = 'cancelled' WHERE id = ? AND status = 'open'").run(id);
+  db.prepare(
+    "UPDATE tab_settlements SET status = 'cancelled' WHERE id = ? AND status IN ('open', 'open_partial')"
+  ).run(id);
 }
 
 async function markSettlementPaid(id: string, signature: string | null): Promise<void> {
@@ -437,7 +558,10 @@ function serializeEntry(row: TabEntryRow, meId: string) {
     amountFmt: fmt(row.amount_cents),
     signedCents: signed,
     note: row.note,
-    status: row.status,
+    // clients see the simple open/paid lifecycle; `payment` marks the row as
+    // a verified partial-settlement payment ("settled $20 💸").
+    status: row.status === "payment" ? "open" : row.status === "payment_paid" ? "paid" : row.status,
+    payment: row.status === "payment" || row.status === "payment_paid",
     createdAt: row.created_at,
   };
 }
@@ -465,7 +589,9 @@ function serializeSettlement(row: TabSettlementRow, meId: string) {
     amountFmt: fmt(row.amount_cents),
     url: settlementUrl(row),
     reference: row.reference,
-    status: row.status,
+    // clients see the simple lifecycle; `partial` marks a part-payment request
+    status: row.status === "open_partial" ? "open" : row.status,
+    partial: row.status === "open_partial",
     signature: row.signature,
     createdAt: row.created_at,
   };
@@ -668,10 +794,13 @@ tabsRouter.delete(
 );
 
 /**
- * POST /api/tabs/:friendUserId/settle — build (or return) the settlement
- * request for the tab's CURRENT net: one Solana Pay payment from the debtor to
- * the creditor's primary wallet. A stale open request (net changed) is
- * cancelled and rebuilt.
+ * POST /api/tabs/:friendUserId/settle { partialCents? } — build (or return)
+ * the settlement request for the tab's CURRENT net: one Solana Pay payment
+ * from the debtor to the creditor's primary wallet. Optional `partialCents`
+ * (payer-only, integer in (0, net]) builds the request at that amount instead
+ * — the remainder stays on the tab. A stale open request (net changed, or a
+ * different amount was asked for) is cancelled and rebuilt; a pending partial
+ * survives bare rebuilds while it still fits inside the net.
  */
 tabsRouter.post(
   "/api/tabs/:friendUserId/settle",
@@ -690,27 +819,25 @@ tabsRouter.post(
     }
 
     const balanceCents = computeTabBalance(entries, meId);
-    const parties = settlementParties(balanceCents, meId, friendId);
-    if (!parties) return res.status(400).json({ error: "you're square — nothing to settle" });
+    const partialCents = (req.body || {})?.partialCents as unknown;
+    const target = resolveSettleRequest(balanceCents, meId, friendId, partialCents);
+    if ("error" in target) return res.status(target.status).json({ error: target.error });
 
-    // Reuse an open request that still matches the net exactly; otherwise the
-    // net has moved — cancel it and build a fresh one.
+    // Reuse an open request that still matches what's being asked for;
+    // otherwise it's superseded — cancel it and build a fresh one.
     const existing = await getOpenSettlement(meId, friendId);
     if (existing) {
-      if (
-        existing.amount_cents === Math.abs(balanceCents) &&
-        existing.payer_user_id === parties.payer
-      ) {
+      if (canReuseSettlement(existing, target, partialCents != null)) {
         return res.json(serializeSettlement(existing, meId));
       }
       await cancelSettlement(existing.id);
     }
 
-    const payWallet = await getPrimaryWallet(parties.payee);
+    const payWallet = await getPrimaryWallet(target.payee);
     if (!payWallet) {
       return res.status(400).json({
         error:
-          parties.payee === meId
+          target.payee === meId
             ? "add a wallet first so they can pay you"
             : "they haven't added a wallet to get paid at yet",
       });
@@ -718,12 +845,12 @@ tabsRouter.post(
 
     const row: TabSettlementRow = {
       id: crypto.randomUUID(),
-      payer_user_id: parties.payer,
-      payee_user_id: parties.payee,
-      amount_cents: Math.abs(balanceCents),
+      payer_user_id: target.payer,
+      payee_user_id: target.payee,
+      amount_cents: target.amountCents,
       reference: newReference(),
       pay_wallet: payWallet,
-      status: "open",
+      status: target.partial ? "open_partial" : "open",
       signature: null,
       created_at: new Date().toISOString(),
     };
@@ -734,8 +861,10 @@ tabsRouter.post(
 
 /**
  * POST /api/tabs/:friendUserId/settle/verify — check the chain for payment of
- * the pair's open settlement. On success the settlement AND the entries it
- * covered flip to paid, and the other side gets a push.
+ * the pair's open settlement. On success a FULL settlement flips the entries
+ * it covered to paid; a PARTIAL one leaves the ledger open and records a
+ * "payment" offset row instead (the net drops by the paid amount, history
+ * shows the payment). Either way the other side gets a push.
  */
 tabsRouter.post(
   "/api/tabs/:friendUserId/settle/verify",
@@ -753,6 +882,7 @@ tabsRouter.post(
     if (!row.reference || !row.pay_wallet) {
       return res.status(400).json({ error: "this settlement has no payable request to verify" });
     }
+    const isPartial = row.status === "open_partial";
 
     const connection = new Connection(rpcUrl, "confirmed");
     const result = await validatePayment(connection, {
@@ -774,6 +904,28 @@ tabsRouter.post(
           signature: result.signature,
         });
         verified = false; // already consumed elsewhere — do not double-discharge
+      } else if (isPartial) {
+        await markSettlementPaid(row.id, result.signature);
+        // A partial doesn't close any entries — it leaves a "payment" offset
+        // row carrying the settlement id, so the net drops by the paid amount
+        // and the ledger shows the payment. A later full settle covers exactly
+        // the remainder (and flips this row along with the rest).
+        await insertEntry(
+          paymentEntry(
+            row.payer_user_id,
+            row.payee_user_id,
+            row.amount_cents,
+            row.id,
+            new Date().toISOString()
+          )
+        );
+        const payerLabel = await callerLabel(row.payer_user_id);
+        void sendPush(friendId, {
+          title: "Tab payment 💸",
+          body: `${payerLabel} paid ${fmt(row.amount_cents)} toward the tab — the rest stays on it`,
+          url: `/#/tab/${meId}`,
+          tag: `tab-settle:${row.id}`,
+        });
       } else {
         await markSettlementPaid(row.id, result.signature);
         // Only entries that existed when the request was built are covered —
@@ -792,6 +944,7 @@ tabsRouter.post(
     const updated = { ...row, status: verified ? "paid" : row.status, signature: verified ? result.signature || null : row.signature };
     return res.json({
       ...serializeSettlement(updated as TabSettlementRow, meId),
+      partial: isPartial,
       verified,
       reason: verified
         ? result.reason

@@ -473,6 +473,8 @@ async function collectItems(meId: string): Promise<JournalItem[]> {
   const entries = await listMyTabEntries(meId);
   const nameCache = new Map<string, string>();
   for (const e of entries) {
+    // Partial-settlement payment rows are money moving, not spending — skip.
+    if (e.status === "payment" || e.status === "payment_paid") continue;
     const signed = signedCents(e, meId);
     if (signed === 0) continue;
     const otherId = e.created_by === meId ? e.friend_user_id : e.created_by;
