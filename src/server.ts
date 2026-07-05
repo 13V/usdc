@@ -100,6 +100,7 @@ import { recurringRouter } from "./recurring";
 import { subscriptionsRouter } from "./subscriptions";
 import { friendsRouter } from "./friends";
 import { chatRouter } from "./chat";
+import { mochiRouter } from "./mochi";
 import { reactionsRouter } from "./reactions";
 import { nudgesRouter } from "./nudges";
 import { pushRouter, sendPush } from "./push";
@@ -376,6 +377,9 @@ app.use(recurringRouter);
 app.use(subscriptionsRouter);
 app.use(friendsRouter);
 app.use(chatRouter);
+// "Ask Mochi" natural-language endpoint (Claude tool use; degrades gracefully
+// without ANTHROPIC_API_KEY — same provider pattern as /api/scan).
+app.use(mochiRouter);
 app.use(reactionsRouter);
 app.use(nudgesRouter);
 app.use(pushRouter);

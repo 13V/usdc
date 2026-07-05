@@ -12,7 +12,7 @@
     "build:web": "vite build -c web/vite.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:web": "tsc -p web/tsconfig.json --noEmit",
-    "test": "ts-node src/split.selftest.ts && ts-node src/tabs.selftest.ts && ts-node src/subscriptions.selftest.ts && ts-node src/security.selftest.ts && ts-node src/telemetry.selftest.ts",
+    "test": "ts-node src/split.selftest.ts && ts-node src/tabs.selftest.ts && ts-node src/subscriptions.selftest.ts && ts-node src/mochi.selftest.ts && ts-node src/security.selftest.ts && ts-node src/telemetry.selftest.ts",
     "test:sec": "ts-node src/security.selftest.ts",
     "test:telemetry": "ts-node src/telemetry.selftest.ts",
     "test:e2e": "node e2e/happy-path.mjs",

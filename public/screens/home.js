@@ -428,6 +428,25 @@
     '</a>';
   }
 
+  // ---- ask mochi (natural-language entry — see screens/mochi.js) ----
+  // A journal-note card: type "add $7 coffee with sam" and mochi handles it.
+  function askMochiCard() {
+    return '<a href="#/mochi" style="text-decoration:none; display:flex; align-items:center; gap:12px; margin-top:14px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px 11px 11px;">' +
+      '<div style="width:48px; height:48px; border-radius:13px; background:rgba(61,232,199,0.18); display:flex; align-items:center; justify-content:center; flex:none;">' + (window.Mascot ? window.Mascot.mini(30) : "🐸") + '</div>' +
+      '<div style="flex:1; min-width:0;">' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118;">ask mochi</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-style:italic; font-size:12.5px; color:rgba(43,33,24,0.6); margin-top:3px;">&ldquo;add $7 coffee with sam&rdquo; · &ldquo;who owes me?&rdquo;</div>' +
+      '</div>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2775CA; flex:none;">→</span>' +
+    '</a>';
+  }
+  // floating mochi bubble: quick jump to the ask screen from anywhere on home.
+  function mochiFab() {
+    return '<button id="mochiFab" aria-label="ask mochi" style="position:fixed; right:16px; bottom:calc(96px + env(safe-area-inset-bottom)); z-index:45; appearance:none; cursor:pointer; width:54px; height:54px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:3px 3.5px 0 rgba(43,33,24,0.9); display:flex; align-items:center; justify-content:center; transform:rotate(3deg);">' +
+      (window.Mascot ? window.Mascot.mini(30) : "🐸") +
+    '</button>';
+  }
+
   // quiet dashed entry point so tabs stay reachable from home before the first one
   function startTabCard() {
     return '<a href="#/tabs" style="display:flex; align-items:center; gap:11px; margin-top:26px; padding:13px 15px; border:1.5px dashed rgba(43,33,24,0.28); border-radius:15px; text-decoration:none; cursor:pointer;">' +
@@ -635,8 +654,10 @@
     // banner (injected by app.js) already carries the orientation, and stacking
     // both reads as clutter.
     var howHtml = (seenHow() || demoModeOn()) ? "" : howItWorksCard();
-    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + howHtml + hero(net, owed, owe, ppl, walletCents, quick) + incomingHtml + peopleHtml + friendTabsHtml + subsCard(subsData) + billsHtml + groupsHtml + emptyHtml + "</div>";
+    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + howHtml + hero(net, owed, owe, ppl, walletCents, quick) + askMochiCard() + incomingHtml + peopleHtml + friendTabsHtml + subsCard(subsData) + billsHtml + groupsHtml + emptyHtml + "</div>" + mochiFab();
     wireHowCard(view);
+    var fab = view.querySelector("#mochiFab");
+    if (fab) fab.onclick = function () { location.hash = "#/mochi"; };
     // count the hero balance up from zero, and stagger the card list in.
     if (app.countUp) {
       var balEl = document.getElementById("hBalance");
