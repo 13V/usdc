@@ -42,8 +42,21 @@
     return '<div style="margin:26px 2px 12px;"><span class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#2B2118;">' + name + '</span></div>';
   }
 
+  // due-date chip bit for a tab's sub line: "· due sun 🗓️" / coral "overdue".
+  // Only shown when the due date points at the tab's live debt direction (a
+  // creditor's date is about what the FRIEND owes, and vice versa).
+  function dueBit(t, cfg) {
+    if (!cfg || !cfg.dueAt || t.direction === "settled") return "";
+    var aims = (cfg.iAmCreditor && t.direction === "owed") || (!cfg.iAmCreditor && t.direction === "owes");
+    if (!aims) return "";
+    if (cfg.overdue) return ' · <span style="color:#FF6B5E; font-weight:600;">overdue 🗓️</span>';
+    var dd = new Date(cfg.dueAt), days = Math.ceil((dd.getTime() - Date.now()) / 86400000), lbl = "";
+    try { lbl = (days > 0 && days <= 6) ? dd.toLocaleDateString(undefined, { weekday: "short" }) : dd.toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch (_) {}
+    return lbl ? ' · <span style="color:#2775CA;">due ' + app.esc(lbl.toLowerCase()) + ' 🗓️</span>' : "";
+  }
+
   // one tab row — a jcard ledger line: avatar · "sam owes you" · +$23.00
-  function tabRow(t) {
+  function tabRow(t, cfg) {
     var f = t.friend || {};
     var pos = t.direction === "owed", neg = t.direction === "owes";
     var col = pos ? "#2775CA" : neg ? "#FF6B5E" : "#3DE8C7";
@@ -55,7 +68,7 @@
       '<div style="width:44px; height:44px; border-radius:14px; background:' + app.esc(f.color || "rgba(39,117,202,0.18)") + '; display:flex; align-items:center; justify-content:center; font-size:21px; flex:none;">' + app.face(f.emoji || (friendName(f)[0] || "?").toUpperCase()) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
         '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(friendName(f)) + '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + (neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.6)") + '; margin-top:3px;">' + app.esc(sub) + ' · ' + t.entryCount + (t.entryCount === 1 ? " entry" : " entries") + ' · ' + relTime(t.lastActivity) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + (neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.6)") + '; margin-top:3px;">' + app.esc(sub) + ' · ' + t.entryCount + (t.entryCount === 1 ? " entry" : " entries") + ' · ' + relTime(t.lastActivity) + dueBit(t, cfg) + '</div>' +
       '</div>' + amt + '</a>';
   }
 
@@ -90,15 +103,20 @@
 
   async function signedIn(view) {
     skeleton(view);
-    var tabs = [], friends = [];
+    var tabs = [], friends = [], dueByFriend = {};
     try {
       var both = await Promise.all([
         app.api.get("/api/tabs").catch(function () { return { tabs: [] }; }),
         app.api.get("/api/friends").catch(function () { return { friends: [] }; }),
+        // due dates + auto-remind configs → per-friend chip data (best-effort)
+        app.api.get("/api/autonudge/tabs").catch(function () { return { tabs: [] }; }),
       ]);
       tabs = (both[0] && both[0].tabs) || [];
       friends = (both[1] && both[1].friends) || [];
-    } catch (_) { /* both fetches are individually caught; keep going */ }
+      ((both[2] && both[2].tabs) || []).forEach(function (c) {
+        if (c && c.friendUserId && c.dueAt) dueByFriend[c.friendUserId] = c;
+      });
+    } catch (_) { /* all fetches are individually caught; keep going */ }
 
     var tabbed = {};
     tabs.forEach(function (t) { if (t.friend && t.friend.id) tabbed[t.friend.id] = 1; });
@@ -107,7 +125,8 @@
     var body = "";
     if (tabs.length) {
       body += sectionLabel("open tabs") +
-        '<div style="display:flex; flex-direction:column; gap:11px;">' + tabs.map(tabRow).join("") + '</div>';
+        '<div style="display:flex; flex-direction:column; gap:11px;">' +
+        tabs.map(function (t) { return tabRow(t, t.friend && dueByFriend[t.friend.id]); }).join("") + '</div>';
     }
     if (startable.length) {
       body += sectionLabel(tabs.length ? "start another" : "start a tab with") +

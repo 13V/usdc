@@ -105,6 +105,7 @@ import { mochiRouter } from "./mochi";
 import { journalRouter } from "./journal";
 import { reactionsRouter } from "./reactions";
 import { nudgesRouter } from "./nudges";
+import { autonudgeRouter, validateDueAt } from "./autonudge";
 import { pushRouter, sendPush } from "./push";
 // Growth loops: OG share cards (og.ts) + invite attribution (referrals.ts).
 import { ogMeta, tripShareHtml, rootShellHtml, OG_CARD_PATH } from "./og";
@@ -400,6 +401,7 @@ app.use(mochiRouter);
 app.use(journalRouter);
 app.use(reactionsRouter);
 app.use(nudgesRouter);
+app.use(autonudgeRouter);
 app.use(pushRouter);
 app.use(referralsRouter);
 // Legal + support pages: /terms, /privacy, /support (server-rendered, static).
@@ -1235,6 +1237,11 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
   // pairwise count it replaces — "3 payments instead of 6".
   const simplified = simplifyDebts(balances);
   const pairwiseCount = pairwiseDebts(memberIds, ledgerExpenses).length;
+  // Due-date chips: a moment is overdue once it passes — but a settled-up
+  // group has nothing left to be late on.
+  const nowMs = Date.now();
+  const settledUp = balances.every((b) => b.cents === 0);
+  const isPast = (iso?: string | null) => !!(iso && new Date(iso).getTime() <= nowMs);
 
   return {
     id: trip.id,
@@ -1253,6 +1260,8 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
     ownerUserId: trip.ownerUserId || null,
     emoji: trip.emoji || null,
     archived: !!trip.archived,
+    dueAt: trip.dueAt || null,
+    overdue: isPast(trip.dueAt) && !settledUp,
     members: await Promise.all(trip.members.map(async (m) => {
       // A linked member shows that account's chosen emoji/color; otherwise the
       // member's own deterministic identity.
@@ -1277,6 +1286,8 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
       participants: e.participants,
       participantNames: e.participants.map((p) => memberName(trip, p)),
       kind: e.kind || null,
+      dueAt: e.dueAt || null,
+      overdue: isPast(e.dueAt) && !settledUp,
       fx: e.fx || null,
       fxNote: e.fx
         ? `Originally ${formatForeign(e.fx.sourceAmount, e.fx.sourceCurrency)} ${
@@ -1323,8 +1334,16 @@ app.post("/api/trips", spamRateLimit, async (req: Request, res: Response) => {
     const body = req.body as {
       name?: string;
       members?: { name?: string; wallet?: string; userId?: string }[];
+      dueAt?: unknown;
     };
     const name = assertLen(String(body.name || ""), "trip name", 1, MAX_TRIP_NAME);
+    // Optional "settle by" date, set at creation (validated: future, ≤ 1 year).
+    let dueAt: string | null = null;
+    if (body.dueAt !== undefined) {
+      const v = validateDueAt(body.dueAt, Date.now());
+      if (!v.ok) return res.status(400).json({ error: v.error });
+      dueAt = v.dueAt;
+    }
     const members = (body.members || [])
       .map((m) => ({ name: String(m.name || "").trim(), wallet: m.wallet, userId: m.userId }))
       .filter((m) => m.name);
@@ -1349,7 +1368,8 @@ app.post("/api/trips", spamRateLimit, async (req: Request, res: Response) => {
       }
     }
     // Record ownership so this trip shows up in "my trips".
-    const trip = await createTrip(name, cluster, members, req.userId);
+    let trip = await createTrip(name, cluster, members, req.userId);
+    if (dueAt) trip = await updateTrip(trip.id, { dueAt });
     res.json(await serializeTrip(trip, { refUserId: req.userId }));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
@@ -1370,6 +1390,7 @@ function tripSummary(trip: Trip) {
   // exclude them from the list summary's totals, like serializeTrip does.
   const spendExpenses = trip.expenses.filter((e) => e.kind !== "transfer");
   const totalCents = spendExpenses.reduce((a, e) => a + e.amountCents, 0);
+  const settledUp = balances.every((b) => b.cents === 0);
   return {
     id: trip.id,
     name: trip.name,
@@ -1380,10 +1401,12 @@ function tripSummary(trip: Trip) {
     expenseCount: spendExpenses.length,
     totalCents,
     totalFmt: fmt(totalCents),
-    settledUp: balances.every((b) => b.cents === 0),
+    settledUp,
     ownerUserId: trip.ownerUserId || null,
     emoji: trip.emoji || null,
     archived: !!trip.archived,
+    dueAt: trip.dueAt || null,
+    overdue: !!(trip.dueAt && new Date(trip.dueAt).getTime() <= Date.now() && !settledUp),
   };
 }
 
@@ -1421,10 +1444,16 @@ app.patch("/api/trips/:id", writeRateLimit, async (req: Request, res: Response) 
     if (!canAdminTrip(req, existing)) {
       return res.status(403).json({ error: "not authorized for this trip" });
     }
-    const body = req.body as { name?: string; emoji?: string; archived?: boolean };
-    const patch: { name?: string; emoji?: string | null; archived?: boolean } = {};
+    const body = req.body as { name?: string; emoji?: string; archived?: boolean; dueAt?: unknown };
+    const patch: { name?: string; emoji?: string | null; archived?: boolean; dueAt?: string | null } = {};
     if (body.name !== undefined) {
       patch.name = assertLen(String(body.name), "trip name", 1, MAX_TRIP_NAME);
+    }
+    if (body.dueAt !== undefined) {
+      // "settle by sunday" — future, ≤ 1 year out; null/"" clears it.
+      const v = validateDueAt(body.dueAt, Date.now());
+      if (!v.ok) return res.status(400).json({ error: v.error });
+      patch.dueAt = v.dueAt;
     }
     if (body.emoji !== undefined) {
       // Same constraint style as member emoji: coerce + cap at 8 chars; empty clears.
@@ -1598,6 +1627,7 @@ app.post("/api/trips/:id/expenses", writeRateLimit, async (req: Request, res: Re
       paidBy?: string;
       participants?: string[];
       fx?: any;
+      dueAt?: unknown;
     };
     if (trip.expenses.length >= MAX_EXPENSES) {
       return res.status(400).json({ error: `too many expenses (max ${MAX_EXPENSES})` });
@@ -1619,12 +1649,20 @@ app.post("/api/trips/:id/expenses", writeRateLimit, async (req: Request, res: Re
     if (participants.length === 0) {
       return res.status(400).json({ error: "need at least one participant" });
     }
+    // Optional "pay back by" moment (validated: future, ≤ 1 year).
+    let dueAt: string | null = null;
+    if (body.dueAt !== undefined) {
+      const v = validateDueAt(body.dueAt, Date.now());
+      if (!v.ok) return res.status(400).json({ error: v.error });
+      dueAt = v.dueAt;
+    }
     const updated = await addExpense(req.params.id, {
       title: String(body.title || ""),
       amountCents,
       paidBy: String(body.paidBy || ""),
       participants,
       fx: body.fx,
+      dueAt,
     });
     res.json(await serializeTrip(updated));
   } catch (err) {
@@ -1654,13 +1692,20 @@ app.patch("/api/trips/:id/expenses/:eid", writeRateLimit, async (req: Request, r
       amountCents?: number;
       paidBy?: string;
       participants?: string[];
+      dueAt?: unknown;
     };
     const patch: {
       title?: string;
       amountCents?: number;
       paidBy?: string;
       participants?: string[];
+      dueAt?: string | null;
     } = {};
+    if (body.dueAt !== undefined) {
+      const v = validateDueAt(body.dueAt, Date.now());
+      if (!v.ok) return res.status(400).json({ error: v.error });
+      patch.dueAt = v.dueAt;
+    }
     if (body.title !== undefined) {
       if (String(body.title).trim()) {
         assertLen(String(body.title), "expense title", 1, MAX_EXPENSE_TITLE);

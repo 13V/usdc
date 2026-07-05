@@ -159,6 +159,24 @@
     return t.expenseCount + " " + noun + " · " + ppl;
   }
 
+  // journal due chip bit appended to the meta line: "· due sun 🗓️", coral once
+  // the settle-by date passes with money still owed (t.overdue from the api).
+  function dueLabel(iso) {
+    var time = new Date(iso).getTime();
+    if (isNaN(time)) return "";
+    var days = Math.ceil((time - Date.now()) / 86400000);
+    var dt = new Date(iso);
+    try {
+      if (days > 0 && days <= 6) return dt.toLocaleDateString(undefined, { weekday: "short" }).toLowerCase();
+      return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toLowerCase();
+    } catch (_) { return ""; }
+  }
+  function dueBit(t) {
+    if (!t.dueAt || t.settledUp) return "";
+    if (t.overdue) return ' · <span style="color:#FF6B5E; font-weight:600;">overdue 🗓️</span>';
+    return ' · <span style="color:#2775CA;">due ' + app.esc(dueLabel(t.dueAt)) + ' 🗓️</span>';
+  }
+
   // right-side state: per-trip net (+blue / −coral) or "square ✨" chip.
   function netBlock(t, big) {
     if (t.settledUp || t.netCents === 0 || t.netCents == null) {
@@ -190,7 +208,7 @@
       '<div style="padding:15px 18px 17px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px;">' +
         '<div style="min-width:0;">' +
           '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:13.5px; color:rgba(43,33,24,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:13.5px; color:rgba(43,33,24,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + dueBit(t) + '</div>' +
         '</div>' +
         '<div style="text-align:right; flex:none;">' + netBlock(t, true) + '</div>' +
       '</div>' +
@@ -208,7 +226,7 @@
       '</div>' +
       '<div style="padding:13px 16px 15px;">' +
         '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12px; color:rgba(43,33,24,0.55); margin-top:3px;">' + app.esc(metaLine(t)) + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12px; color:rgba(43,33,24,0.55); margin-top:3px;">' + app.esc(metaLine(t)) + dueBit(t) + '</div>' +
         '<div style="margin-top:12px;">' + netBlock(t, false) + '</div>' +
       '</div>' +
     '</a>';
@@ -226,7 +244,7 @@
       '<div style="flex:1; min-width:0; padding:15px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;">' +
         '<div style="min-width:0;">' +
           '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + dueBit(t) + '</div>' +
         '</div>' +
         '<div style="text-align:right; flex:none;">' + netBlock(t, false) + '</div>' +
       '</div>' +

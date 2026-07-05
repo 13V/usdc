@@ -107,13 +107,38 @@ async function priorNudgeCount(from: string, to: string): Promise<number> {
   return (row && row.n) || 0;
 }
 
-/** Escalating reminder copy: polite → pointed → the duck. */
-function nudgeBody(fromLabel: string, nudgeNumber: number): string {
+/**
+ * Escalating reminder copy: polite → pointed → the duck. Exported so Mochi's
+ * auto-nudges (autonudge.ts) escalate along the exact same tone ladder.
+ */
+export function nudgeBody(fromLabel: string, nudgeNumber: number): string {
   if (nudgeNumber <= 1) return `${fromLabel} nudged you to settle up`;
   if (nudgeNumber === 2) return `${fromLabel} nudged you again 👀`;
   if (nudgeNumber === 3) return `third nudge. ${fromLabel} remembers 🧾`;
   if (nudgeNumber === 4) return `${fromLabel} sent the duck 🦆 pay up`;
   return `🦆🦆🦆 the ducks are multiplying. settle up with ${fromLabel}`;
+}
+
+/**
+ * Record an AUTO nudge sent on the creditor's behalf (autonudge.ts engine).
+ * Same table, kind "auto" — it shows up in the target's notifications feed and
+ * counts toward the manual escalation ladder, keeping the tone continuous.
+ * This module still owns the table; this is the one sanctioned write-in.
+ */
+export async function recordAutoNudge(
+  fromUserId: string,
+  toUserId: string,
+  tripId: string | null
+): Promise<void> {
+  await insertNudge({
+    id: crypto.randomUUID(),
+    from_user_id: fromUserId,
+    to_user_id: toUserId,
+    to_name: null,
+    trip_id: tripId,
+    kind: "auto",
+    created_at: new Date().toISOString(),
+  });
 }
 
 /** Nudges RECEIVED by a user (to_user_id = me), newest first. */
@@ -416,7 +441,9 @@ nudgesRouter.get(
         }
         items.push({
           type: "nudge",
-          title: `${fromLabel} nudged you to pay`,
+          title: n.kind === "auto"
+            ? `mochi reminded you to pay ${fromLabel} 🐸`
+            : `${fromLabel} nudged you to pay`,
           createdAt: n.created_at,
           nudgeId: n.id,
           fromUserId: n.from_user_id,

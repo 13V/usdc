@@ -131,6 +131,27 @@
     return "$" + (Math.abs(cents) / 100).toFixed(2);
   }
 
+  // ---------- due dates (journal chip: "🗓️ due sun", coral when overdue) ----------
+  function dueLabel(iso) {
+    var t = new Date(iso).getTime();
+    if (isNaN(t)) return "";
+    var days = Math.ceil((t - Date.now()) / 86400000);
+    var dt = new Date(iso);
+    try {
+      if (days > 0 && days <= 6) return dt.toLocaleDateString(undefined, { weekday: "short" }).toLowerCase();
+      return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toLowerCase();
+    } catch (_) { return ""; }
+  }
+  function dueChip(dueAt, overdue) {
+    if (!dueAt) return "";
+    var col = overdue ? "#FF6B5E" : "#2775CA";
+    var label = overdue ? "overdue — was due " + dueLabel(dueAt) : "settle by " + dueLabel(dueAt);
+    return '<span style="display:inline-flex; align-items:center; gap:5px; background:' + col + '1a; border:1.5px ' + (overdue ? "solid" : "dashed") + ' ' + col + '88; border-radius:999px; padding:3px 10px;">' +
+      '<span style="font-size:10px;">🗓️</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:' + col + ';">' + app.esc(label.toUpperCase()) + '</span>' +
+    '</span>';
+  }
+
   // ---------- top bar (back ‹ · name + emoji · ⋯) ----------
   function topbar(trip, emoji) {
     return '' +
@@ -189,7 +210,10 @@
           '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:22px; letter-spacing:-1px; color:#2775CA; margin-top:2px;"><span style="font-size:14px; opacity:.55;">$</span>' + moneyParts(trip.totalCents || 0, "14px", ".55") + '</div>' +
         '</div>' +
       '</div>' +
-      '<div style="position:relative; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.55); margin-top:12px;">' + meta + ' <span style="color:#FF6B5E;">!!</span></div>' +
+      '<div style="position:relative; display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px;">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.55);">' + meta + ' <span style="color:#FF6B5E;">!!</span></span>' +
+        dueChip(trip.dueAt, trip.overdue) +
+      '</div>' +
     '</div>';
   }
 
@@ -575,6 +599,7 @@
         '<div style="display:flex; align-items:center; gap:7px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(e.title || "a tab") + '</span></div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6); margin-top:3px;">' +
           app.esc((e.paidByName || "someone").toLowerCase()) + ' paid · split ' + n + (t ? ' · ' + t : "") +
+          (e.dueAt ? ' · <span style="color:' + (e.overdue ? "#FF6B5E" : "#2775CA") + ';">' + (e.overdue ? "overdue" : "due " + app.esc(dueLabel(e.dueAt))) + ' 🗓️</span>' : "") +
         '</div>' +
       '</div>' +
       '<div style="text-align:right;">' +
@@ -800,6 +825,39 @@
     var archived = !!trip.archived;
     var archiveLabel = archived ? "unarchive group" : "archive group";
 
+    // am I owed money here? (auto-remind is a creditor-only control)
+    var myNet = 0;
+    if (me) (trip.balances || []).forEach(function (b) { if (b.memberId === me.id) myNet = b.cents; });
+    var minDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    var maxDate = new Date(Date.now() + 364 * 86400000).toISOString().slice(0, 10);
+    var dueVal = trip.dueAt ? String(trip.dueAt).slice(0, 10) : "";
+    var dueSection =
+      '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">SETTLE BY</label>' +
+      '<div style="display:flex; gap:8px; margin-top:8px; align-items:center;">' +
+        '<input id="gsDue" type="date" value="' + app.esc(dueVal) + '" min="' + minDate + '" max="' + maxDate + '" ' +
+          'style="flex:1; min-height:44px; padding:8px 14px; border-radius:13px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:14px; color:#2B2118;">' +
+        '<button id="gsDueSave" style="appearance:none; border:2px solid #2B2118; cursor:pointer; padding:0 16px; min-height:44px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">set</button>' +
+        (dueVal ? '<span id="gsDueClear" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline; flex:none;">clear</span>' : '') +
+      '</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:6px;">the group\'s "square up by" date — chips turn coral when it passes</div>';
+    // mochi auto-remind: shown only when the viewer is owed money (creditor).
+    var CADENCES = [
+      ["off", "off", "mochi stays out of it"],
+      ["gentle", "gentle 🌱", "a reminder every 5 days · very polite"],
+      ["standard", "standard 🐸", "every 3 days · friendly but firm"],
+      ["spicy", "spicy 🌶️", "daily. mochi shows no mercy"],
+    ];
+    var remindSection = (me && myNet > 0)
+      ? '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">MOCHI AUTO-REMINDS WHO OWES YOU</label>' +
+        '<div id="gsCadRow" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;">' +
+          CADENCES.map(function (c) {
+            return '<button type="button" class="gsCad" data-c="' + c[0] + '" disabled style="appearance:none; cursor:pointer; padding:0 13px; min-height:38px; border-radius:999px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.16); color:rgba(43,33,24,0.6); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; opacity:.55;">' + c[1] + '</button>';
+          }).join("") +
+        '</div>' +
+        '<div id="gsCadHint" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); margin-top:8px; min-height:16px;">loading…</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:4px;">starts after the settle-by date · pauses on "i paid you" claims · caps at the duck 🦆</div>'
+      : "";
+
     var html = '' +
       '<h2 class="lower" style="font-size:22px; margin:2px 0 14px;">group settings</h2>' +
       // rename
@@ -811,6 +869,9 @@
       // emoji
       '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">EMOJI</label>' +
       '<div id="gsEmojiRow" style="display:flex; flex-wrap:wrap; gap:9px; margin-top:9px;">' + emojiChips + '</div>' +
+      // settle-by date + mochi auto-remind
+      dueSection +
+      remindSection +
       // members
       '<label style="display:block; margin-top:20px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">MEMBERS</label>' +
       '<div style="margin-top:6px; border:2px solid #2B2118; border-radius:16px; background:#FFFDF7; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:6px 12px;">' + memberRows + '</div>' +
@@ -820,6 +881,68 @@
       '<button id="gsArchive" style="appearance:none; cursor:pointer; width:100%; margin-top:11px; min-height:48px; border-radius:14px; background:transparent; border:1px solid rgba(255,107,94,0.6); color:#FF6B5E; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px;">' + archiveLabel + '</button>';
 
     var el = app.sheet(html);
+
+    // settle-by date — PATCH dueAt (server validates: future, ≤ 1 year)
+    function saveDue(v) {
+      app.api.patch("/api/trips/" + encodeURIComponent(trip.id), { dueAt: v })
+        .then(function (fresh) {
+          app.haptic && app.haptic(15);
+          app.toast(v ? "settle-by date set 🗓️" : "due date cleared");
+          app.closeSheet();
+          paint(view_, fresh);
+        })
+        .catch(function (err) { app.toast((err && err.message) || "couldn't set that date"); });
+    }
+    var dueSave = el.querySelector("#gsDueSave");
+    if (dueSave) dueSave.onclick = function () {
+      var inp = el.querySelector("#gsDue");
+      var v = inp && inp.value;
+      if (!v) { app.toast("pick a date first"); return; }
+      dueSave.disabled = true; dueSave.textContent = "…";
+      saveDue(v);
+    };
+    var dueClear = el.querySelector("#gsDueClear");
+    if (dueClear) dueClear.onclick = function () { saveDue(null); };
+
+    // mochi auto-remind cadence (creditor only) — hydrate then wire the chips
+    var cadHint = el.querySelector("#gsCadHint");
+    var cadChips = el.querySelectorAll(".gsCad");
+    function paintCad(cur) {
+      Array.prototype.forEach.call(cadChips, function (c) {
+        var on = c.getAttribute("data-c") === cur;
+        c.disabled = false;
+        c.style.opacity = "1";
+        c.style.background = on ? "rgba(61,232,199,0.2)" : "#FFFDF7";
+        c.style.border = on ? "2px solid #17A277" : "1px solid rgba(43,33,24,0.16)";
+        c.style.color = on ? "#17A277" : "rgba(43,33,24,0.6)";
+      });
+      if (cadHint) {
+        for (var i = 0; i < CADENCES.length; i++) if (CADENCES[i][0] === cur) cadHint.textContent = CADENCES[i][2];
+      }
+    }
+    if (cadChips.length) {
+      app.api.get("/api/autonudge/trip/" + encodeURIComponent(trip.id))
+        .then(function (r) {
+          var cur = (r && r.mine && r.mine.cadence) || "off";
+          paintCad(cur);
+          if (cadHint && r && r.mine && r.mine.sendCount) {
+            cadHint.textContent += " · " + r.mine.sendCount + " sent so far";
+          }
+        })
+        .catch(function () { paintCad("off"); });
+      Array.prototype.forEach.call(cadChips, function (chip) {
+        chip.onclick = function () {
+          var c = chip.getAttribute("data-c") || "off";
+          app.api.put("/api/autonudge/trip/" + encodeURIComponent(trip.id), { cadence: c })
+            .then(function (r) {
+              app.haptic && app.haptic(15);
+              paintCad((r && r.cadence) || c);
+              app.toast(c === "off" ? "mochi stands down" : "set & forget — mochi's on it 🐸");
+            })
+            .catch(function (err) { app.toast((err && err.message) || "couldn't set that"); });
+        };
+      });
+    }
 
     // rename
     var nameInp = el.querySelector("#gsName");

@@ -311,6 +311,34 @@ create table if not exists outside_claims (
 create index if not exists outside_claims_trip_idx on outside_claims (trip_id, status);
 create index if not exists outside_claims_users_idx on outside_claims (debtor_user_id, creditor_user_id, status);
 
+-- ---- due dates + auto-nudge cadence (src/autonudge.ts) ----------------------
+-- The creditor's set-and-forget "mochi collects for me" settings. A config's
+-- deterministic id (tab:<creditor>:<debtor> / trip:<tripId>:<creditor>) is the
+-- uniqueness constraint; auto_nudge_sends carries per-(config, debtor) at-most-
+-- once send state claimed via a CAS update (never nudge twice for one slot).
+create table if not exists auto_nudge_configs (
+  id               text primary key,
+  scope            text not null,            -- 'tab' | 'trip'
+  trip_id          text,                     -- trip scope only
+  creditor_user_id text not null,
+  debtor_user_id   text,                     -- tab scope only
+  cadence          text not null,            -- off | gentle | standard | spicy
+  due_at           text,                     -- tab "square up by" (trips use trips.due_at)
+  created_at       text not null,
+  updated_at       text not null
+);
+create index if not exists auto_nudge_configs_creditor_idx on auto_nudge_configs (creditor_user_id);
+create index if not exists auto_nudge_configs_trip_idx on auto_nudge_configs (trip_id);
+
+create table if not exists auto_nudge_sends (
+  id             text primary key,           -- <configId>|<debtorUserId>
+  config_id      text not null,
+  debtor_user_id text not null,
+  last_sent_at   text,
+  send_count     integer not null default 0
+);
+create index if not exists auto_nudge_sends_config_idx on auto_nudge_sends (config_id);
+
 -- ---- additive column patches ----------------------------------------------
 -- `create table if not exists` above will NOT add columns to a table that
 -- already exists, so these idempotent ALTERs bring an older Supabase project up
@@ -324,6 +352,9 @@ alter table trip_messages add column if not exists reactions text;
 alter table recurring     add column if not exists paused   integer not null default 0;
 -- settle-outside transfer records (src/trips.ts): NULL = ordinary expense.
 alter table expenses      add column if not exists kind     text;
+-- due dates (src/trips.ts): group "settle by" + per-expense "pay back by".
+alter table trips         add column if not exists due_at   text;
+alter table expenses      add column if not exists due_at   text;
 
 -- ---- grants ---------------------------------------------------------------
 -- The server talks to Postgres as `service_role` (which also bypasses RLS).

@@ -85,6 +85,15 @@
       : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:' + (pos ? "#2775CA" : "#FF6B5E") + ';"><span style="opacity:.5;">' + (pos ? "+$" : "−$") + '</span>' + money3(Math.abs(t.netCents)) + '</div>';
     var sub = settled ? (t.memberCount ? t.memberCount + " people" : "all square") : (pos ? "owed to you" : "you owe");
     var subcol = neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.6)";
+    // due-date chip bit: "· due sun 🗓️" (coral "overdue" once the date passes)
+    if (t.dueAt && !settled && !t.settledUp) {
+      if (t.overdue) sub += ' · <span style="color:#FF6B5E; font-weight:600;">overdue 🗓️</span>';
+      else {
+        var dd = new Date(t.dueAt), days = Math.ceil((dd.getTime() - Date.now()) / 86400000), lbl = "";
+        try { lbl = (days > 0 && days <= 6) ? dd.toLocaleDateString(undefined, { weekday: "short" }) : dd.toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch (_) {}
+        if (lbl) sub += ' · <span style="color:#2775CA;">due ' + app.esc(lbl.toLowerCase()) + ' 🗓️</span>';
+      }
+    }
     return '<a href="#/group/' + encodeURIComponent(t.tripId || t.id) + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px 11px 11px;">' +
       '<div style="position:relative; width:48px; height:48px; border-radius:13px; background:' + cover + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; overflow:hidden;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>' +

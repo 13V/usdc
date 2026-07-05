@@ -12,7 +12,7 @@
   "use strict";
   var app = window.app;
 
-  var S = null; // { view, friendId, d, dir, pollTimer }
+  var S = null; // { view, friendId, d, an, dir, pollTimer }
 
   var PEN = "#2B2118", BLUE = "#2775CA", CORAL = "#FF6B5E", MINT = "#3DE8C7";
 
@@ -52,6 +52,134 @@
   }
   function friendName(d) { return (d.friend && (d.friend.displayName || d.friend.handle)) || "friend"; }
   function firstName(d) { return String(friendName(d)).trim().split(/\s+/)[0].toLowerCase(); }
+
+  // ---- due date + mochi auto-remind (autonudge) -------------------------------
+  // "due sun" within a week, "due jul 12" beyond; caller handles overdue color.
+  function dueLabel(iso) {
+    var t = new Date(iso).getTime();
+    if (isNaN(t)) return "";
+    var days = Math.ceil((t - Date.now()) / 86400000);
+    var dt = new Date(iso);
+    try {
+      if (days > 0 && days <= 6) return dt.toLocaleDateString(undefined, { weekday: "short" }).toLowerCase();
+      return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toLowerCase();
+    } catch (_) { return ""; }
+  }
+  function isPast(iso) { var t = new Date(iso).getTime(); return !isNaN(t) && t <= Date.now(); }
+  var CADENCES = [
+    ["off", "off", "mochi stays out of it"],
+    ["gentle", "gentle 🌱", "a reminder every 5 days · very polite"],
+    ["standard", "standard 🐸", "every 3 days · friendly but firm"],
+    ["spicy", "spicy 🌶️", "daily. mochi shows no mercy"],
+  ];
+  function cadenceLabel(c) {
+    for (var i = 0; i < CADENCES.length; i++) if (CADENCES[i][0] === c) return CADENCES[i][1];
+    return "off";
+  }
+  // journal date chip: "🗓️ due sun" — coral once overdue (and still owed)
+  function dueChipHtml(dueAt, overdue, extra) {
+    var col = overdue ? CORAL : BLUE;
+    var label = overdue ? "overdue — was due " + dueLabel(dueAt) : "due " + dueLabel(dueAt);
+    return '<span style="display:inline-flex; align-items:center; gap:5px; background:' + col + '1a; border:1.5px ' + (overdue ? "solid" : "dashed") + ' ' + col + '88; border-radius:999px; padding:4px 11px;">' +
+      '<span style="font-size:11px;">🗓️</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:10px; letter-spacing:.5px; color:' + col + ';">' + app.esc(label) + (extra || "") + '</span>' +
+    '</span>';
+  }
+  // the strip under the hero: creditor gets the tappable controls; the debtor
+  // sees the date (+ "mochi will remind you") their friend set.
+  function dueStrip(d) {
+    var an = S.an || {};
+    if (d.direction === "owed") {
+      var mine = an.mine || { cadence: "off", dueAt: null };
+      var overdue = !!(mine.dueAt && isPast(mine.dueAt));
+      var chips = mine.dueAt
+        ? dueChipHtml(mine.dueAt, overdue)
+        : '<span style="display:inline-flex; align-items:center; gap:5px; border:1.5px dashed rgba(43,33,24,0.3); border-radius:999px; padding:4px 11px;"><span style="font-size:11px;">🗓️</span><span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.55);">set a due date</span></span>';
+      var on = mine.cadence && mine.cadence !== "off";
+      var mochiCol = on ? "#17A277" : "rgba(43,33,24,0.55)";
+      chips += '<span style="display:inline-flex; align-items:center; gap:5px; background:' + (on ? "rgba(61,232,199,0.16)" : "transparent") + '; border:1.5px ' + (on ? "solid rgba(23,162,119,0.5)" : "dashed rgba(43,33,24,0.3)") + '; border-radius:999px; padding:4px 11px;">' +
+        '<span style="font-size:11px;">🐸</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:' + mochiCol + ';">auto-remind: ' + app.esc(cadenceLabel(mine.cadence)) + (mine.sendCount ? " · " + mine.sendCount + " sent" : "") + '</span>' +
+      '</span>';
+      return '<div id="t1Remind" role="button" tabindex="0" style="display:flex; justify-content:center; flex-wrap:wrap; gap:7px; margin-top:12px; cursor:pointer;">' + chips + '</div>';
+    }
+    if (d.direction === "owes" && an.theirs && (an.theirs.dueAt || (an.theirs.cadence && an.theirs.cadence !== "off"))) {
+      var t = an.theirs;
+      var html = t.dueAt ? dueChipHtml(t.dueAt, !!(t.dueAt && isPast(t.dueAt))) : "";
+      if (t.cadence && t.cadence !== "off") {
+        html += '<span style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">mochi will remind you 🐸</span>';
+      }
+      return '<div style="display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin-top:12px;">' + html + '</div>';
+    }
+    return "";
+  }
+  // creditor sheet: pick a "square up by" date + mochi's cadence. set & forget.
+  function openRemindSheet() {
+    var mine = (S.an && S.an.mine) || { cadence: "off", dueAt: null };
+    var dateVal = mine.dueAt ? String(mine.dueAt).slice(0, 10) : "";
+    var minDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    var maxDate = new Date(Date.now() + 364 * 86400000).toISOString().slice(0, 10);
+    var chips = CADENCES.map(function (c) {
+      var on = (mine.cadence || "off") === c[0];
+      return '<button type="button" class="t1Cad" data-c="' + c[0] + '" style="appearance:none; cursor:pointer; padding:0 13px; min-height:38px; border-radius:999px; ' +
+        (on ? 'background:rgba(61,232,199,0.2); border:2px solid #17A277; color:#17A277;'
+            : 'background:#FFFDF7; border:1px solid rgba(43,33,24,0.16); color:rgba(43,33,24,0.6);') +
+        ' font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px;">' + c[1] + '</button>';
+    }).join("");
+    app.sheet('<div style="padding:4px 4px 10px; text-align:center;">' +
+      '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:' + PEN + ';">let mochi handle it 🐸</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:6px;">set a "square up by" date and mochi does the awkward reminding for you.</div>' +
+      '<label style="display:block; text-align:left; margin-top:16px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42);">SQUARE UP BY</label>' +
+      '<div style="display:flex; align-items:center; gap:8px; margin-top:8px;">' +
+        '<input id="t1Due" type="date" value="' + app.esc(dateVal) + '" min="' + minDate + '" max="' + maxDate + '" ' +
+          'style="flex:1; min-height:44px; padding:8px 14px; border-radius:13px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:14px; color:' + PEN + ';">' +
+        '<span id="t1DueClear" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline; flex:none;">clear</span>' +
+      '</div>' +
+      '<label style="display:block; text-align:left; margin-top:16px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42);">MOCHI AUTO-REMINDS</label>' +
+      '<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;">' + chips + '</div>' +
+      '<div id="t1CadHint" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); margin-top:9px; min-height:16px;"></div>' +
+      '<button class="btn" id="t1RemindSave" style="margin-top:14px;">save</button>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:8px;">starts after the due date · pauses if they say they paid · caps at the duck 🦆</div>' +
+    '</div>');
+    var picked = mine.cadence || "off";
+    function hint() {
+      var h = document.getElementById("t1CadHint");
+      if (!h) return;
+      for (var i = 0; i < CADENCES.length; i++) if (CADENCES[i][0] === picked) h.textContent = CADENCES[i][2];
+    }
+    hint();
+    Array.prototype.forEach.call(document.querySelectorAll(".t1Cad"), function (chip) {
+      chip.onclick = function () {
+        picked = chip.getAttribute("data-c") || "off";
+        Array.prototype.forEach.call(document.querySelectorAll(".t1Cad"), function (c2) {
+          var on = c2 === chip;
+          c2.style.background = on ? "rgba(61,232,199,0.2)" : "#FFFDF7";
+          c2.style.border = on ? "2px solid #17A277" : "1px solid rgba(43,33,24,0.16)";
+          c2.style.color = on ? "#17A277" : "rgba(43,33,24,0.6)";
+        });
+        hint();
+      };
+    });
+    var clear = document.getElementById("t1DueClear");
+    if (clear) clear.onclick = function () { var i2 = document.getElementById("t1Due"); if (i2) i2.value = ""; };
+    var save = document.getElementById("t1RemindSave");
+    if (save) save.onclick = function () {
+      var inp = document.getElementById("t1Due");
+      save.disabled = true; save.textContent = "saving…";
+      app.api.put("/api/autonudge/tab/" + encodeURIComponent(S.friendId), {
+        cadence: picked,
+        dueAt: (inp && inp.value) ? inp.value : null,
+      }).then(function () {
+        app.closeSheet();
+        app.haptic && app.haptic([12, 28, 22]);
+        app.toast(picked === "off" ? "saved — mochi stays quiet" : "set & forget — mochi's on it 🐸");
+        return load();
+      }).catch(function (e) {
+        save.disabled = false; save.textContent = "save";
+        app.toast((e && e.message) || "couldn't save that");
+      });
+    };
+  }
 
   // ---- header + hero --------------------------------------------------------
   function header(d) {
@@ -231,9 +359,16 @@
     var d = S.d;
     S.view.innerHTML = '<div class="vfill">' + topbar() +
       '<div class="appscroll" style="padding-top:0;">' +
-        header(d) + composer(d) + settleBtn(d) + outsideCard(d) + ledger(d) +
+        header(d) + dueStrip(d) + composer(d) + settleBtn(d) + outsideCard(d) + ledger(d) +
       '</div></div>';
     wireBack();
+
+    // due date + auto-remind controls (creditor only)
+    var remind = document.getElementById("t1Remind");
+    if (remind) {
+      remind.onclick = openRemindSheet;
+      remind.onkeydown = function (e) { if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); openRemindSheet(); } };
+    }
 
     // settled-outside claim actions (confirm / dispute / cancel)
     var outYes = document.getElementById("t1OutYes");
@@ -562,9 +697,14 @@
     if (c) c.onclick = function () { app.signIn(); };
   }
   function load() {
-    return app.api.get("/api/tabs/" + encodeURIComponent(S.friendId)).then(function (d) {
+    return Promise.all([
+      app.api.get("/api/tabs/" + encodeURIComponent(S.friendId)),
+      // due date + auto-remind config — best-effort, the tab renders without it
+      app.api.get("/api/autonudge/tab/" + encodeURIComponent(S.friendId)).catch(function () { return null; }),
+    ]).then(function (both) {
       if (!S || location.hash.indexOf("tab/") < 0) return;
-      S.d = d;
+      S.d = both[0];
+      S.an = both[1] || {};
       paint();
     }).catch(function (e) {
       if (!S) return;

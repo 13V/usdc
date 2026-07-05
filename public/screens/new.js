@@ -139,6 +139,7 @@
       members: [],              // {id,name,emoji,bg,included,you}
       custom: {},               // id -> cents (only edited rows)
       scanning: false,
+      dueAt: "",                // optional "due by" date (YYYY-MM-DD, group only)
       editId: null,            // when set, we're editing an existing expense (PATCH)
       // ---- itemized "who had what" (from a receipt scan) ----
       itemized: false,         // are we in assign-items mode?
@@ -171,6 +172,7 @@
       var inSet = {}; (ex.participants || []).forEach(function (p) { inSet[p] = 1; });
       st.members.forEach(function (m) { m.included = !!inSet[m.id]; });
       if (ex.paidBy && memberById(ex.paidBy)) st.paidBy = ex.paidBy;
+      st.dueAt = ex.dueAt ? String(ex.dueAt).slice(0, 10) : "";
     }
 
     function tipPct() {
@@ -378,6 +380,23 @@
           '</div>' +
         '</div>';
 
+      // due by — optional journal date (group expenses only; server validates
+      // future + ≤1yr). Overdue chips + mochi's auto-nudges key off it.
+      var dueMin = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+      var dueMax = new Date(Date.now() + 364 * 86400000).toISOString().slice(0, 10);
+      var dueBlock = inGroup ?
+        '<div style="margin-top:16px;">' +
+          '<div style="display:flex; align-items:center; justify-content:space-between;">' +
+            '<label style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); display:block; margin:0;">DUE BY 🗓️</label>' +
+            '<span style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.38);">optional — chips turn coral when late</span>' +
+          '</div>' +
+          '<div style="display:flex; align-items:center; gap:10px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:9px 16px; margin-top:9px;">' +
+            '<input id="nDue" type="date" value="' + app.esc(st.dueAt || "") + '" min="' + dueMin + '" max="' + dueMax + '" ' +
+              'style="all:unset; flex:1; font-family:' + F_MONO + '; font-size:15px; color:#2B2118; min-height:32px;">' +
+            (st.dueAt ? '<span id="nDueClear" role="button" tabindex="0" style="font-family:' + F_SANS + '; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline; flex:none;">clear</span>' : '') +
+          '</div>' +
+        '</div>' : '';
+
       // ---- split between: header + stepper + mode toggle + member chips ----
       // The stepper only earns its space in "by share" mode. In the common
       // evenly path, adding people lives on the "+ add" chip and removing lives
@@ -562,7 +581,7 @@
       var mainSplit = itemized ? itemizedSection : splitBetween;
       var scroll =
         '<div class="ns-scroll" style="position:relative; z-index:2; flex:1; overflow-y:auto; scrollbar-width:none; padding:6px 20px 150px;">' +
-          headline + grpPill + hero + whatFor + totalBlock + tipSeg + paidBy + mainSplit +
+          headline + grpPill + hero + whatFor + totalBlock + tipSeg + paidBy + dueBlock + mainSplit +
         '</div>';
 
       // send footer — exact frame button + dry mono subline
@@ -641,6 +660,12 @@
           }
         };
       }
+
+      // due-by date (group only) — keep state in sync; "clear" wipes it
+      var due = document.getElementById("nDue");
+      if (due) due.onchange = function () { st.dueAt = due.value || ""; render(); };
+      var dueClear = document.getElementById("nDueClear");
+      if (dueClear) dueClear.onclick = function () { st.dueAt = ""; render(); };
 
       [].forEach.call(document.querySelectorAll("[data-tip]"), function (b) {
         b.onclick = function () { st.tipKey = b.getAttribute("data-tip"); render(); };
@@ -932,6 +957,9 @@
             amountCents: grand,
             paidBy: st.paidBy,
             participants: inc.map(function (m) { return m.id; }),
+            // optional due-by: a date string sets it; on edit, null clears it.
+            // (undefined is dropped by JSON.stringify, so creates stay lean.)
+            dueAt: st.dueAt ? st.dueAt : (st.editId ? null : undefined),
           };
           if (st.editId) {
             await app.api.patch("/api/trips/" + encodeURIComponent(groupId) + "/expenses/" + encodeURIComponent(st.editId), payload);

@@ -51,6 +51,8 @@ export interface TripExpense {
    * money SPENT. Transfers are immutable history (no edit/delete).
    */
   kind?: string;
+  /** Optional "pay this back by" moment (ISO). Display + nudge metadata only. */
+  dueAt?: string;
 }
 
 export interface Trip {
@@ -64,6 +66,8 @@ export interface Trip {
   ownerUserId?: string;
   emoji?: string;
   archived?: boolean;
+  /** Optional group "settle by" moment (ISO). Auto-nudges key off it. */
+  dueAt?: string;
 }
 
 /** A persisted settlement transfer (Transfer + payment-request fields). */
@@ -148,6 +152,10 @@ if (!hasColumn("trip_members", "color")) db.exec("ALTER TABLE trip_members ADD C
 // emoji → the client falls back to its name-derived emoji; archived defaults 0.
 if (!hasColumn("trips", "emoji")) db.exec("ALTER TABLE trips ADD COLUMN emoji TEXT");
 if (!hasColumn("trips", "archived")) db.exec("ALTER TABLE trips ADD COLUMN archived INTEGER NOT NULL DEFAULT 0");
+// Due dates (additive; NULL = none): a group-level "settle by" moment and a
+// per-expense "pay this back by" moment. Pure metadata — never affects math.
+if (!hasColumn("trips", "due_at")) db.exec("ALTER TABLE trips ADD COLUMN due_at TEXT");
+if (!hasColumn("expenses", "due_at")) db.exec("ALTER TABLE expenses ADD COLUMN due_at TEXT");
 
 // ---- Row hydration ---------------------------------------------------------
 
@@ -180,6 +188,7 @@ function hydrateExpense(row: any): TripExpense {
     fx: row.fx == null ? undefined : asJson<any>(row.fx, undefined),
     createdAt: row.created_at,
     kind: row.kind ?? undefined,
+    dueAt: row.due_at ?? undefined,
   };
 }
 
@@ -196,6 +205,7 @@ function buildTrip(row: any, members: TripMember[], expenses: TripExpense[]): Tr
     ownerUserId: row.owner_user_id ?? undefined,
     emoji: row.emoji ?? undefined,
     archived: row.archived == null ? false : !!Number(row.archived),
+    dueAt: row.due_at ?? undefined,
   };
 }
 
@@ -517,7 +527,7 @@ export async function updateMember(
  */
 export async function updateTrip(
   tripId: string,
-  patch: { name?: string; emoji?: string | null; archived?: boolean }
+  patch: { name?: string; emoji?: string | null; archived?: boolean; dueAt?: string | null }
 ): Promise<Trip> {
   const trip = await getTrip(tripId);
   if (!trip) throw new Error("updateTrip: trip not found");
@@ -530,18 +540,22 @@ export async function updateTrip(
       : trip.emoji ?? null;
   const archived =
     patch.archived !== undefined ? (patch.archived ? 1 : 0) : trip.archived ? 1 : 0;
+  // Callers validate the due date (server.ts uses autonudge.validateDueAt);
+  // this layer just persists it. null clears, undefined keeps.
+  const dueAt = patch.dueAt !== undefined ? patch.dueAt : trip.dueAt ?? null;
 
   if (usingSupabase) {
     const { error } = await supabase()
       .from("trips")
-      .update({ name, emoji, archived })
+      .update({ name, emoji, archived, due_at: dueAt })
       .eq("id", tripId);
     if (error) throw new Error(`updateTrip: ${error.message}`);
   } else {
-    db.prepare("UPDATE trips SET name = ?, emoji = ?, archived = ? WHERE id = ?").run(
+    db.prepare("UPDATE trips SET name = ?, emoji = ?, archived = ?, due_at = ? WHERE id = ?").run(
       name,
       emoji,
       archived,
+      dueAt,
       tripId
     );
   }
@@ -579,6 +593,8 @@ export async function addExpense(
     fx?: any;
     /** "transfer" = settle-outside payment record (see TripExpense.kind). */
     kind?: "transfer";
+    /** Optional pre-validated "pay back by" moment (ISO). */
+    dueAt?: string | null;
   }
 ): Promise<Trip> {
   const trip = await getTrip(tripId);
@@ -615,11 +631,12 @@ export async function addExpense(
       created_at: new Date().toISOString(),
       voided: 0,
       kind: expense.kind ?? null,
+      due_at: expense.dueAt ?? null,
     });
     if (error) throw new Error(`addExpense: ${error.message}`);
   } else {
     db.prepare(
-      "INSERT INTO expenses (id, trip_id, title, amount_cents, paid_by, participants, fx, created_at, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO expenses (id, trip_id, title, amount_cents, paid_by, participants, fx, created_at, kind, due_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     ).run(
       crypto.randomUUID(),
       tripId,
@@ -629,7 +646,8 @@ export async function addExpense(
       JSON.stringify(participants),
       expense.fx ? JSON.stringify(expense.fx) : null,
       new Date().toISOString(),
-      expense.kind ?? null
+      expense.kind ?? null,
+      expense.dueAt ?? null
     );
   }
   return (await getTrip(tripId)) as Trip;
@@ -648,6 +666,8 @@ export async function editExpense(
     amountCents?: number;
     paidBy?: string;
     participants?: string[];
+    /** Pre-validated ISO due moment; null clears, undefined keeps. */
+    dueAt?: string | null;
   }
 ): Promise<Trip> {
   const trip = await getTrip(tripId);
@@ -690,18 +710,20 @@ export async function editExpense(
     }
   }
 
+  const dueAt = patch.dueAt !== undefined ? patch.dueAt : existing.dueAt ?? null;
+
   if (usingSupabase) {
     const { error } = await supabase()
       .from("expenses")
-      .update({ title, amount_cents: amountCents, paid_by: paidBy, participants })
+      .update({ title, amount_cents: amountCents, paid_by: paidBy, participants, due_at: dueAt })
       .eq("id", expenseId)
       .eq("trip_id", tripId)
       .eq("voided", 0);
     if (error) throw new Error(`editExpense: ${error.message}`);
   } else {
     db.prepare(
-      "UPDATE expenses SET title = ?, amount_cents = ?, paid_by = ?, participants = ? WHERE id = ? AND trip_id = ? AND COALESCE(voided, 0) = 0"
-    ).run(title, amountCents, paidBy, JSON.stringify(participants), expenseId, tripId);
+      "UPDATE expenses SET title = ?, amount_cents = ?, paid_by = ?, participants = ?, due_at = ? WHERE id = ? AND trip_id = ? AND COALESCE(voided, 0) = 0"
+    ).run(title, amountCents, paidBy, JSON.stringify(participants), dueAt, expenseId, tripId);
   }
   return (await getTrip(tripId)) as Trip;
 }
