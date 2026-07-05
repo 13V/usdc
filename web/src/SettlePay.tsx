@@ -21,19 +21,20 @@ function fmt(cents: number) {
 
 const wrap: React.CSSProperties = {
   position: "relative", width: "100%", maxWidth: 430, margin: "0 auto", minHeight: "100vh",
-  background: "#2B2118", color: "#2B2118", fontFamily: "'General Sans',sans-serif",
+  background: "#F7F1E3", color: "#2B2118", fontFamily: "'General Sans',sans-serif",
   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
   padding: "0 26px", textAlign: "center",
 };
 const card: React.CSSProperties = {
-  background: "#FFFDF7", border: "1px solid rgba(43,33,24,0.09)", borderRadius: 20,
+  background: "#FFFDF7", border: "2px solid #2B2118", borderRadius: 20,
+  boxShadow: "3px 4px 0 rgba(43,33,24,0.85)",
   padding: 16, width: "100%", maxWidth: 320, margin: "14px 0",
 };
 const primary: React.CSSProperties = {
-  appearance: "none", border: "none", cursor: "pointer", width: "100%", maxWidth: 320,
-  minHeight: 58, borderRadius: 999, background: "linear-gradient(120deg,#3286db,#2775CA)",
+  appearance: "none", cursor: "pointer", width: "100%", maxWidth: 320,
+  minHeight: 58, borderRadius: 999, background: "#2775CA", border: "2px solid #2B2118",
   color: "#fff", fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600,
-  fontSize: 17, boxShadow: "0 14px 34px rgba(39,117,202,0.45)",
+  fontSize: 17, boxShadow: "3px 3px 0 rgba(43,33,24,0.9)",
 };
 const mono = "'Space Mono',monospace";
 

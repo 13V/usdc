@@ -10,23 +10,25 @@ import { safeReturnPath } from "./safeReturn";
 
 const wrap: React.CSSProperties = {
   position: "relative", width: "100%", maxWidth: 430, margin: "0 auto", minHeight: "100vh",
-  background: "#2B2118", color: "#2B2118", fontFamily: "'General Sans',sans-serif",
+  background: "#F7F1E3", color: "#2B2118", fontFamily: "'General Sans',sans-serif",
   display: "flex", flexDirection: "column", padding: "0 22px", boxSizing: "border-box",
 };
 const card: React.CSSProperties = {
-  background: "#FFFDF7", border: "1px solid rgba(43,33,24,0.09)", borderRadius: 18,
+  background: "#FFFDF7", border: "2px solid #2B2118", borderRadius: 18,
+  boxShadow: "3px 4px 0 rgba(43,33,24,0.85)",
   padding: 18, width: "100%", margin: "11px 0", boxSizing: "border-box",
 };
 const primary: React.CSSProperties = {
-  appearance: "none", border: "none", cursor: "pointer", width: "100%", minHeight: 54,
-  borderRadius: 999, background: "linear-gradient(120deg,#3286db,#2775CA)", color: "#fff",
+  appearance: "none", cursor: "pointer", width: "100%", minHeight: 54,
+  borderRadius: 999, background: "#2775CA", border: "2px solid #2B2118", color: "#fff",
   fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16,
-  boxShadow: "0 10px 26px rgba(39,117,202,0.42)", marginTop: 12,
+  boxShadow: "3px 3px 0 rgba(43,33,24,0.9)", marginTop: 12,
 };
 const ghost: React.CSSProperties = {
   appearance: "none", cursor: "pointer", width: "100%", minHeight: 52, borderRadius: 999,
-  background: "transparent", border: "1px solid rgba(43,33,24,0.18)", color: "#2B2118",
-  fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16, marginTop: 12,
+  background: "#FFFDF7", border: "2px solid #2B2118", color: "#2B2118",
+  fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16,
+  boxShadow: "3px 3px 0 rgba(43,33,24,0.35)", marginTop: 12,
 };
 const mono = "'Space Mono',monospace";
 
@@ -43,6 +45,17 @@ export function Wallet() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  // Dismissing a Privy sheet ("User exited before…") is a choice, not a failure —
+  // acknowledge it gently instead of flashing an error.
+  function soften(e: unknown, fallback: string) {
+    const raw = ((e as Error) && (e as Error).message) || "";
+    if (/exited|closed|cancel/i.test(raw)) {
+      setMsg("no worries — closed without changes 🐸");
+      return;
+    }
+    setErr(raw || fallback);
+  }
+
   useEffect(() => { if (ready && !authenticated) login(); }, [ready, authenticated, login]);
 
   // Privy scopes the embedded key to the authenticated user, so the export /
@@ -54,7 +67,7 @@ export function Wallet() {
       await exportWallet({ address: wallet.address });
       setMsg("if you saved your key, keep it somewhere only you can reach.");
     } catch (e) {
-      setErr((e as Error).message || "couldn't open export — your Privy app may have key export disabled.");
+      soften(e, "couldn't open export — your Privy app may have key export disabled.");
     } finally { setBusy(null); }
   }
 
@@ -64,7 +77,7 @@ export function Wallet() {
       await setWalletRecovery();
       setMsg("recovery set — you can restore this wallet with your password.");
     } catch (e) {
-      setErr((e as Error).message || "couldn't set recovery — try again in a moment.");
+      soften(e, "couldn't set recovery — try again in a moment.");
     } finally { setBusy(null); }
   }
 
@@ -120,7 +133,7 @@ export function Wallet() {
             lost access to your login? with a backup or recovery password you can always restore this wallet. without one, recovery depends on your login method — so set one up now.
           </div>
 
-          {msg && <p style={{ fontSize: 13, color: "#3DE8C7", marginTop: 14 }}>{msg}</p>}
+          {msg && <p style={{ fontSize: 13, color: "#17967f", marginTop: 14 }}>{msg}</p>}
           {err && <p style={{ fontSize: 13, color: "#FF6B5E", marginTop: 12 }}>{err}</p>}
           <div style={{ height: 30 }} />
         </>
