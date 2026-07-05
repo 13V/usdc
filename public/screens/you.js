@@ -263,6 +263,8 @@
         row("yWallet", "🔑", "rgba(139,92,246,0.16)", "wallet & recovery") + divider() +
         row("yFriends", "🫂", "rgba(39,117,202,0.16)", "friends") + divider() +
         row("yRecurring", "🔁", "rgba(61,232,199,0.14)", "recurring") + divider() +
+        // spending journal: the warm monthly digest ("you spent $214 going out").
+        row("yJournal", "📔", "rgba(255,198,92,0.16)", "spending journal") + divider() +
         row("ySaved", "🧾", "rgba(255,198,92,0.16)", "saved tabs") + divider() +
         // notifications taps through to the activity feed; an unread count badge
         // is patched in after render (best-effort, see wireNotifBadge).
@@ -674,6 +676,8 @@
     if (f) f.onclick = function () { location.hash = "#/friends"; };
     var r = document.getElementById("yRecurring");
     if (r) r.onclick = function () { location.hash = "#/recurring"; };
+    var jn = document.getElementById("yJournal");
+    if (jn) jn.onclick = function () { location.hash = "#/journal"; };
     var saved = document.getElementById("ySaved");
     if (saved) saved.onclick = function () { app.go("groups"); };
     var notif = document.getElementById("yNotif");

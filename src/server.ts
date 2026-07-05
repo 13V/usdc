@@ -101,6 +101,7 @@ import { subscriptionsRouter } from "./subscriptions";
 import { friendsRouter } from "./friends";
 import { chatRouter } from "./chat";
 import { mochiRouter } from "./mochi";
+import { journalRouter } from "./journal";
 import { reactionsRouter } from "./reactions";
 import { nudgesRouter } from "./nudges";
 import { pushRouter, sendPush } from "./push";
@@ -380,6 +381,8 @@ app.use(chatRouter);
 // "Ask Mochi" natural-language endpoint (Claude tool use; degrades gracefully
 // without ANTHROPIC_API_KEY — same provider pattern as /api/scan).
 app.use(mochiRouter);
+// Spending journal: warm monthly digest of the caller's own spending.
+app.use(journalRouter);
 app.use(reactionsRouter);
 app.use(nudgesRouter);
 app.use(pushRouter);
