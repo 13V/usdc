@@ -94,6 +94,7 @@ import {
 } from "./fx";
 import { dashboardRouter } from "./dashboard";
 import { iouRouter } from "./ious";
+import { tabsRouter } from "./tabs";
 import { activityRouter } from "./activity";
 import { recurringRouter } from "./recurring";
 import { friendsRouter } from "./friends";
@@ -368,6 +369,7 @@ app.use(
 // Each defines absolute /api paths and guards its own routes with requireAuth.
 app.use(dashboardRouter);
 app.use(iouRouter);
+app.use(tabsRouter);
 app.use(activityRouter);
 app.use(recurringRouter);
 app.use(friendsRouter);

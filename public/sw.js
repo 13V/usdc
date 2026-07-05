@@ -8,7 +8,7 @@ const SHELL = [
   // served against a freshly-cached app.js.
   "/screens/home.js", "/screens/welcome.js", "/screens/groups.js", "/screens/group.js",
   "/screens/new.js", "/screens/settle.js", "/screens/collect.js", "/screens/activity.js",
-  "/screens/friends.js", "/screens/friend.js", "/screens/recurring.js",
+  "/screens/friends.js", "/screens/friend.js", "/screens/tabs.js", "/screens/tab.js", "/screens/recurring.js",
   "/screens/you.js", "/screens/customize.js", "/screens/chat.js", "/screens/receipt.js",
 ];
 

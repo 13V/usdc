@@ -376,6 +376,41 @@
       '<span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7;"></span>' + label + '</span>';
   }
 
+  // ---- friend tabs (running 1:1 ledgers — see screens/tabs.js) ----
+  function friendTabsLabel(count) {
+    return '<div style="display:flex; align-items:baseline; gap:10px; margin:30px 2px 14px;">' +
+      '<span class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#2B2118;">friend tabs</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; color:#FF6B5E;">' + count + ' running</span>' +
+      '<a href="#/tabs" style="margin-left:auto; text-decoration:none; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:#2775CA;">all →</a></div>';
+  }
+  function friendTabRow(t) {
+    var f = t.friend || {};
+    var name = f.displayName || f.handle || "friend";
+    var first = String(name).trim().split(/\s+/)[0].toLowerCase();
+    var pos = t.direction === "owed", neg = t.direction === "owes";
+    var col = pos ? "#2775CA" : neg ? "#FF6B5E" : "#3DE8C7";
+    var sub = pos ? first + " owes you" : neg ? "you owe " + first : "square ✨";
+    var amt = t.direction === "settled"
+      ? '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#3DE8C7; flex:none;">square ✨</span>'
+      : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:18px; letter-spacing:-0.4px; color:' + col + '; flex:none;"><span style="opacity:.5;">' + (pos ? "+$" : "−$") + '</span>' + money3(Math.abs(t.balanceCents)) + '</div>';
+    return '<a href="#/tab/' + encodeURIComponent(f.id || "") + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; padding:11px 4px;">' +
+      '<div style="width:40px;height:40px;border-radius:50%;background:rgba(39,117,202,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;">' + app.face(f.emoji || (name || "?")[0]) + '</div>' +
+      '<div style="flex:1; min-width:0;">' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + (neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.6)") + '; margin-top:2px;">' + app.esc(sub) + '</div>' +
+      '</div>' + amt +
+      '<span style="display:flex; align-items:center; color:rgba(43,33,24,0.28); margin-left:2px; flex:none;"><svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
+    '</a>';
+  }
+  // quiet dashed entry point so tabs stay reachable from home before the first one
+  function startTabCard() {
+    return '<a href="#/tabs" style="display:flex; align-items:center; gap:11px; margin-top:26px; padding:13px 15px; border:1.5px dashed rgba(43,33,24,0.28); border-radius:15px; text-decoration:none; cursor:pointer;">' +
+      '<span style="font-size:19px; flex:none;">☕️</span>' +
+      '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(43,33,24,0.7);">running tabs — keep a "+$7 coffee" ledger with a friend</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2775CA; flex:none;">→</span>' +
+    '</a>';
+  }
+
   // Onboarding (signed-out): a mobile-first MINI-LANDING for cold traffic.
   // Above the fold: waving Mochi, the value headline, a one-line subhead, the
   // primary sign-in CTA (unchanged), and a high-visibility "try it first" button.
@@ -518,17 +553,19 @@
 
   async function signedIn(view) {
     view.innerHTML = topbar() + '<div class="appscroll"><div class="skeleton" style="height:230px;border-radius:23px;margin:14px 0;"></div><div class="skeleton" style="height:54px;margin:10px 0;"></div><div class="skeleton" style="height:54px;margin:10px 0;"></div></div>';
-    var d, bills = [], incoming = [], walletCents = null;
+    var d, bills = [], incoming = [], walletCents = null, friendTabs = [];
     try {
       var both = await Promise.all([
         app.api.get("/api/me/balances"),
         app.api.get("/api/me/bills").catch(function () { return { bills: [], incoming: [] }; }),
         app.api.get("/api/me/wallet").catch(function () { return null; }),
+        app.api.get("/api/tabs").catch(function () { return { tabs: [] }; }),
       ]);
       d = both[0];
       bills = (both[1] && both[1].bills) || [];
       incoming = (both[1] && both[1].incoming) || [];
       if (both[2] && typeof both[2].usdcCents === "number") walletCents = both[2].usdcCents;
+      friendTabs = (both[3] && both[3].tabs) || [];
     }
     catch (e) { view.innerHTML = topbar() + '<div class="empty"><div class="title lower">couldn\'t load balances</div><div class="hint">' + app.esc(e.message) + "</div></div>"; return; }
     var t = d.totals || {}, net = t.netCents || 0, owed = t.owedCents || 0, owe = t.owesCents || 0;
@@ -549,6 +586,11 @@
     var orderedBills = openBills.concat(doneBills);
 
     var peopleHtml = ppl.length ? sectionLabel("people", ppl.length) + '<div style="display:flex; flex-direction:column; gap:3px;">' + ppl.map(personRow).join("") + "</div>" : "";
+    // friend tabs: running 1:1 ledgers. With none yet, a quiet dashed card keeps
+    // the tabs screen reachable from home.
+    var friendTabsHtml = friendTabs.length
+      ? friendTabsLabel(friendTabs.length) + '<div style="display:flex; flex-direction:column; gap:3px;">' + friendTabs.map(friendTabRow).join("") + "</div>"
+      : startTabCard();
     var billsHtml = orderedBills.length ? sectionLabel("tabs", orderedBills.length) + '<div style="display:flex; flex-direction:column; gap:11px;">' + orderedBills.map(billCard).join("") + "</div>" : "";
 
     // Tabs to pay: splits others sent you. Unpaid first, then paid (history).
@@ -565,7 +607,7 @@
     // banner (injected by app.js) already carries the orientation, and stacking
     // both reads as clutter.
     var howHtml = (seenHow() || demoModeOn()) ? "" : howItWorksCard();
-    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + howHtml + hero(net, owed, owe, ppl, walletCents, quick) + incomingHtml + peopleHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
+    view.innerHTML = topbar() + '<div class="appscroll" style="padding-top:0;">' + howHtml + hero(net, owed, owe, ppl, walletCents, quick) + incomingHtml + peopleHtml + friendTabsHtml + billsHtml + groupsHtml + emptyHtml + "</div>";
     wireHowCard(view);
     // count the hero balance up from zero, and stagger the card list in.
     if (app.countUp) {
