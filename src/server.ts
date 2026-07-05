@@ -55,6 +55,8 @@ import {
   updateTrip,
   removeMember,
   addExpense,
+  addItemizedExpense,
+  mergeItemizedExpenses,
   editExpense,
   deleteExpense,
   saveSettlement,
@@ -64,6 +66,7 @@ import {
   isTripAuthorized,
   listAllSettlements,
 } from "./trips";
+import { validateItemized, itemizedShares, canItemize } from "./itemized";
 import {
   authOptional,
   requireAuth,
@@ -1281,7 +1284,10 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
         movedOutAt: m.movedOutAt || null,
       };
     })),
-    expenses: trip.expenses.map((e) => ({
+    // Itemized per-member rows collapse into ONE logical expense (id = the
+    // shared splitId) with an exact breakdown; balances above still use the
+    // raw rows, so the two views always agree.
+    expenses: mergeItemizedExpenses(trip.expenses).map((e) => ({
       id: e.id,
       title: e.title,
       amountCents: e.amountCents,
@@ -1300,6 +1306,26 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
           } @ $${Number(e.fx.rate).toFixed(4)} (as of ${e.fx.asOf})`
         : null,
       createdAt: e.createdAt,
+      itemized: !!e.itemized,
+      breakdown: e.itemized
+        ? e.itemized.breakdown.map((b) => ({
+            memberId: b.memberId,
+            name: memberName(trip, b.memberId),
+            cents: b.cents,
+            fmt: fmt(b.cents),
+          }))
+        : undefined,
+      items: e.itemized
+        ? e.itemized.items.map((it) => ({
+            label: it.label,
+            qty: it.qty,
+            cents: it.cents,
+            fmt: fmt(it.cents),
+            memberIds: it.memberIds,
+            names: it.memberIds.map((p) => memberName(trip, p)),
+          }))
+        : undefined,
+      extrasCents: e.itemized ? e.itemized.extrasCents : undefined,
     })),
     totalCents,
     totalFmt: fmt(totalCents),
@@ -1402,7 +1428,8 @@ function tripSummary(trip: Trip) {
   );
   // Transfers (settle-outside records) clear balances but aren't spending —
   // exclude them from the list summary's totals, like serializeTrip does.
-  const spendExpenses = trip.expenses.filter((e) => e.kind !== "transfer");
+  // Itemized per-member rows count as ONE logical expense (merge first).
+  const spendExpenses = mergeItemizedExpenses(trip.expenses).filter((e) => e.kind !== "transfer");
   const totalCents = spendExpenses.reduce((a, e) => a + e.amountCents, 0);
   const settledUp = balances.every((b) => b.cents === 0);
   return {
@@ -1685,12 +1712,98 @@ app.post("/api/trips/:id/expenses", writeRateLimit, async (req: Request, res: Re
   }
 });
 
+// Itemized "who had what" group expense: the server recomputes the exact
+// per-member shares from the raw items (never trusting client math) — each
+// item split evenly among who had it, extras (tip + tax + unassigned lines)
+// proportional to each member's item subtotal — and posts them as per-member
+// rows sharing a splitId, surfaced as ONE logical expense. Tighter than the
+// collaborative even-split ADD: requires a signed-in trip member.
+app.post(
+  "/api/trips/:id/expenses/itemized",
+  writeRateLimit,
+  requireAuth,
+  async (req: Request, res: Response) => {
+    try {
+      const trip = await getTrip(req.params.id);
+      if (!trip) return res.status(404).json({ error: "not found" });
+      if (!authorizeTrip(req, trip)) {
+        return res.status(403).json({ error: "not authorized for this trip" });
+      }
+      if (
+        !canItemize({
+          userId: req.userId,
+          ownerUserId: trip.ownerUserId || null,
+          memberUserIds: trip.members.map((m) => m.userId).filter((x): x is string => !!x),
+        })
+      ) {
+        return res.status(403).json({ error: "only group members can itemize an expense" });
+      }
+      const body = req.body as {
+        title?: string;
+        totalCents?: number;
+        paidBy?: string;
+        items?: unknown;
+        dueAt?: unknown;
+      };
+      const totalCents = body.totalCents;
+      if (!Number.isInteger(totalCents) || (totalCents as number) <= 0) {
+        return res.status(400).json({ error: "need a positive integer totalCents" });
+      }
+      if ((totalCents as number) > MAX_AMOUNT_CENTS) {
+        return res.status(400).json({ error: `amount exceeds cap ($${MAX_AMOUNT_CENTS / 100})` });
+      }
+      if (body.title !== undefined && String(body.title).trim()) {
+        assertLen(String(body.title), "expense title", 1, MAX_EXPENSE_TITLE);
+      }
+      const paidBy = String(body.paidBy || "");
+      if (!trip.members.some((m) => m.id === paidBy)) {
+        return res.status(400).json({ error: "paidBy must be a group member" });
+      }
+      const memberIds = trip.members.map((m) => m.id);
+      const v = validateItemized(body.items, totalCents as number, memberIds);
+      if (!v.ok) return res.status(400).json({ error: v.error });
+      // Optional "pay back by" moment (validated: future, ≤ 1 year).
+      let dueAt: string | null = null;
+      if (body.dueAt !== undefined) {
+        const dv = validateDueAt(body.dueAt, Date.now());
+        if (!dv.ok) return res.status(400).json({ error: dv.error });
+        dueAt = dv.dueAt;
+      }
+      // Exact shares (zero-sum with the payer's credit by construction). A
+      // member with no items and no extras owes nothing → no row.
+      const shares = itemizedShares(totalCents as number, v.items, memberIds);
+      const entries = memberIds
+        .map((id) => ({ memberId: id, cents: shares.get(id) as number }))
+        .filter((s) => s.cents > 0);
+      if (trip.expenses.length + entries.length > MAX_EXPENSES) {
+        return res.status(400).json({ error: `too many expenses (max ${MAX_EXPENSES})` });
+      }
+      const updated = await addItemizedExpense(trip.id, {
+        title: String(body.title || ""),
+        paidBy,
+        shares: entries,
+        meta: { items: v.items, extrasCents: v.extrasCents },
+        dueAt,
+      });
+      res.json(await serializeTrip(updated));
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  }
+);
+
 app.patch("/api/trips/:id/expenses/:eid", writeRateLimit, async (req: Request, res: Response) => {
   try {
     const trip = await getTrip(req.params.id);
     if (!trip) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, trip)) {
       return res.status(403).json({ error: "not authorized for this trip" });
+    }
+    // Itemized expenses (the merged id is the splitId, and each underlying row
+    // carries one) can't be PATCHed — a partial edit would desync the exact
+    // per-member rows from their item breakdown. Delete and re-add instead.
+    if (trip.expenses.some((e) => e.splitId === req.params.eid || (e.id === req.params.eid && e.splitId))) {
+      return res.status(403).json({ error: "itemized expenses can't be edited — delete and re-add it" });
     }
     const existingExpense = trip.expenses.find((e) => e.id === req.params.eid);
     if (!existingExpense) return res.status(404).json({ error: "expense not found" });
@@ -1753,6 +1866,22 @@ app.delete("/api/trips/:id/expenses/:eid", writeRateLimit, async (req: Request, 
     if (!existing) return res.status(404).json({ error: "not found" });
     if (!authorizeTrip(req, existing)) {
       return res.status(403).json({ error: "not authorized for this trip" });
+    }
+    // An itemized expense is one LOGICAL expense stored as per-member rows —
+    // the client deletes by the merged id (the shared splitId), and every row
+    // of the group must void together so no partial breakdown lingers.
+    const itemizedRows = existing.expenses.filter(
+      (e) => e.splitId && (e.splitId === req.params.eid || e.id === req.params.eid)
+    );
+    if (itemizedRows.length > 0) {
+      const splitId = itemizedRows[0].splitId as string;
+      const group = existing.expenses.filter((e) => e.splitId === splitId);
+      if (!canMutateExpense(req, existing, group[0].paidBy)) {
+        return res.status(403).json({ error: "only the trip owner or the person who paid can delete this expense" });
+      }
+      let trip = existing;
+      for (const row of group) trip = await deleteExpense(req.params.id, row.id);
+      return res.json(await serializeTrip(trip));
     }
     const toDelete = existing.expenses.find((e) => e.id === req.params.eid);
     if (!toDelete) return res.status(404).json({ error: "expense not found" });

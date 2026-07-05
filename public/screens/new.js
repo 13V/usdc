@@ -278,8 +278,10 @@
       var shares = equalShares(grand, n);
       var eachCents = n > 0 ? shares[0] : 0; // top-of-list share (others within 1¢)
       var tipNote = tipPct() > 0 ? "incl. " + tipPct() + "% tip" : "no tip added";
-      // itemized "who had what" is standalone-only (trip expenses are even-split)
-      var itemized = !inGroup && st.itemized && st.items && st.items.length > 0;
+      // itemized "who had what": standalone tabs post custom shares to
+      // /api/bills; group expenses post items to /api/trips/:id/expenses/itemized
+      // (exact per-member shares, tip & tax proportional to what you ordered).
+      var itemized = !editing && st.itemized && st.items && st.items.length > 0;
       var comp = itemized ? computeItemized() : null;
 
       // headline
@@ -510,13 +512,26 @@
           stepper + modeToggle + memberChips + body +
         '</div>';
 
+      // ---- "itemize it 🧾" toggle (group only — who had what) ----
+      var itemizeRow = (inGroup && !editing && !itemized) ?
+        '<div style="margin-top:16px;">' +
+          '<button id="nItemizeOn" style="appearance:none; cursor:pointer; width:100%; border-radius:15px; border:1.5px dashed rgba(39,117,202,0.5); background:linear-gradient(160deg, rgba(39,117,202,0.10), rgba(39,117,202,0.03)); display:flex; align-items:center; gap:12px; padding:13px 15px; text-align:left;">' +
+            '<span style="font-size:20px; flex:none;">🧾</span>' +
+            '<span style="flex:1; min-width:0;">' +
+              '<span style="display:block; font-family:' + F_DISPLAY + '; font-weight:600; font-size:15px; color:#2B2118;">itemize it</span>' +
+              '<span style="display:block; font-family:' + F_SANS + '; font-size:12px; color:rgba(43,33,24,0.55); margin-top:1px;">who had what — tip &amp; tax split by what you ordered</span>' +
+            '</span>' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>' +
+          '</button>' +
+        '</div>' : '';
+
       // ---- itemized: journal of line items + tappable member chips ----
       var itemizedSection = "";
       if (itemized) {
         var members = comp.members;
         var itemRows = st.items.map(function (item, idx) {
           var qtyBadge = item.qty > 1
-            ? '<span style="font-family:' + F_MONO + '; font-size:11px; color:rgba(43,33,24,0.42);">' + item.qty + '× </span>' : '';
+            ? '<span style="font-family:' + F_MONO + '; font-size:11px; color:rgba(43,33,24,0.42); flex:none;">' + item.qty + '×</span>' : '';
           var chips = members.map(function (m) {
             var on = !!item.assigned[m.id];
             return '<button data-item-idx="' + idx + '" data-item-member="' + app.esc(m.id) + '" aria-label="assign to ' + app.esc(m.you ? "you" : m.name) + '" ' +
@@ -525,18 +540,29 @@
               'border:2.5px solid ' + (on ? '#2775CA' : 'rgba(43,33,24,0.12)') + '; opacity:' + (on ? '1' : '0.42') + '; ' +
               'filter:' + (on ? 'none' : 'grayscale(0.35)') + ';">' + app.face(m.emoji) + '</button>';
           }).join("");
+          // editable line: label + price inputs (dashed journal underlines) + ✕
           return '<div style="padding:11px 2px;' + (idx ? ' border-top:1px dashed rgba(43,33,24,0.1);' : '') + '">' +
-            '<div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">' +
-              '<span style="font-family:' + F_DISPLAY + '; font-weight:500; font-size:15px; color:#2B2118;">' + qtyBadge + app.esc(item.label) + '</span>' +
-              '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:15px; color:#2B2118; flex:none;">$' + dollars(item.cents) + '</span>' +
+            '<div style="display:flex; align-items:center; gap:8px;">' +
+              qtyBadge +
+              '<input data-item-label="' + idx + '" value="' + app.esc(item.label) + '" placeholder="item" maxlength="60" ' +
+                'style="all:unset; flex:1; min-width:0; font-family:' + F_DISPLAY + '; font-weight:500; font-size:15px; color:#2B2118; border-bottom:1px dashed rgba(43,33,24,0.18); padding:2px 0;">' +
+              '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:13px; color:rgba(43,33,24,0.4); flex:none;">$</span>' +
+              '<input data-item-price="' + idx + '" inputmode="decimal" enterkeyhint="done" value="' + (item.cents ? dollars(item.cents) : '') + '" placeholder="0.00" ' +
+                'style="all:unset; width:62px; text-align:right; font-family:' + F_MONO + '; font-weight:700; font-size:15px; color:#2B2118; border-bottom:1px dashed rgba(43,33,24,0.18); padding:2px 0; flex:none;">' +
+              '<button data-item-del="' + idx + '" aria-label="remove item" style="appearance:none; border:none; background:transparent; cursor:pointer; flex:none; font-size:14px; color:rgba(43,33,24,0.35); padding:2px 3px; line-height:1;">✕</button>' +
             '</div>' +
             '<div class="ns-row" style="display:flex; gap:7px; overflow-x:auto; scrollbar-width:none; margin-top:9px; padding:1px;">' + chips + '</div>' +
           '</div>';
         }).join("");
 
+        var addItemRow =
+          '<div style="padding:10px 2px 6px;' + (st.items.length ? ' border-top:1px dashed rgba(43,33,24,0.1);' : '') + '">' +
+            '<button id="nItemAdd" style="appearance:none; cursor:pointer; width:100%; min-height:40px; border-radius:11px; border:1.5px dashed rgba(39,117,202,0.5); background:rgba(39,117,202,0.06); font-family:' + F_MONO + '; font-size:11px; letter-spacing:.5px; color:#2775CA;">＋ add an item</button>' +
+          '</div>';
+
         var extrasNote = comp.anyAssigned
           ? "tax, tip &amp; anything unassigned — split by what you had"
-          : "tap who had each item — for now it’s even";
+          : (inGroup ? "tap who had each item to send it 🧾" : "tap who had each item — for now it’s even");
         var extrasRow =
           '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 2px 2px; border-top:1px dashed rgba(43,33,24,0.14); margin-top:2px;">' +
             '<span style="font-family:' + F_MONO + '; font-size:11px; letter-spacing:.3px; color:rgba(43,33,24,0.55);">everything else</span>' +
@@ -564,7 +590,7 @@
               '<button id="nSplitEven" style="appearance:none; border:none; cursor:pointer; background:transparent; font-family:' + F_MONO + '; font-size:10px; letter-spacing:.3px; color:#2775CA; text-decoration:underline; padding:0;">split evenly instead</button>' +
             '</div>' + lowNote + memberChips +
             '<div style="margin-top:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:4px 14px 12px;">' +
-              itemRows + extrasRow +
+              itemRows + addItemRow + extrasRow +
             '</div>' +
             '<div style="margin-top:13px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); border-radius:18px; padding:8px 14px 10px;">' +
               '<div style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); padding:6px 2px 2px;">EACH PERSON OWES</div>' +
@@ -581,7 +607,7 @@
       var mainSplit = itemized ? itemizedSection : splitBetween;
       var scroll =
         '<div class="ns-scroll" style="position:relative; z-index:2; flex:1; overflow-y:auto; scrollbar-width:none; padding:6px 20px 150px;">' +
-          headline + grpPill + hero + whatFor + totalBlock + tipSeg + paidBy + dueBlock + mainSplit +
+          headline + grpPill + hero + whatFor + totalBlock + tipSeg + paidBy + dueBlock + itemizeRow + mainSplit +
         '</div>';
 
       // send footer — exact frame button + dry mono subline
@@ -726,6 +752,48 @@
         st.itemized = false; st.mode = "equally"; render();
       };
 
+      // itemize it 🧾 (group): flip into the item editor, seeding a blank row
+      var itemizeOn = document.getElementById("nItemizeOn");
+      if (itemizeOn) itemizeOn.onclick = function () {
+        if (!st.items || !st.items.length) st.items = [{ label: "", qty: 1, cents: 0, assigned: {} }];
+        st.itemized = true;
+        render();
+      };
+      // editable item rows: label (live), price (re-balance on blur/enter), ✕
+      [].forEach.call(document.querySelectorAll("[data-item-label]"), function (inp) {
+        inp.oninput = function () {
+          var it = st.items && st.items[parseInt(inp.getAttribute("data-item-label"), 10)];
+          if (it) it.label = inp.value.slice(0, 60);
+        };
+      });
+      [].forEach.call(document.querySelectorAll("[data-item-price]"), function (inp) {
+        var idx = parseInt(inp.getAttribute("data-item-price"), 10);
+        inp.oninput = function () {
+          var it = st.items && st.items[idx];
+          if (it) it.cents = toCents(inp.value);
+        };
+        inp.onblur = function () { render(); };
+        inp.onkeydown = function (ev) {
+          if (ev.key === "Enter") { ev.preventDefault(); inp.blur(); }
+        };
+      });
+      [].forEach.call(document.querySelectorAll("[data-item-del]"), function (b) {
+        b.onclick = function () {
+          var idx = parseInt(b.getAttribute("data-item-del"), 10);
+          if (!st.items) return;
+          st.items.splice(idx, 1);
+          if (!st.items.length) { st.itemized = false; st.items = null; }
+          render();
+        };
+      });
+      var itemAdd = document.getElementById("nItemAdd");
+      if (itemAdd) itemAdd.onclick = function () {
+        if (!st.items) st.items = [];
+        if (st.items.length >= 50) { app.toast("that's the limit — 50 items"); return; }
+        st.items.push({ label: "", qty: 1, cents: 0, assigned: {} });
+        render();
+      };
+
       var send = document.getElementById("nSend");
       if (send) send.onclick = doSend;
     }
@@ -864,8 +932,9 @@
       st.scanTipCents = (r.tipCents | 0) || 0;
       st.scanSubtotalCents = (r.subtotalCents | 0) || 0;
       st.itemized = false; st.items = null;
-      // Itemized flow is standalone-only (trip expenses do even splits server-side).
-      if (!groupId && r.items && r.items.length) {
+      // Line items enter "who had what" mode — standalone tabs AND group
+      // expenses (the trips itemized endpoint posts exact per-member shares).
+      if (r.items && r.items.length) {
         var items = [];
         for (var i = 0; i < r.items.length && items.length < 40; i++) {
           var it = r.items[i] || {};
@@ -919,6 +988,30 @@
       var title = st.title.trim() || "tab";
       var send = document.getElementById("nSend");
 
+      // Group + itemized: build the raw items payload — the SERVER recomputes
+      // the exact shares (items even among who had them, tip & tax proportional
+      // to item subtotals), so we only validate it's sendable here.
+      var groupItems = null;
+      if (groupId && !st.editId && st.itemized && st.items && st.items.length) {
+        var gcomp = computeItemized();
+        if (!gcomp.anyAssigned) { app.toast("tap who had each item 🧾"); return; }
+        if (gcomp.extras < 0) { app.toast("items add up past the total — bump the total"); return; }
+        var incSet = {};
+        inc.forEach(function (m) { incSet[m.id] = 1; });
+        groupItems = [];
+        for (var gi = 0; gi < st.items.length; gi++) {
+          var git = st.items[gi];
+          if (!(git.cents > 0)) continue; // blank rows don't count
+          groupItems.push({
+            label: (git.label || "").trim().slice(0, 60) || "item",
+            qty: git.qty > 1 ? git.qty : 1,
+            cents: git.cents,
+            memberIds: Object.keys(git.assigned).filter(function (id) { return git.assigned[id] && incSet[id]; }),
+          });
+        }
+        if (!groupItems.length) { app.toast("give the items a price first"); return; }
+      }
+
       // Standalone "by share": send the per-person amounts (the /api/bills path
       // honors customCents) and require they balance to the total first.
       var customCents = null;
@@ -951,7 +1044,19 @@
       if (send) { send.disabled = true; send.style.opacity = ".6"; }
 
       try {
-        if (groupId) {
+        if (groupId && groupItems) {
+          // itemized group expense → ONE logical ledger entry with exact shares
+          await app.api.post("/api/trips/" + encodeURIComponent(groupId) + "/expenses/itemized", {
+            title: title,
+            totalCents: grand,
+            paidBy: st.paidBy,
+            items: groupItems,
+            dueAt: st.dueAt ? st.dueAt : undefined,
+          });
+          app.toast("added to the tab 🧾✨");
+          if (app.maybeAskPush) setTimeout(function () { app.maybeAskPush("bill_created"); }, 700);
+          location.hash = "#/group/" + encodeURIComponent(groupId);
+        } else if (groupId) {
           var payload = {
             title: title,
             amountCents: grand,

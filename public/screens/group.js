@@ -555,17 +555,28 @@
     if (h < 24) return h + "h";
     return Math.floor(h / 24) + "d";
   }
+  // an itemized expense carries an EXACT per-member breakdown — your share is
+  // yours from the receipt (tip & tax proportional), not amount/n.
+  function myShareOf(e, meId) {
+    if (e.itemized && e.breakdown) {
+      for (var i = 0; i < e.breakdown.length; i++) {
+        if (e.breakdown[i].memberId === meId) return e.breakdown[i].cents;
+      }
+      return 0;
+    }
+    var n = (e.participants || []).length || 1;
+    return Math.round((e.amountCents || 0) / n);
+  }
   // your delta on this tab: +back if you paid, −share if you owe
   function tabDelta(e, me) {
     if (!me || !e.participants) return null;
-    var n = e.participants.length || 1;
-    var share = Math.round((e.amountCents || 0) / n);
+    var share = myShareOf(e, me.id);
     var inSplit = e.participants.indexOf(me.id) >= 0;
     var youPaid = e.paidBy === me.id;
     if (youPaid) {
       var back = (e.amountCents || 0) - (inSplit ? share : 0);
       if (back > 0) return { cents: back, color: "#2775CA", sign: "+$" };
-    } else if (inSplit) {
+    } else if (inSplit && share > 0) {
       return { cents: share, color: "#FF6B5E", sign: "−$" };
     }
     return null;
@@ -598,7 +609,8 @@
       '<div style="flex:1; min-width:0;">' +
         '<div style="display:flex; align-items:center; gap:7px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(e.title || "a tab") + '</span></div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6); margin-top:3px;">' +
-          app.esc((e.paidByName || "someone").toLowerCase()) + ' paid · split ' + n + (t ? ' · ' + t : "") +
+          app.esc((e.paidByName || "someone").toLowerCase()) + ' paid · ' +
+          (e.itemized ? '<span style="color:#2775CA;">itemized 🧾</span> · ' + n : 'split ' + n) + (t ? ' · ' + t : "") +
           (e.dueAt ? ' · <span style="color:' + (e.overdue ? "#FF6B5E" : "#2775CA") + ';">' + (e.overdue ? "overdue" : "due " + app.esc(dueLabel(e.dueAt))) + ' 🗓️</span>' : "") +
         '</div>' +
       '</div>' +
@@ -644,6 +656,11 @@
     var each = Math.round((e.amountCents || 0) / n);
     var meId = me && me.id;
     var youOwe = 0;
+    var isItemized = !!(e.itemized && e.breakdown);
+    // exact per-member cents for an itemized expense (memberId -> cents)
+    var bd = {};
+    if (isItemized) e.breakdown.forEach(function (b) { bd[b.memberId] = b.cents; });
+    var shareOf = function (pid) { return isItemized ? (bd[pid] || 0) : each; };
 
     // meta line: "maya paid · jun 22" (frame shows IZAKAYA · SHIBUYA above; we
     // surface the payer/date there since the api has no venue).
@@ -653,7 +670,9 @@
     }
     var payerName = (e.paidByName || "someone").toLowerCase();
     var payerM = memberById(trip, e.paidBy);
-    var subline = (e.fxNote ? e.fxNote.toUpperCase() : "split " + n + " · " + plain(each) + " each").toUpperCase();
+    var subline = (e.fxNote ? e.fxNote.toUpperCase()
+      : isItemized ? "itemized 🧾 · who had what"
+      : "split " + n + " · " + plain(each) + " each").toUpperCase();
 
     // per-person split rows with PAID / SQUARED / "you owe 👀" tags
     var rowsHtml = (e.participants || []).map(function (pid, idx) {
@@ -661,6 +680,7 @@
       var name = (e.participantNames && e.participantNames[idx]) || pm.name || pid;
       var isYou = pid === meId;
       var isPayer = pid === e.paidBy; // payer fronted the money
+      var each = shareOf(pid);
       var amtColor, tag;
       if (isPayer) {
         amtColor = "rgba(43,33,24,0.85)";
@@ -719,9 +739,34 @@
         '</div>' +
         // perforation
         '<div style="position:relative; height:1px; margin:6px 0 0; border-top:1.5px dashed rgba(43,33,24,0.14);"><div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div><div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div></div>' +
+        // itemized: the receipt lines (qty× label · who had it · price) + the
+        // "everything else" strip (tip & tax, split by what each person had)
+        (isItemized ?
+          '<div style="position:relative; padding:8px 16px 0;">' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); padding:8px 4px 4px;">WHO HAD WHAT 🧾</div>' +
+            (e.items || []).map(function (it) {
+              var qty = it.qty > 1 ? it.qty + '× ' : '';
+              var who = (it.names || []).map(function (nm, wi) {
+                var mid = (it.memberIds || [])[wi];
+                return mid === meId ? "you" : String(nm || "").toLowerCase();
+              }).join(", ");
+              return '<div style="display:flex; align-items:baseline; gap:10px; padding:6px 4px;">' +
+                '<div style="flex:1; min-width:0;">' +
+                  '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + qty + app.esc(it.label || "item") + '</div>' +
+                  '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:' + (who ? 'rgba(43,33,24,0.5)' : 'rgba(255,107,94,0.8)') + ';">' + (who ? app.esc(who) : "unassigned → tip &amp; tax pot") + '</div>' +
+                '</div>' +
+                '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:13px; color:#2B2118; flex:none;">' + plain(it.cents || 0) + '</span>' +
+              '</div>';
+            }).join("") +
+            '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:4px; padding:8px 10px; background:rgba(39,117,202,0.07); border:1.5px dashed rgba(39,117,202,0.4); border-radius:11px;">' +
+              '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.55);">INCL. TIP &amp; TAX — SPLIT BY WHAT YOU HAD</span>' +
+              '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:12px; color:#2775CA; flex:none;">' + plain(e.extrasCents || 0) + '</span>' +
+            '</div>' +
+          '</div>' : '') +
         // per-person
         '<div style="position:relative; padding:8px 16px 16px;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); padding:8px 4px 4px;">SPLIT ' + n + ' · ' + plain(each) + ' EACH</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); padding:8px 4px 4px;">' +
+            (isItemized ? 'EACH PERSON OWES · EXACT' : 'SPLIT ' + n + ' · ' + plain(each) + ' EACH') + '</div>' +
           rowsHtml +
         '</div>' +
       '</div>' +
@@ -730,8 +775,11 @@
       // actions
       '<div style="margin:0 20px;">' + settleBtn + '</div>' +
       '<div style="display:flex; align-items:center; justify-content:center; gap:22px; margin-top:14px;">' +
-        '<span id="gTabEdit" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">edit</span>' +
-        '<span style="width:3px; height:3px; border-radius:50%; background:rgba(43,33,24,0.3);"></span>' +
+        // itemized expenses can't be partially edited (exact per-person shares
+        // would desync from the items) — delete & re-add instead.
+        (isItemized ? '' :
+          '<span id="gTabEdit" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">edit</span>' +
+          '<span style="width:3px; height:3px; border-radius:50%; background:rgba(43,33,24,0.3);"></span>') +
         '<span id="gTabDelete" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">delete</span>' +
       '</div>' +
     '</div>';

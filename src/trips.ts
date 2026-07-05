@@ -57,6 +57,32 @@ export interface TripExpense {
   kind?: string;
   /** Optional "pay this back by" moment (ISO). Display + nudge metadata only. */
   dueAt?: string;
+  /**
+   * Itemized "who had what" grouping. An itemized group expense is stored as
+   * per-member single-participant rows (exact cents — the subscriptions.ts /
+   * household.ts pattern, since ledger.computeBalances only splits evenly)
+   * sharing one splitId. Balances math sees the raw rows; serialization merges
+   * them into ONE logical expense (mergeItemizedExpenses).
+   */
+  splitId?: string;
+  /** Itemization metadata (items + extras), stored on ONE row of the group. */
+  splitMeta?: ItemizedExpenseMeta;
+}
+
+export interface ItemizedExpenseMeta {
+  items: { label: string; qty: number; cents: number; memberIds: string[] }[];
+  /** Tip + tax + unassigned lines (total − item sum), ≥ 0. */
+  extrasCents: number;
+}
+
+/** One logical expense for display: ordinary rows pass through; itemized row
+ *  groups collapse into a single expense with an exact per-member breakdown. */
+export interface DisplayExpense extends TripExpense {
+  itemized?: {
+    breakdown: { memberId: string; cents: number }[];
+    items: ItemizedExpenseMeta["items"];
+    extrasCents: number;
+  };
 }
 
 export interface Trip {
@@ -170,6 +196,11 @@ if (!hasColumn("expenses", "due_at")) db.exec("ALTER TABLE expenses ADD COLUMN d
 if (!hasColumn("trips", "kind")) db.exec("ALTER TABLE trips ADD COLUMN kind TEXT");
 if (!hasColumn("trip_members", "moved_in_at")) db.exec("ALTER TABLE trip_members ADD COLUMN moved_in_at TEXT");
 if (!hasColumn("trip_members", "moved_out_at")) db.exec("ALTER TABLE trip_members ADD COLUMN moved_out_at TEXT");
+// Itemized "who had what" group expenses (additive; NULL = ordinary expense):
+// split_id groups the per-member exact-share rows of one logical expense,
+// split_meta (JSON, on one row of the group) carries the item breakdown.
+if (!hasColumn("expenses", "split_id")) db.exec("ALTER TABLE expenses ADD COLUMN split_id TEXT");
+if (!hasColumn("expenses", "split_meta")) db.exec("ALTER TABLE expenses ADD COLUMN split_meta TEXT");
 
 // ---- Row hydration ---------------------------------------------------------
 
@@ -205,6 +236,11 @@ function hydrateExpense(row: any): TripExpense {
     createdAt: row.created_at,
     kind: row.kind ?? undefined,
     dueAt: row.due_at ?? undefined,
+    splitId: row.split_id ?? undefined,
+    splitMeta:
+      row.split_meta == null
+        ? undefined
+        : asJson<ItemizedExpenseMeta | undefined>(row.split_meta, undefined),
   };
 }
 
@@ -707,6 +743,148 @@ export async function addExpense(
     );
   }
   return (await getTrip(tripId)) as Trip;
+}
+
+/**
+ * Persist an itemized "who had what" expense: one row PER MEMBER with their
+ * exact share (single-participant, so ledger.computeBalances charges it
+ * exactly — the subscriptions.ts/household.ts pattern), all sharing one
+ * splitId so reads can merge them back into ONE logical expense. The payer's
+ * own share is stored too (paidBy === participant, balance-neutral) so the
+ * merged amount equals the receipt total. Zero shares are skipped by callers.
+ *
+ * Rows are written atomically (SQLite transaction / one Supabase batch
+ * insert) with an identical created_at.
+ */
+export async function addItemizedExpense(
+  tripId: string,
+  expense: {
+    title: string;
+    paidBy: string;
+    /** Exact per-member cents; every entry must be a positive integer. */
+    shares: { memberId: string; cents: number }[];
+    meta: ItemizedExpenseMeta;
+    /** Optional pre-validated "pay back by" moment (ISO). */
+    dueAt?: string | null;
+  }
+): Promise<Trip> {
+  const trip = await getTrip(tripId);
+  if (!trip) throw new Error("addItemizedExpense: trip not found");
+
+  const title = String(expense.title || "").trim() || "Expense";
+  const memberIds = new Set(trip.members.map((m) => m.id));
+  if (!memberIds.has(expense.paidBy)) {
+    throw new Error("addItemizedExpense: paidBy must be a trip member");
+  }
+  const shares = expense.shares || [];
+  if (shares.length === 0) throw new Error("addItemizedExpense: need at least one share");
+  const seen = new Set<string>();
+  for (const s of shares) {
+    if (!memberIds.has(s.memberId)) {
+      throw new Error(`addItemizedExpense: member ${s.memberId} is not a trip member`);
+    }
+    if (seen.has(s.memberId)) {
+      throw new Error("addItemizedExpense: duplicate member share");
+    }
+    seen.add(s.memberId);
+    if (!Number.isInteger(s.cents) || s.cents <= 0) {
+      throw new Error("addItemizedExpense: each share must be a positive integer");
+    }
+  }
+
+  const splitId = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+  const rows = shares.map((s, i) => ({
+    id: crypto.randomUUID(),
+    trip_id: tripId,
+    title,
+    amount_cents: s.cents,
+    paid_by: expense.paidBy,
+    participants: [s.memberId],
+    created_at: createdAt,
+    split_id: splitId,
+    // Meta lives on the FIRST row only; the group is always voided together,
+    // so it can never orphan.
+    split_meta: i === 0 ? expense.meta : null,
+    due_at: expense.dueAt ?? null,
+  }));
+
+  if (usingSupabase) {
+    const { error } = await supabase().from("expenses").insert(
+      rows.map((r) => ({
+        ...r,
+        participants: r.participants, // jsonb
+        split_meta: r.split_meta, // jsonb
+        fx: null,
+        voided: 0,
+        kind: null,
+      }))
+    );
+    if (error) throw new Error(`addItemizedExpense: ${error.message}`);
+  } else {
+    const insert = db.prepare(
+      "INSERT INTO expenses (id, trip_id, title, amount_cents, paid_by, participants, fx, created_at, kind, due_at, split_id, split_meta) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, NULL, ?, ?, ?)"
+    );
+    const tx = db.transaction(() => {
+      for (const r of rows) {
+        insert.run(
+          r.id,
+          r.trip_id,
+          r.title,
+          r.amount_cents,
+          r.paid_by,
+          JSON.stringify(r.participants),
+          r.created_at,
+          r.due_at,
+          r.split_id,
+          r.split_meta ? JSON.stringify(r.split_meta) : null
+        );
+      }
+    });
+    tx();
+  }
+  return (await getTrip(tripId)) as Trip;
+}
+
+/**
+ * Collapse per-member itemized rows (shared splitId) into ONE logical expense
+ * for display: id = splitId, amount = sum of shares (the receipt total),
+ * participants = the members with a share, plus an exact breakdown + the item
+ * metadata. Ordinary expenses pass through untouched, in order. Pure.
+ */
+export function mergeItemizedExpenses(expenses: TripExpense[]): DisplayExpense[] {
+  const out: DisplayExpense[] = [];
+  const bySplit = new Map<string, DisplayExpense>();
+  for (const e of expenses) {
+    if (!e.splitId) {
+      out.push(e);
+      continue;
+    }
+    let merged = bySplit.get(e.splitId);
+    if (!merged) {
+      merged = {
+        ...e,
+        id: e.splitId,
+        amountCents: 0,
+        participants: [],
+        splitMeta: undefined,
+        itemized: { breakdown: [], items: [], extrasCents: 0 },
+      };
+      bySplit.set(e.splitId, merged);
+      out.push(merged);
+    }
+    merged.amountCents += e.amountCents;
+    const memberId = e.participants[0];
+    if (memberId !== undefined) {
+      merged.participants = merged.participants.concat([memberId]);
+      merged.itemized!.breakdown.push({ memberId, cents: e.amountCents });
+    }
+    if (e.splitMeta) {
+      merged.itemized!.items = e.splitMeta.items || [];
+      merged.itemized!.extrasCents = e.splitMeta.extrasCents || 0;
+    }
+  }
+  return out;
 }
 
 /**
