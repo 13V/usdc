@@ -99,6 +99,7 @@ import { tabsRouter } from "./tabs";
 import { activityRouter } from "./activity";
 import { recurringRouter } from "./recurring";
 import { subscriptionsRouter } from "./subscriptions";
+import { householdRouter } from "./household";
 import { friendsRouter } from "./friends";
 import { chatRouter } from "./chat";
 import { mochiRouter } from "./mochi";
@@ -392,6 +393,7 @@ app.use(tabsRouter);
 app.use(activityRouter);
 app.use(recurringRouter);
 app.use(subscriptionsRouter);
+app.use(householdRouter);
 app.use(friendsRouter);
 app.use(chatRouter);
 // "Ask Mochi" natural-language endpoint (Claude tool use; degrades gracefully
@@ -1261,6 +1263,7 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
     emoji: trip.emoji || null,
     archived: !!trip.archived,
     dueAt: trip.dueAt || null,
+    kind: trip.kind || null,
     overdue: isPast(trip.dueAt) && !settledUp,
     members: await Promise.all(trip.members.map(async (m) => {
       // A linked member shows that account's chosen emoji/color; otherwise the
@@ -1274,6 +1277,8 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
         claimed: !!m.userId,
         emoji: (linked && linked.emoji) || m.emoji || null,
         color: (linked && linked.color) || m.color || null,
+        movedInAt: m.movedInAt || null,
+        movedOutAt: m.movedOutAt || null,
       };
     })),
     expenses: trip.expenses.map((e) => ({
@@ -1335,8 +1340,17 @@ app.post("/api/trips", spamRateLimit, async (req: Request, res: Response) => {
       name?: string;
       members?: { name?: string; wallet?: string; userId?: string }[];
       dueAt?: unknown;
+      kind?: unknown;
     };
     const name = assertLen(String(body.name || ""), "trip name", 1, MAX_TRIP_NAME);
+    // Optional group kind — only the "roommates 🏠" household template for now.
+    let kind: string | null = null;
+    if (body.kind !== undefined && body.kind !== null && body.kind !== "") {
+      if (body.kind !== "household") {
+        return res.status(400).json({ error: 'kind must be "household"' });
+      }
+      kind = "household";
+    }
     // Optional "settle by" date, set at creation (validated: future, ≤ 1 year).
     let dueAt: string | null = null;
     if (body.dueAt !== undefined) {
@@ -1369,7 +1383,7 @@ app.post("/api/trips", spamRateLimit, async (req: Request, res: Response) => {
     }
     // Record ownership so this trip shows up in "my trips".
     let trip = await createTrip(name, cluster, members, req.userId);
-    if (dueAt) trip = await updateTrip(trip.id, { dueAt });
+    if (dueAt || kind) trip = await updateTrip(trip.id, { ...(dueAt ? { dueAt } : {}), ...(kind ? { kind } : {}) });
     res.json(await serializeTrip(trip, { refUserId: req.userId }));
   } catch (err) {
     res.status(400).json({ error: (err as Error).message });
@@ -1406,6 +1420,7 @@ function tripSummary(trip: Trip) {
     emoji: trip.emoji || null,
     archived: !!trip.archived,
     dueAt: trip.dueAt || null,
+    kind: trip.kind || null,
     overdue: !!(trip.dueAt && new Date(trip.dueAt).getTime() <= Date.now() && !settledUp),
   };
 }

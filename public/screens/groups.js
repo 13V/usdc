@@ -309,12 +309,16 @@
     var me = meIdentity();
     var members = [{ name: "you", you: true, emoji: me.emoji, color: me.color }];
     var allFriends = null; // null = not loaded yet
+    var kind = ""; // "" = plain group, "household" = roommates template
 
     var el = app.sheet(
       '<h2 class="lower" style="font-size:22px;margin:2px 0 4px;">new group</h2>' +
       '<p class="hint" style="margin:0 0 16px;">a trip, the rent, or last night\'s dinner.</p>' +
       '<label>group name</label>' +
       '<input class="input" id="gName" placeholder="tokyo trip" autocomplete="off">' +
+      '<label style="margin-top:16px;">what kind?</label>' +
+      '<div id="gKindRow" style="display:flex; gap:9px; margin-top:9px;"></div>' +
+      '<div id="gKindHint" style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.4); margin-top:6px; min-height:12px;"></div>' +
       '<label style="margin-top:16px;">who\'s in</label>' +
       '<div id="gChips" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;"></div>' +
       '<div id="gPicker" style="display:none;"></div>' +
@@ -323,6 +327,34 @@
     var chipsBox = el.querySelector("#gChips");
     var pickerBox = el.querySelector("#gPicker");
     var pickerOpen = false;
+
+    // template chips: plain group vs the roommates 🏠 household (unlocks the
+    // "this month" bills hub — rent, utilities & subs — on the group screen)
+    var kindRow = el.querySelector("#gKindRow");
+    var kindHint = el.querySelector("#gKindHint");
+    function renderKinds() {
+      var opts = [["", "✨ just a group"], ["household", "roommates 🏠"]];
+      kindRow.innerHTML = opts.map(function (o) {
+        var on = kind === o[0];
+        return '<button type="button" class="gKind" data-kind="' + o[0] + '" style="appearance:none; cursor:pointer; flex:1; min-height:42px; border-radius:999px; ' +
+          'background:' + (on ? "#3DE8C7" : "#FFFDF7") + '; border:2px ' + (on ? "solid" : "dashed") + ' #2B2118; ' +
+          (on ? "box-shadow:2px 3px 0 rgba(43,33,24,0.85); " : "") +
+          'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118;">' + o[1] + '</button>';
+      }).join("");
+      if (kindHint) kindHint.textContent = kind === "household"
+        ? "rent + utilities + shared subs, one monthly view — prorates when someone moves"
+        : "";
+      [].forEach.call(kindRow.querySelectorAll(".gKind"), function (b) {
+        b.onclick = function () {
+          kind = b.getAttribute("data-kind") || "";
+          var nameEl2 = el.querySelector("#gName");
+          if (nameEl2 && !nameEl2.value) nameEl2.placeholder = kind === "household" ? "the apartment" : "tokyo trip";
+          if (app.haptic) app.haptic();
+          renderKinds();
+        };
+      });
+    }
+    renderKinds();
 
     function chipAv(m) {
       var face = m.emoji ? app.face(m.emoji) : app.esc((m.name || "?").trim()[0] || "?");
@@ -438,12 +470,12 @@
 
     renderChips();
     var create = el.querySelector("#gCreate");
-    if (create) create.onclick = function () { submitNewGroup(el, create, members); };
+    if (create) create.onclick = function () { submitNewGroup(el, create, members, function () { return kind; }); };
     var nameEl = el.querySelector("#gName");
     if (nameEl) nameEl.focus();
   }
 
-  async function submitNewGroup(el, btn, list) {
+  async function submitNewGroup(el, btn, list, getKind) {
     var nameEl = el.querySelector("#gName");
     var name = nameEl ? nameEl.value.trim() : "";
     if (!name) { app.toast("give it a name"); if (nameEl) nameEl.focus(); return; }
@@ -451,13 +483,16 @@
       return { name: m.name, userId: m.userId, wallet: m.wallet };
     });
     if (!members.length) members.push({ name: "you" });
+    var kind = (getKind && getKind()) || "";
     btn.disabled = true;
     btn.textContent = "starting…";
     try {
-      var trip = await app.api.post("/api/trips", { name: name, members: members });
+      var payload = { name: name, members: members };
+      if (kind === "household") payload.kind = "household";
+      var trip = await app.api.post("/api/trips", payload);
       app.track && app.track("group_created");
       app.closeSheet();
-      app.toast("group started ✨");
+      app.toast(kind === "household" ? "household started 🏠" : "group started ✨");
       location.hash = "#/group/" + encodeURIComponent(trip.id);
       // Contextual notification moment: after the group lands, offer to turn on
       // notifications ("wanna know when they pay you?"). Honors the 7-day rule.

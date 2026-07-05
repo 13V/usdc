@@ -24,6 +24,10 @@ export interface TripMember {
   userId?: string;
   emoji?: string;
   color?: string;
+  /** Household residency window (ISO date, day granularity). Metadata for
+   *  proration only — never rewrites ledger history by itself. */
+  movedInAt?: string;
+  movedOutAt?: string;
 }
 
 // Deterministic emoji + color identity for a member who hasn't set their own,
@@ -68,6 +72,9 @@ export interface Trip {
   archived?: boolean;
   /** Optional group "settle by" moment (ISO). Auto-nudges key off it. */
   dueAt?: string;
+  /** NULL/undefined = ordinary group. "household" = roommates: the group
+   *  detail screen gains the monthly bills hub (household.ts). */
+  kind?: string;
 }
 
 /** A persisted settlement transfer (Transfer + payment-request fields). */
@@ -156,6 +163,13 @@ if (!hasColumn("trips", "archived")) db.exec("ALTER TABLE trips ADD COLUMN archi
 // per-expense "pay this back by" moment. Pure metadata — never affects math.
 if (!hasColumn("trips", "due_at")) db.exec("ALTER TABLE trips ADD COLUMN due_at TEXT");
 if (!hasColumn("expenses", "due_at")) db.exec("ALTER TABLE expenses ADD COLUMN due_at TEXT");
+// Household hub (additive; NULL = ordinary group / lifelong resident):
+// trips.kind marks a group as a "household"; members carry an optional
+// move-in/move-out date so the month's recurring bills can prorate by
+// days-in-residence. Pure metadata — the ledger itself never changes shape.
+if (!hasColumn("trips", "kind")) db.exec("ALTER TABLE trips ADD COLUMN kind TEXT");
+if (!hasColumn("trip_members", "moved_in_at")) db.exec("ALTER TABLE trip_members ADD COLUMN moved_in_at TEXT");
+if (!hasColumn("trip_members", "moved_out_at")) db.exec("ALTER TABLE trip_members ADD COLUMN moved_out_at TEXT");
 
 // ---- Row hydration ---------------------------------------------------------
 
@@ -168,6 +182,8 @@ function hydrateMember(row: any): TripMember {
     userId: row.user_id ?? undefined,
     emoji: row.emoji ?? seeded.emoji,
     color: row.color ?? seeded.color,
+    movedInAt: row.moved_in_at ?? undefined,
+    movedOutAt: row.moved_out_at ?? undefined,
   };
 }
 
@@ -206,6 +222,7 @@ function buildTrip(row: any, members: TripMember[], expenses: TripExpense[]): Tr
     emoji: row.emoji ?? undefined,
     archived: row.archived == null ? false : !!Number(row.archived),
     dueAt: row.due_at ?? undefined,
+    kind: row.kind ?? undefined,
   };
 }
 
@@ -527,7 +544,13 @@ export async function updateMember(
  */
 export async function updateTrip(
   tripId: string,
-  patch: { name?: string; emoji?: string | null; archived?: boolean; dueAt?: string | null }
+  patch: {
+    name?: string;
+    emoji?: string | null;
+    archived?: boolean;
+    dueAt?: string | null;
+    kind?: string | null;
+  }
 ): Promise<Trip> {
   const trip = await getTrip(tripId);
   if (!trip) throw new Error("updateTrip: trip not found");
@@ -543,21 +566,54 @@ export async function updateTrip(
   // Callers validate the due date (server.ts uses autonudge.validateDueAt);
   // this layer just persists it. null clears, undefined keeps.
   const dueAt = patch.dueAt !== undefined ? patch.dueAt : trip.dueAt ?? null;
+  // Group kind ("household" or null). Callers validate; null clears.
+  const kind = patch.kind !== undefined ? patch.kind : trip.kind ?? null;
 
   if (usingSupabase) {
     const { error } = await supabase()
       .from("trips")
-      .update({ name, emoji, archived, due_at: dueAt })
+      .update({ name, emoji, archived, due_at: dueAt, kind })
       .eq("id", tripId);
     if (error) throw new Error(`updateTrip: ${error.message}`);
   } else {
-    db.prepare("UPDATE trips SET name = ?, emoji = ?, archived = ?, due_at = ? WHERE id = ?").run(
-      name,
-      emoji,
-      archived,
-      dueAt,
-      tripId
-    );
+    db.prepare(
+      "UPDATE trips SET name = ?, emoji = ?, archived = ?, due_at = ?, kind = ? WHERE id = ?"
+    ).run(name, emoji, archived, dueAt, kind, tripId);
+  }
+  return (await getTrip(tripId)) as Trip;
+}
+
+/**
+ * Set a household member's residency window (move-in / move-out, ISO date at
+ * day granularity). null clears, undefined keeps. Callers validate the dates
+ * (household.validateMoveDate) — this layer just persists them.
+ */
+export async function setMemberResidency(
+  tripId: string,
+  memberId: string,
+  patch: { movedInAt?: string | null; movedOutAt?: string | null }
+): Promise<Trip> {
+  const trip = await getTrip(tripId);
+  if (!trip) throw new Error("setMemberResidency: trip not found");
+  const member = trip.members.find((m) => m.id === memberId);
+  if (!member) throw new Error("setMemberResidency: member not found");
+
+  const movedInAt =
+    patch.movedInAt !== undefined ? patch.movedInAt : member.movedInAt ?? null;
+  const movedOutAt =
+    patch.movedOutAt !== undefined ? patch.movedOutAt : member.movedOutAt ?? null;
+
+  if (usingSupabase) {
+    const { error } = await supabase()
+      .from("trip_members")
+      .update({ moved_in_at: movedInAt, moved_out_at: movedOutAt })
+      .eq("id", memberId)
+      .eq("trip_id", tripId);
+    if (error) throw new Error(`setMemberResidency: ${error.message}`);
+  } else {
+    db.prepare(
+      "UPDATE trip_members SET moved_in_at = ?, moved_out_at = ? WHERE id = ? AND trip_id = ?"
+    ).run(movedInAt, movedOutAt, memberId, tripId);
   }
   return (await getTrip(tripId)) as Trip;
 }

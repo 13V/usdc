@@ -858,6 +858,32 @@
         '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:4px;">starts after the settle-by date · pauses on "i paid you" claims · caps at the duck 🦆</div>'
       : "";
 
+    // household: move-in / move-out dates per member (day granularity) — a
+    // mid-month move prorates that month's recurring bills in the hub.
+    var isHousehold = trip.kind === "household";
+    var residencySection = isHousehold
+      ? '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">MOVE-IN / MOVE-OUT 🏠</label>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:4px;">a mid-month move prorates that month\'s bills by days lived here</div>' +
+        '<div style="margin-top:8px; border:2px solid #2B2118; border-radius:16px; background:#FFFDF7; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:10px 12px;">' +
+          (trip.members || []).map(function (m, i) {
+            var inVal = m.movedInAt ? String(m.movedInAt).slice(0, 10) : "";
+            var outVal = m.movedOutAt ? String(m.movedOutAt).slice(0, 10) : "";
+            return '<div style="padding:8px 0;' + (i ? " border-top:1px dashed rgba(43,33,24,0.1);" : "") + '">' +
+              '<div style="display:flex; align-items:center; gap:9px;">' + gavatar(m, 26) +
+                '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name || "someone") + '</span>' +
+                (outVal ? '<span style="font-family:\'Space Mono\',monospace; font-size:8.5px; letter-spacing:.5px; color:#FF6B5E; flex:none;">MOVED OUT</span>' : "") +
+              '</div>' +
+              '<div style="display:flex; gap:8px; margin-top:7px;">' +
+                '<label style="flex:1; display:block;"><span style="display:block; font-family:\'Space Mono\',monospace; font-size:8px; letter-spacing:1px; color:rgba(43,33,24,0.42);">MOVED IN</span>' +
+                  '<input type="date" class="gsResIn" data-mid="' + app.esc(m.id) + '" value="' + app.esc(inVal) + '" style="width:100%; min-height:38px; margin-top:3px; padding:5px 9px; border-radius:10px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:12px; color:#2B2118;"></label>' +
+                '<label style="flex:1; display:block;"><span style="display:block; font-family:\'Space Mono\',monospace; font-size:8px; letter-spacing:1px; color:rgba(43,33,24,0.42);">MOVED OUT</span>' +
+                  '<input type="date" class="gsResOut" data-mid="' + app.esc(m.id) + '" value="' + app.esc(outVal) + '" style="width:100%; min-height:38px; margin-top:3px; padding:5px 9px; border-radius:10px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:12px; color:#2B2118;"></label>' +
+              '</div>' +
+            '</div>';
+          }).join("") +
+        '</div>'
+      : "";
+
     var html = '' +
       '<h2 class="lower" style="font-size:22px; margin:2px 0 14px;">group settings</h2>' +
       // rename
@@ -875,8 +901,13 @@
       // members
       '<label style="display:block; margin-top:20px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">MEMBERS</label>' +
       '<div style="margin-top:6px; border:2px solid #2B2118; border-radius:16px; background:#FFFDF7; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:6px 12px;">' + memberRows + '</div>' +
+      // household residency (move-in / move-out) — household groups only
+      residencySection +
+      // household on/off — unlocks the "this month" bills hub on this screen
+      '<button id="gsHouse" style="appearance:none; cursor:pointer; width:100%; margin-top:18px; min-height:48px; border-radius:14px; background:' + (isHousehold ? "transparent" : "rgba(61,232,199,0.16)") + '; border:' + (isHousehold ? "1px solid rgba(43,33,24,0.18)" : "2px solid #2B2118") + ';' + (isHousehold ? "" : " box-shadow:2px 3px 0 rgba(43,33,24,0.85);") + ' display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118;"><span style="font-size:16px;">🏠</span> ' + (isHousehold ? "not a household anymore" : "make this a household") + '</button>' +
+      (isHousehold ? "" : '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:6px; text-align:center;">roommates? get rent, utilities &amp; shared subs in one monthly view</div>') +
       // chat (keep the old ⋯ → chat path alive)
-      '<button id="gsChat" style="appearance:none; cursor:pointer; width:100%; margin-top:18px; min-height:48px; border-radius:14px; background:rgba(39,117,202,0.1); border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118;"><span style="font-size:16px;">💬</span> open chat</button>' +
+      '<button id="gsChat" style="appearance:none; cursor:pointer; width:100%; margin-top:11px; min-height:48px; border-radius:14px; background:rgba(39,117,202,0.1); border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118;"><span style="font-size:16px;">💬</span> open chat</button>' +
       // archive
       '<button id="gsArchive" style="appearance:none; cursor:pointer; width:100%; margin-top:11px; min-height:48px; border-radius:14px; background:transparent; border:1px solid rgba(255,107,94,0.6); color:#FF6B5E; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px;">' + archiveLabel + '</button>';
 
@@ -1005,6 +1036,54 @@
       };
     });
 
+    // household on/off — PATCH the flag, then reload so the hub (dis)appears
+    var houseBtn = el.querySelector("#gsHouse");
+    if (houseBtn) houseBtn.onclick = function () {
+      houseBtn.disabled = true; houseBtn.textContent = "…";
+      app.api.patch("/api/trips/" + encodeURIComponent(trip.id) + "/household", { household: !isHousehold })
+        .then(function () {
+          app.haptic && app.haptic([20, 30, 20]);
+          app.toast(isHousehold ? "back to a plain group" : "it's a household now 🏠");
+          app.closeSheet();
+          load(view_, trip.id);
+        })
+        .catch(function (err) {
+          houseBtn.disabled = false;
+          houseBtn.textContent = isHousehold ? "🏠 not a household anymore" : "🏠 make this a household";
+          app.toast((err && err.message) || ((err && err.status === 401) ? "sign in first" : "couldn't update"));
+        });
+    };
+
+    // residency dates — save on change (PATCH …/members/:mid/residency); the
+    // server validates dates + out-not-before-in and we repaint from truth.
+    function wireResidency(cls, field) {
+      Array.prototype.forEach.call(el.querySelectorAll(cls), function (inp) {
+        inp.onchange = function () {
+          var mid = inp.getAttribute("data-mid");
+          var body = {};
+          body[field] = inp.value || null;
+          inp.disabled = true;
+          app.api.patch("/api/trips/" + encodeURIComponent(trip.id) + "/members/" + encodeURIComponent(mid) + "/residency", body)
+            .then(function (r) {
+              inp.disabled = false;
+              app.haptic && app.haptic(15);
+              app.toast(inp.value ? "dates saved 🏠" : "date cleared");
+              // keep local truth so the next repaint of this sheet is right
+              (trip.members || []).forEach(function (m) {
+                if (m.id === mid && r && r.member) { m.movedInAt = r.member.movedInAt; m.movedOutAt = r.member.movedOutAt; }
+              });
+            })
+            .catch(function (err) {
+              inp.disabled = false;
+              inp.value = "";
+              app.toast((err && err.message) || "couldn't save that date");
+            });
+        };
+      });
+    }
+    wireResidency(".gsResIn", "movedInAt");
+    wireResidency(".gsResOut", "movedOutAt");
+
     // chat
     var chatBtn = el.querySelector("#gsChat");
     if (chatBtn) chatBtn.onclick = function () { app.closeSheet(); location.hash = "#/chat/" + encodeURIComponent(trip.id); };
@@ -1032,6 +1111,130 @@
           .catch(function (err) { arch.disabled = false; arch.textContent = archiveLabel; app.toast((err && err.message) || "couldn't update"); });
       };
     }
+  }
+
+  // ====================== household hub ("this month" bills) ======================
+  // A group flagged kind="household" gets a THIS MONTH ledger card: rent +
+  // recurring utilities + shared subscriptions, each with amount, your share
+  // (prorated by days-in-residence on a move month), next charge and posted/
+  // upcoming state — plus the "your month: $X" strip. Pure aggregation of
+  // GET /api/trips/:id/household; the ledger itself is untouched.
+  function hubMonthLabel(monthStr) {
+    try {
+      var p = String(monthStr || "").split("-");
+      var d = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, 1));
+      return d.toLocaleDateString(undefined, { month: "short", year: "numeric", timeZone: "UTC" }).toUpperCase();
+    } catch (_) { return ""; }
+  }
+  function hubDayLabel(iso) {
+    try {
+      return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" }).toLowerCase();
+    } catch (_) { return ""; }
+  }
+  function hubBillRow(b, isLast) {
+    var emoji = b.source === "subscription" ? (b.icon || "🔁") : tabEmoji(b.title);
+    var yours = b.yourShareFmt
+      ? ' · <span style="color:#2775CA;">yours ' + app.esc(b.yourShareFmt) + '</span>'
+      : "";
+    var prorated = b.prorated
+      ? ' <span style="display:inline-flex; align-items:center; gap:3px; background:rgba(255,198,92,0.22); border:1px solid rgba(255,198,92,0.6); border-radius:999px; padding:1px 7px; font-family:\'Space Mono\',monospace; font-weight:700; font-size:8px; letter-spacing:.5px; color:#a06a00;">PRORATED 🏠</span>'
+      : "";
+    var status = b.paid
+      ? '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#17A277; white-space:nowrap;">ON THE TAB ✓</span>'
+      : '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:#2775CA; white-space:nowrap;">→ ' + app.esc(hubDayLabel(b.nextChargeAt)) + '</span>';
+    var adjust = b.canAdjust
+      ? '<div style="margin-top:6px;"><span class="hubAdjust" data-eid="' + app.esc(b.adjustExpenseId || "") + '" role="button" tabindex="0" ' +
+          'style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:#FF6B5E; cursor:pointer; text-decoration:underline;">someone moved — prorate this month\'s split →</span></div>'
+      : "";
+    return '<div style="padding:11px 2px;' + (isLast ? "" : " border-bottom:1.5px dashed rgba(43,33,24,0.12);") + '">' +
+      '<div style="display:flex; align-items:center; gap:11px;">' +
+        '<div style="width:30px; height:30px; border-radius:9px; background:#F7F1E3; display:flex; align-items:center; justify-content:center; font-size:15px; flex:none;">' + emoji + '</div>' +
+        '<div style="flex:1; min-width:0;">' +
+          '<div style="display:flex; align-items:center; gap:6px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(b.title) + '</span>' + prorated + '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.55); margin-top:2px;">' + app.esc(b.monthlyFmt) + '/mo' + yours + '</div>' +
+        '</div>' +
+        '<div style="text-align:right; flex:none;">' + status + '</div>' +
+      '</div>' + adjust +
+    '</div>';
+  }
+  function householdHubEl(trip, hub) {
+    var bills = (hub && hub.bills) || [];
+    var inner;
+    if (!bills.length) {
+      inner =
+        '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:14px 8px 6px; gap:7px;">' +
+          app.mascot({ size: 74, mood: "happy" }) +
+          '<div style="font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118;">no bills yet — add rent to get started 🏠</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.55);">recurring bills and shared subs land here every month.</div>' +
+          '<button id="hubAddBill" style="appearance:none; border:2px solid #2B2118; cursor:pointer; margin-top:4px; min-height:40px; border-radius:999px; background:#FFC65C; padding:0 18px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">＋ add rent</button>' +
+        '</div>';
+    } else {
+      var rows = bills.map(function (b, i) { return hubBillRow(b, i === bills.length - 1); }).join("");
+      var haveYours = bills.some(function (b) { return b.yourShareCents != null; });
+      var stripLabel = haveYours ? "YOUR MONTH" : "HOUSEHOLD MONTH";
+      var stripAmt = haveYours ? hub.totals.yourMonthFmt : hub.totals.monthFmt;
+      inner = rows +
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-top:13px; background:rgba(39,117,202,0.08); border:1.5px dashed rgba(39,117,202,0.45); border-radius:12px; padding:10px 14px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(43,33,24,0.55);">' + stripLabel + '</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:18px; letter-spacing:-0.5px; color:#2775CA;">' + app.esc(stripAmt || "$0.00") + '</span>' +
+        '</div>' +
+        '<div style="display:flex; gap:14px; justify-content:center; margin-top:11px;">' +
+          '<span id="hubAddRec" role="button" tabindex="0" style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">＋ recurring bill</span>' +
+          '<span id="hubAddSub" role="button" tabindex="0" style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">＋ subscription</span>' +
+        '</div>';
+    }
+    var html =
+      '<div style="position:relative; margin:22px 0 0; border-radius:20px; padding:16px 16px 13px; background:#FFFDF7; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); transform:rotate(0.35deg);">' +
+        '<div style="position:absolute; top:-11px; left:50%; width:84px; height:22px; transform:translateX(-50%) rotate(1.8deg); background:rgba(255,107,94,0.6); opacity:.9; border-left:1.5px dashed rgba(43,33,24,0.25); border-right:1.5px dashed rgba(43,33,24,0.25);"></div>' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">THIS MONTH 🏠</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.4);">' + app.esc(hubMonthLabel(hub && hub.month)) + '</span>' +
+        '</div>' +
+        inner +
+      '</div>';
+    var el = elFrom(html);
+    var addBill = el.querySelector("#hubAddBill");
+    if (addBill) addBill.onclick = function () { location.hash = "#/recurring"; };
+    var addRec = el.querySelector("#hubAddRec");
+    if (addRec) addRec.onclick = function () { location.hash = "#/recurring"; };
+    var addSub = el.querySelector("#hubAddSub");
+    if (addSub) addSub.onclick = function () { location.hash = "#/subscriptions"; };
+    // one-tap proration for a transition month: the server voids the even
+    // split and writes exact per-member prorated expenses, then we repaint.
+    Array.prototype.forEach.call(el.querySelectorAll(".hubAdjust"), function (a) {
+      a.onclick = function () {
+        var eid = a.getAttribute("data-eid");
+        if (!eid) return;
+        a.style.pointerEvents = "none";
+        a.textContent = "prorating…";
+        app.api.post("/api/trips/" + encodeURIComponent(trip.id) + "/household/adjust", { expenseId: eid })
+          .then(function () {
+            app.haptic && app.haptic([20, 30, 20]);
+            app.toast("prorated — ledger updated ✓");
+            load(view_, trip.id);
+          })
+          .catch(function (err) {
+            app.toast((err && err.message) || "couldn't prorate that");
+            load(view_, trip.id);
+          });
+      };
+    });
+    return el;
+  }
+  function loadHub(trip) {
+    var host = document.getElementById("gHubHost");
+    if (!host) return;
+    app.api.get("/api/trips/" + encodeURIComponent(trip.id) + "/household")
+      .then(function (hub) {
+        var h = document.getElementById("gHubHost");
+        if (!h) return; // navigated away
+        h.innerHTML = "";
+        h.appendChild(householdHubEl(trip, hub));
+      })
+      .catch(function () {
+        var h = document.getElementById("gHubHost");
+        if (h) h.innerHTML = ""; // hub is best-effort; the ledger still renders
+      });
   }
 
   // ====================== states ======================
@@ -1067,11 +1270,13 @@
     // visitor who isn't yet a member, when open slots exist. Injected as a live
     // node into a placeholder so its tap handlers wire cleanly.
     var showClaim = !me && unclaimedSlots(trip).length > 0;
+    var isHousehold = trip.kind === "household";
     view.innerHTML =
       topbar(trip, emoji) +
       '<div class="appscroll gd-scroll" style="padding:0 0 140px;">' +
         coverHeader(trip) +
         (showClaim ? '<div id="gClaimHost" style="padding:0 22px;"></div>' : "") +
+        (isHousehold ? '<div id="gHubHost" style="padding:0 22px;"></div>' : "") +
         balanceHero(trip, me) +
       '</div>' +
       stickyBar();
@@ -1082,6 +1287,8 @@
       var claimHost = document.getElementById("gClaimHost");
       if (claimHost) claimHost.appendChild(claimCardEl(trip));
     }
+    // the household "this month" hub — best-effort second fetch, never blocks
+    if (isHousehold) loadHub(trip);
 
     var more = document.getElementById("gMore");
     if (more) {
