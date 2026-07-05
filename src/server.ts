@@ -42,6 +42,7 @@ import { cashoutOptions } from "./offramp";
 import { fmt, toCents, withTip, SplitMode } from "./split";
 import { Cluster, buildSolanaPayUrl, newReference, USDC_MINT } from "./solanaPay";
 import { computeBalances, minimalSettlement, Transfer } from "./ledger";
+import { simplifyDebts, pairwiseDebts, simplifySummary } from "./simplify";
 import {
   Trip,
   SettlementTransfer,
@@ -1203,15 +1204,18 @@ async function serializeSettlement(trip: Trip) {
 
 async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
   const memberIds = trip.members.map((m) => m.id);
-  const balances = computeBalances(
-    memberIds,
-    trip.expenses.map((e) => ({
-      amountCents: e.amountCents,
-      paidBy: e.paidBy,
-      participants: e.participants,
-    }))
-  );
+  const ledgerExpenses = trip.expenses.map((e) => ({
+    amountCents: e.amountCents,
+    paidBy: e.paidBy,
+    participants: e.participants,
+  }));
+  const balances = computeBalances(memberIds, ledgerExpenses);
   const totalCents = trip.expenses.reduce((a, e) => a + e.amountCents, 0);
+  // Debt simplification: the fewest-payments plan (same greedy the settle flow
+  // executes, so these legs match /settle's transfers exactly) plus the naive
+  // pairwise count it replaces — "3 payments instead of 6".
+  const simplified = simplifyDebts(balances);
+  const pairwiseCount = pairwiseDebts(memberIds, ledgerExpenses).length;
 
   return {
     id: trip.id,
@@ -1270,6 +1274,19 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
       fmt: fmt(Math.abs(b.cents)),
       direction: b.cents > 0 ? "owed" : b.cents < 0 ? "owes" : "settled",
     })),
+    simplify: {
+      transfers: simplified.map((t) => ({
+        from: t.from,
+        fromName: memberName(trip, t.from),
+        to: t.to,
+        toName: memberName(trip, t.to),
+        cents: t.amountCents,
+        fmt: fmt(t.amountCents),
+      })),
+      count: simplified.length,
+      pairwiseCount,
+      summary: simplifySummary({ simplifiedCount: simplified.length, pairwiseCount }),
+    },
     settle: await serializeSettlement(trip),
   };
 }

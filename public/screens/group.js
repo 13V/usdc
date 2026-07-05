@@ -379,7 +379,17 @@
     '</div>';
   }
 
-  // ---------- who owes who (greedy settle-down -> debtor → creditor → amount) ----------
+  // ---------- who owes who — simplified debts ----------
+  // Prefer the server's simplified plan (trip.simplify): the same greedy
+  // fewest-payments matching the settle flow executes, plus the "N payments
+  // instead of M" savings. Falls back to a local greedy on old payloads.
+  function simplifiedEdges(trip) {
+    var s = trip.simplify;
+    if (s && s.transfers) {
+      return s.transfers.map(function (t) { return { from: t.from, to: t.to, cents: t.cents }; });
+    }
+    return settleEdges(trip.balances);
+  }
   function settleEdges(balances) {
     var debtors = [], creditors = [];
     (balances || []).forEach(function (b) {
@@ -402,7 +412,7 @@
     return '<svg width="20" height="11" viewBox="0 0 26 14" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>';
   }
   function whoOwesWho(trip, me) {
-    var edges = settleEdges(trip.balances);
+    var edges = simplifiedEdges(trip);
     if (!edges.length) return "";
     var meId = me && me.id;
     var rows = edges.map(function (e) {
@@ -418,17 +428,36 @@
       var toNameStyle = toYou
         ? 'font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.5);'
         : 'font-family:\'General Sans\',sans-serif; font-size:14px; font-weight:500; color:#2B2118;';
-      return '<div style="display:flex; align-items:center; gap:10px; background:#FFFDF7; border:2px solid #2B2118; border-radius:14px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px;">' +
+      // your payment → tappable: deep-links into settle pre-scoped to this person
+      var payHint = fromYou
+        ? '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#FF6B5E; white-space:nowrap;">settle →</span>'
+        : "";
+      var rowAttrs = fromYou
+        ? ' class="gSimpPay" data-to="' + app.esc(e.to) + '" role="button" tabindex="0"'
+        : "";
+      return '<div' + rowAttrs + ' style="display:flex; align-items:center; gap:10px; background:#FFFDF7; border:2px solid #2B2118; border-radius:14px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px;' + (fromYou ? ' cursor:pointer;' : '') + '">' +
         gavatar(fromM, 28) +
         '<span style="' + fromNameStyle + '">' + app.esc(fromName) + '</span>' +
         arrowSvg() +
         gavatar(toM, 28) +
         '<span style="' + toNameStyle + '">' + app.esc(toName) + '</span>' +
         '<span style="flex:1; text-align:right; font-family:\'Space Mono\',monospace; font-weight:700; font-size:15px; color:' + amtColor + ';">' + plain(e.cents) + '</span>' +
+        payHint +
       '</div>';
     }).join("");
+    // "3 payments instead of 6" — the simplification badge (only when it saves)
+    var s = trip.simplify;
+    var badge = (s && s.summary && s.pairwiseCount > s.count)
+      ? '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.22); border:1px solid rgba(61,232,199,0.55); border-radius:999px; padding:3px 10px;">' +
+          '<span style="font-size:10px;">✨</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#1a9c80;">' + app.esc(s.summary.toUpperCase()) + '</span>' +
+        '</span>'
+      : "";
     return '' +
-    '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); margin:24px 0 11px;">WHO OWES WHO</div>' +
+    '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin:24px 0 11px;">' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">WHO OWES WHO</span>' +
+      badge +
+    '</div>' +
     '<div style="display:flex; flex-direction:column; gap:9px;">' + rows + '</div>';
   }
 
@@ -905,6 +934,22 @@
     if (add) add.onclick = function () { location.hash = "#/new/" + encodeURIComponent(trip.id); };
     var settle = document.getElementById("gSettle");
     if (settle) settle.onclick = function () { location.hash = "#/settle/" + encodeURIComponent(trip.id); };
+
+    // your simplified payments -> settle flow pre-scoped to that counterparty.
+    // The hint is consumed once by screens/settle.js (findMyTransfer) so the
+    // settle screen opens on THIS leg when the plan has several for you.
+    Array.prototype.forEach.call(view.querySelectorAll(".gSimpPay"), function (el) {
+      function goSettle() {
+        try {
+          sessionStorage.setItem("divvy.settle.target", JSON.stringify({ tripId: trip.id, to: el.getAttribute("data-to") }));
+        } catch (_) {}
+        location.hash = "#/settle/" + encodeURIComponent(trip.id);
+      }
+      el.onclick = goSettle;
+      el.onkeydown = function (e) {
+        if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); goSettle(); }
+      };
+    });
 
     // tab rows -> detail sheet
     var byId = {};

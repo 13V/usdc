@@ -671,7 +671,15 @@
     }).map(function (m) { return m.id; });
 
     var byPayer = settle.transfers.filter(function (t) { return myIds.indexOf(t.from) >= 0; });
-    var pick = byPayer[0];
+    var pick = null;
+    // Deep-link scoping: a "settle →" tap on a simplified-debts row hands us the
+    // counterparty (S.targetTo), so when the plan has several legs for you we
+    // open THAT one. Amounts need no scoping — the simplified plan and /settle
+    // build from the same greedy, so the leg's amount already matches.
+    if (S.targetTo) {
+      pick = byPayer.filter(function (t) { return t.to === S.targetTo; })[0] || null;
+    }
+    if (!pick) pick = byPayer[0];
     if (!pick) {
       // Identified but not a payer here → you owe nothing in this settlement; do
       // NOT surface another member's transfer (it would prompt paying their debt).
@@ -784,7 +792,18 @@
         transfer: null, trip: null, balanceCents: null,
         pollTimer: null, polling: false, tries: 0,
         partialCents: null, fullOwedCents: null,
+        targetTo: null,
       };
+      // Consume a one-shot counterparty hint from the group screen's simplified
+      // "who owes who" rows, so this settle opens pre-scoped to that person.
+      try {
+        var raw = sessionStorage.getItem("divvy.settle.target");
+        if (raw) {
+          sessionStorage.removeItem("divvy.settle.target");
+          var hint = JSON.parse(raw);
+          if (hint && hint.tripId === tripId && hint.to) S.targetTo = String(hint.to);
+        }
+      } catch (_) { /* no hint — settle opens on your first leg as before */ }
       // keep toName fresh from whatever transfer is current
       Object.defineProperty(S, "toName", {
         get: function () { return (S.transfer && S.transfer.toName) || "them"; },
