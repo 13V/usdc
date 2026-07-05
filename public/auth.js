@@ -96,13 +96,65 @@
       Auth.user = (data && data.user) || null;
       // A stored-but-invalid token returns user:null — clear it so the UI resets.
       if (!Auth.user) setToken(null);
+      cacheUser(Auth.user);
     } catch (err) {
-      // 401 (expired/invalid token) — drop it and present as signed-out.
-      if (err.status === 401) setToken(null);
-      Auth.user = null;
+      if (err.status === 401) {
+        // 401 (expired/invalid token) — drop it and present as signed-out.
+        setToken(null);
+        Auth.user = null;
+        cacheUser(null);
+      } else {
+        // Network hiccup (cold start in the iOS shell often races connectivity).
+        // The token is still good — render the last-known identity instead of
+        // bouncing a signed-in user to the welcome screen, and re-verify soon.
+        Auth.user = cachedUser();
+        scheduleReverify();
+      }
     }
     fire();
   }
+
+  // ── offline-tolerant identity cache ─────────────────────────────────────────
+  // Last-known signed-in user, so a failed boot-time /api/me (no network yet)
+  // doesn't present a signed-in user as signed-out. Cleared on sign-out/401.
+  const USER_CACHE_KEY = "divvy.user.cache";
+  function cacheUser(u) {
+    try {
+      if (u) localStorage.setItem(USER_CACHE_KEY, JSON.stringify(u));
+      else localStorage.removeItem(USER_CACHE_KEY);
+    } catch (_) { /* non-persistent storage */ }
+  }
+  function cachedUser() {
+    try { return JSON.parse(localStorage.getItem(USER_CACHE_KEY) || "null"); } catch (_) { return null; }
+  }
+  let reverifyTimer = null, reverifyAttempt = 0;
+  function scheduleReverify() {
+    if (reverifyTimer || !token()) return;
+    const delay = Math.min(15000, 1000 * Math.pow(2, reverifyAttempt++));
+    reverifyTimer = setTimeout(async () => {
+      reverifyTimer = null;
+      if (!token()) return;
+      try {
+        const data = await authJson("/api/me");
+        const user = (data && data.user) || null;
+        if (!user) setToken(null);
+        Auth.user = user;
+        cacheUser(user);
+        reverifyAttempt = 0;
+        fire();
+      } catch (err) {
+        if (err.status === 401) {
+          setToken(null); Auth.user = null; cacheUser(null); fire();
+        } else {
+          scheduleReverify();
+        }
+      }
+    }, delay);
+  }
+  // Re-verify as soon as connectivity returns.
+  try {
+    window.addEventListener("online", () => { reverifyAttempt = 0; scheduleReverify(); });
+  } catch (_) { /* no window */ }
 
   // ── Sign-In-With-Solana (injected wallet) ───────────────────────────────────
   function getSolanaProvider() {
