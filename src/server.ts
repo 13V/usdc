@@ -39,7 +39,7 @@ import { usingSupabase, supabase } from "./supabase";
 import { qrToDataUrl } from "./qr";
 import { cardOptions, ramsConfigured, MOONPAY_MIN_CENTS } from "./onramp";
 import { cashoutOptions } from "./offramp";
-import { fmt, toCents, withTip, SplitMode } from "./split";
+import { distributeWeighted, fmt, toCents, withTip, SplitMode } from "./split";
 import { Cluster, buildSolanaPayUrl, newReference, USDC_MINT } from "./solanaPay";
 import { computeBalances, minimalSettlement, Transfer } from "./ledger";
 import { simplifyDebts, pairwiseDebts, simplifySummary } from "./simplify";
@@ -91,10 +91,22 @@ import {
 import { scanReceipt, parseDataUrl, NoScanProvider } from "./scan";
 import { fundingConfigured, fundWallet } from "./funding";
 import {
+  buildExpenseFx,
   convertForeignCentsToUsd,
   convertMajorToUsd,
+  convertMinorToUsd,
   formatForeign,
+  fxEnabled,
+  fxNoteFor,
+  fxOriginal,
+  fxOriginalFmt,
   isSupported,
+  isZeroDecimal,
+  majorFromMinor,
+  MAX_FX_MINOR,
+  supportedCurrencies,
+  symbolFor,
+  ExpenseFx,
 } from "./fx";
 import { dashboardRouter } from "./dashboard";
 import { iouRouter } from "./ious";
@@ -1003,9 +1015,28 @@ app.post("/api/scan", requireAuth, scanRateLimit, async (req: Request, res: Resp
   }
 });
 
+// The currency picker's menu: the offline-known whitelist + display metadata.
+// `enabled:false` (DIVVY_FX=off) tells the client to hide the picker entirely —
+// the app is fully usable USD-only.
+app.get("/api/fx/currencies", (_req: Request, res: Response) => {
+  if (!fxEnabled()) {
+    return res.json({ enabled: false, currencies: ["USD"], symbols: { USD: "$" }, zeroDecimal: [] });
+  }
+  const currencies = supportedCurrencies();
+  const symbols: Record<string, string> = {};
+  for (const c of currencies) symbols[c] = symbolFor(c);
+  res.json({
+    enabled: true,
+    currencies,
+    symbols,
+    zeroDecimal: currencies.filter((c) => isZeroDecimal(c)),
+  });
+});
+
 // FX quote: convert a local-currency MAJOR amount to USD at the current locked
 // rate. e.g. GET /api/fx/THB/2450 -> USD value + rate/source/timestamp.
 app.get("/api/fx/:from/:amount", async (req: Request, res: Response) => {
+  if (!fxEnabled()) return res.status(400).json({ error: "multi-currency is off" });
   const from = String(req.params.from || "").toUpperCase();
   const amount = Number(req.params.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -1287,46 +1318,56 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
     // Itemized per-member rows collapse into ONE logical expense (id = the
     // shared splitId) with an exact breakdown; balances above still use the
     // raw rows, so the two views always agree.
-    expenses: mergeItemizedExpenses(trip.expenses).map((e) => ({
-      id: e.id,
-      title: e.title,
-      amountCents: e.amountCents,
-      amountFmt: fmt(e.amountCents),
-      paidBy: e.paidBy,
-      paidByName: memberName(trip, e.paidBy),
-      participants: e.participants,
-      participantNames: e.participants.map((p) => memberName(trip, p)),
-      kind: e.kind || null,
-      dueAt: e.dueAt || null,
-      overdue: isPast(e.dueAt) && !settledUp,
-      fx: e.fx || null,
-      fxNote: e.fx
-        ? `Originally ${formatForeign(e.fx.sourceAmount, e.fx.sourceCurrency)} ${
-            e.fx.sourceCurrency
-          } @ $${Number(e.fx.rate).toFixed(4)} (as of ${e.fx.asOf})`
-        : null,
-      createdAt: e.createdAt,
-      itemized: !!e.itemized,
-      breakdown: e.itemized
-        ? e.itemized.breakdown.map((b) => ({
-            memberId: b.memberId,
-            name: memberName(trip, b.memberId),
-            cents: b.cents,
-            fmt: fmt(b.cents),
-          }))
-        : undefined,
-      items: e.itemized
-        ? e.itemized.items.map((it) => ({
-            label: it.label,
-            qty: it.qty,
-            cents: it.cents,
-            fmt: fmt(it.cents),
-            memberIds: it.memberIds,
-            names: it.memberIds.map((p) => memberName(trip, p)),
-          }))
-        : undefined,
-      extrasCents: e.itemized ? e.itemized.extrasCents : undefined,
-    })),
+    expenses: mergeItemizedExpenses(trip.expenses).map((e) => {
+      // FX display metadata: the original receipt currency stays prominent
+      // ("¥3,000 · $20.14") while amountCents/amountFmt remain the USD ledger
+      // truth. fxOriginal handles both the new ExpenseFx shape and the legacy
+      // bill-style {sourceCurrency, sourceAmount} blob.
+      const orig = fxOriginal(e.fx);
+      // Itemized foreign receipts store item lines/extras in the ORIGINAL
+      // currency's minor units — format them as such.
+      const lineFmt = (cents: number) =>
+        orig ? formatForeign(majorFromMinor(cents, orig.currency), orig.currency) : fmt(cents);
+      return {
+        id: e.id,
+        title: e.title,
+        amountCents: e.amountCents,
+        amountFmt: fmt(e.amountCents),
+        paidBy: e.paidBy,
+        paidByName: memberName(trip, e.paidBy),
+        participants: e.participants,
+        participantNames: e.participants.map((p) => memberName(trip, p)),
+        kind: e.kind || null,
+        dueAt: e.dueAt || null,
+        overdue: isPast(e.dueAt) && !settledUp,
+        fx: e.fx || null,
+        fxNote: fxNoteFor(e.fx),
+        fxCurrency: orig ? orig.currency : null,
+        fxOriginalFmt: fxOriginalFmt(e.fx),
+        createdAt: e.createdAt,
+        itemized: !!e.itemized,
+        breakdown: e.itemized
+          ? e.itemized.breakdown.map((b) => ({
+              memberId: b.memberId,
+              name: memberName(trip, b.memberId),
+              cents: b.cents,
+              fmt: fmt(b.cents),
+            }))
+          : undefined,
+        items: e.itemized
+          ? e.itemized.items.map((it) => ({
+              label: it.label,
+              qty: it.qty,
+              cents: it.cents,
+              fmt: lineFmt(it.cents),
+              memberIds: it.memberIds,
+              names: it.memberIds.map((p) => memberName(trip, p)),
+            }))
+          : undefined,
+        extrasCents: e.itemized ? e.itemized.extrasCents : undefined,
+        extrasFmt: e.itemized ? lineFmt(e.itemized.extrasCents) : undefined,
+      };
+    }),
     totalCents,
     totalFmt: fmt(totalCents),
     balances: balances.map((b) => ({
@@ -1655,6 +1696,35 @@ app.post("/api/trips/:id/members/:mid/claim", writeRateLimit, requireAuth, async
   }
 });
 
+/**
+ * Resolve a foreign-currency expense entry ({currency, originalAmount} in the
+ * currency's OWN minor units) into USD cents + a locked ExpenseFx blob. The
+ * server converts AT ENTRY TIME with its own rates — any client-supplied
+ * rate/fx blob is ignored. Returns null for USD/absent currency (no FX), or an
+ * error string on a bad payload.
+ */
+async function resolveEntryFx(
+  currencyRaw: unknown,
+  originalAmountRaw: unknown
+): Promise<{ usdCents: number; fx: ExpenseFx } | { error: string } | null> {
+  const currency = String(currencyRaw || "").trim().toUpperCase();
+  if (!currency || currency === "USD") return null;
+  if (!fxEnabled()) return { error: "multi-currency is off — enter the amount in USD" };
+  if (!isSupported(currency)) return { error: `unsupported currency: ${currency}` };
+  const originalAmount = originalAmountRaw as number;
+  if (!Number.isInteger(originalAmount) || originalAmount < 1 || originalAmount > MAX_FX_MINOR) {
+    return { error: "originalAmount must be an integer amount in minor units (1..10^10)" };
+  }
+  const { usdCents, rate, asOf, source } = await convertMinorToUsd(originalAmount, currency);
+  if (usdCents < 1) {
+    return { error: `that's less than a cent in USD (${formatForeign(majorFromMinor(originalAmount, currency), currency)})` };
+  }
+  if (usdCents > MAX_AMOUNT_CENTS) {
+    return { error: `amount exceeds cap ($${MAX_AMOUNT_CENTS / 100})` };
+  }
+  return { usdCents, fx: buildExpenseFx({ currency, originalAmount, rate, asOf, source }) };
+}
+
 app.post("/api/trips/:id/expenses", writeRateLimit, async (req: Request, res: Response) => {
   try {
     const trip = await getTrip(req.params.id);
@@ -1668,13 +1738,36 @@ app.post("/api/trips/:id/expenses", writeRateLimit, async (req: Request, res: Re
       amountCents?: number;
       paidBy?: string;
       participants?: string[];
-      fx?: any;
+      currency?: string;
+      originalAmount?: number;
       dueAt?: unknown;
     };
     if (trip.expenses.length >= MAX_EXPENSES) {
       return res.status(400).json({ error: `too many expenses (max ${MAX_EXPENSES})` });
     }
-    const amountCents = body.amountCents ?? (body.total != null ? toCents(body.total) : NaN);
+    // Foreign-currency entry: the server converts ONCE at entry time and the
+    // ledger stores USD cents (balances/settle/simplify untouched). Tighter
+    // gate than the collaborative USD path: a signed-in trip member only.
+    let fx: ExpenseFx | null = null;
+    let amountCents: number;
+    const fxr = await resolveEntryFx(body.currency, body.originalAmount);
+    if (fxr && "error" in fxr) return res.status(400).json({ error: fxr.error });
+    if (fxr) {
+      if (!req.userId) return res.status(401).json({ error: "sign in to log a foreign-currency expense" });
+      if (
+        !canItemize({
+          userId: req.userId,
+          ownerUserId: trip.ownerUserId || null,
+          memberUserIds: trip.members.map((m) => m.userId).filter((x): x is string => !!x),
+        })
+      ) {
+        return res.status(403).json({ error: "only group members can log a foreign-currency expense" });
+      }
+      amountCents = fxr.usdCents;
+      fx = fxr.fx;
+    } else {
+      amountCents = body.amountCents ?? (body.total != null ? toCents(body.total) : NaN);
+    }
     if (!Number.isInteger(amountCents) || amountCents <= 0) {
       return res.status(400).json({ error: "need a positive amount (total or amountCents)" });
     }
@@ -1703,7 +1796,9 @@ app.post("/api/trips/:id/expenses", writeRateLimit, async (req: Request, res: Re
       amountCents,
       paidBy: String(body.paidBy || ""),
       participants,
-      fx: body.fx,
+      // Server-derived provenance ONLY — a client-supplied fx blob (and any
+      // client rate) is never trusted or stored.
+      fx: fx ?? undefined,
       dueAt,
     });
     res.json(await serializeTrip(updated));
@@ -1743,13 +1838,21 @@ app.post(
         totalCents?: number;
         paidBy?: string;
         items?: unknown;
+        currency?: string;
+        originalAmount?: number;
         dueAt?: unknown;
       };
-      const totalCents = body.totalCents;
+      // Foreign receipt: totals AND item lines arrive in the original
+      // currency's own minor units (what the receipt says); the server
+      // converts the TOTAL to USD exactly once — rates its own, never the
+      // client's — and item math runs in the original units below.
+      const fxr = await resolveEntryFx(body.currency, body.originalAmount);
+      if (fxr && "error" in fxr) return res.status(400).json({ error: fxr.error });
+      const totalCents = fxr ? (body.originalAmount as number) : body.totalCents;
       if (!Number.isInteger(totalCents) || (totalCents as number) <= 0) {
         return res.status(400).json({ error: "need a positive integer totalCents" });
       }
-      if ((totalCents as number) > MAX_AMOUNT_CENTS) {
+      if (!fxr && (totalCents as number) > MAX_AMOUNT_CENTS) {
         return res.status(400).json({ error: `amount exceeds cap ($${MAX_AMOUNT_CENTS / 100})` });
       }
       if (body.title !== undefined && String(body.title).trim()) {
@@ -1772,9 +1875,22 @@ app.post(
       // Exact shares (zero-sum with the payer's credit by construction). A
       // member with no items and no extras owes nothing → no row.
       const shares = itemizedShares(totalCents as number, v.items, memberIds);
-      const entries = memberIds
+      let entries = memberIds
         .map((id) => ({ memberId: id, cents: shares.get(id) as number }))
         .filter((s) => s.cents > 0);
+      if (fxr) {
+        // Ledger rows must be USD: convert the TOTAL once (rounded once, in
+        // resolveEntryFx) and hand out the USD cents by each member's
+        // original-currency share (largest-remainder) — proportions preserved,
+        // USD rows summing EXACTLY to the converted total.
+        const usd = distributeWeighted(fxr.usdCents, entries.map((s) => s.cents));
+        entries = entries
+          .map((s, i) => ({ memberId: s.memberId, cents: usd[i] }))
+          .filter((s) => s.cents > 0);
+        if (entries.length === 0) {
+          return res.status(400).json({ error: "that's less than a cent in USD" });
+        }
+      }
       if (trip.expenses.length + entries.length > MAX_EXPENSES) {
         return res.status(400).json({ error: `too many expenses (max ${MAX_EXPENSES})` });
       }
@@ -1782,7 +1898,10 @@ app.post(
         title: String(body.title || ""),
         paidBy,
         shares: entries,
+        // Items/extras stay in the ORIGINAL currency's minor units when fx is
+        // set (display formats them via the fx blob); USD cents otherwise.
         meta: { items: v.items, extrasCents: v.extrasCents },
+        fx: fxr ? fxr.fx : undefined,
         dueAt,
       });
       res.json(await serializeTrip(updated));
@@ -1828,6 +1947,7 @@ app.patch("/api/trips/:id/expenses/:eid", writeRateLimit, async (req: Request, r
       paidBy?: string;
       participants?: string[];
       dueAt?: string | null;
+      fx?: any | null;
     } = {};
     if (body.dueAt !== undefined) {
       const v = validateDueAt(body.dueAt, Date.now());
@@ -1849,6 +1969,9 @@ app.patch("/api/trips/:id/expenses/:eid", writeRateLimit, async (req: Request, r
         return res.status(400).json({ error: `amount exceeds cap ($${MAX_AMOUNT_CENTS / 100})` });
       }
       patch.amountCents = amountCents;
+      // Rewriting the USD amount makes the original-currency provenance a lie
+      // ("¥3,000" no longer explains the number) — drop it rather than mislead.
+      if (existingExpense.fx && amountCents !== existingExpense.amountCents) patch.fx = null;
     }
     if (body.paidBy !== undefined) patch.paidBy = String(body.paidBy);
     if (body.participants !== undefined) patch.participants = body.participants;

@@ -764,6 +764,9 @@ export async function addItemizedExpense(
     /** Exact per-member cents; every entry must be a positive integer. */
     shares: { memberId: string; cents: number }[];
     meta: ItemizedExpenseMeta;
+    /** FX provenance when the receipt was foreign-currency — stamped on EVERY
+     *  row so any row (incl. the merge's first) carries it consistently. */
+    fx?: any;
     /** Optional pre-validated "pay back by" moment (ISO). */
     dueAt?: string | null;
   }
@@ -815,7 +818,7 @@ export async function addItemizedExpense(
         ...r,
         participants: r.participants, // jsonb
         split_meta: r.split_meta, // jsonb
-        fx: null,
+        fx: expense.fx ?? null, // jsonb
         voided: 0,
         kind: null,
       }))
@@ -823,7 +826,7 @@ export async function addItemizedExpense(
     if (error) throw new Error(`addItemizedExpense: ${error.message}`);
   } else {
     const insert = db.prepare(
-      "INSERT INTO expenses (id, trip_id, title, amount_cents, paid_by, participants, fx, created_at, kind, due_at, split_id, split_meta) VALUES (?, ?, ?, ?, ?, ?, NULL, ?, NULL, ?, ?, ?)"
+      "INSERT INTO expenses (id, trip_id, title, amount_cents, paid_by, participants, fx, created_at, kind, due_at, split_id, split_meta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)"
     );
     const tx = db.transaction(() => {
       for (const r of rows) {
@@ -834,6 +837,7 @@ export async function addItemizedExpense(
           r.amount_cents,
           r.paid_by,
           JSON.stringify(r.participants),
+          expense.fx ? JSON.stringify(expense.fx) : null,
           r.created_at,
           r.due_at,
           r.split_id,
@@ -902,6 +906,8 @@ export async function editExpense(
     participants?: string[];
     /** Pre-validated ISO due moment; null clears, undefined keeps. */
     dueAt?: string | null;
+    /** FX provenance; null clears (e.g. the USD amount was rewritten), undefined keeps. */
+    fx?: any | null;
   }
 ): Promise<Trip> {
   const trip = await getTrip(tripId);
@@ -945,19 +951,20 @@ export async function editExpense(
   }
 
   const dueAt = patch.dueAt !== undefined ? patch.dueAt : existing.dueAt ?? null;
+  const fx = patch.fx !== undefined ? patch.fx : existing.fx ?? null;
 
   if (usingSupabase) {
     const { error } = await supabase()
       .from("expenses")
-      .update({ title, amount_cents: amountCents, paid_by: paidBy, participants, due_at: dueAt })
+      .update({ title, amount_cents: amountCents, paid_by: paidBy, participants, due_at: dueAt, fx })
       .eq("id", expenseId)
       .eq("trip_id", tripId)
       .eq("voided", 0);
     if (error) throw new Error(`editExpense: ${error.message}`);
   } else {
     db.prepare(
-      "UPDATE expenses SET title = ?, amount_cents = ?, paid_by = ?, participants = ?, due_at = ? WHERE id = ? AND trip_id = ? AND COALESCE(voided, 0) = 0"
-    ).run(title, amountCents, paidBy, JSON.stringify(participants), dueAt, expenseId, tripId);
+      "UPDATE expenses SET title = ?, amount_cents = ?, paid_by = ?, participants = ?, due_at = ?, fx = ? WHERE id = ? AND trip_id = ? AND COALESCE(voided, 0) = 0"
+    ).run(title, amountCents, paidBy, JSON.stringify(participants), dueAt, fx ? JSON.stringify(fx) : null, expenseId, tripId);
   }
   return (await getTrip(tripId)) as Trip;
 }

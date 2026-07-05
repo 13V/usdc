@@ -132,7 +132,8 @@
     var st = {
       title: "",
       titleEmoji: "🍜",
-      totalCents: 0,
+      totalCents: 0,            // minor units of st.currency (USD cents by default)
+      currency: "USD",         // group expenses can be logged in the receipt's currency
       tipKey: "none",
       paidBy: null,
       mode: "equally",          // equally (evenly) | custom (by share)
@@ -151,6 +152,103 @@
       _groupName: null,
       _groupEmoji: "🗼",
     };
+
+    // ---- multi-currency (group expenses): log what the receipt says, settle
+    // in USD. The picker only shows when the server reports FX is available;
+    // without it everything stays USD and nothing else changes. -------------
+    var fxInfo = null;   // { enabled, currencies, symbols, zeroDecimal } from /api/fx/currencies
+    var fxRates = {};    // currency -> USD per 1 unit (for the inline "≈ $" preview)
+    var FX_PRIMARY = ["USD", "JPY", "EUR", "GBP", "KRW"]; // compact chips; rest under "more"
+
+    function curSym(cur) {
+      cur = cur || st.currency;
+      if (cur === "USD") return "$";
+      var s = fxInfo && fxInfo.symbols && fxInfo.symbols[cur];
+      return s || (cur + " ");
+    }
+    function curZero(cur) {
+      cur = cur || st.currency;
+      return !!(fxInfo && fxInfo.zeroDecimal && fxInfo.zeroDecimal.indexOf(cur) >= 0);
+    }
+    // parse a typed amount -> integer minor units of the CURRENT currency
+    // (zero-decimal currencies like ¥/₩ have no cents — whole units only).
+    function parseAmt(str) {
+      if (!curZero()) return toCents(str);
+      var v = String(str == null ? "" : str).replace(/[^0-9.]/g, "");
+      var n = parseFloat(v);
+      if (!isFinite(n) || n < 0) return 0;
+      return Math.round(n);
+    }
+    // editable string for inputs ("20.14" / "3000")
+    function amtStr(minor) {
+      return curZero() ? String(Math.max(0, minor | 0)) : dollars(minor);
+    }
+    // display string with separators ("3,000" / "20.14")
+    function amtDisp(minor) {
+      if (curZero()) return (Math.max(0, minor | 0)).toLocaleString();
+      return dollars(minor);
+    }
+    function money(minor) { return curSym() + amtDisp(minor); }
+    // {whole, cents} pieces for the big mono numbers
+    function splitAmt(minor) {
+      if (!curZero()) return splitDollars(minor);
+      return { whole: (Math.max(0, minor | 0)).toLocaleString(), cents: "" };
+    }
+    function usdPreviewCents(minor) {
+      var r = fxRates[st.currency];
+      if (!r) return null;
+      var major = curZero() ? minor : minor / 100;
+      return Math.round(major * r * 100);
+    }
+    function fxPreviewText() {
+      if (st.currency === "USD" || st.totalCents <= 0) return "";
+      var grand = grandCents();
+      var usd = usdPreviewCents(grand);
+      return money(grand) + (usd == null ? " · converts to USD when you add it" : " ≈ $" + dollars(usd));
+    }
+    function ensureRate(cur) {
+      if (!cur || cur === "USD" || fxRates[cur] != null) return;
+      app.api.get("/api/fx/" + encodeURIComponent(cur) + "/1").then(function (r) {
+        if (r && r.rate > 0) {
+          fxRates[cur] = r.rate;
+          if (st.currency === cur) render();
+        }
+      }).catch(function () { /* preview only — the server converts on send */ });
+    }
+    function setCurrency(cur) {
+      if (cur === st.currency) return;
+      var wasZero = curZero(st.currency);
+      var isZero = curZero(cur);
+      // keep the typed digits meaning the same number when the currency's
+      // decimal convention changes ("3000" stays 3000, ¥ or $).
+      var factor = wasZero === isZero ? 1 : (isZero ? 1 / 100 : 100);
+      st.currency = cur;
+      if (factor !== 1) {
+        st.totalCents = Math.round(st.totalCents * factor);
+        (st.items || []).forEach(function (it) { it.cents = Math.round(it.cents * factor); });
+        Object.keys(st.custom).forEach(function (k) { st.custom[k] = Math.round(st.custom[k] * factor); });
+      }
+      ensureRate(cur);
+      render();
+    }
+    function currencySheet() {
+      var list = (fxInfo && fxInfo.currencies) || ["USD"];
+      var html = '<h3 class="lower" style="font-size:18px;margin-bottom:14px;">what currency is the receipt in?</h3>' +
+        '<div class="appscroll" style="max-height:52vh;overflow-y:auto;">' +
+        list.map(function (c) {
+          var sel = st.currency === c;
+          return '<button data-cur-pick="' + app.esc(c) + '" style="appearance:none;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;text-align:left;' +
+            'background:' + (sel ? 'rgba(39,117,202,0.12)' : '#FBF6EA') + ';border:1px solid ' + (sel ? 'rgba(39,117,202,0.45)' : 'rgba(43,33,24,0.08)') + ';border-radius:13px;padding:11px 14px;margin-bottom:7px;">' +
+            '<span style="font-family:' + F_MONO + ';font-weight:700;font-size:15px;color:#2B2118;min-width:34px;">' + app.esc(curSym(c).trim() || c) + '</span>' +
+            '<span style="font-family:' + F_MONO + ';font-size:12px;letter-spacing:.5px;color:rgba(43,33,24,0.6);">' + app.esc(c) + '</span>' +
+            (sel ? '<span style="margin-left:auto;color:#2775CA;font-size:13px;">✓</span>' : '') +
+          '</button>';
+        }).join("") + '</div>';
+      var el = app.sheet(html);
+      [].forEach.call(el.querySelectorAll("[data-cur-pick]"), function (b) {
+        b.onclick = function () { app.closeSheet(); setCurrency(b.getAttribute("data-cur-pick")); };
+      });
+    }
 
     // Edit intent handed over from the group tab sheet: pre-fill this expense.
     var editIntent = null;
@@ -334,16 +432,44 @@
           '</div>' +
         '</div>';
 
-      // total — exact frame card, big mono with smaller/lighter $ and decimals
-      var tot = splitDollars(st.totalCents);
+      // total — exact frame card, big mono with smaller/lighter $ and decimals.
+      // In a group, a compact currency chip row lets you log what the receipt
+      // says (¥ € £ ₩ + more); the ledger still settles in USD. The picker only
+      // renders when the server reports FX is available — USD-only otherwise.
+      var fxOn = inGroup && !editing && fxInfo && fxInfo.enabled &&
+        (fxInfo.currencies || []).length > 1;
+      var curChips = "";
+      if (fxOn) {
+        var prim = FX_PRIMARY.filter(function (c) {
+          return c === "USD" || (fxInfo.currencies || []).indexOf(c) >= 0;
+        });
+        if (prim.indexOf(st.currency) < 0) prim.push(st.currency);
+        curChips =
+          '<div class="ns-row" style="display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; margin-top:9px;">' +
+            prim.map(function (c) {
+              var sel = st.currency === c;
+              return '<button data-cur="' + app.esc(c) + '" aria-label="' + app.esc(c) + '" style="appearance:none; cursor:pointer; flex:none; min-width:40px; min-height:30px; padding:0 10px; border-radius:999px; ' +
+                'background:' + (sel ? '#2775CA' : '#FFFDF7') + '; border:1.5px solid ' + (sel ? '#2B2118' : 'rgba(43,33,24,0.18)') + '; ' +
+                'font-family:' + F_MONO + '; font-weight:700; font-size:12.5px; color:' + (sel ? '#fff' : 'rgba(43,33,24,0.6)') + ';">' +
+                app.esc(curSym(c).trim() || c) + '</button>';
+            }).join("") +
+            '<button id="nCurMore" aria-label="more currencies" style="appearance:none; cursor:pointer; flex:none; min-height:30px; padding:0 11px; border-radius:999px; background:transparent; border:1.5px dashed rgba(43,33,24,0.25); font-family:' + F_MONO + '; font-size:11px; color:rgba(43,33,24,0.55);">more…</button>' +
+          '</div>';
+      }
+      var fxPrev = fxPreviewText();
       var totalBlock =
         '<div style="margin-top:16px;">' +
-          '<label style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); display:block; margin:0;">TOTAL</label>' +
+          '<div style="display:flex; align-items:center; justify-content:space-between;">' +
+            '<label style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); display:block; margin:0;">TOTAL</label>' +
+            (st.currency !== "USD" ? '<span style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.38);">' + app.esc(st.currency) + ' receipt · settles in usd</span>' : '') +
+          '</div>' +
+          curChips +
           '<div style="display:flex; align-items:center; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px; margin-top:9px;">' +
-            '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:18px; opacity:.5;">$</span>' +
-            '<input id="nTotal" inputmode="decimal" enterkeyhint="done" value="' + (st.totalCents ? dollars(st.totalCents) : '') + '" placeholder="0.00" ' +
+            '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:18px; opacity:.5;">' + app.esc(curSym()) + '</span>' +
+            '<input id="nTotal" inputmode="decimal" enterkeyhint="done" value="' + (st.totalCents ? amtStr(st.totalCents) : '') + '" placeholder="' + (curZero() ? '0' : '0.00') + '" ' +
               'style="all:unset; flex:1; font-family:' + F_MONO + '; font-weight:700; font-size:30px; letter-spacing:-1px; color:#2B2118;">' +
           '</div>' +
+          '<div id="nFxPreview" style="font-family:' + F_MONO + '; font-size:11px; letter-spacing:.3px; color:#2775CA; margin-top:7px; min-height:' + (st.currency !== "USD" ? '14px' : '0') + ';">' + app.esc(fxPrev) + '</div>' +
         '</div>';
 
       // tip — exact frame segmented control (none preselected)
@@ -480,7 +606,7 @@
           '</div>';
       } else {
         // EQUALLY (evenly) — exact frame "EACH CHIPS IN" receipt block
-        var sh = splitDollars(eachCents);
+        var sh = splitAmt(eachCents);
         var seg = '';
         for (var i = 0; i < n; i++) {
           seg += '<div style="flex:1; background:' + (i % 2 ? '#3DE8C7' : '#2775CA') + '; animation:nsSeg .3s ease;"></div>';
@@ -493,11 +619,11 @@
                 '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">EACH CHIPS IN</span>' +
                 '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.42);">' + tipNote + '</span>' +
               '</div>' +
-              '<div style="font-family:' + F_MONO + '; font-weight:700; font-size:42px; line-height:1; letter-spacing:-1.5px; color:#3DE8C7; margin-top:8px;"><span style="font-size:24px; opacity:.55;">$</span>' + sh.whole + '<span style="font-size:24px; opacity:.55;">' + sh.cents + '</span></div>' +
+              '<div style="font-family:' + F_MONO + '; font-weight:700; font-size:42px; line-height:1; letter-spacing:-1.5px; color:#3DE8C7; margin-top:8px;"><span style="font-size:24px; opacity:.55;">' + app.esc(curSym()) + '</span>' + sh.whole + '<span style="font-size:24px; opacity:.55;">' + sh.cents + '</span></div>' +
               '<div style="display:flex; gap:3px; height:14px; margin-top:16px; border-radius:8px; overflow:hidden;">' + seg + '</div>' +
               '<div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px;">' +
-                '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">' + n + ' × $' + dollars(eachCents) + '</span>' +
-                '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">= $' + dollars(grand) + '</span>' +
+                '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">' + n + ' × ' + app.esc(money(eachCents)) + '</span>' +
+                '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">= ' + app.esc(money(grand)) + '</span>' +
               '</div>' +
             '</div>' +
           '</div>';
@@ -546,8 +672,8 @@
               qtyBadge +
               '<input data-item-label="' + idx + '" value="' + app.esc(item.label) + '" placeholder="item" maxlength="60" ' +
                 'style="all:unset; flex:1; min-width:0; font-family:' + F_DISPLAY + '; font-weight:500; font-size:15px; color:#2B2118; border-bottom:1px dashed rgba(43,33,24,0.18); padding:2px 0;">' +
-              '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:13px; color:rgba(43,33,24,0.4); flex:none;">$</span>' +
-              '<input data-item-price="' + idx + '" inputmode="decimal" enterkeyhint="done" value="' + (item.cents ? dollars(item.cents) : '') + '" placeholder="0.00" ' +
+              '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:13px; color:rgba(43,33,24,0.4); flex:none;">' + app.esc(curSym()) + '</span>' +
+              '<input data-item-price="' + idx + '" inputmode="decimal" enterkeyhint="done" value="' + (item.cents ? amtStr(item.cents) : '') + '" placeholder="' + (curZero() ? '0' : '0.00') + '" ' +
                 'style="all:unset; width:62px; text-align:right; font-family:' + F_MONO + '; font-weight:700; font-size:15px; color:#2B2118; border-bottom:1px dashed rgba(43,33,24,0.18); padding:2px 0; flex:none;">' +
               '<button data-item-del="' + idx + '" aria-label="remove item" style="appearance:none; border:none; background:transparent; cursor:pointer; flex:none; font-size:14px; color:rgba(43,33,24,0.35); padding:2px 3px; line-height:1;">✕</button>' +
             '</div>' +
@@ -566,7 +692,7 @@
         var extrasRow =
           '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 2px 2px; border-top:1px dashed rgba(43,33,24,0.14); margin-top:2px;">' +
             '<span style="font-family:' + F_MONO + '; font-size:11px; letter-spacing:.3px; color:rgba(43,33,24,0.55);">everything else</span>' +
-            '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:14px; color:#2B2118;">$' + dollars(Math.max(0, comp.extras)) + '</span>' +
+            '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:14px; color:#2B2118;">' + app.esc(money(Math.max(0, comp.extras))) + '</span>' +
           '</div>' +
           '<div style="font-family:' + F_MONO + '; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.4); padding:3px 2px 0;">' + extrasNote + '</div>';
 
@@ -578,7 +704,7 @@
           return '<div style="display:flex; align-items:center; gap:10px; padding:8px 2px;">' +
             '<div style="width:30px; height:30px; border-radius:50%; background:' + m.bg + '; display:flex; align-items:center; justify-content:center; font-size:15px; flex:none;">' + app.face(m.emoji) + '</div>' +
             '<span style="flex:1; font-family:' + F_SANS + '; font-weight:500; font-size:14px; color:#2B2118;">' + app.esc(m.you ? "you" : m.name) + '</span>' +
-            '<span data-per="' + app.esc(m.id) + '" style="font-family:' + F_MONO + '; font-weight:700; font-size:15px; color:#2775CA;">$' + dollars(cents) + '</span>' +
+            '<span data-per="' + app.esc(m.id) + '" style="font-family:' + F_MONO + '; font-weight:700; font-size:15px; color:#2775CA;">' + app.esc(money(cents)) + '</span>' +
           '</div>';
         }).join("");
         var sumPer = members.reduce(function (a, m) { return a + (comp.perPerson[m.id] || 0); }, 0);
@@ -596,8 +722,10 @@
               '<div style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5); padding:6px 2px 2px;">EACH PERSON OWES</div>' +
               perRows +
               '<div style="display:flex; align-items:center; justify-content:space-between; padding:9px 2px 4px; margin-top:4px; border-top:1.5px dashed rgba(43,33,24,0.14);">' +
-                '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">total</span>' +
-                '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:15px; color:#3DE8C7;">$' + dollars(sumPer) + '</span>' +
+                '<span style="font-family:' + F_MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">total' + (st.currency !== "USD" ? ' · settles in usd' : '') + '</span>' +
+                '<span style="font-family:' + F_MONO + '; font-weight:700; font-size:15px; color:#3DE8C7;">' + app.esc(money(sumPer)) +
+                  (function () { var u = st.currency !== "USD" ? usdPreviewCents(sumPer) : null; return u == null ? '' : ' <span style="font-weight:400; font-size:11px; color:rgba(43,33,24,0.5);">≈ $' + dollars(u) + '</span>'; })() +
+                '</span>' +
               '</div>' +
             '</div>' +
           '</div>';
@@ -674,18 +802,30 @@
 
       var total = document.getElementById("nTotal");
       if (total) {
-        total.oninput = function () { st.totalCents = toCents(total.value); };
-        total.onblur = function () { st.totalCents = toCents(total.value); render(); };
+        total.oninput = function () {
+          st.totalCents = parseAmt(total.value);
+          // live "¥3,000 ≈ $20.14" preview while typing (no full re-render).
+          var prev = document.getElementById("nFxPreview");
+          if (prev) prev.textContent = fxPreviewText();
+        };
+        total.onblur = function () { st.totalCents = parseAmt(total.value); render(); };
         // Enter commits the amount and sends the tab (the common one-input flow).
         total.onkeydown = function (ev) {
           if (ev.key === "Enter") {
             ev.preventDefault();
-            st.totalCents = toCents(total.value);
+            st.totalCents = parseAmt(total.value);
             total.blur();
             doSend();
           }
         };
       }
+
+      // currency chips ($ ¥ € £ ₩ + more…) — group expenses only
+      [].forEach.call(document.querySelectorAll("[data-cur]"), function (b) {
+        b.onclick = function () { setCurrency(b.getAttribute("data-cur")); };
+      });
+      var curMore = document.getElementById("nCurMore");
+      if (curMore) curMore.onclick = function () { currencySheet(); };
 
       // due-by date (group only) — keep state in sync; "clear" wipes it
       var due = document.getElementById("nDue");
@@ -770,7 +910,7 @@
         var idx = parseInt(inp.getAttribute("data-item-price"), 10);
         inp.oninput = function () {
           var it = st.items && st.items[idx];
-          if (it) it.cents = toCents(inp.value);
+          if (it) it.cents = parseAmt(inp.value);
         };
         inp.onblur = function () { render(); };
         inp.onkeydown = function (ev) {
@@ -925,6 +1065,9 @@
     // scan came back with line items. Defensive: clamps + drops junk lines.
     function applyScanResult(r) {
       if (!r) return;
+      // /api/scan already converts foreign receipts to USD (locked rate), so a
+      // scanned total is ALWAYS dollars — snap the picker back to USD.
+      st.currency = "USD";
       if (r.total != null) st.totalCents = toCents(r.total);
       st.tipKey = "none"; // scanned totals already include tip; don't double it
       if (r.merchant && !st.title) st.title = String(r.merchant).toLowerCase();
@@ -1043,12 +1186,19 @@
 
       if (send) { send.disabled = true; send.style.opacity = ".6"; }
 
+      // Foreign-currency group expense: send what the receipt says ({currency,
+      // originalAmount} in that currency's own minor units) — the SERVER
+      // converts to USD at entry time with its own rate and stores both.
+      var foreign = groupId && !st.editId && st.currency !== "USD";
+
       try {
         if (groupId && groupItems) {
           // itemized group expense → ONE logical ledger entry with exact shares
           await app.api.post("/api/trips/" + encodeURIComponent(groupId) + "/expenses/itemized", {
             title: title,
-            totalCents: grand,
+            totalCents: foreign ? undefined : grand,
+            currency: foreign ? st.currency : undefined,
+            originalAmount: foreign ? grand : undefined,
             paidBy: st.paidBy,
             items: groupItems,
             dueAt: st.dueAt ? st.dueAt : undefined,
@@ -1059,7 +1209,9 @@
         } else if (groupId) {
           var payload = {
             title: title,
-            amountCents: grand,
+            amountCents: foreign ? undefined : grand,
+            currency: foreign ? st.currency : undefined,
+            originalAmount: foreign ? grand : undefined,
             paidBy: st.paidBy,
             participants: inc.map(function (m) { return m.id; }),
             // optional due-by: a date string sets it; on edit, null clears it.
@@ -1106,6 +1258,14 @@
         '<div style="padding:6px 20px;"><div class="skeleton" style="height:120px;margin:10px 0;"></div>' +
         '<div class="skeleton" style="height:60px;margin:10px 0;"></div>' +
         '<div class="skeleton" style="height:60px;margin:10px 0;"></div></div>');
+      // Which currencies can this group log in? Best-effort: if the endpoint
+      // is missing/disabled/unreachable the picker simply never shows (USD-only).
+      app.api.get("/api/fx/currencies").then(function (r) {
+        if (r && r.enabled && r.currencies && r.currencies.length > 1) {
+          fxInfo = r;
+          if (st.members.length) render(); // form already painted — add the chips
+        }
+      }).catch(function () { /* USD-only */ });
       app.api.get("/api/trips/" + encodeURIComponent(groupId)).then(function (trip) {
         st._groupName = trip && trip.name;
         // The API doesn't return a top-level trip emoji, so derive one from the

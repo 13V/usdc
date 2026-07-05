@@ -33,6 +33,30 @@ export interface FxConversion {
   source: string;
 }
 
+/**
+ * FX provenance stamped on a trip expense whose amount was entered in a local
+ * currency. The ledger's amountCents is ALWAYS the converted USD value — this
+ * blob is the locked record of what the receipt actually said. The server
+ * builds it from its own rates (never a client-supplied rate).
+ */
+export interface ExpenseFx {
+  /** ISO code of the original currency, e.g. "JPY". */
+  currency: string;
+  /** Original amount in MINOR units (integer): ¥3,000 → 3000; €40 → 4000. */
+  originalAmount: number;
+  /** USD per 1 unit of the original currency, locked at entry. */
+  rate: number;
+  /** When the conversion happened (ISO). */
+  at: string;
+  /** When the rate was as-of (per the rate source). */
+  asOf: string;
+  /** Rate source, e.g. "open.er-api.com" or "fallback". */
+  source: string;
+}
+
+/** Cap on a foreign original amount in minor units (validated server-side). */
+export const MAX_FX_MINOR = 10_000_000_000; // 10^10
+
 const RATE_API_URL = "https://open.er-api.com/v6/latest/USD";
 const CACHE_TTL_MS = 10 * 60 * 1000; // ~10 minutes
 
@@ -99,6 +123,64 @@ const ZERO_DECIMAL = new Set(["JPY", "KRW", "VND", "IDR"]);
 // In-memory cache of the last successful (or fallback) fetch.
 let cache: { value: UsdRates; at: number } | null = null;
 
+// Test seam: injected rates short-circuit getUsdRates so selftests never touch
+// the network (and never depend on the fallback table's exact numbers).
+let injectedRates: UsdRates | null = null;
+
+/** TEST-ONLY: inject fixed rates (FOREIGN units per USD); null clears. */
+export function __setRatesForTest(
+  rates: Record<string, number> | null,
+  asOf = "(test rates)"
+): void {
+  injectedRates = rates ? { rates: { ...rates, USD: 1 }, asOf, source: "test" } : null;
+}
+
+/**
+ * Kill switch: set DIVVY_FX=off to disable multi-currency entry entirely.
+ * The rate source itself is keyless (with an offline fallback table), so FX is
+ * available by default — this exists so the app degrades to USD-only cleanly.
+ */
+export function fxEnabled(): boolean {
+  return process.env.DIVVY_FX !== "off";
+}
+
+/** The stable, offline-known currency whitelist (the fallback table's keys). */
+export function supportedCurrencies(): string[] {
+  return Object.keys(FALLBACK_RATES);
+}
+
+/** Display symbol for a currency ("$", "¥", …); falls back to the ISO code. */
+export function symbolFor(currency: string): string {
+  return SYMBOLS[normalize(currency)] || `${normalize(currency)} `;
+}
+
+/** True when the currency has no minor unit (JPY, KRW, VND, IDR). */
+export function isZeroDecimal(currency: string): boolean {
+  return ZERO_DECIMAL.has(normalize(currency));
+}
+
+/** Minor units per 1 major unit: 1 for zero-decimal currencies, else 100. */
+export function minorPerMajor(currency: string): number {
+  return isZeroDecimal(currency) ? 1 : 100;
+}
+
+/** Convert an integer MINOR amount to major units: 3000 JPY→3000, 4000 EUR→40. */
+export function majorFromMinor(minor: number, currency: string): number {
+  return minor / minorPerMajor(currency);
+}
+
+/**
+ * Pure helper: USD cents from an integer amount in the currency's OWN minor
+ * units (zero-decimal aware). Rounds exactly once.
+ */
+export function usdCentsFromForeignMinor(
+  minor: number,
+  currency: string,
+  ratePerUnit: number
+): number {
+  return Math.round(majorFromMinor(minor, currency) * ratePerUnit * 100);
+}
+
 /**
  * Pure helper: USD cents from foreign MINOR units (cents) given the USD value
  * of 1 foreign unit. Rounds exactly once.
@@ -124,6 +206,7 @@ export function isSupported(currency: string): boolean {
   const cur = normalize(currency);
   if (cur === "USD") return true;
   if (cur in FALLBACK_RATES) return true;
+  if (injectedRates && cur in injectedRates.rates) return true;
   if (cache && cur in cache.value.rates) return true;
   return false;
 }
@@ -144,6 +227,7 @@ export function ratePerUnitToUsd(currency: string, rates: Record<string, number>
  * (network, bad shape, non-2xx) returns the STATIC FALLBACK table.
  */
 export async function getUsdRates(): Promise<UsdRates> {
+  if (injectedRates) return injectedRates;
   const now = Date.now();
   if (cache && now - cache.at < CACHE_TTL_MS) return cache.value;
 
@@ -197,6 +281,77 @@ export async function convertForeignCentsToUsd(
   const rate = ratePerUnitToUsd(currency, rates);
   const usdCents = usdCentsFromForeignCents(foreignCents, rate);
   return { usdCents, rate, asOf, source };
+}
+
+/**
+ * Convert an integer amount in the currency's OWN minor units to USD (rates
+ * fetched fresh per the module cache — the freshness convention). async.
+ * rate = USD per 1 unit.
+ */
+export async function convertMinorToUsd(
+  minor: number,
+  currency: string
+): Promise<FxConversion> {
+  const { rates, asOf, source } = await getUsdRates();
+  const rate = ratePerUnitToUsd(currency, rates);
+  const usdCents = usdCentsFromForeignMinor(minor, currency, rate);
+  return { usdCents, rate, asOf, source };
+}
+
+/** Build the ExpenseFx provenance blob for a just-converted expense. */
+export function buildExpenseFx(input: {
+  currency: string;
+  originalAmount: number;
+  rate: number;
+  asOf: string;
+  source: string;
+}): ExpenseFx {
+  return {
+    currency: normalize(input.currency),
+    originalAmount: input.originalAmount,
+    rate: input.rate,
+    at: new Date().toISOString(),
+    asOf: input.asOf,
+    source: input.source,
+  };
+}
+
+/**
+ * Normalize any stored fx blob (the new ExpenseFx shape OR the legacy
+ * bill-style {sourceCurrency, sourceAmount(major)} shape) into the original
+ * currency + MAJOR amount for display. Returns null when the blob is junk.
+ */
+export function fxOriginal(fx: unknown): { currency: string; amountMajor: number } | null {
+  if (!fx || typeof fx !== "object") return null;
+  const f = fx as Record<string, unknown>;
+  const cur = normalize(String(f.currency || f.sourceCurrency || f.code || ""));
+  if (!cur || cur === "USD") return null;
+  if (Number.isFinite(f.originalAmount)) {
+    return { currency: cur, amountMajor: majorFromMinor(f.originalAmount as number, cur) };
+  }
+  if (Number.isFinite(f.sourceAmount)) {
+    return { currency: cur, amountMajor: f.sourceAmount as number };
+  }
+  return null;
+}
+
+/** "¥3,000" / "€40.00" for a stored fx blob, or null when there isn't one. */
+export function fxOriginalFmt(fx: unknown): string | null {
+  const o = fxOriginal(fx);
+  return o ? formatForeign(o.amountMajor, o.currency) : null;
+}
+
+/** The dry provenance line: `Originally ¥3,000 JPY @ $0.0064 (as of …)`. */
+export function fxNoteFor(fx: unknown): string | null {
+  const o = fxOriginal(fx);
+  if (!o) return null;
+  const f = fx as Record<string, unknown>;
+  const rate = Number(f.rate);
+  const asOf = String(f.asOf || f.at || "");
+  let note = `Originally ${formatForeign(o.amountMajor, o.currency)} ${o.currency}`;
+  if (Number.isFinite(rate) && rate > 0) note += ` @ $${rate.toFixed(4)}`;
+  if (asOf) note += ` (as of ${asOf})`;
+  return note;
 }
 
 /**

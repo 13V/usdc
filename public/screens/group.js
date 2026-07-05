@@ -615,7 +615,12 @@
         '</div>' +
       '</div>' +
       '<div style="text-align:right;">' +
-        '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#2B2118;">' + plain(e.amountCents || 0) + '</div>' +
+        // foreign receipts show the ORIGINAL currency prominently ("¥3,000")
+        // with the USD ledger value subordinate — balances stay USD.
+        (e.fxOriginalFmt
+          ? '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#2B2118;">' + app.esc(e.fxOriginalFmt) + '</div>' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; color:rgba(43,33,24,0.5); margin-top:1px;">' + plain(e.amountCents || 0) + '</div>'
+          : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#2B2118;">' + plain(e.amountCents || 0) + '</div>') +
         delta +
       '</div>' +
     '</div>';
@@ -731,7 +736,12 @@
           '<div style="width:60px; height:60px; border-radius:18px; background:#F7F1E3; display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto;">' + tabEmoji(e.title) + '</div>' +
           '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:22px; letter-spacing:-0.3px; margin:13px 0 0; color:#2B2118;">' + app.esc(e.title || "a tab") + '</h2>' +
           '<div style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:1px; color:rgba(43,33,24,0.5); margin-top:4px;">' + app.esc(subline) + '</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:#2B2118; margin-top:16px;"><span style="font-size:25px; opacity:.5;">$</span>' + moneyParts(e.amountCents || 0, "25px", ".5") + '</div>' +
+          // foreign receipts: the original currency is the headline number;
+          // the USD ledger value sits under it ("¥3,000 · $20.14 usd").
+          (e.fxOriginalFmt
+            ? '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:42px; line-height:1; letter-spacing:-1.5px; color:#2B2118; margin-top:16px;">' + app.esc(e.fxOriginalFmt) + '</div>' +
+              '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:15px; color:rgba(43,33,24,0.55); margin-top:7px;">' + plain(e.amountCents || 0) + ' <span style="font-weight:400; font-size:10px; letter-spacing:1px;">USD</span></div>'
+            : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:#2B2118; margin-top:16px;"><span style="font-size:25px; opacity:.5;">$</span>' + moneyParts(e.amountCents || 0, "25px", ".5") + '</div>') +
           '<div style="display:inline-flex; align-items:center; gap:8px; margin-top:12px; background:#F7F1E3; border:1px solid rgba(43,33,24,0.09); border-radius:999px; padding:5px 12px;">' +
             '<div style="width:20px; height:20px; border-radius:50%; background:' + memberGrad(payerM) + '; display:flex; align-items:center; justify-content:center; font-size:11px;">' + memberEmoji(payerM) + '</div>' +
             '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.7);">' + app.esc(payerName + " paid" + when) + '</span>' +
@@ -755,12 +765,14 @@
                   '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + qty + app.esc(it.label || "item") + '</div>' +
                   '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:' + (who ? 'rgba(43,33,24,0.5)' : 'rgba(255,107,94,0.8)') + ';">' + (who ? app.esc(who) : "unassigned → tip &amp; tax pot") + '</div>' +
                 '</div>' +
-                '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:13px; color:#2B2118; flex:none;">' + plain(it.cents || 0) + '</span>' +
+                // foreign itemized receipts: line prices are in the original
+                // currency (server-formatted, e.g. "¥1,200"); USD otherwise.
+                '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:13px; color:#2B2118; flex:none;">' + app.esc(it.fmt || plain(it.cents || 0)) + '</span>' +
               '</div>';
             }).join("") +
             '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:4px; padding:8px 10px; background:rgba(39,117,202,0.07); border:1.5px dashed rgba(39,117,202,0.4); border-radius:11px;">' +
               '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.55);">INCL. TIP &amp; TAX — SPLIT BY WHAT YOU HAD</span>' +
-              '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:12px; color:#2775CA; flex:none;">' + plain(e.extrasCents || 0) + '</span>' +
+              '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:12px; color:#2775CA; flex:none;">' + app.esc(e.extrasFmt || plain(e.extrasCents || 0)) + '</span>' +
             '</div>' +
           '</div>' : '') +
         // per-person
