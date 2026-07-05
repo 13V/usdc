@@ -288,6 +288,29 @@ create table if not exists referrals (
 );
 create index if not exists referrals_inviter_idx on referrals (inviter_user_id);
 
+-- ---- settle-outside claims (src/settleOutside.ts) ---------------------------
+-- "I paid you in cash" handshakes: a debtor's PENDING claim that only the
+-- creditor's confirm turns into a ledger effect (a cash tab entry / a
+-- kind='transfer' expense). Pending claims never affect any balance.
+create table if not exists outside_claims (
+  id               text primary key,
+  context          text not null,            -- 'tab' | 'trip'
+  trip_id          text,                     -- trip claims only
+  from_member_id   text,                     -- trip claims only
+  to_member_id     text,                     -- trip claims only
+  debtor_user_id   text not null,
+  creditor_user_id text not null,
+  amount_cents     bigint not null,
+  method           text not null,            -- cash | venmo | zelle | other
+  note             text,
+  status           text not null,            -- pending|confirmed|declined|cancelled|expired
+  created_at       text not null,
+  expires_at       text not null,
+  resolved_at      text
+);
+create index if not exists outside_claims_trip_idx on outside_claims (trip_id, status);
+create index if not exists outside_claims_users_idx on outside_claims (debtor_user_id, creditor_user_id, status);
+
 -- ---- additive column patches ----------------------------------------------
 -- `create table if not exists` above will NOT add columns to a table that
 -- already exists, so these idempotent ALTERs bring an older Supabase project up
@@ -299,6 +322,8 @@ alter table trip_members  add column if not exists emoji    text;
 alter table trip_members  add column if not exists color    text;
 alter table trip_messages add column if not exists reactions text;
 alter table recurring     add column if not exists paused   integer not null default 0;
+-- settle-outside transfer records (src/trips.ts): NULL = ordinary expense.
+alter table expenses      add column if not exists kind     text;
 
 -- ---- grants ---------------------------------------------------------------
 -- The server talks to Postgres as `service_role` (which also bypasses RLS).

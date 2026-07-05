@@ -110,6 +110,20 @@ import { pushRouter, sendPush } from "./push";
 import { ogMeta, tripShareHtml, rootShellHtml, OG_CARD_PATH } from "./og";
 import { referralsRouter, setRefCookie, readRefCookie, recordReferral } from "./referrals";
 import { rateLimit, moneyRateLimit, writeRateLimit, spamRateLimit } from "./ratelimit";
+import {
+  isOutsideMethod,
+  methodPhrase,
+  resolveOutsideAmount,
+  decideClaimAction,
+  newOutsideClaim,
+  insertOutsideClaim,
+  getOutsideClaim,
+  transitionOutsideClaim,
+  listPendingTripClaims,
+  serializeOutsideClaim,
+  ClaimVerb,
+  OutsideMethod,
+} from "./settleOutside";
 import { securityHeaders } from "./headers";
 import { telemetryRouter } from "./telemetry";
 // Server-rendered legal + support pages (GET /terms, /privacy, /support). Static,
@@ -1210,7 +1224,12 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
     participants: e.participants,
   }));
   const balances = computeBalances(memberIds, ledgerExpenses);
-  const totalCents = trip.expenses.reduce((a, e) => a + e.amountCents, 0);
+  // Confirmed settle-outside transfers CLEAR balances (they're in ledgerExpenses)
+  // but are money moving, not spending — keep them out of the group total.
+  const totalCents = trip.expenses.reduce(
+    (a, e) => a + (e.kind === "transfer" ? 0 : e.amountCents),
+    0
+  );
   // Debt simplification: the fewest-payments plan (same greedy the settle flow
   // executes, so these legs match /settle's transfers exactly) plus the naive
   // pairwise count it replaces — "3 payments instead of 6".
@@ -1257,6 +1276,7 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
       paidByName: memberName(trip, e.paidBy),
       participants: e.participants,
       participantNames: e.participants.map((p) => memberName(trip, p)),
+      kind: e.kind || null,
       fx: e.fx || null,
       fxNote: e.fx
         ? `Originally ${formatForeign(e.fx.sourceAmount, e.fx.sourceCurrency)} ${
@@ -1288,6 +1308,13 @@ async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
       summary: simplifySummary({ simplifiedCount: simplified.length, pairwiseCount }),
     },
     settle: await serializeSettlement(trip),
+    // Pending "settled another way" claims (settleOutside.ts). Pure metadata —
+    // a pending claim NEVER moves a balance; only a confirm records a transfer.
+    settleOutside: (await listPendingTripClaims(trip.id)).map((c) => ({
+      ...serializeOutsideClaim(c),
+      fromName: c.from_member_id ? memberName(trip, c.from_member_id) : null,
+      toName: c.to_member_id ? memberName(trip, c.to_member_id) : null,
+    })),
   };
 }
 
@@ -1339,7 +1366,10 @@ function tripSummary(trip: Trip) {
       participants: e.participants,
     }))
   );
-  const totalCents = trip.expenses.reduce((a, e) => a + e.amountCents, 0);
+  // Transfers (settle-outside records) clear balances but aren't spending —
+  // exclude them from the list summary's totals, like serializeTrip does.
+  const spendExpenses = trip.expenses.filter((e) => e.kind !== "transfer");
+  const totalCents = spendExpenses.reduce((a, e) => a + e.amountCents, 0);
   return {
     id: trip.id,
     name: trip.name,
@@ -1347,7 +1377,7 @@ function tripSummary(trip: Trip) {
     // working capability links.
     createdAt: trip.createdAt,
     memberCount: trip.members.length,
-    expenseCount: trip.expenses.length,
+    expenseCount: spendExpenses.length,
     totalCents,
     totalFmt: fmt(totalCents),
     settledUp: balances.every((b) => b.cents === 0),
@@ -1611,6 +1641,11 @@ app.patch("/api/trips/:id/expenses/:eid", writeRateLimit, async (req: Request, r
     }
     const existingExpense = trip.expenses.find((e) => e.id === req.params.eid);
     if (!existingExpense) return res.status(404).json({ error: "expense not found" });
+    if (existingExpense.kind === "transfer") {
+      // A confirmed settle-outside payment is money history — rewriting it
+      // would silently un-settle a debt the creditor already confirmed.
+      return res.status(403).json({ error: "confirmed settle-ups can't be edited" });
+    }
     if (!canMutateExpense(req, trip, existingExpense.paidBy)) {
       return res.status(403).json({ error: "only the trip owner or the person who paid can edit this expense" });
     }
@@ -1661,6 +1696,9 @@ app.delete("/api/trips/:id/expenses/:eid", writeRateLimit, async (req: Request, 
     }
     const toDelete = existing.expenses.find((e) => e.id === req.params.eid);
     if (!toDelete) return res.status(404).json({ error: "expense not found" });
+    if (toDelete.kind === "transfer") {
+      return res.status(403).json({ error: "confirmed settle-ups can't be deleted" });
+    }
     if (!canMutateExpense(req, existing, toDelete.paidBy)) {
       return res.status(403).json({ error: "only the trip owner or the person who paid can delete this expense" });
     }
@@ -1848,6 +1886,188 @@ app.post("/api/trips/:id/settle/verify", moneyRateLimit, async (req: Request, re
     res.status(status).json({ error: `verify failed: ${(err as Error).message}` });
   }
 });
+
+// ---- Settled outside the app (cash / venmo / zelle) -------------------------
+// Two-step handshake (settleOutside.ts): a debtor member files a PENDING claim
+// against the simplified-plan leg they owe; only the creditor's CONFIRM records
+// the payment — as a `kind:"transfer"` expense (paidBy debtor → participants
+// [creditor]), so it flows through computeBalances everywhere, survives
+// settlement cancel+rebuilds, and never counts as spending (journal/totals).
+
+/**
+ * POST /api/trips/:id/settle-outside { to, amountCents?, method, note? }
+ * Debtor-only: both sides must hold CLAIMED member slots (the claimant to prove
+ * who's talking, the creditor so someone can actually confirm + get the push).
+ * Amount defaults to the whole leg, clamped to (0, leg] (partial semantics).
+ */
+app.post("/api/trips/:id/settle-outside", writeRateLimit, async (req: Request, res: Response) => {
+  const trip = await getTrip(req.params.id);
+  if (!trip) return res.status(404).json({ error: "not found" });
+  if (!authorizeTrip(req, trip)) {
+    return res.status(403).json({ error: "not authorized for this trip" });
+  }
+  if (!req.userId) return res.status(401).json({ error: "sign in first" });
+  const me = trip.members.find((m) => m.userId === req.userId);
+  if (!me) return res.status(403).json({ error: "claim your spot in this group first" });
+
+  const body = (req.body || {}) as Record<string, unknown>;
+  const toM = trip.members.find((m) => m.id === String(body.to || ""));
+  if (!toM || toM.id === me.id) return res.status(400).json({ error: "pick who you paid" });
+  if (!toM.userId) {
+    return res.status(400).json({ error: "they need to claim their spot before they can confirm" });
+  }
+  const method = body.method;
+  if (!isOutsideMethod(method)) {
+    return res.status(400).json({ error: "method must be cash, venmo, zelle, or other" });
+  }
+
+  // What do I owe THEM right now? The same greedy plan the settle screen shows.
+  const balances = computeBalances(
+    trip.members.map((m) => m.id),
+    trip.expenses.map((e) => ({ amountCents: e.amountCents, paidBy: e.paidBy, participants: e.participants }))
+  );
+  const leg = minimalSettlement(balances).find((t) => t.from === me.id && t.to === toM.id);
+  if (!leg) return res.status(400).json({ error: "you don't owe them anything right now" });
+  const amount = resolveOutsideAmount(leg.amountCents, body.amountCents);
+  if ("error" in amount) return res.status(amount.status).json({ error: amount.error });
+
+  let note: string | null = null;
+  if (body.note != null && String(body.note).trim() !== "") {
+    note = String(body.note).trim();
+    if (note.length > MAX_EXPENSE_TITLE) {
+      return res.status(400).json({ error: `note must be at most ${MAX_EXPENSE_TITLE} chars` });
+    }
+  }
+
+  // A fresh claim supersedes any pending one on the same leg.
+  for (const c of await listPendingTripClaims(trip.id)) {
+    if (c.from_member_id === me.id && c.to_member_id === toM.id) {
+      await transitionOutsideClaim(c.id, "cancelled", new Date().toISOString());
+    }
+  }
+
+  const row = newOutsideClaim({
+    context: "trip",
+    tripId: trip.id,
+    fromMemberId: me.id,
+    toMemberId: toM.id,
+    debtorUserId: req.userId,
+    creditorUserId: toM.userId,
+    amountCents: amount.amountCents,
+    method: method as OutsideMethod,
+    note,
+  });
+  await insertOutsideClaim(row);
+  logMoney("settle.outside.claim", req, { tripId: trip.id, from: me.id, to: toM.id, amountCents: amount.amountCents, method });
+
+  void sendPush(toM.userId, {
+    title: "settled outside? 💵",
+    body: `${me.name} says they paid you ${fmt(amount.amountCents)} ${methodPhrase(method)} · ${trip.name} — confirm?`,
+    url: `/#/group/${trip.id}`,
+    tag: `trip-outside:${row.id}`,
+  });
+
+  return res.status(201).json(serializeOutsideClaim(row, req.userId));
+});
+
+/**
+ * POST /api/trips/:id/settle-outside/:claimId/(confirm|decline|cancel)
+ * confirm/decline: the creditor's account only. cancel: the debtor's. Confirm
+ * is idempotent + race-safe (atomic pending→confirmed transition), re-checks
+ * the claim still fits the CURRENT plan leg, then records the transfer.
+ */
+app.post(
+  "/api/trips/:id/settle-outside/:claimId/:verb(confirm|decline|cancel)",
+  writeRateLimit,
+  async (req: Request, res: Response) => {
+    const trip = await getTrip(req.params.id);
+    if (!trip) return res.status(404).json({ error: "not found" });
+    if (!authorizeTrip(req, trip)) {
+      return res.status(403).json({ error: "not authorized for this trip" });
+    }
+    if (!req.userId) return res.status(401).json({ error: "sign in first" });
+    const verb = req.params.verb as ClaimVerb;
+
+    const claim = await getOutsideClaim(req.params.claimId);
+    if (!claim || claim.context !== "trip" || claim.trip_id !== trip.id) {
+      return res.status(404).json({ error: "not found" });
+    }
+
+    const nowIso = new Date().toISOString();
+    const decision = decideClaimAction(claim, verb, req.userId, nowIso);
+    if (!decision.ok) {
+      if (decision.status === 410) await transitionOutsideClaim(claim.id, "expired", nowIso);
+      return res.status(decision.status).json({ error: decision.error });
+    }
+    if (decision.already) return res.json(await serializeTrip(trip));
+
+    if (verb !== "confirm") {
+      await transitionOutsideClaim(claim.id, decision.next, nowIso);
+      if (verb === "decline") {
+        void sendPush(claim.debtor_user_id, {
+          title: "hmm — not confirmed",
+          body: `your ${fmt(claim.amount_cents)} ${methodPhrase(claim.method)} wasn't confirmed · ${trip.name} — the ledger stays as-is`,
+          url: `/#/group/${trip.id}`,
+          tag: `trip-outside:${claim.id}`,
+        });
+      }
+      return res.json(await serializeTrip(trip));
+    }
+
+    // CONFIRM — the claim must still fit inside what that member owes on the
+    // CURRENT plan (expenses may have moved since it was filed).
+    const balances = computeBalances(
+      trip.members.map((m) => m.id),
+      trip.expenses.map((e) => ({ amountCents: e.amountCents, paidBy: e.paidBy, participants: e.participants }))
+    );
+    const leg = minimalSettlement(balances).find(
+      (t) => t.from === claim.from_member_id && t.to === claim.to_member_id
+    );
+    if (!leg || leg.amountCents < claim.amount_cents) {
+      return res.status(409).json({
+        error: "the ledger changed since this claim — ask them to claim it again",
+      });
+    }
+
+    // Atomic transition is the idempotency/race lock — one winner, one transfer.
+    const won = await transitionOutsideClaim(claim.id, "confirmed", nowIso);
+    if (!won) {
+      const latest = await getOutsideClaim(claim.id);
+      if (latest && latest.status === "confirmed") return res.json(await serializeTrip(trip));
+      return res.status(409).json({ error: `this claim was already ${latest?.status || "resolved"}` });
+    }
+
+    let updated: Trip;
+    try {
+      updated = await addExpense(trip.id, {
+        title: `settled ${methodPhrase(claim.method)}`,
+        amountCents: claim.amount_cents,
+        paidBy: claim.from_member_id as string,
+        participants: [claim.to_member_id as string],
+        kind: "transfer",
+      });
+    } catch (err) {
+      // Ledger write failed — put the claim back so the confirm can be retried.
+      if (usingSupabase) {
+        await supabase().from("outside_claims").update({ status: "pending", resolved_at: null }).eq("id", claim.id);
+      } else {
+        db.prepare("UPDATE outside_claims SET status = 'pending', resolved_at = NULL WHERE id = ?").run(claim.id);
+      }
+      throw err;
+    }
+    logMoney("settle.outside.confirm", req, { tripId: trip.id, claimId: claim.id, amountCents: claim.amount_cents, method: claim.method });
+
+    const toName = memberName(trip, claim.to_member_id as string);
+    void sendPush(claim.debtor_user_id, {
+      title: "confirmed ✓",
+      body: `${toName} confirmed your ${fmt(claim.amount_cents)} ${methodPhrase(claim.method)} · ${trip.name}`,
+      url: `/#/group/${trip.id}`,
+      tag: `trip-outside:${claim.id}`,
+    });
+
+    return res.json(await serializeTrip(updated));
+  }
+);
 
 // ---- Receipts -------------------------------------------------------------
 // Look up a single payment by its Solana Pay reference OR confirmed signature,

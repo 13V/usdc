@@ -453,6 +453,9 @@ async function collectItems(meId: string): Promise<JournalItem[]> {
     if (!me) continue;
     const nameById = new Map(trip.members.map((m) => [m.id, m.name]));
     for (const e of trip.expenses) {
+      // Settle-outside transfer records are money MOVING, not spending — skip
+      // them exactly like tab payment rows below.
+      if (e.kind === "transfer") continue;
       const mine = yourEvenShare(e.amountCents, e.participants, me.id);
       const frontedCents = e.paidBy === me.id ? e.amountCents - mine : 0;
       if (mine === 0 && frontedCents === 0) continue;
@@ -473,8 +476,16 @@ async function collectItems(meId: string): Promise<JournalItem[]> {
   const entries = await listMyTabEntries(meId);
   const nameCache = new Map<string, string>();
   for (const e of entries) {
-    // Partial-settlement payment rows are money moving, not spending — skip.
-    if (e.status === "payment" || e.status === "payment_paid") continue;
+    // Settlement payment rows (on-chain partials AND confirmed cash settles)
+    // are money moving, not spending — skip.
+    if (
+      e.status === "payment" ||
+      e.status === "payment_paid" ||
+      e.status === "cash_payment" ||
+      e.status === "cash_payment_paid"
+    ) {
+      continue;
+    }
     const signed = signedCents(e, meId);
     if (signed === 0) continue;
     const otherId = e.created_by === meId ? e.friend_user_id : e.created_by;

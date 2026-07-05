@@ -360,9 +360,50 @@
       bar +
       ((haveNet && net < 0) ? walletReadyChip(Math.abs(net)) : "") +
       pillRow() +
+      outsideClaims(trip, me) +
       whoOwesWho(trip, me) +
       tabsFeed(trip, me) +
     '</div>';
+  }
+
+  // ---------- settled outside: pending "I paid you in cash" claims ----------
+  // The creditor sees confirm ✓ / dispute ✗; the debtor sees a waiting strip
+  // with cancel; everyone else sees a quiet info row. A pending claim never
+  // moves a balance — only the creditor's confirm records the transfer.
+  function outsideClaims(trip, me) {
+    var claims = trip.settleOutside || [];
+    if (!claims.length) return "";
+    var meId = me && me.id;
+    var rows = claims.map(function (c) {
+      var fromYou = c.from === meId, toYou = c.to === meId;
+      var what = "$" + ((c.amountCents || 0) / 100).toFixed(2) + " " + (c.methodPhrase || "");
+      var note = c.note ? '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); margin-top:3px;">“' + app.esc(c.note) + '”</div>' : "";
+      if (toYou) {
+        return '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.9); padding:14px 16px;">' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42);">SETTLED OUTSIDE?</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:14.5px; line-height:1.4; color:#2B2118; margin-top:7px;">' +
+            app.esc((c.fromName || "someone").toLowerCase()) + ' says they paid you <b>' + app.esc(what.trim()) + '</b>' + note +
+          '</div>' +
+          '<div style="display:flex; gap:9px; margin-top:12px;">' +
+            '<button type="button" class="gOutAct" data-cid="' + app.esc(c.id) + '" data-verb="confirm" style="appearance:none; border:2px solid #2B2118; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:#3DE8C7; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">confirm ✓</button>' +
+            '<button type="button" class="gOutAct" data-cid="' + app.esc(c.id) + '" data-verb="decline" style="appearance:none; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:rgba(43,33,24,0.7);">dispute ✗</button>' +
+          '</div>' +
+        '</div>';
+      }
+      if (fromYou) {
+        return '<div style="display:flex; align-items:center; gap:10px; background:rgba(255,198,92,0.16); border:1.5px dashed rgba(43,33,24,0.3); border-radius:14px; padding:11px 14px;">' +
+          '<span style="font-size:16px; flex:none;">⏳</span>' +
+          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.7);">waiting for ' + app.esc((c.toName || "them").toLowerCase()) + ' to confirm your ' + app.esc(what.trim()) + '</span>' +
+          '<span class="gOutAct" data-cid="' + app.esc(c.id) + '" data-verb="cancel" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline; flex:none;">cancel</span>' +
+        '</div>';
+      }
+      return '<div style="display:flex; align-items:center; gap:8px; padding:2px 4px;">' +
+        '<span style="font-size:13px; flex:none;">💵</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">' +
+          app.esc((c.fromName || "someone").toLowerCase()) + ' says they paid ' + app.esc((c.toName || "someone").toLowerCase()) + ' ' + app.esc(what.trim()) + ' · waiting</span>' +
+      '</div>';
+    }).join("");
+    return '<div style="display:flex; flex-direction:column; gap:9px; margin-top:20px;">' + rows + '</div>';
   }
 
   // ---------- quick pills: 💬 chat · ✨ recap · ↗ share ----------
@@ -508,6 +549,21 @@
   function tabRow(e, me) {
     var n = (e.participants || []).length || 1;
     var t = ago(e.createdAt);
+    // settled-outside transfers are money history, not spending — render them
+    // distinctly ("settled in cash 💵 · confirmed") and keep them un-tappable.
+    if (e.kind === "transfer") {
+      var toName = ((e.participantNames && e.participantNames[0]) || "someone").toLowerCase();
+      return '<div style="display:flex; align-items:center; gap:13px; background:rgba(61,232,199,0.10); border:1.5px dashed rgba(23,162,119,0.5); border-radius:16px; padding:12px 15px;">' +
+        '<div style="width:42px; height:42px; border-radius:13px; background:rgba(61,232,199,0.22); display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">💵</div>' +
+        '<div style="flex:1; min-width:0;">' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#17A277; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(e.title || "settled outside") + '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.55); margin-top:3px;">' +
+            app.esc((e.paidByName || "someone").toLowerCase()) + ' paid ' + app.esc(toName) + ' · confirmed ✓' + (t ? ' · ' + t : "") +
+          '</div>' +
+        '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#17A277;">' + plain(e.amountCents || 0) + '</div>' +
+      '</div>';
+    }
     var d = tabDelta(e, me);
     var delta = d
       ? '<div style="font-family:\'Space Mono\',monospace; font-size:9px; color:' + d.color + '; margin-top:2px;">' + d.sign + (d.cents / 100).toFixed(2) + '</div>'
@@ -956,6 +1012,29 @@
     (trip.expenses || []).forEach(function (e) { byId[e.id] = e; });
     Array.prototype.forEach.call(view.querySelectorAll(".gTab"), function (el) {
       el.onclick = function () { var e = byId[el.getAttribute("data-eid")]; if (e) openTab(trip, e, me); };
+    });
+
+    // settled-outside claim actions: confirm ✓ / dispute ✗ (creditor) and
+    // cancel (debtor). The server re-checks everything; we just repaint truth.
+    Array.prototype.forEach.call(view.querySelectorAll(".gOutAct"), function (el) {
+      el.onclick = function () {
+        var cid = el.getAttribute("data-cid"), verb = el.getAttribute("data-verb");
+        if (!cid || !verb) return;
+        el.style.pointerEvents = "none";
+        el.style.opacity = "0.6";
+        app.api.post("/api/trips/" + encodeURIComponent(trip.id) + "/settle-outside/" + encodeURIComponent(cid) + "/" + verb)
+          .then(function (fresh) {
+            if (verb === "confirm") { if (app.celebrate) app.celebrate({ coins: true }); app.toast("confirmed — ledger updated ✓"); }
+            else if (verb === "decline") app.toast("okay — the ledger stays as-is");
+            else app.toast("claim cancelled");
+            if (fresh && fresh.id) paint(view, fresh);
+            else load(view, trip.id);
+          })
+          .catch(function (e) {
+            app.toast((e && e.message) || "couldn't do that");
+            load(view, trip.id); // the claim may have moved under us
+          });
+      };
     });
   }
 

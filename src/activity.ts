@@ -76,6 +76,25 @@ async function eventsForTrip(trip: Trip): Promise<ActivityEvent[]> {
   for (const e of expenses) {
     if (!e || !e.createdAt) continue;
     const paidByName = memberName(members, e.paidBy) || "Someone";
+    // Settle-outside transfer records read as payments, not new expenses.
+    if (e.kind === "transfer") {
+      const toName = memberName(members, (e.participants || [])[0]) || "someone";
+      let amountFmt: string | undefined;
+      try {
+        amountFmt = Number.isFinite(e.amountCents) ? fmt(e.amountCents) : undefined;
+      } catch {
+        amountFmt = undefined;
+      }
+      out.push({
+        type: "paid",
+        tripId,
+        tripName,
+        text: `${paidByName} paid ${toName} outside the app`,
+        amountFmt,
+        at: e.createdAt,
+      });
+      continue;
+    }
     const title = e.title || "an expense";
     let text = `${paidByName} added "${title}"`;
     // If the expense carries FX info, note the original currency where available.

@@ -118,6 +118,52 @@
       (owes ? "settle up " + amt + " ✨" : "request " + amt + " 👀") + '</button>';
   }
 
+  // ---- settled outside: pending claim card ------------------------------------
+  // A debtor's "I paid you in cash" claim. Creditor sees confirm ✓ / dispute ✗;
+  // the debtor sees a waiting strip with cancel. Pending claims never move the
+  // balance — only the creditor's confirm does (server-enforced).
+  function outsideCard(d) {
+    var c = d.outsideClaim;
+    if (!c) return "";
+    var name = firstName(d);
+    var what = "$" + (Math.abs(c.amountCents || 0) / 100).toFixed(2) + " " + (c.methodPhrase || "");
+    if (c.iAmCreditor) {
+      return '<div style="background:#FFFDF7; border:2px solid ' + PEN + '; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.9); padding:14px 16px; margin-top:14px;">' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42);">SETTLED OUTSIDE?</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-size:14.5px; line-height:1.4; color:' + PEN + '; margin-top:7px;">' +
+          app.esc(name) + ' says they paid you <b>' + app.esc(what.trim()) + '</b>' +
+          (c.note ? '<div style="font-size:12.5px; color:rgba(43,33,24,0.55); margin-top:3px;">“' + app.esc(c.note) + '”</div>' : '') +
+        '</div>' +
+        '<div style="display:flex; gap:9px; margin-top:12px;">' +
+          '<button id="t1OutYes" type="button" style="appearance:none; border:2px solid ' + PEN + '; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:#3DE8C7; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:' + PEN + '; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">confirm ✓</button>' +
+          '<button id="t1OutNo" type="button" style="appearance:none; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:rgba(43,33,24,0.7);">dispute ✗</button>' +
+        '</div>' +
+      '</div>';
+    }
+    // I'm the debtor — waiting on their confirm.
+    return '<div style="display:flex; align-items:center; gap:10px; background:rgba(255,198,92,0.16); border:1.5px dashed rgba(43,33,24,0.3); border-radius:14px; padding:11px 14px; margin-top:14px;">' +
+      '<span style="font-size:16px; flex:none;">⏳</span>' +
+      '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.7);">waiting for ' + app.esc(name) + ' to confirm your ' + app.esc(what.trim()) + '</span>' +
+      '<span id="t1OutCancel" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline; flex:none;">cancel</span>' +
+    '</div>';
+  }
+  function outsideAct(verb, btn) {
+    var c = S.d && S.d.outsideClaim;
+    if (!c) return;
+    if (btn) btn.disabled = true;
+    app.api.post("/api/tabs/" + encodeURIComponent(S.friendId) + "/settle-outside/" + encodeURIComponent(c.id) + "/" + verb)
+      .then(function () {
+        if (verb === "confirm") { app.celebrate({ coins: true }); app.toast("confirmed — tab updated ✓"); }
+        else if (verb === "decline") app.toast("okay — the tab stays as-is");
+        else app.toast("claim cancelled");
+        return load();
+      }).catch(function (e) {
+        if (btn) btn.disabled = false;
+        app.toast((e && e.message) || "couldn't do that");
+        return load(); // the claim may have moved under us — repaint truth
+      });
+  }
+
   // ---- the ledger (ruled notebook lines + coral margin) -------------------------
   var ROW = 52; // px per ruled line
   function ledgerRow(e, d) {
@@ -125,14 +171,21 @@
     var col = mine ? BLUE : CORAL;
     var paid = e.status !== "open";
     if (e.payment) {
-      // a verified partial payment — money actually moved, the rest stayed on
-      // the tab. Render it as a payment, not an IOU: mint, no +/− sign.
+      // a settlement payment — money actually moved (on-chain partial), or a
+      // creditor-CONFIRMED off-app payment (e.cash: "settled $20 in cash 💵").
+      // Render it as a payment, not an IOU: mint, no +/− sign.
       var payWho = e.addedByMe ? "you" : firstName(d);
       var INK = "#17A277"; // readable mint ink on the cream page
+      var payTitle = e.cash
+        ? (e.note || ("settled $" + (e.amountCents / 100).toFixed(2) + " 💵"))
+        : "settled $" + (e.amountCents / 100).toFixed(2) + " 💸";
+      var paySub = e.cash
+        ? app.esc(payWho) + " paid outside the app · confirmed ✓ · " + relTime(e.createdAt)
+        : app.esc(payWho) + " paid · " + relTime(e.createdAt);
       return '<div style="display:flex; align-items:center; gap:10px; height:' + ROW + 'px; padding:0 6px 0 46px;' + (paid ? ' opacity:.5;' : '') + '">' +
         '<div style="flex:1; min-width:0;">' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:' + INK + '; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;' + (paid ? ' text-decoration:line-through rgba(43,33,24,0.35) 1.5px;' : '') + '">settled $' + (e.amountCents / 100).toFixed(2) + ' 💸</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.42); margin-top:1px;">' + app.esc(payWho) + ' paid · ' + relTime(e.createdAt) + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:' + INK + '; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;' + (paid ? ' text-decoration:line-through rgba(43,33,24,0.35) 1.5px;' : '') + '">' + app.esc(payTitle) + '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.42); margin-top:1px;">' + paySub + '</div>' +
         '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; letter-spacing:-0.4px; color:' + INK + '; flex:none;"><span style="font-size:11px; opacity:.5;">$</span>' + money3(e.amountCents) + '</div>' +
       '</div>';
@@ -178,9 +231,17 @@
     var d = S.d;
     S.view.innerHTML = '<div class="vfill">' + topbar() +
       '<div class="appscroll" style="padding-top:0;">' +
-        header(d) + composer(d) + settleBtn(d) + ledger(d) +
+        header(d) + composer(d) + settleBtn(d) + outsideCard(d) + ledger(d) +
       '</div></div>';
     wireBack();
+
+    // settled-outside claim actions (confirm / dispute / cancel)
+    var outYes = document.getElementById("t1OutYes");
+    if (outYes) outYes.onclick = function () { outsideAct("confirm", outYes); };
+    var outNo = document.getElementById("t1OutNo");
+    if (outNo) outNo.onclick = function () { outsideAct("decline", outNo); };
+    var outCancel = document.getElementById("t1OutCancel");
+    if (outCancel) outCancel.onclick = function () { outsideAct("cancel", null); };
 
     // direction toggle — repaint just the composer state by re-rendering
     var they = document.getElementById("t1DirThey"), io = document.getElementById("t1DirI");
@@ -306,8 +367,18 @@
       (iPay && s.url ? '<button class="btn" id="t1Pay" style="margin-top:16px;">open in wallet</button>' : '') +
       (s.url ? '<button class="btn ghost" id="t1Copy" style="margin-top:10px;">copy payment link</button>' : '') +
       '<button class="btn ghost" id="t1Check" style="margin-top:10px;">' + (iPay ? "i paid — check ✓" : "check for payment ✓") + '</button>' +
+      (iPay
+        ? '<div style="margin-top:12px;"><span id="t1Outside" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">settled another way? 💵</span></div>'
+        : '') +
     '</div>');
     S.checkLabel = iPay ? "i paid — check ✓" : "check for payment ✓";
+
+    var outside = document.getElementById("t1Outside");
+    if (outside) outside.onclick = function () {
+      stopPoll();
+      app.closeSheet();
+      openOutsideSheet(fullCents);
+    };
 
     // partial-payment controls — re-build the settlement at the chosen amount
     // (fresh reference + Solana Pay url), then re-open the sheet on it.
@@ -362,6 +433,74 @@
       verify(false);
     }, 5000);
   }
+  // ---- settled another way (cash / venmo / zelle) ------------------------------
+  // Files a PENDING claim ("I paid you $X in cash") — nothing moves until the
+  // friend confirms it from their side. Quiet path for mixed-adoption groups.
+  function openOutsideSheet(owedCents) {
+    var name = firstName(S.d);
+    var methods = [["cash", "💵 cash"], ["venmo", "venmo"], ["zelle", "zelle"], ["other", "other"]];
+    var chips = methods.map(function (m, i) {
+      return '<button type="button" class="t1OMethod" data-m="' + m[0] + '" style="appearance:none; cursor:pointer; padding:0 13px; min-height:38px; border-radius:999px; ' +
+        (i === 0
+          ? 'background:rgba(39,117,202,0.12); border:2px solid ' + BLUE + '; color:' + BLUE + ';'
+          : 'background:#FFFDF7; border:1px solid rgba(43,33,24,0.16); color:rgba(43,33,24,0.6);') +
+        ' font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px;">' + m[1] + '</button>';
+    }).join("");
+    app.sheet('<div id="t1OSheet" style="padding:4px 4px 10px; text-align:center;">' +
+      '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:' + PEN + ';">settled another way?</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:6px;">already paid ' + app.esc(name) + ' off-app? they confirm it, then the tab updates.</div>' +
+      '<div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:14px;">' + chips + '</div>' +
+      '<div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-top:14px;">' +
+        '<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; border:2px solid ' + PEN + '; border-radius:12px; box-shadow:2px 3px 0 rgba(43,33,24,0.85); padding:8px 12px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(43,33,24,0.5);">$</span>' +
+          '<input id="t1OAmt" inputmode="decimal" enterkeyhint="done" value="' + dollarsOf(owedCents) + '" style="width:86px; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:' + PEN + ';">' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:6px;">pay less and the rest stays on the tab</div>' +
+      '<input id="t1ONote" maxlength="140" autocomplete="off" placeholder="note — “at the bar” (optional)" ' +
+        'style="width:100%; min-height:44px; margin-top:12px; padding:10px 14px; border-radius:13px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:' + PEN + ';">' +
+      '<button class="btn" id="t1OSend" style="margin-top:14px;">ask ' + app.esc(name) + ' to confirm</button>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:8px;">nothing changes until they confirm</div>' +
+    '</div>');
+    var method = "cash";
+    Array.prototype.forEach.call(document.querySelectorAll(".t1OMethod"), function (chip) {
+      chip.onclick = function () {
+        method = chip.getAttribute("data-m") || "cash";
+        Array.prototype.forEach.call(document.querySelectorAll(".t1OMethod"), function (c2) {
+          var on = c2 === chip;
+          c2.style.background = on ? "rgba(39,117,202,0.12)" : "#FFFDF7";
+          c2.style.border = on ? "2px solid " + BLUE : "1px solid rgba(43,33,24,0.16)";
+          c2.style.color = on ? BLUE : "rgba(43,33,24,0.6)";
+        });
+      };
+    });
+    var send = document.getElementById("t1OSend");
+    if (send) send.onclick = function () {
+      var amtEl = document.getElementById("t1OAmt");
+      var cents = toCents(amtEl && amtEl.value);
+      if (!(cents > 0)) { app.toast("enter an amount"); if (amtEl) amtEl.focus(); return; }
+      if (cents > owedCents) cents = owedCents; // clamp to what's owed
+      var noteEl = document.getElementById("t1ONote");
+      var note = (noteEl && noteEl.value ? String(noteEl.value).trim() : "").slice(0, 140);
+      send.disabled = true;
+      send.textContent = "sending…";
+      app.api.post("/api/tabs/" + encodeURIComponent(S.friendId) + "/settle-outside", {
+        method: method,
+        amountCents: cents,
+        note: note || undefined,
+      }).then(function () {
+        app.closeSheet();
+        app.haptic([12, 28, 22]);
+        app.toast("asked " + name + " to confirm 👀");
+        return load();
+      }).catch(function (e) {
+        send.disabled = false;
+        send.textContent = "ask " + name + " to confirm";
+        app.toast((e && e.message) || "couldn't send that");
+      });
+    };
+  }
+
   var verifying = false;
   function verify(manual) {
     if (verifying) return;

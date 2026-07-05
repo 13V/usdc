@@ -44,6 +44,13 @@ export interface TripExpense {
   participants: string[];
   fx?: any;
   createdAt: string;
+  /**
+   * NULL/undefined = ordinary spending. "transfer" = a confirmed settle-outside
+   * payment recorded as paidBy → participants[0] so it feeds computeBalances
+   * (clearing the debt) while journal/totals treat it as money MOVING, not
+   * money SPENT. Transfers are immutable history (no edit/delete).
+   */
+  kind?: string;
 }
 
 export interface Trip {
@@ -129,6 +136,11 @@ if (!hasColumn("trips", "owner_user_id")) {
 if (!hasColumn("expenses", "voided")) {
   db.exec("ALTER TABLE expenses ADD COLUMN voided INTEGER NOT NULL DEFAULT 0");
 }
+// Settle-outside transfers: expenses gain a `kind` discriminator (additive;
+// NULL = ordinary expense, 'transfer' = confirmed off-app settle payment).
+if (!hasColumn("expenses", "kind")) {
+  db.exec("ALTER TABLE expenses ADD COLUMN kind TEXT");
+}
 // Emoji + color avatar identity per member (additive; NULL → deterministic).
 if (!hasColumn("trip_members", "emoji")) db.exec("ALTER TABLE trip_members ADD COLUMN emoji TEXT");
 if (!hasColumn("trip_members", "color")) db.exec("ALTER TABLE trip_members ADD COLUMN color TEXT");
@@ -167,6 +179,7 @@ function hydrateExpense(row: any): TripExpense {
     participants: asJson<string[]>(row.participants, []),
     fx: row.fx == null ? undefined : asJson<any>(row.fx, undefined),
     createdAt: row.created_at,
+    kind: row.kind ?? undefined,
   };
 }
 
@@ -564,6 +577,8 @@ export async function addExpense(
     paidBy: string;
     participants: string[];
     fx?: any;
+    /** "transfer" = settle-outside payment record (see TripExpense.kind). */
+    kind?: "transfer";
   }
 ): Promise<Trip> {
   const trip = await getTrip(tripId);
@@ -599,11 +614,12 @@ export async function addExpense(
       fx: expense.fx ?? null, // jsonb
       created_at: new Date().toISOString(),
       voided: 0,
+      kind: expense.kind ?? null,
     });
     if (error) throw new Error(`addExpense: ${error.message}`);
   } else {
     db.prepare(
-      "INSERT INTO expenses (id, trip_id, title, amount_cents, paid_by, participants, fx, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO expenses (id, trip_id, title, amount_cents, paid_by, participants, fx, created_at, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
     ).run(
       crypto.randomUUID(),
       tripId,
@@ -612,7 +628,8 @@ export async function addExpense(
       expense.paidBy,
       JSON.stringify(participants),
       expense.fx ? JSON.stringify(expense.fx) : null,
-      new Date().toISOString()
+      new Date().toISOString(),
+      expense.kind ?? null
     );
   }
   return (await getTrip(tripId)) as Trip;

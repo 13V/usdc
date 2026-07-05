@@ -280,10 +280,15 @@
           '</button>' +
           '<div style="display:flex; align-items:center; gap:12px; width:100%; max-width:340px; padding:14px 0 4px;"><span style="flex:1; height:1px; background:rgba(43,33,24,0.10);"></span><span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.4);">or pay from another wallet</span><span style="flex:1; height:1px; background:rgba(43,33,24,0.10);"></span></div>' +
           card +
-          '<button id="stPaid" style="appearance:none; cursor:pointer; width:100%; max-width:340px; margin-top:14px; min-height:48px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">i\'ve paid — check now</button>'
+          '<button id="stPaid" style="appearance:none; cursor:pointer; width:100%; max-width:340px; margin-top:14px; min-height:48px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">i\'ve paid — check now</button>' +
+          // quiet escape hatch: paid in cash / venmo / zelle? file a claim the
+          // creditor confirms — no USDC moves through this path.
+          '<div style="margin-top:12px;"><span id="stOutside" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">settled another way? 💵</span></div>'
         ) +
       '</div>';
     wireCancel();
+    var outsideLink = document.getElementById("stOutside");
+    if (outsideLink) outsideLink.onclick = function () { tap(); openOutsideSheet(); };
 
     // partial-payment controls
     var pToggle = document.getElementById("stPartialToggle");
@@ -335,6 +340,79 @@
     if (w) w.onclick = function () { tap(); busy(w, "opening…"); openUrl(solUrl); go("waiting"); };
     var paid = document.getElementById("stPaid");
     if (paid) paid.onclick = function () { tap(); busy(paid, "checking…"); go("waiting"); poll(); };
+  }
+
+  // ---- settled another way (cash / venmo / zelle) -------------------------------
+  // Files a PENDING claim against this leg; only the creditor's confirm (on the
+  // group screen) clears the debt. Nothing changes from the debtor's word alone.
+  function openOutsideSheet() {
+    if (!S || !S.transfer || !window.app || !app.sheet) return;
+    var t = S.transfer;
+    var owedCents = S.fullOwedCents != null ? S.fullOwedCents : Math.abs(t.amountCents || 0);
+    var name = (S.toName || "them");
+    var methods = [["cash", "💵 cash"], ["venmo", "venmo"], ["zelle", "zelle"], ["other", "other"]];
+    var chips = methods.map(function (m, i) {
+      return '<button type="button" class="stOMethod" data-m="' + m[0] + '" style="appearance:none; cursor:pointer; padding:0 13px; min-height:38px; border-radius:999px; ' +
+        (i === 0
+          ? 'background:rgba(39,117,202,0.12); border:2px solid #2775CA; color:#2775CA;'
+          : 'background:#FFFDF7; border:1px solid rgba(43,33,24,0.16); color:rgba(43,33,24,0.6);') +
+        ' font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px;">' + m[1] + '</button>';
+    }).join("");
+    app.sheet('<div style="padding:4px 4px 10px; text-align:center;">' +
+      '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:#2B2118;">settled another way?</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:6px;">already paid ' + esc(name) + ' off-app? they confirm it, then the group ledger updates.</div>' +
+      '<div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:14px;">' + chips + '</div>' +
+      '<div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-top:14px;">' +
+        '<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; border:2px solid #2B2118; border-radius:12px; box-shadow:2px 3px 0 rgba(43,33,24,0.85); padding:8px 12px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(43,33,24,0.5);">$</span>' +
+          '<input id="stOAmt" inputmode="decimal" enterkeyhint="done" value="' + dollarsOf(owedCents) + '" style="width:86px; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#2B2118;">' +
+        '</div>' +
+      '</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:6px;">pay less and the rest stays owed</div>' +
+      '<input id="stONote" maxlength="140" autocomplete="off" placeholder="note — “at the bar” (optional)" ' +
+        'style="width:100%; min-height:44px; margin-top:12px; padding:10px 14px; border-radius:13px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:#2B2118;">' +
+      '<button class="btn" id="stOSend" style="margin-top:14px;">ask ' + esc(name) + ' to confirm</button>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:8px;">nothing changes until they confirm</div>' +
+    '</div>');
+    var method = "cash";
+    Array.prototype.forEach.call(document.querySelectorAll(".stOMethod"), function (chip) {
+      chip.onclick = function () {
+        method = chip.getAttribute("data-m") || "cash";
+        Array.prototype.forEach.call(document.querySelectorAll(".stOMethod"), function (c2) {
+          var on = c2 === chip;
+          c2.style.background = on ? "rgba(39,117,202,0.12)" : "#FFFDF7";
+          c2.style.border = on ? "2px solid #2775CA" : "1px solid rgba(43,33,24,0.16)";
+          c2.style.color = on ? "#2775CA" : "rgba(43,33,24,0.6)";
+        });
+      };
+    });
+    var send = document.getElementById("stOSend");
+    if (send) send.onclick = function () {
+      tap();
+      var amtEl = document.getElementById("stOAmt");
+      var cents = toCents(amtEl && amtEl.value);
+      if (!(cents > 0)) { app.toast("enter an amount"); if (amtEl) amtEl.focus(); return; }
+      if (cents > owedCents) cents = owedCents; // clamp to what's owed
+      var noteEl = document.getElementById("stONote");
+      var note = (noteEl && noteEl.value ? String(noteEl.value).trim() : "").slice(0, 140);
+      send.disabled = true;
+      send.textContent = "sending…";
+      app.api.post("/api/trips/" + encodeURIComponent(S.tripId) + "/settle-outside", {
+        to: t.to,
+        method: method,
+        amountCents: cents,
+        note: note || undefined,
+      }).then(function () {
+        app.closeSheet();
+        app.toast("asked " + name + " to confirm 👀");
+        // back to the group — the waiting card lives there until they confirm.
+        location.hash = "#/group/" + encodeURIComponent(S.tripId);
+      }).catch(function (e) {
+        send.disabled = false;
+        send.textContent = "ask " + name + " to confirm";
+        app.toast((e && e.message) || "couldn't send that");
+      });
+    };
   }
 
   // ---- STATE: waiting (lifted FRAME 3) ----------------------------------------
@@ -434,11 +512,16 @@
               '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(255,255,255,0.8);">DEBIT CARD · APPLE PAY · INSTANT</span>' +
             '</button>' +
             '<button id="stOther" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">use another wallet</button>' +
+            // no USDC on hand is exactly the cash-settle persona — offer the
+            // off-app path right here, not only on the ready state.
+            '<div style="text-align:center; margin-top:6px;"><span id="stOutside" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">settled another way? 💵</span></div>' +
             '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.34); text-align:center; margin-top:4px;">dollars, just faster.</div>' +
           '</div>'
         ) +
       '</div>';
     wireCancel();
+    var outsideNF = document.getElementById("stOutside");
+    if (outsideNF) outsideNF.onclick = function () { tap(); openOutsideSheet(); };
     var add = document.getElementById("stAdd");
     if (add) add.onclick = function () {
       // Default the sheet to exactly the shortfall (or the full amount owed if we
