@@ -19,3 +19,8 @@ export async function qrToPngFile(data: string, filePath: string): Promise<strin
 export async function qrToDataUrl(data: string): Promise<string> {
   return QRCode.toDataURL(data, { width: 320, margin: 2 });
 }
+
+/** Raw PNG bytes — for the /api/qr endpoint the pay/settle screens use. */
+export async function qrToPngBuffer(data: string, width = 380): Promise<Buffer> {
+  return QRCode.toBuffer(data, { width, margin: 2 });
+}

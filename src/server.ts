@@ -36,7 +36,7 @@ import { claimSignature } from "./consumedSignatures";
 import { alert, makeSpikeDetector } from "./alerts";
 import { db } from "./db";
 import { usingSupabase, supabase } from "./supabase";
-import { qrToDataUrl } from "./qr";
+import { qrToDataUrl, qrToPngBuffer } from "./qr";
 import { cardOptions, ramsConfigured, MOONPAY_MIN_CENTS } from "./onramp";
 import { cashoutOptions } from "./offramp";
 import { distributeWeighted, fmt, toCents, withTip, SplitMode } from "./split";
@@ -743,6 +743,26 @@ app.post("/api/me/fund", fundRateLimit, requireAuth, fundUserLimit, async (req: 
   } catch (err) {
     const status = isRpcFailure(err) ? 502 : 400;
     res.status(status).json({ error: `funding failed: ${(err as Error).message}` });
+  }
+});
+
+// Local QR rendering for the pay/settle/receive screens — replaces the
+// third-party QR image API that leaked payment URLs (recipient wallet, amount,
+// reference) to an external host. Restricted to Solana Pay URLs and bare
+// base58 addresses so this is not an open QR generator.
+const qrRateLimit = rateLimit(60, 60_000);
+const BASE58_ADDR = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+app.get("/api/qr", qrRateLimit, async (req: Request, res: Response) => {
+  const data = String(req.query.data || "");
+  const ok = data.length <= 2048 && (data.startsWith("solana:") || BASE58_ADDR.test(data));
+  if (!ok) return res.status(400).json({ error: "unsupported payload" });
+  try {
+    const png = await qrToPngBuffer(data);
+    res.setHeader("content-type", "image/png");
+    res.setHeader("cache-control", "private, max-age=300");
+    res.send(png);
+  } catch (_e) {
+    res.status(400).json({ error: "unsupported payload" });
   }
 });
 

@@ -806,7 +806,7 @@
   // "add money" on devnet = receive USDC at your own wallet address. Shows the
   // address (copyable) + a QR a sender's wallet can scan. Reused by You + Settle.
   function qrImg(data) {
-    return "https://api.qrserver.com/v1/create-qr-code/?size=190x190&margin=0&data=" + encodeURIComponent(data);
+    return "/api/qr?data=" + encodeURIComponent(data); // rendered locally — never leaks the address to a third party
   }
   // Shared amount-entry sheet body used by both add-money and cash-out flows.
   // Renders quick chips + a custom amount input; reads/writes a cents value via

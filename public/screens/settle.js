@@ -37,7 +37,7 @@
     return "https://phantom.app/ul/browse/" + encURL(u) + "?ref=" + encURL("https://divvy.app");
   }
   function qrSrc(u) {
-    return "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encURL(u);
+    return "/api/qr?data=" + encURL(u); // rendered locally — payment URLs never leave the app
   }
   function openUrl(u) {
     if (!u) return;
