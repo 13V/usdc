@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSolanaWallets, useSendTransaction } from "@privy-io/react-auth/solana";
-import { Connection, clusterApiUrl } from "@solana/web3.js";
+import { Connection } from "@solana/web3.js";
 import { buildTransferTransaction, readUsdcBalanceCents, centsToBaseUnits } from "./spl";
 
 interface Participant {
@@ -18,17 +18,22 @@ interface Bill {
   collector: string;
   splToken: string;
   participants: Participant[];
+  /** Set by the server when the bill was stamped on a DIFFERENT cluster than
+   *  the one this deployment settles on — the bill is closed here. */
+  crossCluster?: boolean;
+  crossClusterNote?: string;
 }
 
 function useQuery() {
   return useMemo(() => new URLSearchParams(window.location.search), []);
 }
 
-function rpcFor(cluster: Bill["cluster"]): string {
-  // Devnet (the server's configured cluster) goes through the same-origin proxy
-  // so the upstream RPC key stays server-side. Mainnet bills fall back to the
-  // public mainnet endpoint (the server proxy is wired to the devnet upstream).
-  if (cluster === "mainnet-beta") return clusterApiUrl("mainnet-beta");
+function rpcFor(_cluster: Bill["cluster"]): string {
+  // ALWAYS the same-origin proxy: it fronts whichever chain this server is
+  // pinned to, and keeps the upstream (Helius) key server-side. The public
+  // clusterApiUrl endpoints are rate-limited and explicitly not for production
+  // — and a bill on a different cluster than the server is refused outright
+  // (crossCluster) rather than routed to another chain.
   return window.location.origin + "/api/rpc";
 }
 
@@ -144,6 +149,23 @@ export function EmbeddedPay() {
   }
   if (!bill || !participant) {
     return <Shell><p>Loading…</p></Shell>;
+  }
+  if (bill.crossCluster) {
+    // Stamped on another cluster (e.g. a devnet-era tab after the mainnet
+    // flip): closed here — never render a payable flow for it.
+    return (
+      <Shell>
+        <div style={{ ...box, textAlign: "center" }}>
+          <strong>{bill.title} — closed</strong>
+          <p style={{ color: "#888", fontSize: ".9rem" }}>
+            {bill.crossClusterNote || "this tab was created on the test network — it's closed here."}
+          </p>
+          <p style={{ color: "#888", fontSize: ".85rem" }}>
+            nothing is owed. if this split is still live, ask for a fresh link.
+          </p>
+        </div>
+      </Shell>
+    );
   }
 
   const insufficient = balanceCents != null && balanceCents < participant.amountCents;

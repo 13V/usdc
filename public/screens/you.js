@@ -260,8 +260,16 @@
     return '<div style="height:1px; background:rgba(var(--ink-rgb),0.05); margin:0 15px;"></div>';
   }
 
-  function settingsList() {
-    var netTag = '<span style="display:inline-flex; align-items:center; gap:6px; background:rgba(61,232,199,0.1); border:1px solid rgba(61,232,199,0.35); border-radius:999px; padding:3px 9px; margin-right:2px;"><span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 6px rgba(61,232,199,0.8);"></span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#3DE8C7;">devnet</span></span>';
+  function settingsList(cluster) {
+    // Honest network tag: the mint "devnet" badge only on devnet; on mainnet a
+    // deliberately quiet "mainnet" tag (real money is the boring default, not
+    // a feature callout). Unknown cluster falls back to devnet styling.
+    var netTag;
+    if (cluster === "mainnet-beta") {
+      netTag = '<span style="display:inline-flex; align-items:center; font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); background:rgba(var(--ink-rgb),0.06); border:1px solid rgba(var(--ink-rgb),0.1); border-radius:999px; padding:3px 9px; margin-right:2px;">mainnet</span>';
+    } else {
+      netTag = '<span style="display:inline-flex; align-items:center; gap:6px; background:rgba(61,232,199,0.1); border:1px solid rgba(61,232,199,0.35); border-radius:999px; padding:3px 9px; margin-right:2px;"><span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 6px rgba(61,232,199,0.8);"></span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#3DE8C7;">' + app.esc(cluster || "devnet") + '</span></span>';
+    }
 
     return '' +
       '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.42); padding:24px 2px 11px;">SETTINGS</div>' +
@@ -321,10 +329,12 @@
   // ── signed-in ────────────────────────────────────────────────────────────────
   async function signedIn(view, user) {
     // Live on-chain USDC balance of the user's wallet; falls back to "—".
-    var balance = null;
+    // The same payload carries the server's cluster (for the honest network tag).
+    var balance = null, cluster = "devnet";
     try {
       var w = await app.api.get("/api/me/wallet");
       if (w && typeof w.usdcCents === "number") balance = w.usdcCents;
+      if (w && w.cluster) cluster = w.cluster;
     } catch (_) { /* show — */ }
 
     var id = identity(user);
@@ -343,7 +353,7 @@
           // the app is installable and not already installed/dismissed.
           '<div id="yInstallSlot"></div>' +
           balanceCard(balance) +
-          settingsList() +
+          settingsList(cluster) +
           signOutCard() +
         '</div>' +
       '</div>';
@@ -351,7 +361,7 @@
     wireGear();
     wireIdentity(id);
     wireBalance();
-    wireSettings();
+    wireSettings(cluster);
     wireStreak();     // non-blocking; drops in the settle-streak chip when >= 2
     wireInvites();    // non-blocking; drops in the "friends brought: N" chip when > 0
     wireNotifBadge(); // non-blocking; patches an unread badge in after render
@@ -674,7 +684,7 @@
       .catch(function (e) { app.toast((e && e.message) || "couldn't export history"); });
   }
 
-  function wireSettings() {
+  function wireSettings(cluster) {
     var wal = document.getElementById("yWallet");
     if (wal) wal.onclick = function () {
       // Wallet backup/recovery lives in the embedded Privy app (it needs the
@@ -745,7 +755,7 @@
     var help = document.getElementById("yHelp");
     if (help) help.onclick = openHelpSheet;
     var net = document.getElementById("yNet");
-    if (net) net.onclick = function () { app.toast("devnet · usdc on solana 🌐"); };
+    if (net) net.onclick = function () { app.toast((cluster === "mainnet-beta" ? "mainnet" : (cluster || "devnet")) + " · usdc on solana 🌐"); };
     var so = document.getElementById("ySignOut");
     if (so) so.onclick = function () {
       if (window.Auth && Auth.signOut) Auth.signOut();

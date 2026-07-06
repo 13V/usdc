@@ -37,6 +37,7 @@
       amountCents: typeof d.amountCents === "number" ? d.amountCents : null,
       from: d.from || {},                 // { name, emoji, color, wallet }
       to: d.to || {},                     // { name, emoji, color, wallet }
+      cluster: d.cluster || null,         // row's cluster, when the handoff knows it
       network: d.network || "solana",
       feeUsd: d.feeUsd || "~$0.0001",
       reference: d.reference || "",
@@ -79,6 +80,7 @@
       amountCents: typeof data.amountCents === "number" ? data.amountCents : null,
       from: { name: data.fromName || "" },
       to: { name: data.toName || "", wallet: data.wallet || null },
+      cluster: data.cluster || null,      // the ROW's cluster (bill/trip), from the API
       network: data.cluster ? "solana · " + data.cluster : "solana",
       feeUsd: "~$0.0001",
       reference: data.reference || "",
@@ -158,8 +160,13 @@
         '</span>' +
       '</div>';
 
-    // devnet-only app: without ?cluster=devnet the link resolves to mainnet and 404s.
-    var solscan = r.signature ? "https://solscan.io/tx/" + encodeURIComponent(r.signature) + "?cluster=devnet" : "";
+    // Solscan defaults to mainnet — non-mainnet rows need their cluster in the
+    // query or the link 404s (same pattern as settle.js). The row's cluster
+    // comes from the API payload; unknown clusters fall back to devnet (only
+    // legacy placeholder handoffs lack it).
+    var cluster = r.cluster || "devnet";
+    var clusterQ = cluster === "mainnet-beta" ? "" : "?cluster=" + encodeURIComponent(cluster);
+    var solscan = r.signature ? "https://solscan.io/tx/" + encodeURIComponent(r.signature) + clusterQ : "";
     var solscanLink = '<a ' + (solscan ? 'href="' + app.esc(solscan) + '" target="_blank" rel="noopener"' : 'style="pointer-events:none; opacity:.4;"') +
       ' style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:18px; padding-top:16px; border-top:1px solid rgba(var(--ink-rgb),0.07); cursor:pointer; text-decoration:none;">' +
       '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2775CA;">view on solscan</span>' +

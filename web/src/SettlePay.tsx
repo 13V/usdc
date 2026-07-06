@@ -75,11 +75,35 @@ export function SettlePay() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [paid, setPaid] = useState(false);
+  // Which chain the server settles on — gates the devnet-only faucet/copy.
+  // null while loading; the conservative default is "not devnet" (no faucet).
+  const [cluster, setCluster] = useState<"devnet" | "mainnet-beta" | null>(null);
+  // Card top-up links for exactly this wallet+amount (mainnet short-funds path).
+  const [cards, setCards] = useState<{ moonpay?: string; coinbase?: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/config")
+      .then((r) => r.json())
+      .then((c) => setCluster(c && c.cluster === "devnet" ? "devnet" : "mainnet-beta"))
+      .catch(() => setCluster("mainnet-beta")); // unknown → never auto-mint test funds
+  }, []);
 
   // open Privy login as soon as it's ready
   useEffect(() => {
     if (ready && !authenticated) login();
   }, [ready, authenticated, login]);
+
+  const insufficient = balanceCents != null && balanceCents < amountCents;
+
+  // Mainnet + short: real money can't be faucet-minted — fetch the card
+  // on-ramp links for this wallet and the exact shortfall's share instead.
+  useEffect(() => {
+    if (cluster !== "mainnet-beta" || !wallet || !insufficient) { setCards(null); return; }
+    fetch(`/api/onramp/${wallet.address}/${amountCents}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setCards)
+      .catch(() => setCards(null));
+  }, [cluster, wallet?.address, insufficient, amountCents]);
 
   const refreshBalance = async () => {
     if (!wallet || !mint) return;
@@ -108,8 +132,13 @@ export function SettlePay() {
     if (!wallet) return;
     setBusy(true); setError(null);
     try {
-      // top up first if short on test-USDC (covers gas too)
+      // Short on funds: on DEVNET the app faucet auto-mints test-USDC (covers
+      // gas too). On mainnet that endpoint 501s — real money comes from the
+      // add-money card rendered below, never an auto-call here.
       if (balanceCents != null && balanceCents < amountCents) {
+        if (cluster !== "devnet") {
+          throw new Error("your balance is short — add money first, then pay");
+        }
         await fund();
         const b = await readUsdcBalanceCents(conn, wallet.address, mint).catch(() => 0);
         if (b < amountCents) throw new Error("wallet still short on funds — try again in a moment");
@@ -158,7 +187,9 @@ export function SettlePay() {
 
       <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#3DE8C7" }}>{isSend ? "SEND" : "SETTLE UP"}</div>
       <div style={{ fontFamily: mono, fontWeight: 700, fontSize: 52, letterSpacing: -1, margin: "10px 0 0" }}>{fmt(amountCents)}</div>
-      <div style={{ fontFamily: mono, fontSize: 11, color: "rgba(var(--ink-rgb),0.45)", marginTop: 6 }}>to {toName} · USDC on devnet</div>
+      <div style={{ fontFamily: mono, fontSize: 11, color: "rgba(var(--ink-rgb),0.45)", marginTop: 6 }}>
+        to {toName} · USDC{cluster === "devnet" ? ` on ${cluster}` : ""}
+      </div>
 
       {paid ? (
         <div style={{ ...card, background: "linear-gradient(120deg,#2bccae,#3DE8C7)", color: "#04121a", fontWeight: 700 }}>{isSend ? "✓ sent!" : "✓ settled — thank you!"}</div>
@@ -176,12 +207,56 @@ export function SettlePay() {
               {balanceCents == null ? "…" : fmt(balanceCents) + " USDC"}
             </div>
           </div>
-          <button style={{ ...primary, opacity: busy ? 0.7 : 1 }} onClick={pay} disabled={busy}>
+          {cluster === "mainnet-beta" && insufficient && (
+            // Real money + short balance: no faucet exists here. Offer the card
+            // on-ramp for exactly this share, or the main app's add-money flow
+            // (same graceful pattern as the settle screen's needs-funds state).
+            <div style={{ ...card, textAlign: "left" }}>
+              <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 1, color: "#FF6B5E" }}>BALANCE TOO LOW</div>
+              <p style={{ fontSize: 13, color: "rgba(var(--ink-rgb),0.6)", margin: "8px 0 10px" }}>
+                you need {fmt(amountCents)} in USDC. add money first, then pay.
+              </p>
+              {cards && (cards.moonpay || cards.coinbase) ? (
+                <>
+                  {cards.moonpay && (
+                    <a href={cards.moonpay} target="_blank" rel="noopener noreferrer"
+                      style={{ display: "block", textAlign: "center", padding: "10px 12px", margin: "6px 0", borderRadius: 999, border: "2px solid var(--border-ink)", textDecoration: "none", color: "var(--ink)", fontWeight: 600, fontSize: 14 }}>
+                      add money · card / apple pay
+                    </a>
+                  )}
+                  {cards.coinbase && (
+                    <a href={cards.coinbase} target="_blank" rel="noopener noreferrer"
+                      style={{ display: "block", textAlign: "center", padding: "10px 12px", margin: "6px 0", borderRadius: 999, border: "2px solid var(--border-ink)", textDecoration: "none", color: "var(--ink)", fontWeight: 600, fontSize: 14 }}>
+                      add money · coinbase
+                    </a>
+                  )}
+                  <button onClick={refreshBalance}
+                    style={{ display: "block", width: "100%", background: "transparent", border: "none", cursor: "pointer", marginTop: 6, fontFamily: mono, fontSize: 11, color: "rgba(var(--ink-rgb),0.55)", textDecoration: "underline" }}>
+                    added it? check my balance again
+                  </button>
+                </>
+              ) : (
+                <p style={{ fontSize: 13, color: "rgba(var(--ink-rgb),0.6)", margin: 0 }}>
+                  card top-ups aren't available right now —{" "}
+                  <a href={ret} style={{ color: "#2775CA", fontWeight: 600 }}>add money in the app first</a>, then come back.
+                </p>
+              )}
+            </div>
+          )}
+          <button
+            style={{ ...primary, opacity: busy || (cluster !== "devnet" && insufficient) ? 0.55 : 1 }}
+            onClick={pay}
+            disabled={busy || (cluster !== "devnet" && insufficient)}
+          >
             {busy ? "working…" : (isSend ? `send ${fmt(amountCents)}` : `pay ${fmt(amountCents)}`)}
           </button>
           {status && <p style={{ fontFamily: mono, fontSize: 12.5, color: "rgba(var(--ink-rgb),0.55)", marginTop: 14 }}>{status}</p>}
           {error && <p style={{ fontSize: 13, color: "#FF6B5E", marginTop: 12, maxWidth: 320 }}>{error}</p>}
-          <div style={{ fontFamily: mono, fontSize: 10, color: "rgba(var(--ink-rgb),0.3)", marginTop: 18 }}>devnet test funds · auto-added if needed</div>
+          {cluster === "devnet" && (
+            <div style={{ fontFamily: mono, fontSize: 10, color: "rgba(var(--ink-rgb),0.3)", marginTop: 18 }}>
+              {cluster} test funds · auto-added if needed
+            </div>
+          )}
         </>
       )}
     </div>

@@ -288,12 +288,36 @@
     return Auth.user;
   }
 
+  // ── server cluster (cached) ─────────────────────────────────────────────────
+  // The server pins which chain money moves on; the client only needs it to
+  // gate devnet-only UX. Cached for the page's lifetime. On any failure we
+  // assume devnet (the burner-wallet path is UX-level; the server's own
+  // mainnet gates are authoritative either way).
+  var clusterPromise = null;
+  function serverCluster() {
+    if (!clusterPromise) {
+      clusterPromise = fetch("/api/auth/config")
+        .then(function (r) { return r.json(); })
+        .then(function (c) { return (c && c.cluster) || "devnet"; })
+        .catch(function () { return "devnet"; });
+    }
+    return clusterPromise;
+  }
+
   // Create a browser wallet, persist it, and sign in. If this device already
   // holds a burner key, sign back into THAT account instead of generating a
   // fresh keypair — overwriting the stored key would orphan the account it
   // controls (groups, claims, funds) with no way back in. Only an unloadable
   // (corrupt) saved key falls through to a fresh wallet; a network/sign-in
   // failure on a good key surfaces as an error so the key is never clobbered.
+  //
+  // MAINNET GATE (H2): a raw-key burner wallet in localStorage is a devnet/demo
+  // convenience — on mainnet-beta it would hold REAL money behind a key anyone
+  // with device storage access can copy, with no recovery. So on mainnet, every
+  // createWallet() entry point (try-the-demo, claim-your-spot, connect-a-wallet
+  // CTAs) routes to the real Privy sign-in flow instead of minting fresh keys.
+  // Signing back into an EXISTING local wallet stays allowed (legacy sign-in —
+  // it's the only way back into that account).
   async function createWallet() {
     if (hasLocalWallet()) {
       let privateKey = null;
@@ -304,6 +328,14 @@
         privateKey = null; // corrupt/unreadable key — mint a fresh wallet below
       }
       if (privateKey) return siwsSignInWithKey(saved.address, privateKey);
+    }
+    // No local wallet yet: on mainnet, never generate one — hand off to the
+    // real sign-in flow (Privy embedded wallet). The navigation replaces this
+    // page, so the returned promise deliberately never settles.
+    const cluster = await serverCluster();
+    if (cluster === "mainnet-beta") {
+      window.location.href = "/embedded/";
+      return new Promise(function () { /* navigating to sign-in */ });
     }
     let kp;
     try {
@@ -596,6 +628,8 @@
     signInWithCreatedWallet,
     hasLocalWallet,
     exportWalletSecret,
+    // Which chain the server settles on ("devnet" | "mainnet-beta"), cached.
+    serverCluster,
   };
   window.Auth = Auth;
 
