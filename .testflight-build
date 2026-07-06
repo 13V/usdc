@@ -1,2 +1,3 @@
 build 6 — push entitlements + APNs registration in the shell
 build 8 — repoint shell at usdc-production-ecba.up.railway.app (domain provisioning wedged)
+build 9 — native Apple/Google OAuth handoff (divvy:// scheme + Browser/App plugins)
