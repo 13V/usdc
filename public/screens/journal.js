@@ -106,9 +106,11 @@
     }
 
     var chips = "";
-    if (d.frontedCents > 0) chips += chip("you fronted $" + money3(d.frontedCents) + " for friends 💛", "rgba(255,198,92,0.35)", -1);
+    // &nbsp; after money3(): chips are inline-flex, which drops the plain space
+    // between the amount's trailing <span> and the text that follows it.
+    if (d.frontedCents > 0) chips += chip("you fronted $" + money3(d.frontedCents) + "&nbsp;for friends 💛", "rgba(255,198,92,0.35)", -1);
     if (d.settledCount > 0) chips += chip(d.settledCount + " tab" + (d.settledCount === 1 ? "" : "s") + " settled ✓", "rgba(61,232,199,0.3)", 1);
-    if (d.subscriptionsCents > 0) chips += chip("$" + money3(d.subscriptionsCents) + " of it was subscriptions 🔁", "rgba(39,117,202,0.14)", -0.6);
+    if (d.subscriptionsCents > 0) chips += chip("$" + money3(d.subscriptionsCents) + "&nbsp;of it was subscriptions 🔁", "rgba(39,117,202,0.14)", -0.6);
 
     return '<div style="position:relative; background:#FFFDF7; border:2px solid ' + INKC + '; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); margin-top:16px; padding:18px 18px 16px; transform:rotate(-0.35deg);">' +
       '<div class="jtape" style="top:-12px; left:14%; background:rgba(61,232,199,0.6);"></div>' +

@@ -288,8 +288,23 @@
     return Auth.user;
   }
 
-  // Create a brand-new browser wallet, persist it, and sign in.
+  // Create a browser wallet, persist it, and sign in. If this device already
+  // holds a burner key, sign back into THAT account instead of generating a
+  // fresh keypair — overwriting the stored key would orphan the account it
+  // controls (groups, claims, funds) with no way back in. Only an unloadable
+  // (corrupt) saved key falls through to a fresh wallet; a network/sign-in
+  // failure on a good key surfaces as an error so the key is never clobbered.
   async function createWallet() {
+    if (hasLocalWallet()) {
+      let privateKey = null;
+      const saved = readLocalWallet();
+      try {
+        privateKey = await importPrivateKey(saved.pkcs8B64);
+      } catch (_) {
+        privateKey = null; // corrupt/unreadable key — mint a fresh wallet below
+      }
+      if (privateKey) return siwsSignInWithKey(saved.address, privateKey);
+    }
     let kp;
     try {
       kp = await genKeypair();

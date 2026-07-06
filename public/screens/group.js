@@ -349,7 +349,11 @@
     }
     var bigCents = haveNet ? net : (trip.totalCents || 0);
 
-    // owe bar — frame shows the owed/you-owe split (blue + soft-blue / coral)
+    // owe bar — frame shows the owed/you-owe split (blue + soft-blue / coral).
+    // The labels are PERSONAL: what's owed to YOU vs what YOU owe (group-wide
+    // credits always equal group-wide debts, so group sums would just repeat
+    // the same number on both sides). The soft-blue middle segment is money
+    // moving among the others.
     var bar;
     if (owed > 0 || owe > 0) {
       var yourOwe = (haveNet && net < 0) ? Math.abs(net) : 0;
@@ -357,7 +361,7 @@
       var owedRest = Math.max(owed - owedToYou, 0);
       var fOwed = Math.max(Math.round(owedToYou / 100), owedToYou ? 1 : 0);
       var fRest = Math.max(Math.round(owedRest / 100), owedRest ? 1 : 0);
-      var fOwe = Math.max(Math.round(owe / 100), owe ? 1 : 0);
+      var fOwe = Math.max(Math.round(yourOwe / 100), yourOwe ? 1 : 0);
       bar = '' +
       '<div style="position:relative; margin-top:18px;">' +
         '<div style="display:flex; gap:4px; height:16px; border-radius:9px; overflow:hidden;">' +
@@ -366,8 +370,8 @@
           (fOwe ? '<div style="flex:' + fOwe + '; background:#FF6B5E;"></div>' : "") +
         '</div>' +
         '<div style="display:flex; justify-content:space-between; margin-top:9px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#2775CA;">＋ ' + plain(owed) + ' owed to you</span>' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#FF6B5E;">− ' + plain(owe) + ' you owe</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#2775CA;">＋ ' + plain(owedToYou) + ' owed to you</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#FF6B5E;">− ' + plain(yourOwe) + ' you owe</span>' +
         '</div>' +
       '</div>';
     } else {
