@@ -23,6 +23,8 @@ const TABLES = [
   "user_wallets",
   "friendships",
   "ious",
+  "tab_entries",
+  "tab_settlements",
   "recurring",
   "trip_messages",
   "trip_reactions",
