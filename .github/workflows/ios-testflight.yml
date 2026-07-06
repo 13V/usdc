@@ -86,7 +86,7 @@ jobs:
       - name: Sync Capacitor iOS project
         run: npx cap sync ios
         env:
-          CAP_SERVER_URL: https://app.divvysol.com
+          CAP_SERVER_URL: https://usdc-production-ecba.up.railway.app
 
       # Run 1 hung for 59 minutes inside xcodebuild's SPM resolution (right
       # after "Checking out capacitor-swift-pm") until the job timeout killed
