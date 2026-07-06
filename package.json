@@ -18,6 +18,7 @@
     "test:apple": "ts-node src/appleauth.selftest.ts",
     "test:telemetry": "ts-node src/telemetry.selftest.ts",
     "test:e2e": "node e2e/happy-path.mjs",
+    "preflight:mainnet": "ts-node scripts/mainnet-preflight.ts",
     "cap:sync": "cap sync",
     "cap:open:ios": "cap open ios",
     "cap:open:android": "cap open android",
