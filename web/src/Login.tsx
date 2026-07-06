@@ -12,6 +12,17 @@ const DIVVY_TOKEN_KEY = "divvy.token";
 const FRAME_OUTER =
   "position:relative; width:100%; max-width:430px; margin:0 auto; min-height:100vh; background:#F7F1E3; overflow:hidden; font-family:'General Sans',sans-serif; color:#2B2118; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;";
 
+// The canonical Mochi rig from /mascot.js (loaded by index.html, same origin
+// as the main app). Falls back to a plain mint dot if the script hasn't
+// loaded — the halo + spinner around it still carry the frame.
+function mochi(size: number, mood: string): string {
+  const M = (window as unknown as { Mascot?: { html?: (o: object) => string } }).Mascot;
+  if (M && typeof M.html === "function") {
+    try { return M.html({ size, mood }); } catch { /* fall through */ }
+  }
+  return `<div style="width:${Math.round(size * 0.4)}px; height:${Math.round(size * 0.4)}px; border-radius:50%; background:#3DE8C7; border:3px solid #2B2118;"></div>`;
+}
+
 // ---- connecting frame (v6 design) -----------------------------------------
 function connectingHtml(headline: string, status: string): string {
   return `<div style="${FRAME_OUTER} align-items:center; justify-content:center;">
@@ -24,17 +35,7 @@ function connectingHtml(headline: string, status: string): string {
     <div style="position:relative; z-index:2; width:200px; height:200px; display:flex; align-items:center; justify-content:center;">
       <div style="position:absolute; left:50%; top:50%; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.28) 0%, rgba(61,232,199,0.08) 44%, rgba(61,232,199,0) 68%); animation:cgHalo 3s ease-in-out infinite;"></div>
       <svg width="184" height="184" viewBox="0 0 184 184" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); overflow:visible;"><defs><linearGradient id="cgArc" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2775CA"></stop><stop offset="100%" stop-color="#3DE8C7"></stop></linearGradient></defs><circle cx="92" cy="92" r="88" fill="none" stroke="rgba(39,117,202,0.12)" stroke-width="5"></circle><circle cx="92" cy="92" r="88" fill="none" stroke="url(#cgArc)" stroke-width="5" stroke-linecap="round" stroke-dasharray="150 553" style="transform-box:fill-box; transform-origin:center; animation:cgSpin 1.4s linear infinite; filter:drop-shadow(0 0 5px rgba(61,232,199,0.55));"></circle></svg>
-      <div style="position:relative; width:130px; height:130px; animation:cgFloat 3.4s ease-in-out infinite;">
-        <div style="position:absolute; left:6px; top:60px; width:26px; height:50px; border-radius:999px; background:linear-gradient(165deg,#3f95e6,#1a5290); transform:rotate(13deg);"></div>
-        <div style="position:absolute; right:6px; top:60px; width:26px; height:50px; border-radius:999px; background:linear-gradient(165deg,#3f95e6,#1a5290); transform:rotate(-13deg);"></div>
-        <div style="position:absolute; left:42px; bottom:-6px; width:24px; height:38px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f);"></div>
-        <div style="position:absolute; right:42px; bottom:-6px; width:24px; height:38px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f);"></div>
-        <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:116px; height:116px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:cgSquish 5s ease-in-out infinite; box-shadow:0 16px 32px rgba(6,14,24,0.5), inset 0 6px 13px rgba(255,255,255,0.32), inset 0 -8px 16px rgba(13,40,72,0.5); display:flex; align-items:center; justify-content:center;">
-          <div style="position:absolute; top:16px; left:22px; width:52px; height:34px; border-radius:50%; background:radial-gradient(closest-side, rgba(255,255,255,0.4), rgba(255,255,255,0)); pointer-events:none;"></div>
-          <div style="display:flex; gap:18px; margin-top:-12px;"><div style="width:13px; height:18px; border-radius:50%; background:#F7F1E3; animation:cgBlink 4.5s infinite;"></div><div style="width:13px; height:18px; border-radius:50%; background:#F7F1E3; animation:cgBlink 4.5s infinite;"></div></div>
-          <div style="position:absolute; bottom:38px; left:50%; transform:translateX(-50%); width:24px; height:12px; background:#F7F1E3; border-radius:5px 5px 12px 12px; overflow:hidden; display:flex; align-items:flex-end; justify-content:center;"><div style="width:13px; height:8px; background:#FF6B5E; border-radius:3px 3px 6px 6px; margin-bottom:-1px;"></div></div>
-        </div>
-      </div>
+      <div style="position:relative; width:130px; height:130px; animation:cgFloat 3.4s ease-in-out infinite; display:flex; align-items:center; justify-content:center;">${mochi(126, "happy")}</div>
     </div>
     <div style="position:relative; z-index:2; font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:3px; color:#3DE8C7; margin-top:38px;">ONE SEC</div>
     <h1 style="position:relative; z-index:2; font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:30px; letter-spacing:-0.8px; margin:12px 0 0; color:#2B2118; text-align:center; padding:0 30px;">${headline}</h1>
@@ -58,21 +59,7 @@ function errorHtml(refCode: string): string {
         <div style="position:absolute; right:6px; top:30px; z-index:4; animation:erSpark 2.4s ease-in-out infinite;"><div style="width:46px; height:46px; border-radius:14px; background:rgba(255,107,94,0.14); border:1px solid rgba(255,107,94,0.4); display:flex; align-items:center; justify-content:center; box-shadow:0 8px 18px rgba(255,107,94,0.25);"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FF6B5E" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 7H7a4 4 0 0 0 0 8h2.2"></path><path d="M14.5 17H17a4 4 0 0 0 0-8h-2.2"></path><path d="M3.5 3.5l17 17"></path></svg></div></div>
         <div style="position:absolute; right:54px; top:78px; width:5px; height:5px; border-radius:50%; background:rgba(255,107,94,0.7); animation:erSpark 1.8s ease-in-out infinite; animation-delay:.4s;"></div>
         <div style="position:absolute; right:38px; top:96px; width:4px; height:4px; border-radius:50%; background:rgba(255,107,94,0.5); animation:erSpark 2.2s ease-in-out infinite; animation-delay:.9s;"></div>
-        <div style="position:relative; width:160px; height:150px; animation:erFloat 4.6s ease-in-out infinite;">
-          <div style="position:absolute; left:10px; top:60px; width:26px; height:50px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f); transform:rotate(15deg);"></div>
-          <div style="position:absolute; right:10px; top:60px; width:26px; height:50px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f); transform:rotate(-15deg);"></div>
-          <div style="position:absolute; left:53px; bottom:-8px; width:26px; height:40px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f);"></div>
-          <div style="position:absolute; right:53px; bottom:-8px; width:26px; height:40px; border-radius:999px; background:linear-gradient(165deg,#3a90e2,#16487f);"></div>
-          <div style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:132px; height:132px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:erSquish 5s ease-in-out infinite; box-shadow:0 18px 36px rgba(6,14,24,0.5), inset 0 6px 14px rgba(255,255,255,0.32), inset 0 -8px 18px rgba(13,40,72,0.5); display:flex; align-items:center; justify-content:center;">
-            <div style="position:absolute; top:18px; left:26px; width:56px; height:36px; border-radius:50%; background:radial-gradient(closest-side, rgba(255,255,255,0.4), rgba(255,255,255,0)); pointer-events:none;"></div>
-            <div style="position:absolute; top:38px; left:34px; width:18px; height:5px; border-radius:999px; background:#F7F1E3; transform:rotate(-15deg);"></div>
-            <div style="position:absolute; top:38px; right:34px; width:18px; height:5px; border-radius:999px; background:#F7F1E3; transform:rotate(15deg);"></div>
-            <div style="display:flex; gap:22px; margin-top:2px;"><div style="width:15px; height:18px; border-radius:50%; background:#F7F1E3; animation:erBlink 5s infinite;"></div><div style="width:15px; height:18px; border-radius:50%; background:#F7F1E3; animation:erBlink 5s infinite;"></div></div>
-            <div style="position:absolute; bottom:40px; left:50%; transform:translateX(-58%);"><svg width="30" height="10" viewBox="0 0 30 10" fill="none" stroke="#2B2118" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6 H17 Q23 6 26 3"></path></svg></div>
-            <div style="position:absolute; bottom:42px; left:26px; width:13px; height:7px; border-radius:50%; background:rgba(255,107,94,0.3);"></div>
-            <div style="position:absolute; bottom:42px; right:26px; width:13px; height:7px; border-radius:50%; background:rgba(255,107,94,0.3);"></div>
-          </div>
-        </div>
+        <div style="position:relative; width:160px; height:150px; animation:erFloat 4.6s ease-in-out infinite; display:flex; align-items:center; justify-content:center;">${mochi(144, "worried")}</div>
       </div>
       <div style="font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:3px; color:#FF6B5E; margin-top:18px;">HMM</div>
       <h1 style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:42px; letter-spacing:-1.2px; margin:8px 0 0; color:#2B2118;">that didn't take.</h1>

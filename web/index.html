@@ -13,6 +13,9 @@
 </head>
 <body>
   <div id="root"></div>
+  <!-- Canonical mascot rig (same-origin, shared with the main app) so the
+       embedded flows render the real Mochi instead of a duplicate drawing. -->
+  <script defer src="/mascot.js"></script>
   <script type="module" src="./src/main.tsx"></script>
 </body>
 </html>
