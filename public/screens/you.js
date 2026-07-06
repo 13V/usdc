@@ -261,6 +261,9 @@
       '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); padding:24px 2px 11px;">SETTINGS</div>' +
       '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); overflow:hidden;">' +
         row("yWallet", "🔑", "rgba(139,92,246,0.16)", "wallet & recovery") + divider() +
+        // link more ways to sign in (apple/google/email/phone) so they all open
+        // THIS account — lives in the embedded Privy app (needs the Privy session).
+        row("yLogins", "🔐", "rgba(39,117,202,0.16)", "sign-in methods") + divider() +
         row("yFriends", "🫂", "rgba(39,117,202,0.16)", "friends") + divider() +
         row("yRecurring", "🔁", "rgba(61,232,199,0.14)", "recurring") + divider() +
         // spending journal: the warm monthly digest ("you spent $214 going out").
@@ -671,6 +674,12 @@
       // Wallet backup/recovery lives in the embedded Privy app (it needs the
       // wallet context). Hand off with an absolute return path back to here.
       window.location.href = "/embedded/?manage=wallet&ret=" + encodeURIComponent("/#/you");
+    };
+    var lg = document.getElementById("yLogins");
+    if (lg) lg.onclick = function () {
+      // Linking sign-in methods (apple/google/email/phone → one account) lives
+      // in the embedded Privy app too — it needs the Privy user context.
+      window.location.href = "/embedded/?manage=logins&ret=" + encodeURIComponent("/#/you");
     };
     var f = document.getElementById("yFriends");
     if (f) f.onclick = function () { location.hash = "#/friends"; };

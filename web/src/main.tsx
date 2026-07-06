@@ -4,6 +4,7 @@ import { PrivyProvider } from "@privy-io/react-auth";
 import { EmbeddedPay } from "./EmbeddedPay";
 import { SettlePay } from "./SettlePay";
 import { Wallet } from "./Wallet";
+import { ManageLogins } from "./ManageLogins";
 import { Login } from "./Login";
 
 // Privy app id is injected at build time via VITE_PRIVY_APP_ID. Without it the
@@ -14,10 +15,12 @@ const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID as string | undefined;
 //   • ?bill=…&name=…    → pay a single bill share (EmbeddedPay)
 //   • ?pay=settle&…     → pay a trip settle-up transfer (SettlePay)
 //   • ?manage=wallet    → back up / set recovery on the embedded wallet (Wallet)
+//   • ?manage=logins    → link more sign-in methods to this account (ManageLogins)
 //   • otherwise         → onboarding: create a wallet + sign in (Login)
 function ActiveFlow() {
   const p = new URLSearchParams(window.location.search);
   if (p.get("pay") === "settle" || p.get("pay") === "send") return <SettlePay />;
+  if (p.get("manage") === "logins") return <ManageLogins />;
   if (p.get("manage") === "wallet") return <Wallet />;
   if (p.has("bill")) return <EmbeddedPay />;
   return <Login />;

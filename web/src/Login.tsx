@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSolanaWallets } from "@privy-io/react-auth/solana";
 import { safeReturnPath } from "./safeReturn";
+import { isNativeShell, openInSystemBrowser } from "./native";
 import "./onboarding.css";
 
 // The main (vanilla) app reads its session token from this localStorage key.
@@ -17,41 +18,8 @@ const DIVVY_TOKEN_KEY = "divvy.token";
 // then mints a single-use code (POST /api/auth/handoff) and deep-links back
 // into the shell via divvy://auth?code=… where public/auth.js exchanges it for
 // the session token. Email/phone sign-in never diverts — it works in-webview.
-
-function isNativeShell(): boolean {
-  try {
-    return !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
-      .Capacitor?.isNativePlatform?.();
-  } catch {
-    return false;
-  }
-}
-
-// Open a URL in the system browser from inside the shell. Prefers the
-// @capacitor/browser plugin (SFSafariViewController — a real browser context
-// Google accepts); falls back to the Cordova-style window.open target. Returns
-// false if no out-of-webview route exists (old binary) so the caller can fall
-// back to today's in-webview flow.
-async function openInSystemBrowser(url: string): Promise<boolean> {
-  const cap = (window as unknown as {
-    Capacitor?: { Plugins?: { Browser?: { open: (o: { url: string }) => Promise<void> } } };
-  }).Capacitor;
-  const browser = cap?.Plugins?.Browser;
-  if (browser?.open) {
-    try {
-      await browser.open({ url });
-      return true;
-    } catch {
-      /* fall through */
-    }
-  }
-  try {
-    const w = window.open(url, "_system");
-    return !!w;
-  } catch {
-    return false;
-  }
-}
+// (isNativeShell / openInSystemBrowser live in ./native — shared with the
+// sign-in-methods link flow.)
 
 const FRAME_OUTER =
   "position:relative; width:100%; max-width:430px; margin:0 auto; min-height:100vh; background:#F7F1E3; overflow:hidden; font-family:'General Sans',sans-serif; color:#2B2118; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;";

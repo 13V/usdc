@@ -392,15 +392,23 @@
   // shell's WKWebView), which deep-links back with a single-use code:
   //   divvy://auth?code=<code>  →  POST /api/auth/handoff/exchange → { token, user }
   // Plain web/PWA: window.Capacitor is absent and all of this is a no-op.
-  function parseHandoffCode(url) {
+  // The link may also carry a `ret` path (e.g. the sign-in-methods flow returns
+  // to /#/you) — sanitized to a SAME-ORIGIN path, mirroring web/src/safeReturn.ts.
+  function parseHandoff(url) {
     var m = /^divvy:\/\/auth\/?\?(.*)$/i.exec(String(url || ""));
     if (!m) return null;
-    try { return new URLSearchParams(m[1]).get("code"); } catch (_) { return null; }
+    try {
+      var p = new URLSearchParams(m[1]);
+      var ret = p.get("ret");
+      if (!ret || !/^\/(?![/\\])/.test(ret)) ret = null;
+      return { code: p.get("code"), ret: ret };
+    } catch (_) { return null; }
   }
 
   var handledHandoffUrls = {};
   function handleAppUrl(url) {
-    var code = parseHandoffCode(url);
+    var parsed = parseHandoff(url);
+    var code = parsed && parsed.code;
     if (!code) return;
     // getLaunchUrl (cold start) and appUrlOpen (warm) can both deliver the same
     // URL — exchange it once; the server rejects a replay anyway.
@@ -415,9 +423,13 @@
       cacheUser(Auth.user);
       fire();
       // Land on the signed-in entry via a full reload (re-runs init() with the
-      // token present) — same destination the in-page /embedded flow uses.
-      try { sessionStorage.setItem("divvy.onboardVia", "privy"); } catch (_) {}
-      try { window.location.href = "/#/welcome"; } catch (_) { /* keep current screen */ }
+      // token present) — same destination the in-page /embedded flow uses,
+      // unless the deep link asked for a specific screen (sign-in-methods
+      // linking returns to /#/you instead of replaying onboarding).
+      if (!(parsed && parsed.ret)) {
+        try { sessionStorage.setItem("divvy.onboardVia", "privy"); } catch (_) {}
+      }
+      try { window.location.href = (parsed && parsed.ret) || "/#/welcome"; } catch (_) { /* keep current screen */ }
     }).catch(function () {
       // Expired/reused code (user lingered in Safari) — stay signed out; the
       // welcome screen still works and a fresh sign-in mints a fresh code.
