@@ -86,11 +86,49 @@
     document.head.appendChild(s);
   }
 
+  // ── theme picker (auto / light / dark) — a device setting, not part of the
+  // profile: chips persist via app.setTheme and re-skin the app instantly. ──
+  var THEMES = [
+    { id: "auto", label: "auto", icon: "☁️" },
+    { id: "light", label: "light", icon: "☀️" },
+    { id: "dark", label: "dark", icon: "🌙" },
+  ];
+  function themeSectionHtml() {
+    return '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45); margin:24px 2px 12px;">THEME</div>' +
+      '<div id="cpTheme" style="display:flex; gap:9px;"></div>';
+  }
+  function renderTheme() {
+    var wrap = document.getElementById("cpTheme");
+    if (!wrap || !app.theme) return;
+    var cur = app.theme();
+    wrap.innerHTML = THEMES.map(function (t) {
+      var sel = t.id === cur;
+      // selected chip is a mint sticker — its text/outline stay literal dark
+      // ink (the accent bg stays light in both themes)
+      return '<div data-theme-pick="' + t.id + '" role="button" tabindex="0" aria-label="' + t.label + ' theme' + (sel ? ' (selected)' : '') + '" ' +
+        'style="flex:1; display:flex; align-items:center; justify-content:center; gap:7px; min-height:44px; border-radius:14px; ' +
+        'background:' + (sel ? "#3DE8C7" : "var(--card)") + '; border:2px solid ' + (sel ? "#2B2118" : "var(--border-ink)") + '; ' +
+        'box-shadow:2.5px 3px 0 rgba(var(--shadow-rgb),0.85); cursor:pointer;">' +
+        '<span style="font-size:15px;">' + t.icon + '</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; letter-spacing:.5px; color:' + (sel ? "#2B2118" : "var(--ink)") + ';">' + t.label + '</span>' +
+        '</div>';
+    }).join("");
+    Array.prototype.forEach.call(wrap.querySelectorAll("[data-theme-pick]"), function (el) {
+      var pick = function () {
+        if (app.setTheme) app.setTheme(el.getAttribute("data-theme-pick"));
+        app.haptic(12);
+        renderTheme();
+      };
+      el.onclick = pick;
+      el.onkeydown = function (e) { if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") { e.preventDefault(); pick(); } };
+    });
+  }
+
   // exact thumbs-up mascot blob lifted from the frame
   function thumbMascot() {
     return '<div class="cp-anim" style="position:relative; width:54px; height:54px; animation:cpFloat 5s ease-in-out infinite; margin-left:6px;">' +
       '<div style="position:absolute; inset:-7px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.4) 0%, rgba(39,117,202,0) 70%); animation:cpPulse 3s ease-in-out infinite; z-index:-2;"></div>' +
-      '<div style="position:relative; width:46px; height:46px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:cpSquish 4.5s ease-in-out infinite; box-shadow:3px 3px 0 rgba(43,33,24,0.9); display:flex; align-items:center; justify-content:center;">' +
+      '<div style="position:relative; width:46px; height:46px; background:linear-gradient(155deg,#4aa0f0,#2775CA 60%,#1c5697); animation:cpSquish 4.5s ease-in-out infinite; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9); display:flex; align-items:center; justify-content:center;">' +
         '<div style="position:absolute; left:16px; bottom:-5px; width:7px; height:12px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>' +
         '<div style="position:absolute; right:16px; bottom:-5px; width:7px; height:12px; border-radius:999px; background:linear-gradient(160deg,#3a8fe0,#1f5da3); z-index:-1;"></div>' +
         '<div style="position:absolute; left:-5px; top:18px; width:8px; height:14px; border-radius:999px; background:linear-gradient(160deg,#3f93e4,#2061a8); transform-origin:5px 2px; animation:cpWaveL 3.4s ease-in-out infinite; z-index:-1;"></div>' +
@@ -108,15 +146,15 @@
   // top bar lifted from the frame (back ‹ + centered "make it yours" + blue save)
   function topbar() {
     return '<div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 16px; flex:none;">' +
-      '<div id="cpBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
-      '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118;">make it yours</span>' +
+      '<div id="cpBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:var(--ink);">make it yours</span>' +
       '<span id="cpSaveTop" role="button" aria-label="save" tabindex="0" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2775CA; cursor:pointer; padding:8px 6px;">save</span>' +
     '</div>';
   }
 
   // texture + glow layers lifted from the frame
   function backdrop() {
-    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(43,33,24,0.025) 0 1px, transparent 1px 8px); opacity:.55; pointer-events:none;"></div>' +
+    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(var(--ink-rgb),0.025) 0 1px, transparent 1px 8px); opacity:.55; pointer-events:none;"></div>' +
       '<div style="position:absolute; left:50%; top:90px; width:380px; height:260px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.18) 0%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>';
   }
 
@@ -130,8 +168,10 @@
           '<div class="title lower">make it yours</div>' +
           '<div class="hint">sign in to pick your emoji + color ✨</div>' +
           '<button class="btn" id="cpConnect" style="max-width:260px;margin-top:8px;">sign in</button>' +
+          '<div style="width:100%; max-width:260px; text-align:left;">' + themeSectionHtml() + '</div>' +
         '</div>' +
       '</div>';
+    renderTheme();
     var b = document.getElementById("cpBack");
     if (b) b.onclick = function () { app.go("you"); };
     var c = document.getElementById("cpConnect");
@@ -160,7 +200,7 @@
           '<div style="display:flex; align-items:center; justify-content:center; gap:14px; padding:10px 0 6px;">' +
             '<div class="cp-anim" style="position:relative; width:132px; height:132px; flex:none; animation:cpHero 5s ease-in-out infinite;">' +
               '<div style="position:absolute; inset:-14px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.4) 0%, rgba(39,117,202,0) 70%); animation:cpPulse 3.4s ease-in-out infinite;"></div>' +
-              '<div style="position:relative; width:132px; height:132px; border-radius:36px; overflow:hidden; box-shadow:0 18px 40px rgba(43,33,24,0.13), inset 0 2px 0 rgba(255,255,255,0.18);">' +
+              '<div style="position:relative; width:132px; height:132px; border-radius:36px; overflow:hidden; box-shadow:0 18px 40px rgba(var(--shadow-rgb),0.13), inset 0 2px 0 rgba(255,255,255,0.18);">' +
                 '<div id="cpHeroBg" style="position:absolute; inset:0; background:' + colorBg(state.colorId) + ';"></div>' +
                 '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 80% 110%, rgba(255,255,255,0.1) 0 1px, transparent 1px 7px); opacity:.5;"></div>' +
                 '<div id="cpHeroEmoji" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:68px;">' + app.face(state.emoji) + '</div>' +
@@ -168,8 +208,8 @@
             '</div>' +
 
             '<div style="display:flex; flex-direction:column; align-items:flex-start; gap:8px; flex:none;">' +
-              '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:14px; box-shadow:3px 4px 0 rgba(43,33,24,0.85) 14px 14px 4px; padding:7px 11px;">' +
-                '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.75);">looking good 😎</span>' +
+              '<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:14px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85) 14px 14px 4px; padding:7px 11px;">' +
+                '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(var(--ink-rgb),0.75);">looking good 😎</span>' +
               '</div>' +
               thumbMascot() +
             '</div>' +
@@ -177,40 +217,43 @@
 
           // ===== YOUR EMOJI =====
           '<div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 12px;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">YOUR EMOJI</span>' +
-            '<div style="display:inline-flex; align-items:center; gap:7px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:5px 12px;">' +
-              '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
-              '<input id="cpSearch" placeholder="search" style="border:none; outline:none; background:transparent; color:#2B2118; font-family:\'Space Mono\',monospace; font-size:10.5px; width:62px; padding:0;" />' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">YOUR EMOJI</span>' +
+            '<div style="display:inline-flex; align-items:center; gap:7px; background:var(--card); border:2px solid var(--border-ink); border-radius:999px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:5px 12px;">' +
+              '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+              '<input id="cpSearch" placeholder="search" style="border:none; outline:none; background:transparent; color:var(--ink); font-family:\'Space Mono\',monospace; font-size:10.5px; width:62px; padding:0;" />' +
             '</div>' +
           '</div>' +
           '<div id="cpEmojiGrid" style="display:grid; grid-template-columns:repeat(6, 1fr); gap:9px;"></div>' +
 
           // ===== MEME PFPS (hand-drawn Faces pack) =====
           '<div style="display:flex; align-items:baseline; gap:8px; margin:24px 2px 12px;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">MEME PFPS</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">MEME PFPS</span>' +
             '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; color:#FF6B5E;">hand-drawn, obviously</span>' +
           '</div>' +
           '<div id="cpMemeGrid" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:9px;"></div>' +
 
           // ===== YOUR COLOR =====
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin:24px 2px 12px;">YOUR COLOR</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45); margin:24px 2px 12px;">YOUR COLOR</div>' +
           '<div id="cpColors" style="display:flex; flex-wrap:wrap; gap:11px;"></div>' +
+
+          // ===== THEME (device setting — applies instantly, no save needed) =====
+          themeSectionHtml() +
 
           // ===== NAME + HANDLE =====
           '<div style="margin-top:26px; display:flex; flex-direction:column; gap:13px;">' +
             '<div>' +
-              '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin-bottom:8px;">NAME</div>' +
-              '<div style="display:flex; align-items:center; gap:10px; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:15px 16px;">' +
-                '<input id="cpName" placeholder="your name" value="' + app.esc(state.name) + '" style="flex:1; border:none; outline:none; background:transparent; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; padding:0;" />' +
-                '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' +
+              '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:8px;">NAME</div>' +
+              '<div style="display:flex; align-items:center; gap:10px; background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:15px 16px;">' +
+                '<input id="cpName" placeholder="your name" value="' + app.esc(state.name) + '" style="flex:1; border:none; outline:none; background:transparent; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:var(--ink); padding:0;" />' +
+                '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.4)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>' +
               '</div>' +
             '</div>' +
             '<div>' +
-              '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin-bottom:8px;">HANDLE</div>' +
-              '<div style="display:flex; align-items:center; gap:6px; background:#FFFDF7; border:1px solid rgba(39,117,202,0.3); border-radius:16px; padding:15px 16px;">' +
+              '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:8px;">HANDLE</div>' +
+              '<div style="display:flex; align-items:center; gap:6px; background:var(--card); border:1px solid rgba(39,117,202,0.3); border-radius:16px; padding:15px 16px;">' +
                 '<span style="font-family:\'Space Mono\',monospace; font-size:15px; color:rgba(39,117,202,0.7);">@</span>' +
                 '<div style="flex:1; display:flex; align-items:center; min-width:0;">' +
-                  '<input id="cpHandle" placeholder="handle" value="' + app.esc(state.handle) + '" style="flex:1; min-width:0; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-size:15px; color:#2B2118; padding:0;" />' +
+                  '<input id="cpHandle" placeholder="handle" value="' + app.esc(state.handle) + '" style="flex:1; min-width:0; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-size:15px; color:var(--ink); padding:0;" />' +
                   '<span id="cpCaret" style="display:inline-block; width:2px; height:17px; background:#2775CA; margin-left:2px; animation:cpCaret 1s steps(1) infinite; flex:none;"></span>' +
                 '</div>' +
                 '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.1); border:1px solid rgba(61,232,199,0.35); border-radius:999px; padding:3px 9px; flex:none;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#3DE8C7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; color:#3DE8C7;">free</span></span>' +
@@ -222,8 +265,8 @@
         '</div>' +
 
         // ── sticky save ──
-        '<div style="position:relative; z-index:6; flex:none; padding:12px 18px calc(16px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(247,241,227,0) 0%, #F7F1E3 24%);">' +
-          '<button id="cpSave" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+        '<div style="position:relative; z-index:6; flex:none; padding:12px 18px calc(16px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(var(--paper-rgb),0) 0%, var(--paper) 24%);">' +
+          '<button id="cpSave" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">save</span>' +
             '<span style="font-size:15px;">✨</span>' +
           '</button>' +
@@ -246,12 +289,12 @@
         return !q || e.t.indexOf(q) >= 0 || e.c === q;
       });
       if (!list.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:12px 0; font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5);">no emoji like that 🤔</div>';
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:12px 0; font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.5);">no emoji like that 🤔</div>';
         return;
       }
       grid.innerHTML = list.map(function (e) {
         var sel = e.c === state.emoji;
-        return '<div data-emoji="' + app.esc(e.c) + '" role="button" tabindex="0" aria-label="' + app.esc(e.t) + (sel ? ' (selected)' : '') + '" style="position:relative; aspect-ratio:1; border-radius:14px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.06); display:flex; align-items:center; justify-content:center; font-size:23px; cursor:pointer;">' +
+        return '<div data-emoji="' + app.esc(e.c) + '" role="button" tabindex="0" aria-label="' + app.esc(e.t) + (sel ? ' (selected)' : '') + '" style="position:relative; aspect-ratio:1; border-radius:14px; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.06); display:flex; align-items:center; justify-content:center; font-size:23px; cursor:pointer;">' +
           app.esc(e.c) +
           (sel ? '<div style="position:absolute; inset:-2px; border-radius:16px; border:2px solid #2775CA; box-shadow:0 0 14px rgba(39,117,202,0.6); pointer-events:none;"></div>' : '') +
           '</div>';
@@ -285,7 +328,7 @@
       grid.innerHTML = window.Faces.list.map(function (m) {
         var token = "m:" + m.id;
         var sel = token === state.emoji;
-        return '<div data-meme="' + token + '" style="position:relative; border-radius:14px; background:#FFFDF7; border:2px solid ' + (sel ? "#2775CA" : "#2B2118") + '; box-shadow:2.5px 3px 0 rgba(43,33,24,0.85); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:10px 4px 8px; cursor:pointer;' + (sel ? "" : " transform:rotate(" + ((m.id.length % 3) - 1) * 1.2 + "deg);") + '">' +
+        return '<div data-meme="' + token + '" style="position:relative; border-radius:14px; background:#FFFDF7; border:2px solid ' + (sel ? "#2775CA" : "#2B2118") + '; box-shadow:2.5px 3px 0 rgba(var(--shadow-rgb),0.85); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:10px 4px 8px; cursor:pointer;' + (sel ? "" : " transform:rotate(" + ((m.id.length % 3) - 1) * 1.2 + "deg);") + '">' +
           '<span style="font-size:30px; line-height:1;">' + window.Faces.svg(token, "30px") + '</span>' +
           '<span style="font-family:\'Space Mono\',monospace; font-size:8.5px; letter-spacing:.3px; color:rgba(43,33,24,0.55); white-space:nowrap;">' + app.esc(m.name) + '</span>' +
           (sel ? '<div style="position:absolute; top:-7px; right:-6px; width:18px; height:18px; border-radius:50%; background:#3DE8C7; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>' : '') +
@@ -303,6 +346,7 @@
     renderEmoji();
     renderMemes();
     renderColors();
+    renderTheme();
 
     var search = document.getElementById("cpSearch");
     if (search) search.oninput = function () { state.query = search.value || ""; renderEmoji(); };

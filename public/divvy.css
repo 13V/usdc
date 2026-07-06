@@ -5,19 +5,29 @@
 @import url("/fonts.css");
 
 :root {
-  /* surfaces — JOURNAL theme: warm notebook paper + hand-inked chrome */
-  --ink: #F7F1E3;        /* paper */
-  --ink-deep: #EFE7D3;   /* deep paper (page edges) */
-  --card: #FFFDF7;       /* white card stock */
+  /* surfaces — JOURNAL theme: warm notebook paper + hand-inked chrome.
+     These are the LIGHT (day) values; html[data-theme="dark"] below flips the
+     same tokens to "the notebook at night" (layout + accents unchanged). */
+  --paper: #F7F1E3;       /* paper */
+  --paper-deep: #EFE7D3;  /* deep paper (page edges) */
+  --paper2: #EDE7D8;      /* deeper paper tint (chat bubbles) */
+  --paper3: #F1E8D6;      /* stepper-chip paper tint */
+  --paper-rgb: 247, 241, 227; /* bare triplet for rgba() composition */
+  --card: #FFFDF7;        /* white card stock */
   --card-2: #FBF6EA;
-  --line: rgba(43, 33, 24, 0.12);
-  --line-2: rgba(43, 33, 24, 0.22);
-  --pen: #2B2118;        /* the ink everything is drawn with */
+  --ink: #2B2118;         /* the ink everything is drawn with */
+  --ink-rgb: 43, 33, 24;  /* bare triplet for rgba() composition */
+  --border-ink: #2B2118;  /* hand-inked outlines (slightly softened in dark) */
+  --shadow-rgb: 43, 33, 24; /* offset "sticker" shadows */
+  --line: rgba(var(--ink-rgb), 0.12);
+  --line-2: rgba(var(--ink-rgb), 0.22);
+  --pen: var(--border-ink);
+  color-scheme: light;
 
   /* text */
-  --text: #2B2118;
-  --muted: rgba(43, 33, 24, 0.60);
-  --faint: rgba(43, 33, 24, 0.42);
+  --text: var(--ink);
+  --muted: rgba(var(--ink-rgb), 0.60);
+  --faint: rgba(var(--ink-rgb), 0.42);
 
   /* brand + accents (money rule: owed-to-you = blue, you-owe = coral, settled = mint) */
   --blue: #2775CA;
@@ -37,10 +47,28 @@
   --r-sm: 14px;  /* input / small */
 }
 
+/* DARK — "the notebook at night": same layout, same hand-inked borders and
+   offset shadows, only the palette flips. Accents (blue/coral/mint/amber/
+   violet) and white-on-accent text are unchanged. */
+html[data-theme="dark"] {
+  --paper: #1E1913;       /* warm near-black paper */
+  --paper-deep: #18140F;
+  --paper2: #322B21;
+  --paper3: #2E2820;
+  --paper-rgb: 30, 25, 19;
+  --card: #2A241C;        /* dark card stock */
+  --card-2: #251F18;
+  --ink: #F3EAD9;         /* warm cream ink */
+  --ink-rgb: 243, 234, 217;
+  --border-ink: #E8DDC8;  /* softened cream so cards read as inked outlines */
+  --shadow-rgb: 0, 0, 0;
+  color-scheme: dark;
+}
+
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
-  background: var(--ink);
+  background: var(--paper);
   color: var(--text);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
@@ -84,7 +112,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.5
 .receipt { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
   padding: 18px; overflow: hidden; }
 .receipt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -8px; height: 16px;
-  background: radial-gradient(circle at 8px -2px, transparent 7px, var(--ink) 8px) repeat-x; background-size: 18px 16px; }
+  background: radial-gradient(circle at 8px -2px, transparent 7px, var(--paper) 8px) repeat-x; background-size: 18px 16px; }
 .receipt hr { border: none; border-top: 1.5px dashed var(--line-2); margin: 14px 0; }
 
 /* ---- buttons ---- */
@@ -153,7 +181,7 @@ label { display: block; font-family: var(--mono); font-size: 11px; letter-spacin
 .avatar.round { border-radius: 50%; }
 .avatar.sm { width: 34px; height: 34px; font-size: 17px; border-radius: 11px; }
 .avatar-stack { display: inline-flex; }
-.avatar-stack > * { margin-left: -10px; border: 2px solid var(--ink); }
+.avatar-stack > * { margin-left: -10px; border: 2px solid var(--paper); }
 .avatar-stack > *:first-child { margin-left: 0; }
 
 /* ---- two-tone owe bar ---- */
@@ -226,16 +254,16 @@ button:active, .tabbar a:active { transform: scale(.96); }
    not fixed height) so the home-indicator safe area extends it. */
 .tabbar { position: fixed; left: 50%; transform: translateX(-50%); width: min(410px, calc(100% - 20px)); bottom: calc(8px + env(safe-area-inset-bottom));
   background: var(--card); border: 2px solid var(--pen); border-radius: 999px;
-  box-shadow: 3px 4px 0 rgba(43,33,24,0.9);
+  box-shadow: 3px 4px 0 rgba(var(--shadow-rgb),0.9);
   display: flex; align-items: center; justify-content: space-around;
   padding: 9px 10px; z-index: 50; }
 .tabbar a { display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none;
   color: var(--faint); font-family: var(--mono); font-size: 10px; letter-spacing: 0.5px; flex: 1; cursor: pointer;
   padding: 7px 0 6px; margin: 0 4px; border-radius: 999px; transition: color .18s, background .18s, transform .13s; }
-.tabbar a.active { color: var(--pen); background: #3DE8C7; border: 2px solid var(--pen); padding: 5px 0 4px; }
+.tabbar a.active { color: #2B2118; background: #3DE8C7; border: 2px solid #2B2118; padding: 5px 0 4px; }
 .tabbar a svg { width: 21px; height: 21px; stroke: currentColor; fill: none; stroke-width: 1.9; }
 .tabbar .fab { margin-top: -18px; width: 52px; height: 52px; border-radius: 16px;
-  background: #FF6B5E; border: 2px solid var(--pen); box-shadow: 3px 3px 0 rgba(43,33,24,0.9);
+  background: #FF6B5E; border: 2px solid #2B2118; box-shadow: 3px 3px 0 rgba(var(--shadow-rgb),0.9);
   display: flex; align-items: center; justify-content: center;
   color: #FFFDF7; flex: none; padding: 0; transform: rotate(-3deg); }
 .tabbar .fab:active { transform: rotate(-3deg) scale(.92); }
@@ -245,7 +273,7 @@ button:active, .tabbar a:active { transform: scale(.96); }
 .sheet-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 60; }
 .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 61; background: var(--card);
   border-radius: 24px 24px 0 0; border: 2px solid var(--pen); border-bottom: none;
-  box-shadow: 0 -4px 0 rgba(43,33,24,0.15);
+  box-shadow: 0 -4px 0 rgba(var(--shadow-rgb),0.15);
   padding: 8px 20px calc(28px + env(safe-area-inset-bottom)); }
 .sheet .grab { width: 38px; height: 4px; border-radius: 999px; background: var(--line-2); margin: 8px auto 14px; }
 
@@ -254,12 +282,12 @@ button:active, .tabbar a:active { transform: scale(.96); }
 
 /* subtle dotted "paper" texture overlay (use on hero areas) */
 /* notebook paper: faint ruled lines across the whole shell */
-.paper { background-image: repeating-linear-gradient(0deg, transparent 0 30px, rgba(43,33,24,0.05) 30px 31px); }
+.paper { background-image: repeating-linear-gradient(0deg, transparent 0 30px, rgba(var(--ink-rgb),0.05) 30px 31px); }
 
 /* ---- journal utilities (the hand-drawn signatures) ---- */
 .jcard { background: var(--card); border: 2px solid var(--pen); border-radius: 16px;
-  box-shadow: 3.5px 4.5px 0 rgba(43,33,24,0.9); }
+  box-shadow: 3.5px 4.5px 0 rgba(var(--shadow-rgb),0.9); }
 .jtape { position: absolute; width: 86px; height: 24px; background: rgba(61,232,199,0.55);
   transform: rotate(-5deg); pointer-events: none;
-  border-left: 1.5px dashed rgba(43,33,24,0.25); border-right: 1.5px dashed rgba(43,33,24,0.25); }
+  border-left: 1.5px dashed rgba(var(--ink-rgb),0.25); border-right: 1.5px dashed rgba(var(--ink-rgb),0.25); }
 .jdoodle { text-decoration: underline wavy rgba(255,107,94,0.75) 2.5px; text-underline-offset: 5px; }

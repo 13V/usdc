@@ -51,20 +51,20 @@
     var nm = (p && p.name != null) ? String(p.name).trim() : "";
     var emoji = (p && p.emoji) || (nm ? nm[0].toUpperCase() : "🙂");
     return '<div style="width:42px; height:42px; border-radius:50%; background:' + bg +
-      '; border:2px solid #FFFDF7; display:flex; align-items:center; justify-content:center; font-size:20px;">' +
+      '; border:2px solid var(--card); display:flex; align-items:center; justify-content:center; font-size:20px;">' +
       app.face(emoji) + '</div>';
   }
 
   // one mono label/value row from the on-chain proof block (lifted).
   function proofRow(label, valueHtml) {
     return '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:11.5px; color:rgba(43,33,24,0.45);">' + label + '</span>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2B2118; max-width:62%; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + valueHtml + '</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:11.5px; color:rgba(var(--ink-rgb),0.45);">' + label + '</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:var(--ink); max-width:62%; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + valueHtml + '</span>' +
     '</div>';
   }
 
   function copyIcon() {
-    return '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer; flex:none;"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+    return '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer; flex:none;"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
   }
 
   // map the GET /api/receipts/:ref payload (found:true) into the shape the card
@@ -126,13 +126,13 @@
       amountBlock =
         '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:58px; line-height:.95; letter-spacing:-2.5px; color:' + accent + '; text-shadow:0 0 34px ' + glowColor + ';"><span style="font-size:30px; opacity:.5;">' + sign + '$</span>' + app.esc(whole) + '<span style="font-size:30px; opacity:.5;">' + app.esc(dec) + '</span></div>' +
         '<div style="display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap;">' +
-          '<span style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.55);">' + subline + '</span>' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.35);">· ' + app.esc(usdc) + ' usdc</span>' +
+          '<span style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.55);">' + subline + '</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.35);">· ' + app.esc(usdc) + ' usdc</span>' +
         '</div>';
     } else {
       amountBlock =
-        '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:rgba(43,33,24,0.4);">' + sign + '$—.—</div>' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.55); margin-top:9px;">amount unavailable · settled on-chain</div>';
+        '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:rgba(var(--ink-rgb),0.4);">' + sign + '$—.—</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.55); margin-top:9px;">amount unavailable · settled on-chain</div>';
     }
 
     var dateLine = (r.context ? app.esc(r.context) + " · " : "") + (r.date ? app.esc(r.date) : "settled");
@@ -140,8 +140,8 @@
     // ---- on-chain proof rows (mono, lowercase labels) ----
     var fromWallet = r.from.wallet ? shorten(r.from.wallet) : "—";
     var toWallet = r.to.wallet ? shorten(r.to.wallet) : "—";
-    var fromTag = r.from.name ? ' <span style="color:rgba(43,33,24,0.6);">(' + app.esc(String(r.from.name).toLowerCase()) + ')</span>' : "";
-    var toTag = r.to.name ? ' <span style="color:rgba(43,33,24,0.6);">(' + app.esc(String(r.to.name).toLowerCase()) + ')</span>' : "";
+    var fromTag = r.from.name ? ' <span style="color:rgba(var(--ink-rgb),0.6);">(' + app.esc(String(r.from.name).toLowerCase()) + ')</span>' : "";
+    var toTag = r.to.name ? ' <span style="color:rgba(var(--ink-rgb),0.6);">(' + app.esc(String(r.to.name).toLowerCase()) + ')</span>' : "";
 
     var proof =
       proofRow("from", app.esc(fromWallet) + fromTag) +
@@ -151,9 +151,9 @@
       proofRow("fee", '<span style="color:#3DE8C7;">' + app.esc(r.feeUsd) + '</span>') +
       proofRow("reference", app.esc(r.reference ? shorten(r.reference) : "—")) +
       '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">' +
-        '<span style="font-family:\'Space Mono\',monospace; font-size:11.5px; color:rgba(43,33,24,0.45);">signature</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:11.5px; color:rgba(var(--ink-rgb),0.45);">signature</span>' +
         '<span style="display:inline-flex; align-items:center; gap:7px; min-width:0;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2B2118; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + app.esc(r.signature ? shorten(r.signature) : "—") + '</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + app.esc(r.signature ? shorten(r.signature) : "—") + '</span>' +
           (r.signature ? '<span id="rcCopy" role="button" aria-label="copy" tabindex="0">' + copyIcon() + '</span>' : '') +
         '</span>' +
       '</div>';
@@ -161,7 +161,7 @@
     // devnet-only app: without ?cluster=devnet the link resolves to mainnet and 404s.
     var solscan = r.signature ? "https://solscan.io/tx/" + encodeURIComponent(r.signature) + "?cluster=devnet" : "";
     var solscanLink = '<a ' + (solscan ? 'href="' + app.esc(solscan) + '" target="_blank" rel="noopener"' : 'style="pointer-events:none; opacity:.4;"') +
-      ' style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:18px; padding-top:16px; border-top:1px solid rgba(43,33,24,0.07); cursor:pointer; text-decoration:none;">' +
+      ' style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:18px; padding-top:16px; border-top:1px solid rgba(var(--ink-rgb),0.07); cursor:pointer; text-decoration:none;">' +
       '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2775CA;">view on solscan</span>' +
       '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>' +
     '</a>';
@@ -169,9 +169,9 @@
     // ---- top bar (lifted) — back circle, "receipt", close ✕. both go back. ----
     var topbar =
       '<div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 16px; flex:none;">' +
-        '<div id="rcBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
-        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118;">receipt</span>' +
-        '<div id="rcClose" role="button" aria-label="close" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></div>' +
+        '<div id="rcBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:var(--ink);">receipt</span>' +
+        '<div id="rcClose" role="button" aria-label="close" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></div>' +
       '</div>';
 
     // ---- peeking full-body mascot (real asset, scaled to ~62px over the top edge) ----
@@ -187,7 +187,7 @@
       '<div style="position:relative; margin-top:40px;">' +
         peekMascot +
 
-        '<div style="position:relative; background:#FFFDF7; border-radius:24px 24px 0 0; border:1px solid rgba(43,33,24,0.08); border-bottom:none; box-shadow:0 18px 46px rgba(43,33,24,0.13); overflow:hidden;">' +
+        '<div style="position:relative; background:var(--card); border-radius:24px 24px 0 0; border:1px solid rgba(var(--ink-rgb),0.08); border-bottom:none; box-shadow:0 18px 46px rgba(var(--shadow-rgb),0.13); overflow:hidden;">' +
           // money texture (guilloché)
           '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 4%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
           // soft foil shimmer (barely visible, no hard line)
@@ -208,30 +208,30 @@
             '<div style="display:flex; align-items:center; gap:12px; margin-top:22px;">' +
               '<div style="display:flex; align-items:center;">' +
                 avatarTile(r.from, "linear-gradient(150deg,#3DE8C7,#2775CA)") +
-                '<svg aria-hidden="true" width="20" height="14" viewBox="0 0 26 14" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin:0 -2px 0 6px;"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>' +
+                '<svg aria-hidden="true" width="20" height="14" viewBox="0 0 26 14" fill="none" stroke="rgba(var(--ink-rgb),0.4)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin:0 -2px 0 6px;"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>' +
                 '<span style="margin-left:6px; display:inline-flex;">' + avatarTile(r.to, "linear-gradient(150deg,#FFC65C,#FF6B5E)") + '</span>' +
               '</div>' +
               '<div style="flex:1; min-width:0;">' +
-                '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118;">' + headline + '</div>' +
-                '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.45); margin-top:3px;">' + flow + '</div>' +
+                '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:var(--ink);">' + headline + '</div>' +
+                '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.45); margin-top:3px;">' + flow + '</div>' +
               '</div>' +
             '</div>' +
 
             // big amount
             '<div style="margin-top:20px;">' + amountBlock + '</div>' +
 
-            '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(43,33,24,0.5); margin-top:16px;">' + dateLine + '</div>' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.5); margin-top:16px;">' + dateLine + '</div>' +
           '</div>' +
 
           // dashed tear divider (two notch circles)
-          '<div style="position:relative; height:1px; margin:14px 0 0; border-top:1.5px dashed rgba(43,33,24,0.16);">' +
-            '<div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div>' +
-            '<div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div>' +
+          '<div style="position:relative; height:1px; margin:14px 0 0; border-top:1.5px dashed rgba(var(--ink-rgb),0.16);">' +
+            '<div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:var(--paper);"></div>' +
+            '<div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:var(--paper);"></div>' +
           '</div>' +
 
           // on-chain proof block
           '<div style="position:relative; padding:18px 22px 22px;">' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:2px; color:rgba(43,33,24,0.4); margin-bottom:14px;">on-chain proof</div>' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:2px; color:rgba(var(--ink-rgb),0.4); margin-bottom:14px;">on-chain proof</div>' +
             '<div style="display:flex; flex-direction:column; gap:13px;">' + proof + '</div>' +
             solscanLink +
           '</div>' +
@@ -239,22 +239,22 @@
       '</div>' +
 
       // perforated bottom edge (row of half-circles)
-      '<div style="height:14px; background:radial-gradient(circle at 10px 14px, #F7F1E3 0 7px, transparent 7.5px); background-size:20px 14px; background-repeat:repeat-x; margin-bottom:8px;"></div>';
+      '<div style="height:14px; background:radial-gradient(circle at 10px 14px, var(--paper) 0 7px, transparent 7.5px); background-size:20px 14px; background-repeat:repeat-x; margin-bottom:8px;"></div>';
 
     var placeholderNote = r.placeholder ?
-      '<div style="font-family:\'Space Mono\',monospace; text-align:center; font-size:11px; color:rgba(43,33,24,0.4); margin:2px 0 10px;">couldn\'t load the full receipt — showing what we know ✨</div>' : '';
+      '<div style="font-family:\'Space Mono\',monospace; text-align:center; font-size:11px; color:rgba(var(--ink-rgb),0.4); margin:2px 0 10px;">couldn\'t load the full receipt — showing what we know ✨</div>' : '';
 
     // ---- sticky actions (lifted): glowing-blue "share proof ✨" + quiet "done" ----
     var actions =
       '<div style="flex:1; min-height:14px;"></div>' +
       placeholderNote +
-      '<button id="rcShare" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+      '<button id="rcShare" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
         '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">share proof</span>' +
         '<span style="font-size:15px;">✨</span>' +
       '</button>' +
       '<div style="display:flex; justify-content:center; margin-top:14px;">' +
-        '<span id="rcDone" style="font-family:\'General Sans\',sans-serif; font-size:15px; color:rgba(43,33,24,0.5); cursor:pointer; padding:6px 18px;">done</span>' +
+        '<span id="rcDone" style="font-family:\'General Sans\',sans-serif; font-size:15px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; padding:6px 18px;">done</span>' +
       '</div>';
 
     // keyframes the lifted card relies on (FINALIZED dot pulse) — inject once.

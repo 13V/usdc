@@ -6,11 +6,65 @@
 <meta name="theme-color" content="#F7F1E3" />
 <title>Divvy — pay your share</title>
 <style>
-  /* Journal theme: warm paper everywhere, matching the main app. */
-  html, body { height: 100%; margin: 0; background: #F7F1E3; color-scheme: light; }
+  /* Journal theme tokens, matching the main app's divvy.css (same names, same
+     values). Light by default; html[data-theme="dark"] flips to "the notebook
+     at night". Accents and white-on-accent text stay unchanged. */
+  :root {
+    --paper: #F7F1E3;
+    --paper-deep: #EFE7D3;
+    --paper2: #EDE7D8;
+    --paper3: #F1E8D6;
+    --paper-rgb: 247, 241, 227;
+    --card: #FFFDF7;
+    --card-2: #FBF6EA;
+    --ink: #2B2118;
+    --ink-rgb: 43, 33, 24;
+    --border-ink: #2B2118;
+    --shadow-rgb: 43, 33, 24;
+    color-scheme: light;
+  }
+  html[data-theme="dark"] {
+    --paper: #1E1913;
+    --paper-deep: #18140F;
+    --paper2: #322B21;
+    --paper3: #2E2820;
+    --paper-rgb: 30, 25, 19;
+    --card: #2A241C;
+    --card-2: #251F18;
+    --ink: #F3EAD9;
+    --ink-rgb: 243, 234, 217;
+    --border-ink: #E8DDC8;
+    --shadow-rgb: 0, 0, 0;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; margin: 0; background: var(--paper); }
   * { touch-action: manipulation; } /* no double-tap zoom */
 </style>
-  <script type="module" crossorigin src="/embedded/assets/index-CAkEOBka.js"></script>
+<script>
+  /* Theme boot: same "divvy.theme" key as the main app (same origin), stamped
+     before first paint; follows the system live while in auto mode. */
+  (function () {
+    function pref() {
+      try { var t = localStorage.getItem("divvy.theme"); return t === "light" || t === "dark" ? t : "auto"; }
+      catch (_) { return "auto"; }
+    }
+    var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+    function apply() {
+      var p = pref();
+      var dark = p === "dark" || (p !== "light" && mq && mq.matches);
+      document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+      var m = document.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute("content", dark ? "#1E1913" : "#F7F1E3");
+    }
+    apply();
+    if (mq) {
+      var on = function () { if (pref() === "auto") apply(); };
+      if (mq.addEventListener) mq.addEventListener("change", on);
+      else if (mq.addListener) mq.addListener(on);
+    }
+  })();
+</script>
+  <script type="module" crossorigin src="/embedded/assets/index-DyconA_c.js"></script>
   <link rel="stylesheet" crossorigin href="/embedded/assets/index-BLFfqox8.css">
 </head>
 <body>

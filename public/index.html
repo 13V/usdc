@@ -5,6 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Divvy — split the bill, settle in seconds</title>
 <meta name="theme-color" content="#F7F1E3" />
+<script>
+  /* Theme boot: resolve "divvy.theme" (auto|light|dark, default auto) and stamp
+     html[data-theme] BEFORE the stylesheet applies, so dark mode never flashes
+     light paper. app.js keeps it in sync afterwards (system changes + setTheme). */
+  (function () {
+    var pref = "auto";
+    try { pref = localStorage.getItem("divvy.theme") || "auto"; } catch (_) {}
+    var dark = pref === "dark" || (pref !== "light" && window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    if (dark) {
+      var m = document.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute("content", "#1E1913");
+    }
+  })();
+</script>
 <meta name="description" content="Split any bill and settle up in seconds. Dollars, just faster — no app needed to pay, no crypto to figure out." />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Divvy" />
@@ -31,12 +47,12 @@
 <style>
   /* Lock the document: the page itself must never scroll or rubber-band (the
      native drag-the-whole-app bounce reads as "webview"). Only #view scrolls. */
-  html, body { position: fixed; inset: 0; overflow: hidden; background: var(--ink-deep); }
+  html, body { position: fixed; inset: 0; overflow: hidden; background: var(--paper-deep); }
   /* No double-tap-to-zoom anywhere (touch-action isn't inherited, so hit all
      elements); "manipulation" keeps panning + normal taps intact. */
   * { touch-action: manipulation; }
   /* center a phone-width column on desktop */
-  #app { position: relative; max-width: 430px; height: 100%; margin: 0 auto; background: var(--ink);
+  #app { position: relative; max-width: 430px; height: 100%; margin: 0 auto; background: var(--paper);
     display: flex; flex-direction: column; overflow: hidden;
     /* keep content clear of the notch / Dynamic Island on device (0 on web) */
     padding-top: env(safe-area-inset-top); }

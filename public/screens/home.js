@@ -17,20 +17,20 @@
     return '' +
     '<div style="display:flex; align-items:center; justify-content:space-between; height:56px; padding:0 18px; flex:none;">' +
       '<div style="display:flex; align-items:center; gap:9px;">' +
-        '<div style="width:32px; height:32px; border-radius:10px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+        '<div style="width:32px; height:32px; border-radius:10px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:21px; color:#fff; transform:translateY(-1px);">/</span></div>' +
-        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.5px; color:#2B2118;">divvy</span>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.5px; color:var(--ink);">divvy</span>' +
       '</div>' +
-      '<a href="#/you" aria-label="your profile" style="text-decoration:none; width:34px; height:34px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:17px; border:2px solid #2B2118;">' + app.face(me.emoji) + '</a>' +
+      '<a href="#/you" aria-label="your profile" style="text-decoration:none; width:34px; height:34px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:17px; border:2px solid var(--border-ink);">' + app.face(me.emoji) + '</a>' +
     '</div>';
   }
 
   // exact "people" row from the frame — now tappable. owed → nudge, owes → settle.
   function personRow(c, i) {
     var pos = c.direction === "owed", neg = c.direction === "owes";
-    var col = pos ? "#2775CA" : neg ? "#FF6B5E" : "rgba(43,33,24,0.5)";
+    var col = pos ? "#2775CA" : neg ? "#FF6B5E" : "rgba(var(--ink-rgb),0.5)";
     var sub = pos ? "owes you" : neg ? "you owe" : "square ✨";
-    var subcol = neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.6)";
+    var subcol = neg ? "rgba(255,107,94,0.8)" : "rgba(var(--ink-rgb),0.6)";
     var av = app.avatar({ name: c.name, emoji: c.emoji, color: c.color });
     // recolor the avatar bg to a soft tint like the frame
     var amt = c.direction === "settled" ? '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:#3DE8C7;">square ✨</span>'
@@ -40,7 +40,7 @@
     var affordance = pos
       ? '<span class="pr-nudge" style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:#2775CA; opacity:.85; margin-left:2px; flex:none;">nudge</span>'
       : neg
-      ? '<span style="display:flex; align-items:center; color:rgba(43,33,24,0.28); margin-left:2px; flex:none;"><svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
+      ? '<span style="display:flex; align-items:center; color:rgba(var(--ink-rgb),0.28); margin-left:2px; flex:none;"><svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>'
       : "";
     var tag = tappable ? "button" : "div";
     var tapAttrs = tappable
@@ -49,7 +49,7 @@
     return '<' + tag + tapAttrs + ' display:flex; align-items:center; gap:13px; padding:11px 4px;">' +
       '<div style="width:40px;height:40px;border-radius:50%;background:rgba(39,117,202,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;">' + app.face(c.emoji || (c.name||"?")[0]) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(c.name) + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(c.name) + '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + subcol + '; margin-top:2px;">' + sub + '</div>' +
       '</div>' + amt + affordance + '</' + tag + '>';
   }
@@ -84,7 +84,7 @@
       ? '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.14); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:5px 11px; flex:none; font-family:\'Space Mono\',monospace; font-size:11px; color:#3DE8C7;">square ✨</span>'
       : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:' + (pos ? "#2775CA" : "#FF6B5E") + ';"><span style="opacity:.5;">' + (pos ? "+$" : "−$") + '</span>' + money3(Math.abs(t.netCents)) + '</div>';
     var sub = settled ? (t.memberCount ? t.memberCount + " people" : "all square") : (pos ? "owed to you" : "you owe");
-    var subcol = neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.6)";
+    var subcol = neg ? "rgba(255,107,94,0.8)" : "rgba(var(--ink-rgb),0.6)";
     // due-date chip bit: "· due sun 🗓️" (coral "overdue" once the date passes)
     if (t.dueAt && !settled && !t.settledUp) {
       if (t.overdue) sub += ' · <span style="color:#FF6B5E; font-weight:600;">overdue 🗓️</span>';
@@ -94,12 +94,12 @@
         if (lbl) sub += ' · <span style="color:#2775CA;">due ' + app.esc(lbl.toLowerCase()) + ' 🗓️</span>';
       }
     }
-    return '<a href="#/group/' + encodeURIComponent(t.tripId || t.id) + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px 11px 11px;">' +
+    return '<a href="#/group/' + encodeURIComponent(t.tripId || t.id) + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; background:var(--card); border:2px solid var(--border-ink); border-radius:15px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:11px 14px 11px 11px;">' +
       '<div style="position:relative; width:48px; height:48px; border-radius:13px; background:' + cover + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; overflow:hidden;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>' +
         '<span style="position:relative;">' + emoji + '</span></div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + subcol + '; margin-top:3px;">' + sub + '</div>' +
       '</div>' + right + '</a>';
   }
@@ -124,7 +124,7 @@
     return '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:10px; margin-left:8px; border:1px solid ' + c + '55; background:' + c + '1f; border-radius:999px; padding:4px 11px;">' +
       '<span style="width:6px; height:6px; border-radius:50%; background:' + c + '; box-shadow:0 0 7px ' + c + 'cc;"></span>' +
       '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:10px; color:' + c + ';">$' + (walletCents / 100).toFixed(2) + '</span>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.55);">' + label + '</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.55);">' + label + '</span>' +
     '</div>';
   }
   // Inner HTML for the big hero figure at a given (absolute) cents value — the
@@ -153,27 +153,27 @@
         (owe > 0 ? '<div style="flex:' + oweSeg + '; background:linear-gradient(90deg,#FF6B5E,#ff8073); display:flex; align-items:center; justify-content:flex-end; padding-right:7px;">' + av(owees) + '</div>' : '') +
       '</div>' : "";
 
-    return '<div style="position:relative; background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:4px 5px 0 rgba(43,33,24,0.9); padding:22px 20px 22px; margin-top:14px; transform:rotate(-0.5deg);">' +
+    return '<div style="position:relative; background:var(--card); border:2px solid var(--border-ink); border-radius:18px; box-shadow:4px 5px 0 rgba(var(--shadow-rgb),0.9); padding:22px 20px 22px; margin-top:14px; transform:rotate(-0.5deg);">' +
       // washi tape holding the page down
-      '<div style="position:absolute; top:-13px; left:34%; width:86px; height:24px; background:rgba(61,232,199,0.55); transform:rotate(-5deg); border-left:1.5px dashed rgba(43,33,24,0.25); border-right:1.5px dashed rgba(43,33,24,0.25); pointer-events:none;"></div>' +
+      '<div style="position:absolute; top:-13px; left:34%; width:86px; height:24px; background:rgba(61,232,199,0.55); transform:rotate(-5deg); border-left:1.5px dashed rgba(var(--ink-rgb),0.25); border-right:1.5px dashed rgba(var(--ink-rgb),0.25); pointer-events:none;"></div>' +
       '<div style="position:relative;">' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">' + (pos ? "the squad owes u" : "u owe the squad") + ' · ' + (window.__grpCount || 0) + ' groups</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.5);">' + (pos ? "the squad owes u" : "u owe the squad") + ' · ' + (window.__grpCount || 0) + ' groups</div>' +
         '<div style="display:flex; align-items:baseline; gap:9px; margin-top:10px;">' +
           '<div id="hBalance" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:64px; line-height:.9; letter-spacing:-2.5px; color:' + col + ';">' + heroBalanceInner(Math.abs(net), pos) + '</div>' +
-          '<span style="font-family:\'Space Mono\',monospace; font-weight:400; font-size:12px; letter-spacing:1px; color:rgba(43,33,24,0.6);">usdc</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-weight:400; font-size:12px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.6);">usdc</span>' +
         '</div>' +
-        (owe > 0 && pos ? '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14px; color:rgba(43,33,24,0.55); margin-top:12px;">you owe <span style="font-family:\'Space Mono\',monospace; font-weight:700; color:#FF6B5E;">$' + (owe / 100).toFixed(2) + '</span> elsewhere</div>' : '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.55); margin-top:12px;">' + (net === 0 ? "you're all square ✨" : pos ? "everyone owes you 🤑" : "time to settle up 💸") + '</div>') +
+        (owe > 0 && pos ? '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14px; color:rgba(var(--ink-rgb),0.55); margin-top:12px;">you owe <span style="font-family:\'Space Mono\',monospace; font-weight:700; color:#FF6B5E;">$' + (owe / 100).toFixed(2) + '</span> elsewhere</div>' : '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.55); margin-top:12px;">' + (net === 0 ? "you're all square ✨" : pos ? "everyone owes you 🤑" : "time to settle up 💸") + '</div>') +
         '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid rgba(39,117,202,0.4); background:rgba(39,117,202,0.10); border-radius:999px; padding:4px 11px;">' +
           '<span style="width:6px; height:6px; border-radius:50%; background:#2775CA; box-shadow:0 0 7px rgba(39,117,202,0.8);"></span>' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(43,33,24,0.62);">settles instantly · ~$0.001 fee</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(var(--ink-rgb),0.62);">settles instantly · ~$0.001 fee</span>' +
         '</div>' + heroWalletChip(walletCents, owe) + bar +
-        '<div style="position:relative; height:1px; margin:20px -20px 16px; border-top:1.5px dashed rgba(43,33,24,0.16);">' +
-          '<div style="position:absolute; left:-7px; top:-8px; width:15px; height:15px; border-radius:50%; background:#F7F1E3;"></div>' +
-          '<div style="position:absolute; right:-7px; top:-8px; width:15px; height:15px; border-radius:50%; background:#F7F1E3;"></div>' +
+        '<div style="position:relative; height:1px; margin:20px -20px 16px; border-top:1.5px dashed rgba(var(--ink-rgb),0.16);">' +
+          '<div style="position:absolute; left:-7px; top:-8px; width:15px; height:15px; border-radius:50%; background:var(--paper);"></div>' +
+          '<div style="position:absolute; right:-7px; top:-8px; width:15px; height:15px; border-radius:50%; background:var(--paper);"></div>' +
         '</div>' +
         '<div style="display:flex; gap:11px;">' +
-          '<button id="hSettle" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; box-shadow:3px 3px 0 rgba(43,33,24,0.9); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 12px;">' + (quick ? "settle " + app.esc(String(quick.tripName || "up").toLowerCase().slice(0, 14)) : "settle up") + '</button>' +
-          '<button id="hRequest" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:#FFFDF7; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">request</button>' +
+          '<button id="hSettle" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 12px;">' + (quick ? "settle " + app.esc(String(quick.tripName || "up").toLowerCase().slice(0, 14)) : "settle up") + '</button>' +
+          '<button id="hRequest" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:var(--card); border:2px solid var(--border-ink); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:var(--ink);">request</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -189,15 +189,15 @@
     var right = done
       ? '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.14); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:5px 11px; flex:none; font-family:\'Space Mono\',monospace; font-size:11px; color:#3DE8C7;">paid ✨</span>'
       : '<div style="text-align:right; flex:none;"><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:#2775CA;"><span style="opacity:.5;">$</span>' + money3(b.outstandingCents) + '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:0.5px; color:rgba(43,33,24,0.4); margin-top:2px;">left</div></div>';
+        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:0.5px; color:rgba(var(--ink-rgb),0.4); margin-top:2px;">left</div></div>';
     var sub = done ? (ppl + (ppl === 1 ? " person" : " people")) : (paid + " of " + ppl + " paid");
-    return '<a href="#/collect/' + encodeURIComponent(b.id) + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px 11px 11px;">' +
+    return '<a href="#/collect/' + encodeURIComponent(b.id) + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; background:var(--card); border:2px solid var(--border-ink); border-radius:15px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:11px 14px 11px 11px;">' +
       '<div style="position:relative; width:48px; height:48px; border-radius:13px; background:' + cover + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; overflow:hidden;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>' +
         '<span style="position:relative;">' + emoji + '</span></div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(b.title) + '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(43,33,24,0.6); margin-top:3px;">' + sub + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(b.title) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(var(--ink-rgb),0.6); margin-top:3px;">' + sub + '</div>' +
       '</div>' + right + '</a>';
   }
 
@@ -211,23 +211,23 @@
     var paid = !!mine.paid;
     var right = paid
       ? '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(61,232,199,0.14); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:5px 11px; flex:none; font-family:\'Space Mono\',monospace; font-size:11px; color:#3DE8C7;">paid ✨</span>'
-      : '<a href="' + app.esc(mine.payPath || ("/pay/" + encodeURIComponent(b.id))) + '" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:#2775CA; border:2px solid #2B2118; border-radius:999px; padding:9px 16px; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+      : '<a href="' + app.esc(mine.payPath || ("/pay/" + encodeURIComponent(b.id))) + '" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:#2775CA; border:2px solid var(--border-ink); border-radius:999px; padding:9px 16px; flex:none; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#fff;">pay <span style="font-family:\'Space Mono\',monospace;">' + app.esc(mine.amountFmt || "") + '</span></span>' +
         '</a>';
     var sub = paid ? "you paid your share" : "your share";
-    return '<div style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px 11px 11px;">' +
+    return '<div style="display:flex; align-items:center; gap:13px; background:var(--card); border:2px solid var(--border-ink); border-radius:15px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:11px 14px 11px 11px;">' +
       '<div style="position:relative; width:48px; height:48px; border-radius:13px; background:' + cover + '; display:flex; align-items:center; justify-content:center; font-size:24px; flex:none; overflow:hidden;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 20% 120%, rgba(255,255,255,0.12) 0 1px, transparent 1px 6px); opacity:.5;"></div>' +
         '<span style="position:relative;">' + emoji + '</span></div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(b.title) + '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(43,33,24,0.6); margin-top:3px;">' + sub + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(b.title) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(var(--ink-rgb),0.6); margin-top:3px;">' + sub + '</div>' +
       '</div>' + right + '</div>';
   }
 
   function sectionLabel(name, count) {
     return '<div style="display:flex; align-items:baseline; gap:10px; margin:30px 2px 14px;">' +
-      '<span class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#2B2118;">' + name + '</span>' +
+      '<span class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:var(--ink);">' + name + '</span>' +
       '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; color:#FF6B5E;">' + count + ' going!!</span></div>';
   }
 
@@ -321,32 +321,32 @@
   // A hand-built mini UI vignette (not a screenshot): a small journal card with a
   // kicker, a bespoke mock, and a caption. Used for the below-the-fold story.
   function vignette(kicker, mock, caption) {
-    return '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:16px 16px 15px;">' +
+    return '<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:18px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:16px 16px 15px;">' +
       '<div style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; letter-spacing:2px; color:#3DE8C7; margin-bottom:11px;">' + kicker + '</div>' +
       mock +
-      '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; line-height:1.35; color:#2B2118; margin-top:13px;">' + caption + '</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; line-height:1.35; color:var(--ink); margin-top:13px;">' + caption + '</div>' +
     '</div>';
   }
   // person chip: soft-tinted avatar + name, for the "who had what" mock.
   function tag(emoji, name) {
     return '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(39,117,202,0.10); border:1px solid rgba(39,117,202,0.28); border-radius:999px; padding:3px 9px 3px 5px;">' +
       '<span style="width:18px; height:18px; border-radius:50%; background:rgba(39,117,202,0.18); display:inline-flex; align-items:center; justify-content:center; font-size:11px;">' + app.face(emoji) + '</span>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.7);">' + app.esc(name) + '</span></span>';
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(var(--ink-rgb),0.7);">' + app.esc(name) + '</span></span>';
   }
   // vignette 1 — a receipt with two item rows, each tagged to who had it.
   function mockReceipt() {
     function row(label, price, tags) {
-      return '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1.5px dashed rgba(43,33,24,0.14);">' +
+      return '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1.5px dashed rgba(var(--ink-rgb),0.14);">' +
         '<div style="min-width:0;">' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; color:#2B2118;">' + label + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; color:var(--ink);">' + label + '</div>' +
           '<div style="display:flex; gap:5px; margin-top:5px;">' + tags + '</div>' +
         '</div>' +
-        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:12.5px; color:#2B2118; flex:none;">' + price + '</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:12.5px; color:var(--ink); flex:none;">' + price + '</span>' +
       '</div>';
     }
-    return '<div style="background:#F7F1E3; border:2px solid #2B2118; border-radius:12px; padding:12px 13px 10px; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.4);">' +
+    return '<div style="background:var(--paper); border:2px solid var(--border-ink); border-radius:12px; padding:12px 13px 10px; box-shadow:inset 0 0 0 1px rgba(255,255,255,0.4);">' +
       '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">' +
-        '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(43,33,24,0.45);">RECEIPT · 3 items</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.45);">RECEIPT · 3 items</span>' +
         '<span style="font-size:13px;">🧾</span>' +
       '</div>' +
       row("sushi omakase", "$48", tag("🦊", "you") + tag("🐹", "mei")) +
@@ -356,10 +356,10 @@
   // vignette 2 — an iMessage-style bubble with a pay-your-share link, no app.
   function mockText() {
     return '<div style="display:flex; flex-direction:column; gap:8px;">' +
-      '<div style="align-self:flex-start; max-width:82%; background:#EDE7D8; border:1.5px solid rgba(43,33,24,0.14); border-radius:15px 15px 15px 4px; padding:9px 12px;">' +
-        '<span style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:#2B2118;">you owe $24 for karaoke 🎤</span>' +
+      '<div style="align-self:flex-start; max-width:82%; background:var(--paper2); border:1.5px solid rgba(var(--ink-rgb),0.14); border-radius:15px 15px 15px 4px; padding:9px 12px;">' +
+        '<span style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:var(--ink);">you owe $24 for karaoke 🎤</span>' +
       '</div>' +
-      '<div style="align-self:flex-end; max-width:88%; background:#2775CA; border:2px solid #2B2118; border-radius:15px 15px 4px 15px; padding:10px 13px; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">' +
+      '<div style="align-self:flex-end; max-width:88%; background:#2775CA; border:2px solid var(--border-ink); border-radius:15px 15px 4px 15px; padding:10px 13px; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">' +
         '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(255,255,255,0.7);">divvy.app/pay ↗</div>' +
         '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:5px;">' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#fff;">pay $24</span>' +
@@ -370,25 +370,25 @@
   }
   // vignette 3 — a mini balance card + a cash-out chip.
   function mockBalance() {
-    return '<div style="background:linear-gradient(150deg,#3286db,#2775CA 65%,#1f5fa8); border:2px solid #2B2118; border-radius:14px; padding:14px 15px; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">' +
+    return '<div style="background:linear-gradient(150deg,#3286db,#2775CA 65%,#1f5fa8); border:2px solid var(--border-ink); border-radius:14px; padding:14px 15px; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">' +
       '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(255,255,255,0.7);">YOUR BALANCE</div>' +
       '<div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-top:4px;">' +
         '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:30px; letter-spacing:-1.5px; color:#fff;"><span style="opacity:.55; font-size:18px;">$</span>128<span style="opacity:.55; font-size:18px;">.00</span></div>' +
-        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12px; color:#2B2118; background:#3DE8C7; border:1.5px solid #2B2118; border-radius:999px; padding:5px 11px;">cash out →</span>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12px; color:#2B2118; background:#3DE8C7; border:1.5px solid var(--border-ink); border-radius:999px; padding:5px 11px;">cash out →</span>' +
       '</div>' +
     '</div>';
   }
   // The small trust chip row. "built on solana" appears here ONCE (this audience
   // loves it) and stays subtle.
   function trustChip(label) {
-    return '<span style="display:inline-flex; align-items:center; gap:6px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6); border:1px solid rgba(43,33,24,0.14); border-radius:999px; padding:5px 11px;">' +
+    return '<span style="display:inline-flex; align-items:center; gap:6px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.6); border:1px solid rgba(var(--ink-rgb),0.14); border-radius:999px; padding:5px 11px;">' +
       '<span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7;"></span>' + label + '</span>';
   }
 
   // ---- friend tabs (running 1:1 ledgers — see screens/tabs.js) ----
   function friendTabsLabel(count) {
     return '<div style="display:flex; align-items:baseline; gap:10px; margin:30px 2px 14px;">' +
-      '<span class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#2B2118;">friend tabs</span>' +
+      '<span class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:var(--ink);">friend tabs</span>' +
       '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; color:#FF6B5E;">' + count + ' running</span>' +
       '<a href="#/tabs" style="margin-left:auto; text-decoration:none; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:#2775CA;">all →</a></div>';
   }
@@ -405,10 +405,10 @@
     return '<a href="#/tab/' + encodeURIComponent(f.id || "") + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; padding:11px 4px;">' +
       '<div style="width:40px;height:40px;border-radius:50%;background:rgba(39,117,202,0.18);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none;">' + app.face(f.emoji || (name || "?")[0]) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + (neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.6)") + '; margin-top:2px;">' + app.esc(sub) + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(name) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + (neg ? "rgba(255,107,94,0.8)" : "rgba(var(--ink-rgb),0.6)") + '; margin-top:2px;">' + app.esc(sub) + '</div>' +
       '</div>' + amt +
-      '<span style="display:flex; align-items:center; color:rgba(43,33,24,0.28); margin-left:2px; flex:none;"><svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
+      '<span style="display:flex; align-items:center; color:rgba(var(--ink-rgb),0.28); margin-left:2px; flex:none;"><svg width="7" height="12" viewBox="0 0 7 12" fill="none" aria-hidden="true"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
     '</a>';
   }
   // ---- shared subscriptions (auto-split netflix & co — see screens/subscriptions.js) ----
@@ -417,9 +417,9 @@
   function subsCard(subsData) {
     var subs = (subsData && subsData.subscriptions) || [];
     if (!subs.length) {
-      return '<a href="#/subscriptions" style="display:flex; align-items:center; gap:11px; margin-top:14px; padding:13px 15px; border:1.5px dashed rgba(43,33,24,0.28); border-radius:15px; text-decoration:none; cursor:pointer;">' +
+      return '<a href="#/subscriptions" style="display:flex; align-items:center; gap:11px; margin-top:14px; padding:13px 15px; border:1.5px dashed rgba(var(--ink-rgb),0.28); border-radius:15px; text-decoration:none; cursor:pointer;">' +
         '<span style="font-size:19px; flex:none;">🍿</span>' +
-        '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(43,33,24,0.7);">shared subscriptions — split netflix & co automatically</span>' +
+        '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(var(--ink-rgb),0.7);">shared subscriptions — split netflix & co automatically</span>' +
         '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2775CA; flex:none;">→</span>' +
       '</a>';
     }
@@ -427,11 +427,11 @@
     var mine = (t.yourMonthlyCents || 0) > 0;
     var cents = mine ? t.yourMonthlyCents : (t.monthlyCents || 0);
     var label = mine ? "cost you" : "run";
-    return '<a href="#/subscriptions" style="text-decoration:none; display:flex; align-items:center; gap:13px; margin-top:14px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px 11px 11px;">' +
+    return '<a href="#/subscriptions" style="text-decoration:none; display:flex; align-items:center; gap:13px; margin-top:14px; background:var(--card); border:2px solid var(--border-ink); border-radius:15px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:11px 14px 11px 11px;">' +
       '<div style="width:48px; height:48px; border-radius:13px; background:rgba(39,117,202,0.14); display:flex; align-items:center; justify-content:center; font-size:24px; flex:none;">🍿</div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118;">subscriptions</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(43,33,24,0.6); margin-top:3px;">' + subs.length + ' on autopilot · ' + label + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:var(--ink);">subscriptions</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:rgba(var(--ink-rgb),0.6); margin-top:3px;">' + subs.length + ' on autopilot · ' + label + '</div>' +
       '</div>' +
       '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:17px; letter-spacing:-0.4px; color:#FF6B5E;"><span style="opacity:.5;">$</span>' + money3(cents) + '<span style="font-size:10px; opacity:.45;">/mo</span></div>' +
     '</a>';
@@ -440,27 +440,27 @@
   // ---- ask mochi (natural-language entry — see screens/mochi.js) ----
   // A journal-note card: type "add $7 coffee with sam" and mochi handles it.
   function askMochiCard() {
-    return '<a href="#/mochi" style="text-decoration:none; display:flex; align-items:center; gap:12px; margin-top:14px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px 11px 11px;">' +
+    return '<a href="#/mochi" style="text-decoration:none; display:flex; align-items:center; gap:12px; margin-top:14px; background:var(--card); border:2px solid var(--border-ink); border-radius:15px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:11px 14px 11px 11px;">' +
       '<div style="width:48px; height:48px; border-radius:13px; background:rgba(61,232,199,0.18); display:flex; align-items:center; justify-content:center; flex:none;">' + (window.Mascot ? window.Mascot.mini(30) : "🐸") + '</div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118;">ask mochi</div>' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-style:italic; font-size:12.5px; color:rgba(43,33,24,0.6); margin-top:3px;">&ldquo;add $7 coffee with sam&rdquo; · &ldquo;who owes me?&rdquo;</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:var(--ink);">ask mochi</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-style:italic; font-size:12.5px; color:rgba(var(--ink-rgb),0.6); margin-top:3px;">&ldquo;add $7 coffee with sam&rdquo; · &ldquo;who owes me?&rdquo;</div>' +
       '</div>' +
       '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2775CA; flex:none;">→</span>' +
     '</a>';
   }
   // floating mochi bubble: quick jump to the ask screen from anywhere on home.
   function mochiFab() {
-    return '<button id="mochiFab" aria-label="ask mochi" style="position:fixed; right:16px; bottom:calc(96px + env(safe-area-inset-bottom)); z-index:45; appearance:none; cursor:pointer; width:54px; height:54px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:3px 3.5px 0 rgba(43,33,24,0.9); display:flex; align-items:center; justify-content:center; transform:rotate(3deg);">' +
+    return '<button id="mochiFab" aria-label="ask mochi" style="position:fixed; right:16px; bottom:calc(96px + env(safe-area-inset-bottom)); z-index:45; appearance:none; cursor:pointer; width:54px; height:54px; border-radius:50%; background:var(--card); border:2px solid var(--border-ink); box-shadow:3px 3.5px 0 rgba(var(--shadow-rgb),0.9); display:flex; align-items:center; justify-content:center; transform:rotate(3deg);">' +
       (window.Mascot ? window.Mascot.mini(30) : "🐸") +
     '</button>';
   }
 
   // quiet dashed entry point so tabs stay reachable from home before the first one
   function startTabCard() {
-    return '<a href="#/tabs" style="display:flex; align-items:center; gap:11px; margin-top:26px; padding:13px 15px; border:1.5px dashed rgba(43,33,24,0.28); border-radius:15px; text-decoration:none; cursor:pointer;">' +
+    return '<a href="#/tabs" style="display:flex; align-items:center; gap:11px; margin-top:26px; padding:13px 15px; border:1.5px dashed rgba(var(--ink-rgb),0.28); border-radius:15px; text-decoration:none; cursor:pointer;">' +
       '<span style="font-size:19px; flex:none;">☕️</span>' +
-      '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(43,33,24,0.7);">running tabs — keep a "+$7 coffee" ledger with a friend</span>' +
+      '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:rgba(var(--ink-rgb),0.7);">running tabs — keep a "+$7 coffee" ledger with a friend</span>' +
       '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#2775CA; flex:none;">→</span>' +
     '</a>';
   }
@@ -483,7 +483,7 @@
       // against #view). Direct child of #view so the % height works.
       '<section style="position:relative; box-sizing:border-box; min-height:100%; display:flex; flex-direction:column; align-items:center; padding:0 24px; overflow:hidden;">' +
         // ambient glow + guilloché texture
-        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 20%, rgba(43,33,24,0.03) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
+        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 50% 20%, rgba(var(--ink-rgb),0.03) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
         '<div style="position:absolute; left:50%; top:22%; width:340px; height:340px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.22), transparent 70%); filter:blur(8px); pointer-events:none;"></div>' +
 
         '<div style="flex:1 1 0; min-height:12px; max-height:80px;"></div>' +
@@ -494,16 +494,16 @@
 
           // wordmark: div [slash] vy
           '<div style="display:flex; align-items:center; gap:1px; margin-top:8px;">' +
-            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:40px; line-height:1; letter-spacing:-1.5px; color:#2B2118;">div</span>' +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:40px; line-height:1; letter-spacing:-1.5px; color:var(--ink);">div</span>' +
             '<span style="display:inline-block; width:11px; height:38px; background:#2775CA; border-radius:2px; transform:skewX(-13deg); margin:0 6px; box-shadow:0 0 16px rgba(39,117,202,0.5);"></span>' +
-            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:40px; line-height:1; letter-spacing:-1.5px; color:#2B2118;">vy</span>' +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:40px; line-height:1; letter-spacing:-1.5px; color:var(--ink);">vy</span>' +
           '</div>' +
 
           // value headline
-          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:25px; line-height:1.14; letter-spacing:-0.6px; text-align:center; text-wrap:pretty; max-width:320px; margin:14px 0 0; color:#2B2118;">split bills. settle in dollars. instantly.</h1>' +
+          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:25px; line-height:1.14; letter-spacing:-0.6px; text-align:center; text-wrap:pretty; max-width:320px; margin:14px 0 0; color:var(--ink);">split bills. settle in dollars. instantly.</h1>' +
 
           // one-liner subhead
-          '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; text-align:center; text-wrap:pretty; max-width:300px; margin:10px 0 0; color:rgba(43,33,24,0.6);">scan the receipt, tap who had what, and your friends pay from a text — no app needed.</p>' +
+          '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; text-align:center; text-wrap:pretty; max-width:300px; margin:10px 0 0; color:rgba(var(--ink-rgb),0.6);">scan the receipt, tap who had what, and your friends pay from a text — no app needed.</p>' +
         '</div>' +
 
         '<div style="flex:1 1 0; min-height:16px;"></div>' +
@@ -511,27 +511,27 @@
         // ── ACTIONS ──
         '<div style="position:relative; z-index:2; width:100%; display:flex; flex-direction:column; gap:11px; padding-bottom:14px;">' +
           // primary: sign in (unchanged flow)
-          '<button id="hSignIn" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+          '<button id="hSignIn" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
             appleIcon +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">' + primaryLabel + '</span>' +
           '</button>' +
 
           // high-visibility secondary: try it first — no sign up
-          '<button id="hTry" style="appearance:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#FFFDF7; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(43,33,24,0.85);">' +
+          '<button id="hTry" style="appearance:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:var(--card); border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.85);">' +
             '<span style="font-size:17px;">👀</span>' +
-            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">try it first — no sign up</span>' +
+            '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:var(--ink);">try it first — no sign up</span>' +
           '</button>' +
 
           // tertiary: phone or email → same sign-in flow
           '<div style="text-align:center; margin-top:2px;">' +
-            '<button id="hPhone" style="appearance:none; border:none; background:transparent; cursor:pointer; padding:5px 8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; color:rgba(43,33,24,0.6); text-decoration:underline; text-underline-offset:2px;">or continue with phone or email</button>' +
+            '<button id="hPhone" style="appearance:none; border:none; background:transparent; cursor:pointer; padding:5px 8px; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; color:rgba(var(--ink-rgb),0.6); text-decoration:underline; text-underline-offset:2px;">or continue with phone or email</button>' +
           '</div>' +
         '</div>' +
 
         // scroll cue
         '<div style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:3px; padding-bottom:10px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.35);">how it works</span>' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.35)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.35);">how it works</span>' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.35)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>' +
         '</div>' +
       '</section>' +
 
@@ -547,12 +547,12 @@
         '</div>' +
 
         // footer links (server-rendered pages)
-        '<div style="text-align:center; margin-top:14px; font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.45);">' +
-          '<a href="/terms" style="color:rgba(43,33,24,0.5); text-decoration:none;">terms</a>' +
+        '<div style="text-align:center; margin-top:14px; font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(var(--ink-rgb),0.45);">' +
+          '<a href="/terms" style="color:rgba(var(--ink-rgb),0.5); text-decoration:none;">terms</a>' +
           '<span style="opacity:.4;"> · </span>' +
-          '<a href="/privacy" style="color:rgba(43,33,24,0.5); text-decoration:none;">privacy</a>' +
+          '<a href="/privacy" style="color:rgba(var(--ink-rgb),0.5); text-decoration:none;">privacy</a>' +
           '<span style="opacity:.4;"> · </span>' +
-          '<a href="/support" style="color:rgba(43,33,24,0.5); text-decoration:none;">support</a>' +
+          '<a href="/support" style="color:rgba(var(--ink-rgb),0.5); text-decoration:none;">support</a>' +
         '</div>' +
       '</section>';
 
@@ -586,9 +586,9 @@
           // welcome-back veil that fades out over the fresh render.
           try {
             var veil = document.createElement("div");
-            veil.style.cssText = "position:fixed; inset:0; z-index:9999; background:#F7F1E3; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; opacity:1; transition:opacity .5s ease;";
+            veil.style.cssText = "position:fixed; inset:0; z-index:9999; background:var(--paper); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; opacity:1; transition:opacity .5s ease;";
             veil.innerHTML = (app.mascot ? app.mascot({ size: 92, mood: "happy" }) : "") +
-              '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:19px; color:#2B2118;">welcome back</div>';
+              '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:19px; color:var(--ink);">welcome back</div>';
             document.body.appendChild(veil);
             setTimeout(function () { veil.style.opacity = "0"; }, 650);
             setTimeout(function () { try { veil.remove(); } catch (_) {} }, 1250);
@@ -621,22 +621,22 @@
   }
   function howStep(n, emoji, text) {
     return '<div style="display:flex; align-items:center; gap:11px;">' +
-      '<div style="width:30px; height:30px; border-radius:9px; background:#F7F1E3; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; font-size:15px; flex:none; box-shadow:2px 2px 0 rgba(43,33,24,0.85);">' + emoji + '</div>' +
-      '<div style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:#2B2118;">' + text + '</div>' +
-      '<div style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; color:rgba(43,33,24,0.32); flex:none;">' + n + '</div>' +
+      '<div style="width:30px; height:30px; border-radius:9px; background:var(--paper); border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; font-size:15px; flex:none; box-shadow:2px 2px 0 rgba(var(--shadow-rgb),0.85);">' + emoji + '</div>' +
+      '<div style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:var(--ink);">' + text + '</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; color:rgba(var(--ink-rgb),0.32); flex:none;">' + n + '</div>' +
     '</div>';
   }
   function howItWorksCard() {
-    return '<div id="howCard" style="position:relative; background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:4px 5px 0 rgba(43,33,24,0.9); padding:18px 18px 16px; margin-top:14px;">' +
-      '<div id="howClose" role="button" aria-label="close" tabindex="0" style="position:absolute; top:11px; right:11px; width:28px; height:28px; border-radius:50%; background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
+    return '<div id="howCard" style="position:relative; background:var(--card); border:2px solid var(--border-ink); border-radius:18px; box-shadow:4px 5px 0 rgba(var(--shadow-rgb),0.9); padding:18px 18px 16px; margin-top:14px;">' +
+      '<div id="howClose" role="button" aria-label="close" tabindex="0" style="position:absolute; top:11px; right:11px; width:28px; height:28px; border-radius:50%; background:rgba(var(--ink-rgb),0.05); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.55)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
       '<div style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:700; letter-spacing:2px; color:#3DE8C7;">HOW IT WORKS</div>' +
-      '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:19px; letter-spacing:-0.4px; color:#2B2118; margin:5px 0 15px;">three taps, you\'re square.</div>' +
+      '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:19px; letter-spacing:-0.4px; color:var(--ink); margin:5px 0 15px;">three taps, you\'re square.</div>' +
       '<div style="display:flex; flex-direction:column; gap:12px;">' +
         howStep("1", "🧾", "split a bill with your people") +
         howStep("2", "💸", "they pay their share") +
         howStep("3", "🎉", "the money\'s yours — in dollars") +
       '</div>' +
-      '<button id="howGot" style="appearance:none; cursor:pointer; width:100%; min-height:44px; margin-top:16px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; box-shadow:3px 3px 0 rgba(43,33,24,0.9); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff;">got it ✨</button>' +
+      '<button id="howGot" style="appearance:none; cursor:pointer; width:100%; min-height:44px; margin-top:16px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff;">got it ✨</button>' +
     '</div>';
   }
   function wireHowCard(view) {

@@ -81,17 +81,17 @@
     '<path fill="#fff" d="M12 3.2C7.7 3.2 4.2 6.6 4.2 10.9V19c0 .8.9 1.2 1.5.7l1.3-1.1c.3-.3.8-.3 1.1 0l1.2 1.1c.3.3.8.3 1.1 0l1.2-1.1c.3-.3.8-.3 1.1 0l1.2 1.1c.3.3.8.3 1.1 0l1.3-1.1c.3-.3.8-.3 1.1 0l1.3 1.1c.6.5 1.5.1 1.5-.7v-8.1c0-4.3-3.5-7.7-7.8-7.7z"/>' +
     '<circle cx="9.4" cy="11" r="1.35" fill="#2775CA"/><circle cx="14.6" cy="11" r="1.35" fill="#2775CA"/></svg>';
   var ARROW_SVG =
-    '<svg width="24" height="13" viewBox="0 0 26 14" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>';
+    '<svg width="24" height="13" viewBox="0 0 26 14" fill="none" stroke="rgba(var(--ink-rgb),0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>';
   var SHARE_SVG =
-    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5 8.6 10.5"/></svg>';
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5 8.6 10.5"/></svg>';
 
   // ---- chrome (lifted: settle-up status row + optional cancel) ----
   function header(showCancel) {
     return '<div style="position:relative; z-index:2; display:flex; align-items:center; justify-content:' +
       (showCancel ? 'space-between' : 'flex-start') + '; height:46px; padding:0 22px; flex:none;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">settle up</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.5);">settle up</span>' +
       (showCancel
-        ? '<span id="stCancel" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">cancel</span>'
+        ? '<span id="stCancel" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.5); cursor:pointer;">cancel</span>'
         : '') +
       '</div>';
   }
@@ -160,20 +160,20 @@
     if (isPartial) {
       return '<div style="margin-top:12px; display:flex; flex-direction:column; align-items:center; gap:4px;">' +
         '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#e0a63a;">paying $' + dollarsOf(S.partialCents) + ' of $' + dollarsOf(full) + '</span>' +
-        '<span id="stPartialReset" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">pay the full amount instead</span>' +
+        '<span id="stPartialReset" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline;">pay the full amount instead</span>' +
       '</div>';
     }
     return '<div style="margin-top:12px;">' +
       '<span id="stPartialToggle" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:#2775CA; cursor:pointer;">pay part of it →</span>' +
       '<div id="stPartialBox" style="display:none; margin-top:10px;">' +
         '<div style="display:flex; align-items:center; justify-content:center; gap:8px;">' +
-          '<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; border:2px solid #2B2118; border-radius:12px; box-shadow:2px 3px 0 rgba(43,33,24,0.85); padding:8px 12px;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(43,33,24,0.5);">$</span>' +
-            '<input id="stPartialInput" inputmode="decimal" enterkeyhint="done" placeholder="0.00" style="width:80px; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#2B2118;">' +
+          '<div style="display:inline-flex; align-items:center; gap:4px; background:var(--card); border:2px solid var(--border-ink); border-radius:12px; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); padding:8px 12px;">' +
+            '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(var(--ink-rgb),0.5);">$</span>' +
+            '<input id="stPartialInput" inputmode="decimal" enterkeyhint="done" placeholder="0.00" style="width:80px; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:var(--ink);">' +
           '</div>' +
-          '<button id="stPartialSet" style="appearance:none; border:2px solid #2B2118; cursor:pointer; padding:0 14px; min-height:40px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">set</button>' +
+          '<button id="stPartialSet" style="appearance:none; border:2px solid var(--border-ink); cursor:pointer; padding:0 14px; min-height:40px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">set</button>' +
         '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:7px;">the rest stays owed</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:7px;">the rest stays owed</div>' +
       '</div>' +
     '</div>';
   }
@@ -221,50 +221,50 @@
     var themLabel = S.toName + (t.toWallet ? " · " + trunc(t.toWallet) : "");
 
     var card =
-      '<div style="position:relative; width:100%; max-width:340px; background:#FFFDF7; border-radius:24px; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:20px 20px 18px; overflow:hidden;">' +
+      '<div style="position:relative; width:100%; max-width:340px; background:var(--card); border-radius:24px; border:2px solid var(--border-ink); box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:20px 20px 18px; overflow:hidden;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 4%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
         '<div style="position:absolute; top:16px; bottom:16px; right:12px; width:3px; background:repeating-linear-gradient(180deg, rgba(39,117,202,0.6) 0 5px, transparent 5px 11px); opacity:.5; pointer-events:none;"></div>' +
         '<div style="position:relative;">' +
           // you → ava
           '<div style="display:flex; align-items:center; justify-content:center; gap:11px;">' +
-            avatarTile(me.emoji, me.color, "you", "rgba(43,33,24,0.45)") +
+            avatarTile(me.emoji, me.color, "you", "rgba(var(--ink-rgb),0.45)") +
             ARROW_SVG +
-            avatarTile(them.emoji, themBg, themLabel, "rgba(43,33,24,0.55)") +
+            avatarTile(them.emoji, themBg, themLabel, "rgba(var(--ink-rgb),0.55)") +
           '</div>' +
           // amount
           '<div style="text-align:center; margin-top:15px;">' +
             bigNeg(t.amountCents, 46, 25) +
             '<div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:8px;">' +
-              '<span style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.5);">you owe ' + esc(S.toName) + '</span>' +
-              '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(43,33,24,0.4); border:1px solid rgba(43,33,24,0.16); border-radius:5px; padding:1px 5px;">IN USDC</span>' +
+              '<span style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.5);">you owe ' + esc(S.toName) + '</span>' +
+              '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.4); border:1px solid rgba(var(--ink-rgb),0.16); border-radius:5px; padding:1px 5px;">IN USDC</span>' +
             '</div>' +
             partialAffordance() +
           '</div>' +
           // pay paths
           '<div style="display:flex; flex-direction:column; gap:9px; margin-top:18px;">' +
-            '<button id="stPhantom" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:52px; border-radius:15px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+            '<button id="stPhantom" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:52px; border-radius:15px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
               PHANTOM_SVG +
               '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">pay with phantom</span>' +
             '</button>' +
-            '<button id="stWallet" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:15px; background:transparent; border:1px solid rgba(43,33,24,0.16); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;">' +
-              '<span style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">open in another wallet</span>' +
-              '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.42);">solflare · backpack · any solana pay</span>' +
+            '<button id="stWallet" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:15px; background:transparent; border:1px solid rgba(var(--ink-rgb),0.16); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;">' +
+              '<span style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink);">open in another wallet</span>' +
+              '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.42);">solflare · backpack · any solana pay</span>' +
             '</button>' +
             // QR (live image of the real solana: url)
-            '<div style="display:flex; align-items:center; gap:13px; background:rgba(238,241,244,0.04); border:1px solid rgba(43,33,24,0.10); border-radius:15px; padding:11px 13px; text-align:left;">' +
+            '<div style="display:flex; align-items:center; gap:13px; background:rgba(238,241,244,0.04); border:1px solid rgba(var(--ink-rgb),0.10); border-radius:15px; padding:11px 13px; text-align:left;">' +
               '<div style="width:62px; height:62px; background:#EEF1F4; border-radius:11px; padding:6px; flex:none;">' +
                 '<img alt="solana pay qr" width="100%" height="100%" style="display:block; border-radius:6px;" src="' + esc(qrSrc(solUrl)) + '">' +
               '</div>' +
               '<div style="flex:1; min-width:0;">' +
-                '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; color:rgba(43,33,24,0.82);">or scan with any solana wallet</div>' +
-                '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.5px; color:rgba(43,33,24,0.4); margin-top:3px;">pay from your phone on desktop</div>' +
+                '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; color:rgba(var(--ink-rgb),0.82);">or scan with any solana wallet</div>' +
+                '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4); margin-top:3px;">pay from your phone on desktop</div>' +
               '</div>' +
             '</div>' +
           '</div>' +
           // ref + reassurance
-          '<div style="margin-top:16px; padding-top:13px; border-top:1px solid rgba(43,33,24,0.08); text-align:center;">' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.42);">ref ' + esc(trunc(t.reference)) + '</div>' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.34); margin-top:5px;">irreversible · arrives in seconds · ~$0.0001 fee</div>' +
+          '<div style="margin-top:16px; padding-top:13px; border-top:1px solid rgba(var(--ink-rgb),0.08); text-align:center;">' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.42);">ref ' + esc(trunc(t.reference)) + '</div>' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.34); margin-top:5px;">irreversible · arrives in seconds · ~$0.0001 fee</div>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -275,15 +275,15 @@
         stage("",
           '<div style="margin-bottom:14px;">' + mascot(58, "happy") + '</div>' +
           // primary: pay in-app with the user's own (Privy/created) wallet
-          '<button id="stInApp" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:340px; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+          '<button id="stInApp" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:340px; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
             '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">pay ' + amtStr + ' with my wallet</span><span style="font-size:14px;">✨</span>' +
           '</button>' +
-          '<div style="display:flex; align-items:center; gap:12px; width:100%; max-width:340px; padding:14px 0 4px;"><span style="flex:1; height:1px; background:rgba(43,33,24,0.10);"></span><span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.4);">or pay from another wallet</span><span style="flex:1; height:1px; background:rgba(43,33,24,0.10);"></span></div>' +
+          '<div style="display:flex; align-items:center; gap:12px; width:100%; max-width:340px; padding:14px 0 4px;"><span style="flex:1; height:1px; background:rgba(var(--ink-rgb),0.10);"></span><span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.4);">or pay from another wallet</span><span style="flex:1; height:1px; background:rgba(var(--ink-rgb),0.10);"></span></div>' +
           card +
-          '<button id="stPaid" style="appearance:none; cursor:pointer; width:100%; max-width:340px; margin-top:14px; min-height:48px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">i\'ve paid — check now</button>' +
+          '<button id="stPaid" style="appearance:none; cursor:pointer; width:100%; max-width:340px; margin-top:14px; min-height:48px; border-radius:999px; background:transparent; border:1px solid rgba(var(--ink-rgb),0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink);">i\'ve paid — check now</button>' +
           // quiet escape hatch: paid in cash / venmo / zelle? file a claim the
           // creditor confirms — no USDC moves through this path.
-          '<div style="margin-top:12px;"><span id="stOutside" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">settled another way? 💵</span></div>'
+          '<div style="margin-top:12px;"><span id="stOutside" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline;">settled another way? 💵</span></div>'
         ) +
       '</div>';
     wireCancel();
@@ -355,24 +355,24 @@
       return '<button type="button" class="stOMethod" data-m="' + m[0] + '" style="appearance:none; cursor:pointer; padding:0 13px; min-height:38px; border-radius:999px; ' +
         (i === 0
           ? 'background:rgba(39,117,202,0.12); border:2px solid #2775CA; color:#2775CA;'
-          : 'background:#FFFDF7; border:1px solid rgba(43,33,24,0.16); color:rgba(43,33,24,0.6);') +
+          : 'background:var(--card); border:1px solid rgba(var(--ink-rgb),0.16); color:rgba(var(--ink-rgb),0.6);') +
         ' font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px;">' + m[1] + '</button>';
     }).join("");
     app.sheet('<div style="padding:4px 4px 10px; text-align:center;">' +
-      '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:#2B2118;">settled another way?</div>' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:6px;">already paid ' + esc(name) + ' off-app? they confirm it, then the group ledger updates.</div>' +
+      '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:var(--ink);">settled another way?</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.55); margin-top:6px;">already paid ' + esc(name) + ' off-app? they confirm it, then the group ledger updates.</div>' +
       '<div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:14px;">' + chips + '</div>' +
       '<div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-top:14px;">' +
-        '<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; border:2px solid #2B2118; border-radius:12px; box-shadow:2px 3px 0 rgba(43,33,24,0.85); padding:8px 12px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(43,33,24,0.5);">$</span>' +
-          '<input id="stOAmt" inputmode="decimal" enterkeyhint="done" value="' + dollarsOf(owedCents) + '" style="width:86px; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#2B2118;">' +
+        '<div style="display:inline-flex; align-items:center; gap:4px; background:var(--card); border:2px solid var(--border-ink); border-radius:12px; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); padding:8px 12px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(var(--ink-rgb),0.5);">$</span>' +
+          '<input id="stOAmt" inputmode="decimal" enterkeyhint="done" value="' + dollarsOf(owedCents) + '" style="width:86px; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:var(--ink);">' +
         '</div>' +
       '</div>' +
-      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:6px;">pay less and the rest stays owed</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:6px;">pay less and the rest stays owed</div>' +
       '<input id="stONote" maxlength="140" autocomplete="off" placeholder="note — “at the bar” (optional)" ' +
-        'style="width:100%; min-height:44px; margin-top:12px; padding:10px 14px; border-radius:13px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:#2B2118;">' +
+        'style="width:100%; min-height:44px; margin-top:12px; padding:10px 14px; border-radius:13px; background:var(--card-2); border:1px solid rgba(var(--ink-rgb),0.12); outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:var(--ink);">' +
       '<button class="btn" id="stOSend" style="margin-top:14px;">ask ' + esc(name) + ' to confirm</button>' +
-      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:8px;">nothing changes until they confirm</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:8px;">nothing changes until they confirm</div>' +
     '</div>');
     var method = "cash";
     Array.prototype.forEach.call(document.querySelectorAll(".stOMethod"), function (chip) {
@@ -380,9 +380,9 @@
         method = chip.getAttribute("data-m") || "cash";
         Array.prototype.forEach.call(document.querySelectorAll(".stOMethod"), function (c2) {
           var on = c2 === chip;
-          c2.style.background = on ? "rgba(39,117,202,0.12)" : "#FFFDF7";
-          c2.style.border = on ? "2px solid #2775CA" : "1px solid rgba(43,33,24,0.16)";
-          c2.style.color = on ? "#2775CA" : "rgba(43,33,24,0.6)";
+          c2.style.background = on ? "rgba(39,117,202,0.12)" : "var(--card)";
+          c2.style.border = on ? "2px solid #2775CA" : "1px solid rgba(var(--ink-rgb),0.16)";
+          c2.style.color = on ? "#2775CA" : "rgba(var(--ink-rgb),0.6)";
         });
       };
     });
@@ -431,16 +431,16 @@
           '<div style="display:flex; align-items:center; gap:7px; margin-top:11px;">' +
             '<span style="font-family:\'Space Mono\',monospace; font-size:9px; font-weight:700; letter-spacing:.5px; color:#2775CA;">waiting</span>' +
             '<span style="width:18px; height:2px; border-radius:2px; background:repeating-linear-gradient(90deg,rgba(39,117,202,0.7) 0 3px,transparent 3px 6px);"></span>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.4);">confirmed</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4);">confirmed</span>' +
           '</div>' +
-          '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; line-height:1.18; letter-spacing:-0.3px; text-align:center; margin:22px 0 0; color:#2B2118; max-width:280px;">watching the chain<br>for your payment</h2>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(43,33,24,0.5); margin-top:11px;">' +
+          '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; line-height:1.18; letter-spacing:-0.3px; text-align:center; margin:22px 0 0; color:var(--ink); max-width:280px;">watching the chain<br>for your payment</h2>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.5); margin-top:11px;">' +
             esc(t.amountFmt || "") + ' → ' + esc(S.toName) + (t.toWallet ? ' · ' + esc(trunc(t.toWallet)) : '') + '</div>' +
           // truthful reassurance — we're watching, nothing's confirmed yet.
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.6); margin-top:8px; max-width:280px;">hang tight — we check automatically every few seconds.</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(var(--ink-rgb),0.6); margin-top:8px; max-width:280px;">hang tight — we check automatically every few seconds.</div>' +
           '<div style="width:100%; max-width:340px; margin-top:30px; display:flex; flex-direction:column; gap:11px;">' +
-            '<button id="stCheck" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">i\'ve paid — check now</button>' +
-            '<button id="stWalletAgain" style="appearance:none; background:transparent; border:none; cursor:pointer; width:100%; min-height:44px; font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5);">open wallet again</button>' +
+            '<button id="stCheck" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">i\'ve paid — check now</button>' +
+            '<button id="stWalletAgain" style="appearance:none; background:transparent; border:none; cursor:pointer; width:100%; min-height:44px; font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.5);">open wallet again</button>' +
           '</div>'
         ) +
       '</div>';
@@ -462,11 +462,11 @@
             '<span style="width:7px; height:7px; border-radius:50%; background:#FFC65C; animation:stPulse 1.6s ease-in-out infinite;"></span>' +
             '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:10px; letter-spacing:1.5px; color:#FFC65C;">NOT SEEN YET</span>' +
           '</div>' +
-          '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:25px; line-height:1.16; letter-spacing:-0.3px; text-align:center; margin:22px 0 0; color:#2B2118;">still looking 👀</h2>' +
-          '<p style="font-family:\'General Sans\',sans-serif; font-size:14px; line-height:1.45; text-align:center; color:rgba(43,33,24,0.55); margin:11px 0 0; max-width:264px;">paid already? give it a few seconds — solana\'s fast, but your wallet might still be broadcasting.</p>' +
+          '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:25px; line-height:1.16; letter-spacing:-0.3px; text-align:center; margin:22px 0 0; color:var(--ink);">still looking 👀</h2>' +
+          '<p style="font-family:\'General Sans\',sans-serif; font-size:14px; line-height:1.45; text-align:center; color:rgba(var(--ink-rgb),0.55); margin:11px 0 0; max-width:264px;">paid already? give it a few seconds — solana\'s fast, but your wallet might still be broadcasting.</p>' +
           '<div style="width:100%; max-width:340px; margin-top:30px; display:flex; flex-direction:column; gap:11px;">' +
-            '<button id="stAgain" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">check again</button>' +
-            '<button id="stOpenAgain" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">open wallet again</button>' +
+            '<button id="stAgain" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">check again</button>' +
+            '<button id="stOpenAgain" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(var(--ink-rgb),0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink);">open wallet again</button>' +
           '</div>'
         ) +
       '</div>';
@@ -490,9 +490,9 @@
       var have = "$" + (S.balanceCents / 100).toFixed(2);
       breakdown =
         '<div style="display:flex; align-items:center; gap:8px; margin-top:14px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">balance</span>' +
-          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:13px; color:rgba(43,33,24,0.7);">' + esc(have) + '</span>' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.3);">/</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45);">balance</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:13px; color:rgba(var(--ink-rgb),0.7);">' + esc(have) + '</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(var(--ink-rgb),0.3);">/</span>' +
           '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#FF6B5E;">short $' + (shortBy / 100).toFixed(2) + '</span>' +
         '</div>';
     }
@@ -504,18 +504,18 @@
             '<span style="width:7px; height:7px; border-radius:50%; background:#FF6B5E; animation:stPulseC 1.6s ease-in-out infinite;"></span>' +
             '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:10px; letter-spacing:1.5px; color:#FF6B5E;">BALANCE TOO LOW</span>' +
           '</div>' +
-          '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; line-height:1.2; letter-spacing:-0.3px; text-align:center; margin:20px 0 0; color:#2B2118; max-width:280px;">you need ' + amt + ' USDC to settle this</h2>' +
+          '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; line-height:1.2; letter-spacing:-0.3px; text-align:center; margin:20px 0 0; color:var(--ink); max-width:280px;">you need ' + amt + ' USDC to settle this</h2>' +
           breakdown +
           '<div style="width:100%; max-width:340px; margin-top:30px; display:flex; flex-direction:column; gap:11px;">' +
-            '<button id="stAdd" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#FF8A7E,#FF6B5E); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+            '<button id="stAdd" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#FF8A7E,#FF6B5E); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
               '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">add money</span>' +
               '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1px; color:rgba(255,255,255,0.8);">DEBIT CARD · APPLE PAY · INSTANT</span>' +
             '</button>' +
-            '<button id="stOther" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">use another wallet</button>' +
+            '<button id="stOther" style="appearance:none; cursor:pointer; width:100%; min-height:50px; border-radius:999px; background:transparent; border:1px solid rgba(var(--ink-rgb),0.16); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink);">use another wallet</button>' +
             // no USDC on hand is exactly the cash-settle persona — offer the
             // off-app path right here, not only on the ready state.
-            '<div style="text-align:center; margin-top:6px;"><span id="stOutside" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">settled another way? 💵</span></div>' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.34); text-align:center; margin-top:4px;">dollars, just faster.</div>' +
+            '<div style="text-align:center; margin-top:6px;"><span id="stOutside" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline;">settled another way? 💵</span></div>' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.34); text-align:center; margin-top:4px;">dollars, just faster.</div>' +
           '</div>'
         ) +
       '</div>';
@@ -574,7 +574,7 @@
   function renderSettled() {
     var card =
       '<div id="stShare" style="position:relative; width:100%; max-width:340px; border-radius:24px; padding:18px 24px 24px; overflow:hidden; color:#fff;' +
-        'background:linear-gradient(125deg,#2775CA 0%,#2aa5cf 48%,#3DE8C7 100%); background-size:200% 200%; animation:stGrad 6s ease-in-out infinite; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+        'background:linear-gradient(125deg,#2775CA 0%,#2aa5cf 48%,#3DE8C7 100%); background-size:200% 200%; animation:stGrad 6s ease-in-out infinite; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 85% 6%, rgba(255,255,255,0.10) 0 1px, transparent 1px 9px); opacity:.55; pointer-events:none;"></div>' +
         // squared stamp
         '<div style="position:absolute; top:18px; right:16px; transform:rotate(-11deg); animation:stStamp .6s ease-out .15s both;">' +
@@ -613,11 +613,11 @@
           '<div style="margin-bottom:16px;">' + mascot(62, "sparkle", "stBounce 2.4s ease-in-out infinite") + '</div>' +
           card +
           '<div style="display:flex; gap:11px; width:100%; max-width:340px; margin-top:14px;">' +
-            '<button id="stShareBtn" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+            '<button id="stShareBtn" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:linear-gradient(120deg,#3DE8C7,#2aa5cf); display:flex; align-items:center; justify-content:center; gap:7px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
               SHARE_SVG +
-              '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">share ✨</span>' +
+              '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:var(--ink);">share ✨</span>' +
             '</button>' +
-            '<button id="stDone" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118;">done</button>' +
+            '<button id="stDone" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:var(--ink);">done</button>' +
           '</div>'
         ) +
       '</div>';
@@ -795,9 +795,9 @@
       '<div class="appscroll" style="padding-top:0;">' +
         stage("",
           mascot(96, "shrug", "stShrug 3.4s ease-in-out infinite") +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; margin-top:14px; color:#2B2118;">' + esc(title) + '</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.55); margin-top:6px; max-width:280px;">' + esc(hint) + '</div>' +
-          (btnLabel ? '<button id="stBack" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:260px; min-height:54px; margin-top:18px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + esc(btnLabel) + '</button>' : '')
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; margin-top:14px; color:var(--ink);">' + esc(title) + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.55); margin-top:6px; max-width:280px;">' + esc(hint) + '</div>' +
+          (btnLabel ? '<button id="stBack" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:260px; min-height:54px; margin-top:18px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' + esc(btnLabel) + '</button>' : '')
         ) +
       '</div>';
     wireCancel();

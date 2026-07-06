@@ -74,9 +74,9 @@
 
   function streakChipHtml(n) {
     return '' +
-      '<div style="display:inline-flex; align-items:center; gap:8px; padding:6px 12px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); transform:rotate(-1.2deg);">' +
+      '<div style="display:inline-flex; align-items:center; gap:8px; padding:6px 12px; background:var(--card); border:2px solid var(--border-ink); border-radius:999px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); transform:rotate(-1.2deg);">' +
         '<span style="font-size:14px; line-height:1;">🔥</span>' +
-        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; letter-spacing:.4px; color:#2B2118;">' + n + '-week settle streak</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; letter-spacing:.4px; color:var(--ink);">' + n + '-week settle streak</span>' +
       '</div>';
   }
 
@@ -86,9 +86,9 @@
   // (so a zero never nags). Mirrors the streak chip's look + wiring pattern.
   function invitesChipHtml(n) {
     return '' +
-      '<div style="display:inline-flex; align-items:center; gap:8px; padding:6px 12px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); transform:rotate(1deg);">' +
+      '<div style="display:inline-flex; align-items:center; gap:8px; padding:6px 12px; background:var(--card); border:2px solid var(--border-ink); border-radius:999px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); transform:rotate(1deg);">' +
         '<span style="font-size:14px; line-height:1;">🌱</span>' +
-        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; letter-spacing:.4px; color:#2B2118;">friends brought: ' + n + '</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; letter-spacing:.4px; color:var(--ink);">friends brought: ' + n + '</span>' +
       '</div>';
   }
 
@@ -158,11 +158,11 @@
     return '' +
       '<div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:88px; padding:0 20px; flex:none;">' +
         '<div style="display:flex; align-items:center; gap:12px;">' +
-          '<h1 class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:28px; letter-spacing:-0.8px; margin:0; color:#2B2118;">you</h1>' +
-          '<div id="yGear" role="button" aria-label="settings" tabindex="0" style="width:36px; height:36px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:2px 2px 0 rgba(43,33,24,0.35); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+          '<h1 class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:28px; letter-spacing:-0.8px; margin:0; color:var(--ink);">you</h1>' +
+          '<div id="yGear" role="button" aria-label="settings" tabindex="0" style="width:36px; height:36px; border-radius:50%; background:var(--card); border:2px solid var(--border-ink); box-shadow:2px 2px 0 rgba(var(--shadow-rgb),0.35); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
             // Hand-inked spoke gear (hub + 8 ticks) — stays crisp at small sizes,
             // unlike the lobed feather cog it replaces.
-            '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round">' +
+            '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round">' +
               '<circle cx="12" cy="12" r="3.4"/>' +
               '<path d="M18.3 12h3M5.7 12h-3M12 5.7v-3M12 18.3v3M16.46 7.54l2.12-2.12M7.54 7.54 5.42 5.42M16.46 16.46l2.12 2.12M7.54 16.46l-2.12 2.12"/>' +
             '</svg></div>' +
@@ -181,15 +181,15 @@
   // ── identity row (72px avatar standalone + you + @handle + wallet pill) ───────
   function identityRow(id) {
     var copyIcon = id.wallet
-      ? '<svg id="yCopy" aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>'
+      ? '<svg id="yCopy" aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>'
       : '';
     return '' +
       '<div style="display:flex; align-items:center; gap:15px; padding:6px 2px 2px;">' +
-        '<div id="yAvatar" role="button" aria-label="edit profile" tabindex="0" style="width:72px; height:72px; border-radius:22px; background:' + id.color + '; display:flex; align-items:center; justify-content:center; font-size:36px; box-shadow:0 12px 28px rgba(43,33,24,0.13); flex:none; cursor:pointer;">' + app.face(id.emoji) + '</div>' +
+        '<div id="yAvatar" role="button" aria-label="edit profile" tabindex="0" style="width:72px; height:72px; border-radius:22px; background:' + id.color + '; display:flex; align-items:center; justify-content:center; font-size:36px; box-shadow:0 12px 28px rgba(var(--shadow-rgb),0.13); flex:none; cursor:pointer;">' + app.face(id.emoji) + '</div>' +
         '<div style="flex:1; min-width:0;">' +
-          '<div style="display:flex; align-items:center; gap:8px; min-width:0;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.4px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;">' + app.esc((id.name || "you").toLowerCase()) + '</span><span style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(39,117,202,0.75);">' + app.esc(id.handle.toLowerCase()) + '</span><span id="yEdit" style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.6); cursor:pointer;">edit</span></div>' +
-          '<div id="yWalletChip" style="display:inline-flex; align-items:center; gap:8px; margin-top:9px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:5px 11px;' + (id.wallet ? ' cursor:pointer;' : '') + '">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.6);">' + app.esc(truncWallet(id.wallet)) + '</span>' +
+          '<div style="display:flex; align-items:center; gap:8px; min-width:0;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.4px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;">' + app.esc((id.name || "you").toLowerCase()) + '</span><span style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(39,117,202,0.75);">' + app.esc(id.handle.toLowerCase()) + '</span><span id="yEdit" style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(var(--ink-rgb),0.6); cursor:pointer;">edit</span></div>' +
+          '<div id="yWalletChip" style="display:inline-flex; align-items:center; gap:8px; margin-top:9px; background:var(--card); border:2px solid var(--border-ink); border-radius:999px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:5px 11px;' + (id.wallet ? ' cursor:pointer;' : '') + '">' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.6);">' + app.esc(truncWallet(id.wallet)) + '</span>' +
             copyIcon +
           '</div>' +
         '</div>' +
@@ -200,72 +200,72 @@
   //    shimmer, perforated middle). Big mono balance with blue glow. ────────────
   function balanceCard(balanceCents) {
     return '' +
-      '<div style="position:relative; background:#FFFDF7; border-radius:24px; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); margin-top:22px; transform:rotate(0.4deg);">' +
+      '<div style="position:relative; background:var(--card); border-radius:24px; border:2px solid var(--border-ink); box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); margin-top:22px; transform:rotate(0.4deg);">' +
         '<div class="jtape" style="top:-12px; right:12%; background:rgba(255,198,92,0.6);"></div>' +
 
         '<div style="position:relative; padding:20px 20px 8px;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">YOUR BALANCE</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">YOUR BALANCE</div>' +
           '<div style="display:flex; align-items:baseline; gap:10px; margin-top:11px;">' +
             '<div id="yBalance" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:54px; line-height:.9; letter-spacing:-2.4px; color:#2775CA; text-shadow:none;">' + moneyBig(balanceCents) + '</div>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-weight:400; font-size:12px; letter-spacing:1px; color:rgba(43,33,24,0.6);">usdc</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-weight:400; font-size:12px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.6);">usdc</span>' +
           '</div>' +
           '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid rgba(39,117,202,0.4); background:rgba(39,117,202,0.1); border-radius:999px; padding:4px 11px;">' +
             '<span style="width:6px; height:6px; border-radius:50%; background:#2775CA; box-shadow:0 0 7px rgba(39,117,202,0.8);"></span>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:.5px; color:rgba(43,33,24,0.62);">settles instantly · ~$0.001 fee</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; font-weight:400; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.62);">settles instantly · ~$0.001 fee</span>' +
           '</div>' +
         '</div>' +
 
         // perforation
-        '<div style="position:relative; height:1px; margin:18px 0 0; border-top:1.5px dashed rgba(43,33,24,0.14);">' +
-          '<div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div>' +
-          '<div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div>' +
+        '<div style="position:relative; height:1px; margin:18px 0 0; border-top:1.5px dashed rgba(var(--ink-rgb),0.14);">' +
+          '<div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:var(--paper);"></div>' +
+          '<div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:var(--paper);"></div>' +
         '</div>' +
 
         '<div style="position:relative; padding:18px 20px 20px;">' +
           '<div style="display:flex; gap:11px;">' +
-            '<button id="yAdd" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+            '<button id="yAdd" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
               '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
               '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#fff;">add money</span>' +
             '</button>' +
-            '<button id="yCash" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.2); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118;">' +
-              '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>' +
+            '<button id="yCash" style="appearance:none; cursor:pointer; flex:1; min-height:52px; border-radius:999px; background:transparent; border:1px solid rgba(var(--ink-rgb),0.2); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15.5px; color:var(--ink);">' +
+              '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>' +
               'cash out' +
             '</button>' +
           '</div>' +
           '<div style="display:flex; align-items:center; gap:7px; justify-content:center; margin-top:14px;">' +
             '<span style="font-size:12px;">💳</span>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.2px; color:rgba(43,33,24,0.42);">spend it with any card. dollars, just faster.</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.2px; color:rgba(var(--ink-rgb),0.42);">spend it with any card. dollars, just faster.</span>' +
           '</div>' +
         '</div>' +
       '</div>';
   }
 
   // ── settings list (emoji-icon tile + lowercase label + chevron) ──────────────
-  var CHEV = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+  var CHEV = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
 
   // a "coming soon" pill, for rows that aren't wired yet — so they read as
   // not-yet-available instead of looking like a live, tappable row.
-  var SOON_TAG = '<span style="display:inline-flex; align-items:center; font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.4); background:rgba(43,33,24,0.06); border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:3px 9px; margin-right:2px;">soon</span>';
+  var SOON_TAG = '<span style="display:inline-flex; align-items:center; font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4); background:rgba(var(--ink-rgb),0.06); border:1px solid rgba(var(--ink-rgb),0.1); border-radius:999px; padding:3px 9px; margin-right:2px;">soon</span>';
 
   function row(id, icon, tint, label, right, soon) {
     // soon rows: dimmed, no pointer/chevron, a "soon" pill instead.
     return '' +
       '<div id="' + id + '" style="display:flex; align-items:center; gap:13px; padding:14px 15px;' + (soon ? ' opacity:.55; cursor:default;' : ' cursor:pointer;') + '">' +
         '<div style="width:34px; height:34px; border-radius:11px; background:' + tint + '; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;">' + icon + '</div>' +
-        '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + label + '</span>' +
+        '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink);">' + label + '</span>' +
         (soon ? SOON_TAG : ((right || '') + CHEV)) +
       '</div>';
   }
   function divider() {
-    return '<div style="height:1px; background:rgba(43,33,24,0.05); margin:0 15px;"></div>';
+    return '<div style="height:1px; background:rgba(var(--ink-rgb),0.05); margin:0 15px;"></div>';
   }
 
   function settingsList() {
     var netTag = '<span style="display:inline-flex; align-items:center; gap:6px; background:rgba(61,232,199,0.1); border:1px solid rgba(61,232,199,0.35); border-radius:999px; padding:3px 9px; margin-right:2px;"><span style="width:5px; height:5px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 6px rgba(61,232,199,0.8);"></span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#3DE8C7;">devnet</span></span>';
 
     return '' +
-      '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); padding:24px 2px 11px;">SETTINGS</div>' +
-      '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); overflow:hidden;">' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.42); padding:24px 2px 11px;">SETTINGS</div>' +
+      '<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:18px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); overflow:hidden;">' +
         row("yWallet", "🔑", "rgba(139,92,246,0.16)", "wallet & recovery") + divider() +
         // link more ways to sign in (apple/google/email/phone) so they all open
         // THIS account — lives in the embedded Privy app (needs the Privy session).
@@ -278,15 +278,15 @@
         // notifications taps through to the activity feed; an unread count badge
         // is patched in after render (best-effort, see wireNotifBadge).
         row("yNotif", "🔔", "rgba(255,107,94,0.14)", "notifications") + divider() +
-        row("yPush", "📣", "rgba(139,92,246,0.16)", "push notifications", '<span id="yPushState" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.4); margin-right:2px;">off</span>') + divider() +
-        row("ySound", "🔊", "rgba(61,232,199,0.14)", "sounds", '<span id="ySoundState" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.4); margin-right:2px;">on</span>') + divider() +
+        row("yPush", "📣", "rgba(139,92,246,0.16)", "push notifications", '<span id="yPushState" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4); margin-right:2px;">off</span>') + divider() +
+        row("ySound", "🔊", "rgba(61,232,199,0.14)", "sounds", '<span id="ySoundState" style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4); margin-right:2px;">on</span>') + divider() +
         row("yNet", "🌐", "rgba(39,117,202,0.16)", "network", netTag) + divider() +
         // export a CSV of the user's history (built client-side from /api/activity)
         // and help & support (FAQs + contact + links to /terms and /privacy).
         row("yExport", "📄", "rgba(255,198,92,0.16)", "export my history (csv)") + divider() +
         // fun / growth: opens the public Mochi meme generator (/memes) in a new tab.
         row("yMeme", "🐸", "rgba(61,232,199,0.14)", "make a mochi meme") + divider() +
-        row("yHelp", "💁", "rgba(43,33,24,0.07)", "help & support") +
+        row("yHelp", "💁", "rgba(var(--ink-rgb),0.07)", "help & support") +
       '</div>';
   }
 
@@ -304,17 +304,17 @@
         '</div>' +
       '</div>' +
       '<div style="display:flex; gap:14px; justify-content:center; margin-top:16px;">' +
-        '<a href="/privacy.html" style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.4px; color:rgba(43,33,24,0.4); text-decoration:none;">privacy</a>' +
-        '<span style="color:rgba(43,33,24,0.2);">·</span>' +
-        '<a href="/terms.html" style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.4px; color:rgba(43,33,24,0.4); text-decoration:none;">terms</a>' +
+        '<a href="/privacy.html" style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.4px; color:rgba(var(--ink-rgb),0.4); text-decoration:none;">privacy</a>' +
+        '<span style="color:rgba(var(--ink-rgb),0.2);">·</span>' +
+        '<a href="/terms.html" style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.4px; color:rgba(var(--ink-rgb),0.4); text-decoration:none;">terms</a>' +
       '</div>' +
-      '<div style="text-align:center; font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.5px; color:rgba(43,33,24,0.28); margin-top:12px;">divvy v1.4.0 · made for splitting, not stressing</div>';
+      '<div style="text-align:center; font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.28); margin-top:12px;">divvy v1.4.0 · made for splitting, not stressing</div>';
   }
 
   // ── background overlays (money texture + soft accent glow, frame-level) ───────
   function backdrop() {
     return '' +
-      '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(43,33,24,0.025) 0 1px, transparent 1px 8px); opacity:.55; pointer-events:none; z-index:0;"></div>' +
+      '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(var(--ink-rgb),0.025) 0 1px, transparent 1px 8px); opacity:.55; pointer-events:none; z-index:0;"></div>' +
       '<div style="position:absolute; left:50%; top:120px; width:380px; height:280px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.16) 0%, rgba(39,117,202,0) 70%); pointer-events:none; z-index:0;"></div>';
   }
 
@@ -394,11 +394,11 @@
     var ios = app.install.iosManual && app.install.iosManual();
     slot.innerHTML =
       '<div id="yInstallChip" style="display:flex; align-items:center; gap:11px; margin:2px 0 14px; padding:11px 11px 11px 13px; ' +
-        'border:2px solid #2B2118; border-radius:15px; background:#FFFDF7; box-shadow:3px 3px 0 rgba(43,33,24,0.85);">' +
+        'border:2px solid var(--border-ink); border-radius:15px; background:var(--card); box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.85);">' +
         '<span style="font-size:19px; flex:none;">📲</span>' +
-        '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; line-height:1.3; color:#2B2118;">add divvy to your home screen</span>' +
-        '<button id="yInstallGo" style="appearance:none; border:2px solid #2B2118; cursor:pointer; flex:none; background:#2775CA; color:#fff; border-radius:999px; padding:7px 13px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; box-shadow:2px 2px 0 rgba(43,33,24,0.85);">' + (ios ? "how" : "add") + '</button>' +
-        '<button id="yInstallX" aria-label="dismiss" style="appearance:none; border:none; cursor:pointer; flex:none; background:transparent; padding:4px; display:flex; align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' +
+        '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; line-height:1.3; color:var(--ink);">add divvy to your home screen</span>' +
+        '<button id="yInstallGo" style="appearance:none; border:2px solid var(--border-ink); cursor:pointer; flex:none; background:#2775CA; color:#fff; border-radius:999px; padding:7px 13px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; box-shadow:2px 2px 0 rgba(var(--shadow-rgb),0.85);">' + (ios ? "how" : "add") + '</button>' +
+        '<button id="yInstallX" aria-label="dismiss" style="appearance:none; border:none; cursor:pointer; flex:none; background:transparent; padding:4px; display:flex; align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.55)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>' +
       '</div>';
     var go = document.getElementById("yInstallGo");
     var x = document.getElementById("yInstallX");
@@ -435,11 +435,11 @@
         header() +
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; text-align:center; padding:30px 24px 104px;">' +
           '<div style="margin:10px 0 4px;">' + app.mascot({ size: 128, mood: "happy", glow: true }) + '</div>' +
-          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.6px; max-width:300px; margin:10px 0 0; color:#2B2118;">your tabs, your money, your people.</h1>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(43,33,24,0.45); margin:16px 0 22px;">sign in to see your balance</div>' +
-          '<button id="yConnect" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:320px; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">sign in</button>' +
-          '<div style="margin-top:16px;"><button id="yCreate" style="appearance:none; border:none; background:transparent; cursor:pointer; padding:5px 8px; font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.6); text-decoration:underline; text-underline-offset:2px;">just exploring? try a demo account</button></div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(43,33,24,0.4); margin-top:20px;">dollars, just faster · settles in seconds</div>' +
+          '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:24px; letter-spacing:-0.6px; max-width:300px; margin:10px 0 0; color:var(--ink);">your tabs, your money, your people.</h1>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(var(--ink-rgb),0.45); margin:16px 0 22px;">sign in to see your balance</div>' +
+          '<button id="yConnect" style="appearance:none; border:none; cursor:pointer; width:100%; max-width:320px; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">sign in</button>' +
+          '<div style="margin-top:16px;"><button id="yCreate" style="appearance:none; border:none; background:transparent; cursor:pointer; padding:5px 8px; font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(var(--ink-rgb),0.6); text-decoration:underline; text-underline-offset:2px;">just exploring? try a demo account</button></div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.8px; color:rgba(var(--ink-rgb),0.4); margin-top:20px;">dollars, just faster · settles in seconds</div>' +
         '</div>' +
       '</div>';
 
@@ -500,21 +500,21 @@
     app.sheet(
       '<div style="padding:4px 20px 26px;">' +
         '<div style="text-align:center; margin-bottom:6px;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">CASH OUT</div>' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118; margin-top:4px;">cash out to your bank</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">CASH OUT</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:var(--ink); margin-top:4px;">cash out to your bank</div>' +
         '</div>' +
         app.amountEntryHtml(entryOpts) +
-        '<button id="yOut" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+        '<button id="yOut" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="10" rx="1.5"/><path d="M12 3L3 8h18z"/><path d="M7 14v2M12 14v2M17 14v2"/></svg>' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">cash out to your bank</span>' +
         '</button>' +
         '<div style="text-align:center; margin-top:9px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">arrives in 1-2 business days</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.5);">arrives in 1-2 business days</span>' +
         '</div>' +
         '<div id="yOutTestNote"></div>' +
         // honest secondary framing — compact version of the old explainer.
         '<div style="display:flex; align-items:center; gap:8px; justify-content:center; margin-top:16px; text-align:center;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.2px; line-height:1.5; color:rgba(43,33,24,0.42);">these are real dollars — you can also just spend them with any card or send to a friend.</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.2px; line-height:1.5; color:rgba(var(--ink-rgb),0.42);">these are real dollars — you can also just spend them with any card or send to a friend.</span>' +
         '</div>' +
         '<button id="yOutAdd" type="button" style="appearance:none; border:none; cursor:pointer; background:transparent; display:block; width:100%; text-align:center; margin-top:12px; padding:6px; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(39,117,202,0.75);">add money instead</button>' +
       '</div>'
@@ -539,7 +539,7 @@
         }
         var note = document.getElementById("yOutTestNote");
         if (note) note.innerHTML =
-          '<div style="text-align:center; margin-top:12px;"><span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">coming soon in your region ✨</span></div>';
+          '<div style="text-align:center; margin-top:12px;"><span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.5);">coming soon in your region ✨</span></div>';
       }
     }).catch(function () {});
 
@@ -578,9 +578,9 @@
 
   function faqBlock(q, a) {
     return '' +
-      '<div style="border-top:1px solid rgba(43,33,24,0.08); padding:13px 2px 3px;">' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:#2B2118;">' + q + '</div>' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; line-height:1.55; color:rgba(43,33,24,0.66); margin-top:5px;">' + a + '</div>' +
+      '<div style="border-top:1px solid rgba(var(--ink-rgb),0.08); padding:13px 2px 3px;">' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:var(--ink);">' + q + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; line-height:1.55; color:rgba(var(--ink-rgb),0.66); margin-top:5px;">' + a + '</div>' +
       '</div>';
   }
 
@@ -601,25 +601,25 @@
     app.sheet(
       '<div style="padding:4px 20px 28px; max-height:72vh; overflow:auto;">' +
         '<div style="text-align:center; margin-bottom:6px;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">HELP &amp; SUPPORT</div>' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118; margin-top:4px;">how divvy works</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">HELP &amp; SUPPORT</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:var(--ink); margin-top:4px;">how divvy works</div>' +
         '</div>' +
         // "where's my money" explainer
-        '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:15px 16px; margin-top:12px;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.2px; color:rgba(43,33,24,0.45);">WHERE’S MY MONEY?</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; line-height:1.55; color:rgba(43,33,24,0.72); margin-top:7px;">your money lives in <b>your own wallet</b>, not with divvy. every balance is <b>USDC — a digital dollar</b> — sitting in a wallet only you control. divvy just does the math and helps you send. spend it with any card, cash out to your bank, or send it to a friend.</div>' +
+        '<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:15px 16px; margin-top:12px;">' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.2px; color:rgba(var(--ink-rgb),0.45);">WHERE’S MY MONEY?</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; line-height:1.55; color:rgba(var(--ink-rgb),0.72); margin-top:7px;">your money lives in <b>your own wallet</b>, not with divvy. every balance is <b>USDC — a digital dollar</b> — sitting in a wallet only you control. divvy just does the math and helps you send. spend it with any card, cash out to your bank, or send it to a friend.</div>' +
         '</div>' +
         // FAQs
         '<div style="margin-top:16px;">' + faqs + '</div>' +
         // mailto
-        '<a href="mailto:' + SUPPORT_EMAIL + '" style="display:flex; align-items:center; justify-content:center; gap:9px; text-decoration:none; margin-top:20px; min-height:50px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; box-shadow:3px 3px 0 rgba(43,33,24,0.9); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff;">email support</a>' +
+        '<a href="mailto:' + SUPPORT_EMAIL + '" style="display:flex; align-items:center; justify-content:center; gap:9px; text-decoration:none; margin-top:20px; min-height:50px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff;">email support</a>' +
         // legal links (new tab)
         '<div style="display:flex; gap:14px; justify-content:center; margin-top:16px;">' +
-          '<a href="/terms" target="_blank" rel="noopener" style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.4px; color:rgba(43,33,24,0.5); text-decoration:none;">terms</a>' +
-          '<span style="color:rgba(43,33,24,0.25);">·</span>' +
-          '<a href="/privacy" target="_blank" rel="noopener" style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.4px; color:rgba(43,33,24,0.5); text-decoration:none;">privacy</a>' +
-          '<span style="color:rgba(43,33,24,0.25);">·</span>' +
-          '<a href="/support" target="_blank" rel="noopener" style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.4px; color:rgba(43,33,24,0.5); text-decoration:none;">support page</a>' +
+          '<a href="/terms" target="_blank" rel="noopener" style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.4px; color:rgba(var(--ink-rgb),0.5); text-decoration:none;">terms</a>' +
+          '<span style="color:rgba(var(--ink-rgb),0.25);">·</span>' +
+          '<a href="/privacy" target="_blank" rel="noopener" style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.4px; color:rgba(var(--ink-rgb),0.5); text-decoration:none;">privacy</a>' +
+          '<span style="color:rgba(var(--ink-rgb),0.25);">·</span>' +
+          '<a href="/support" target="_blank" rel="noopener" style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.4px; color:rgba(var(--ink-rgb),0.5); text-decoration:none;">support page</a>' +
         '</div>' +
       '</div>'
     );
@@ -704,7 +704,7 @@
       if (!soundState) return;
       var on = app.soundsEnabled ? app.soundsEnabled() : false;
       soundState.textContent = on ? "on" : "off";
-      soundState.style.color = on ? "#3DE8C7" : "rgba(43,33,24,0.4)";
+      soundState.style.color = on ? "#3DE8C7" : "rgba(var(--ink-rgb),0.4)";
     }
     renderSoundState();
     if (soundRow) soundRow.onclick = function () {
@@ -722,7 +722,7 @@
       var supported = app.push && app.push.supported && app.push.supported();
       var label = !supported ? "n/a" : p === "granted" ? "on" : p === "denied" ? "blocked" : "off";
       pushState.textContent = label;
-      pushState.style.color = label === "on" ? "#3DE8C7" : "rgba(43,33,24,0.4)";
+      pushState.style.color = label === "on" ? "#3DE8C7" : "rgba(var(--ink-rgb),0.4)";
     }
     renderPushState();
     var pushRow = document.getElementById("yPush");

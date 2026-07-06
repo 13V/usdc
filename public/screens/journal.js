@@ -9,7 +9,7 @@
   "use strict";
   var app = window.app;
 
-  var INKC = "#2B2118";
+  var INKC = "var(--ink)";
   var MONO = "'Space Mono',monospace";
   var SANS = "'General Sans',sans-serif";
   var DISPLAY = "'Clash Display','General Sans',sans-serif";
@@ -25,7 +25,7 @@
     travel: "rgba(39,117,202,0.45)",   // usdc blue wash
     home: "rgba(139,92,246,0.4)",      // lavender
     fun: "rgba(255,107,94,0.55)",      // coral
-    other: "rgba(43,33,24,0.18)",      // pencil
+    other: "rgba(var(--ink-rgb),0.18)",      // pencil
   };
 
   // ── month math (UTC, matching the server's bucketing) ────────────────────────
@@ -58,8 +58,8 @@
   // ── chrome ───────────────────────────────────────────────────────────────────
   function topbar() {
     return '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:12px; height:50px; padding:0 16px; flex:none;">' +
-      '<div id="jnBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></div>' +
-      '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">spending journal</span>' +
+      '<div id="jnBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.5);">spending journal</span>' +
     '</div>';
   }
   function wireBack() {
@@ -70,7 +70,7 @@
   // month picker: ‹ july, so far… › — next hidden at the current month.
   function pickerHtml(month) {
     var atNow = month >= thisMonth();
-    var btn = 'appearance:none; cursor:pointer; width:34px; height:34px; border-radius:50%; background:#FFFDF7; border:2px solid ' + INKC + '; box-shadow:2px 2px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; font-family:' + MONO + '; font-weight:700; font-size:15px; color:' + INKC + '; flex:none;';
+    var btn = 'appearance:none; cursor:pointer; width:34px; height:34px; border-radius:50%; background:var(--card); border:2px solid ' + INKC + '; box-shadow:2px 2px 0 rgba(var(--shadow-rgb),0.85); display:flex; align-items:center; justify-content:center; font-family:' + MONO + '; font-weight:700; font-size:15px; color:' + INKC + '; flex:none;';
     return '<div style="display:flex; align-items:center; gap:12px; padding:8px 2px 2px;">' +
       '<button id="jnPrev" aria-label="previous month" style="' + btn + '">‹</button>' +
       '<h1 class="jdoodle" style="flex:1; text-align:center; font-family:' + DISPLAY + '; font-weight:600; font-size:26px; letter-spacing:-0.7px; margin:0; color:' + INKC + '; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(diaryTitle(month)) + '</h1>' +
@@ -112,17 +112,17 @@
     if (d.settledCount > 0) chips += chip(d.settledCount + " tab" + (d.settledCount === 1 ? "" : "s") + " settled ✓", "rgba(61,232,199,0.3)", 1);
     if (d.subscriptionsCents > 0) chips += chip("$" + money3(d.subscriptionsCents) + "&nbsp;of it was subscriptions 🔁", "rgba(39,117,202,0.14)", -0.6);
 
-    return '<div style="position:relative; background:#FFFDF7; border:2px solid ' + INKC + '; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); margin-top:16px; padding:18px 18px 16px; transform:rotate(-0.35deg);">' +
+    return '<div style="position:relative; background:var(--card); border:2px solid ' + INKC + '; border-radius:20px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); margin-top:16px; padding:18px 18px 16px; transform:rotate(-0.35deg);">' +
       '<div class="jtape" style="top:-12px; left:14%; background:rgba(61,232,199,0.6);"></div>' +
-      '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">YOU SPENT</div>' +
+      '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">YOU SPENT</div>' +
       '<div style="display:flex; align-items:baseline; gap:9px; margin-top:9px;">' +
         '<div style="font-family:' + MONO + '; font-weight:700; font-size:46px; line-height:.95; letter-spacing:-2px; color:#2775CA;"><span style="font-size:26px; opacity:.5;">$</span>' + money3(d.spentCents) + '</div>' +
-        '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">your share</span>' +
+        '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.5);">your share</span>' +
       '</div>' +
       (mostly || doing
-        ? '<div style="font-family:' + SANS + '; font-weight:500; font-size:14.5px; line-height:1.45; color:rgba(43,33,24,0.75); margin-top:10px;">' + app.esc([doing, mostly].filter(Boolean).join(" · ")) + '</div>'
+        ? '<div style="font-family:' + SANS + '; font-weight:500; font-size:14.5px; line-height:1.45; color:rgba(var(--ink-rgb),0.75); margin-top:10px;">' + app.esc([doing, mostly].filter(Boolean).join(" · ")) + '</div>'
         : "") +
-      (deltaLine ? '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.3px; color:rgba(43,33,24,0.55); margin-top:8px;">' + deltaLine + '</div>' : "") +
+      (deltaLine ? '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.55); margin-top:8px;">' + deltaLine + '</div>' : "") +
       (chips ? '<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:13px;">' + chips + '</div>' : "") +
     '</div>';
   }
@@ -142,13 +142,13 @@
         '<span style="width:22px; text-align:center; font-size:15px; flex:none;">' + b.emoji + '</span>' +
         '<span style="width:52px; flex:none; font-family:' + SANS + '; font-weight:500; font-size:13px; color:' + INKC + ';">' + app.esc(b.label) + '</span>' +
         '<div style="flex:1; min-width:0;">' +
-          '<div style="width:' + w + '%; height:15px; background:' + (BUCKET_FILL[b.key] || BUCKET_FILL.other) + '; border:2px solid ' + INKC + '; border-radius:5px 999px 999px 5px; box-shadow:2px 2px 0 rgba(43,33,24,0.55); transform:rotate(' + rot + 'deg);"></div>' +
+          '<div style="width:' + w + '%; height:15px; background:' + (BUCKET_FILL[b.key] || BUCKET_FILL.other) + '; border:2px solid ' + INKC + '; border-radius:5px 999px 999px 5px; box-shadow:2px 2px 0 rgba(var(--shadow-rgb),0.55); transform:rotate(' + rot + 'deg);"></div>' +
         '</div>' +
         '<span style="flex:none; font-family:' + MONO + '; font-weight:700; font-size:12px; color:' + INKC + ';"><span style="opacity:.5;">$</span>' + money3(b.cents) + '</span>' +
       '</div>';
     }).join("");
-    return '<div style="background:#FFFDF7; border:2px solid ' + INKC + '; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); margin-top:18px; padding:15px 16px 10px; transform:rotate(0.3deg);">' +
-      '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45); margin-bottom:5px;">WHERE IT WENT</div>' +
+    return '<div style="background:var(--card); border:2px solid ' + INKC + '; border-radius:18px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); margin-top:18px; padding:15px 16px 10px; transform:rotate(0.3deg);">' +
+      '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:5px;">WHERE IT WENT</div>' +
       rows +
     '</div>';
   }
@@ -159,14 +159,14 @@
     if (!b || !(b.cents > 0)) return "";
     var emoji = "🏆";
     return '<div style="display:flex; justify-content:center; margin-top:24px;">' +
-      '<div style="position:relative; width:min(78%, 280px); background:#FFFDF7; border:2px solid ' + INKC + '; border-radius:6px; box-shadow:4px 5px 0 rgba(43,33,24,0.85); padding:12px 12px 14px; transform:rotate(1.6deg);">' +
+      '<div style="position:relative; width:min(78%, 280px); background:var(--card); border:2px solid ' + INKC + '; border-radius:6px; box-shadow:4px 5px 0 rgba(var(--shadow-rgb),0.85); padding:12px 12px 14px; transform:rotate(1.6deg);">' +
         '<div class="jtape" style="top:-13px; left:50%; transform:translateX(-50%) rotate(-3deg); background:rgba(255,198,92,0.7);"></div>' +
-        '<div style="background:linear-gradient(150deg, rgba(39,117,202,0.14), rgba(61,232,199,0.18)); border:1.5px solid rgba(43,33,24,0.25); border-radius:4px; height:110px; display:flex; align-items:center; justify-content:center; font-size:44px;">' + emoji + '</div>' +
+        '<div style="background:linear-gradient(150deg, rgba(39,117,202,0.14), rgba(61,232,199,0.18)); border:1.5px solid rgba(var(--ink-rgb),0.25); border-radius:4px; height:110px; display:flex; align-items:center; justify-content:center; font-size:44px;">' + emoji + '</div>' +
         '<div style="margin-top:11px; text-align:center;">' +
-          '<div style="font-family:' + MONO + '; font-size:9px; letter-spacing:1.3px; color:rgba(43,33,24,0.45);">BIGGEST SPLURGE</div>' +
+          '<div style="font-family:' + MONO + '; font-size:9px; letter-spacing:1.3px; color:rgba(var(--ink-rgb),0.45);">BIGGEST SPLURGE</div>' +
           '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:' + INKC + '; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(b.title || "expense") + '</div>' +
           '<div style="font-family:' + MONO + '; font-weight:700; font-size:19px; color:#FF6B5E; margin-top:3px;"><span style="opacity:.5;">$</span>' + money3(b.cents) + '</div>' +
-          '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5); margin-top:4px;">' + app.esc([b.where, niceDate(b.at)].filter(Boolean).join(" · ")) + '</div>' +
+          '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.5); margin-top:4px;">' + app.esc([b.where, niceDate(b.at)].filter(Boolean).join(" · ")) + '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -182,7 +182,7 @@
   }
 
   function footerNote() {
-    return '<div style="text-align:center; font-family:' + MONO + '; font-size:9.5px; letter-spacing:.5px; color:rgba(43,33,24,0.35); margin-top:26px;">just a journal, not a judgment ✍️</div>';
+    return '<div style="text-align:center; font-family:' + MONO + '; font-size:9.5px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.35); margin-top:26px;">just a journal, not a judgment ✍️</div>';
   }
 
   // ── render ───────────────────────────────────────────────────────────────────

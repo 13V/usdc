@@ -108,17 +108,17 @@
   // ---- shared chrome --------------------------------------------------------
   // faint money texture + glow, lifted from the frame canvas
   function canvasTexture() {
-    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(43,33,24,0.025) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none; z-index:0;"></div>' +
+    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(var(--ink-rgb),0.025) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none; z-index:0;"></div>' +
       '<div style="position:absolute; left:-40px; top:120px; width:340px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.15) 0%, rgba(39,117,202,0) 70%); pointer-events:none; z-index:0;"></div>';
   }
 
   // top bar — back chevron + "on autopilot" + mono subhead (frame-exact)
   function topbar(subhead) {
     return '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:12px; height:54px; padding:0 16px; flex:none;">' +
-      '<div id="rBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<div id="rBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
       '<div style="flex:1;">' +
-        '<h1 style="font-family:' + DISPLAY + '; font-weight:600; font-size:23px; letter-spacing:-0.5px; margin:0; color:#2B2118;">on autopilot</h1>' +
-        '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.45); margin-top:1px;">' + app.esc(subhead || "") + '</div>' +
+        '<h1 style="font-family:' + DISPLAY + '; font-weight:600; font-size:23px; letter-spacing:-0.5px; margin:0; color:var(--ink);">on autopilot</h1>' +
+        '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.45); margin-top:1px;">' + app.esc(subhead || "") + '</div>' +
       '</div>' +
     '</div>';
   }
@@ -133,7 +133,7 @@
       '<div class="appscroll" style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:40px;">' +
         '<div style="margin:6px 0 4px;">' + app.mascot({ size: 124, mood: "sleepy", glow: true }) + '</div>' +
         '<h1 style="font-family:' + DISPLAY + '; font-weight:600; font-size:22px; max-width:280px; margin-top:16px;" class="lower">put your bills on autopilot</h1>' +
-        '<p style="font-family:' + SANS + '; font-size:14px; color:rgba(43,33,24,0.6); max-width:250px; margin:11px 0 0;">sign in to set the bills you split every month and forget them 🫡</p>' +
+        '<p style="font-family:' + SANS + '; font-size:14px; color:rgba(var(--ink-rgb),0.6); max-width:250px; margin:11px 0 0;">sign in to set the bills you split every month and forget them 🫡</p>' +
         '<button class="btn" id="rConnect" style="max-width:300px; margin-top:24px;">sign in</button>' +
       '</div>';
     wireBack();
@@ -161,8 +161,8 @@
     view.innerHTML = canvasTexture() + topbar("nothing on autopilot yet") +
       '<div style="position:relative; z-index:2; min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:40px 44px 120px; text-align:center;">' +
         app.mascot({ size: 120, mood: "sleepy", glow: true }) +
-        '<div style="font-family:' + SANS + '; font-size:16px; line-height:1.5; color:rgba(43,33,24,0.65);">set the bills you split every month<br>and forget them 🫡</div>' +
-        '<button id="rNew" style="appearance:none; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-height:50px; padding:0 24px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+        '<div style="font-family:' + SANS + '; font-size:16px; line-height:1.5; color:rgba(var(--ink-rgb),0.65);">set the bills you split every month<br>and forget them 🫡</div>' +
+        '<button id="rNew" style="appearance:none; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-height:50px; padding:0 24px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
           '<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
           '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:16px; color:#fff;">new recurring</span>' +
         '</button>' +
@@ -199,7 +199,7 @@
       ? '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(255,198,92,0.1); border:1px solid rgba(255,198,92,0.3); border-radius:999px; padding:5px 12px;"><svg width="8" height="8" viewBox="0 0 24 24" fill="#FFC65C"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg><span style="font-family:' + MONO + '; font-weight:700; font-size:11px; color:#FFC65C;">paused</span></span>'
       : '<span style="display:inline-flex; align-items:center; gap:6px; background:rgba(61,232,199,0.12); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:5px 12px;"><span style="width:6px; height:6px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 7px rgba(61,232,199,0.9); animation:recPulse 2.4s ease-in-out infinite;"></span><span style="font-family:' + MONO + '; font-weight:700; font-size:11px; color:#3DE8C7;">active</span></span>';
 
-    return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:#FFFDF7; border-radius:24px; border:1px solid rgba(39,117,202,0.32); overflow:hidden; box-shadow:0 16px 40px rgba(43,33,24,0.13); cursor:pointer;">' +
+    return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:var(--card); border-radius:24px; border:1px solid rgba(39,117,202,0.32); overflow:hidden; box-shadow:0 16px 40px rgba(var(--shadow-rgb),0.13); cursor:pointer;">' +
       '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 4%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
       '<div style="position:absolute; right:-30px; top:-30px; width:180px; height:180px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.22) 0%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>' +
       '<div style="position:absolute; left:0; top:0; bottom:0; width:4px; background:linear-gradient(180deg,#2775CA,#3f97ee);"></div>' +
@@ -211,39 +211,39 @@
             '<div style="width:46px; height:46px; border-radius:14px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;">' + app.face(emoji) + '</div>' +
             '<div style="min-width:0;">' +
               '<div style="display:inline-flex; align-items:center; gap:6px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.45); border-radius:999px; padding:2px 9px; margin-bottom:5px;"><span style="font-family:' + MONO + '; font-weight:700; font-size:8.5px; letter-spacing:1px; color:#2775CA;">NEXT DUE</span></div>' +
-              '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(rule.title) + '</div>' +
-              '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.45); margin-top:2px;" class="lower">' + app.esc(rule.tripName || "auto-tab") + '</div>' +
+              '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(rule.title) + '</div>' +
+              '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.45); margin-top:2px;" class="lower">' + app.esc(rule.tripName || "auto-tab") + '</div>' +
             '</div>' +
           '</div>' +
           // progress ring
           '<div style="position:relative; width:62px; height:62px; flex:none;">' +
             '<svg width="62" height="62" viewBox="0 0 62 62">' +
-              '<circle cx="31" cy="31" r="26" fill="none" stroke="rgba(43,33,24,0.1)" stroke-width="5"/>' +
+              '<circle cx="31" cy="31" r="26" fill="none" stroke="rgba(var(--ink-rgb),0.1)" stroke-width="5"/>' +
               '<circle cx="31" cy="31" r="26" fill="none" stroke="#2775CA" stroke-width="5" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="' + off + '" transform="rotate(-90 31 31)" style="filter:drop-shadow(0 0 4px rgba(39,117,202,0.6));"/>' +
             '</svg>' +
             '<div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">' +
-              '<span style="font-family:' + MONO + '; font-weight:700; font-size:16px; letter-spacing:-0.5px; color:#2B2118; line-height:1;">' + ringTxt + '</span>' +
-              '<span style="font-family:' + MONO + '; font-size:7px; letter-spacing:.5px; color:rgba(43,33,24,0.4); margin-top:2px;">to run</span>' +
+              '<span style="font-family:' + MONO + '; font-weight:700; font-size:16px; letter-spacing:-0.5px; color:var(--ink); line-height:1;">' + ringTxt + '</span>' +
+              '<span style="font-family:' + MONO + '; font-size:7px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4); margin-top:2px;">to run</span>' +
             '</div>' +
           '</div>' +
         '</div>' +
 
         // big amount
         '<div style="display:flex; align-items:baseline; gap:9px; margin-top:16px;">' +
-          '<div style="font-family:' + MONO + '; font-weight:700; font-size:42px; line-height:.9; letter-spacing:-1.8px; color:#2B2118;"><span style="font-size:22px; opacity:.5;">$</span>' + mp.whole + '<span style="font-size:22px; opacity:.5;">' + mp.dec + '</span></div>' +
-          (cadShort(rule.interval) ? '<span style="font-family:' + MONO + '; font-size:12px; letter-spacing:.5px; color:rgba(43,33,24,0.4);">' + cadShort(rule.interval) + '</span>' : "") +
+          '<div style="font-family:' + MONO + '; font-weight:700; font-size:42px; line-height:.9; letter-spacing:-1.8px; color:var(--ink);"><span style="font-size:22px; opacity:.5;">$</span>' + mp.whole + '<span style="font-size:22px; opacity:.5;">' + mp.dec + '</span></div>' +
+          (cadShort(rule.interval) ? '<span style="font-family:' + MONO + '; font-size:12px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4);">' + cadShort(rule.interval) + '</span>' : "") +
         '</div>' +
 
         // pills
         '<div style="display:flex; align-items:center; gap:9px; margin-top:14px;">' +
-          '<span style="display:inline-flex; align-items:center; gap:6px; background:rgba(43,33,24,0.06); border:1px solid rgba(43,33,24,0.12); border-radius:999px; padding:5px 12px;"><span style="font-family:' + MONO + '; font-weight:700; font-size:11px; color:rgba(43,33,24,0.8);">' + app.esc(cadence(rule.interval)) + '</span></span>' +
+          '<span style="display:inline-flex; align-items:center; gap:6px; background:rgba(var(--ink-rgb),0.06); border:1px solid rgba(var(--ink-rgb),0.12); border-radius:999px; padding:5px 12px;"><span style="font-family:' + MONO + '; font-weight:700; font-size:11px; color:rgba(var(--ink-rgb),0.8);">' + app.esc(cadence(rule.interval)) + '</span></span>' +
           statusPill +
         '</div>' +
 
         // sub + owe bar
-        '<div style="margin-top:16px; padding-top:15px; border-top:1px dashed rgba(43,33,24,0.12);">' +
+        '<div style="margin-top:16px; padding-top:15px; border-top:1px dashed rgba(var(--ink-rgb),0.12);">' +
           '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-            '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.3px; color:rgba(43,33,24,0.55);">next: ' + fmtDate(rule.nextDue) + ' · split ' + n + '</span>' +
+            '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.55);">next: ' + fmtDate(rule.nextDue) + ' · split ' + n + '</span>' +
             '<span style="font-family:' + MONO + '; font-size:11px; color:#FF6B5E;">your share ' + plain$(share) + '</span>' +
           '</div>' +
           '<div style="display:flex; gap:3px; height:7px; border-radius:4px; overflow:hidden; margin-top:11px;">' + bars + '</div>' +
@@ -260,26 +260,26 @@
     var cad = cadence(rule.interval);
 
     if (paused) {
-      return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:#FFFDF7; border-radius:20px; border:1px solid rgba(43,33,24,0.05); padding:14px; overflow:hidden; opacity:.72; cursor:pointer;">' +
+      return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:var(--card); border-radius:20px; border:1px solid rgba(var(--ink-rgb),0.05); padding:14px; overflow:hidden; opacity:.72; cursor:pointer;">' +
         '<div style="position:relative; display:flex; align-items:center; justify-content:space-between;">' +
           '<div style="width:38px; height:38px; border-radius:12px; background:rgba(255,198,92,0.12); display:flex; align-items:center; justify-content:center; font-size:18px; filter:grayscale(.3);">' + app.face(emoji) + '</div>' +
           '<span style="display:inline-flex; align-items:center; gap:5px; background:rgba(255,198,92,0.1); border:1px solid rgba(255,198,92,0.3); border-radius:999px; padding:2px 8px;"><svg width="8" height="8" viewBox="0 0 24 24" fill="#FFC65C"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:#FFC65C;">PAUSED</span></span>' +
         '</div>' +
-        '<div style="position:relative; font-family:' + DISPLAY + '; font-weight:500; font-size:14.5px; color:rgba(43,33,24,0.75); margin-top:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(rule.title) + '</div>' +
-        '<div style="position:relative; font-family:' + MONO + '; font-weight:700; font-size:22px; letter-spacing:-0.6px; color:rgba(43,33,24,0.6); margin-top:6px;"><span style="font-size:13px; opacity:.5;">$</span>' + mp.whole + '<span style="font-size:13px; opacity:.5;">' + mp.dec + '</span></div>' +
-        '<div style="position:relative; font-family:' + MONO + '; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.35); margin-top:11px;">' + app.esc(cad) + ' · paused</div>' +
+        '<div style="position:relative; font-family:' + DISPLAY + '; font-weight:500; font-size:14.5px; color:rgba(var(--ink-rgb),0.75); margin-top:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(rule.title) + '</div>' +
+        '<div style="position:relative; font-family:' + MONO + '; font-weight:700; font-size:22px; letter-spacing:-0.6px; color:rgba(var(--ink-rgb),0.6); margin-top:6px;"><span style="font-size:13px; opacity:.5;">$</span>' + mp.whole + '<span style="font-size:13px; opacity:.5;">' + mp.dec + '</span></div>' +
+        '<div style="position:relative; font-family:' + MONO + '; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.35); margin-top:11px;">' + app.esc(cad) + ' · paused</div>' +
       '</div>';
     }
 
-    return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:#FFFDF7; border-radius:20px; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:14px; overflow:hidden; cursor:pointer;">' +
+    return '<div data-rid="' + app.esc(rule.id) + '" style="position:relative; background:var(--card); border-radius:20px; border:2px solid var(--border-ink); box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:14px; overflow:hidden; cursor:pointer;">' +
       '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 6%, rgba(255,255,255,0.03) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>' +
       '<div style="position:relative; display:flex; align-items:center; justify-content:space-between;">' +
         '<div style="width:38px; height:38px; border-radius:12px; background:' + tileTint(emoji) + '; display:flex; align-items:center; justify-content:center; font-size:18px;">' + app.face(emoji) + '</div>' +
         '<span style="width:6px; height:6px; border-radius:50%; background:#3DE8C7; box-shadow:0 0 6px rgba(61,232,199,0.8);"></span>' +
       '</div>' +
-      '<div style="position:relative; font-family:' + DISPLAY + '; font-weight:500; font-size:14.5px; color:#2B2118; margin-top:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(rule.title) + '</div>' +
-      '<div style="position:relative; font-family:' + MONO + '; font-weight:700; font-size:22px; letter-spacing:-0.6px; color:#2B2118; margin-top:6px;"><span style="font-size:13px; opacity:.5;">$</span>' + mp.whole + '<span style="font-size:13px; opacity:.5;">' + mp.dec + '</span></div>' +
-      '<div style="position:relative; font-family:' + MONO + '; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.42); margin-top:11px;">' + app.esc(cad) + ' · ' + fmtDate(rule.nextDue) + '</div>' +
+      '<div style="position:relative; font-family:' + DISPLAY + '; font-weight:500; font-size:14.5px; color:var(--ink); margin-top:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(rule.title) + '</div>' +
+      '<div style="position:relative; font-family:' + MONO + '; font-weight:700; font-size:22px; letter-spacing:-0.6px; color:var(--ink); margin-top:6px;"><span style="font-size:13px; opacity:.5;">$</span>' + mp.whole + '<span style="font-size:13px; opacity:.5;">' + mp.dec + '</span></div>' +
+      '<div style="position:relative; font-family:' + MONO + '; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.42); margin-top:11px;">' + app.esc(cad) + ' · ' + fmtDate(rule.nextDue) + '</div>' +
     '</div>';
   }
 
@@ -327,7 +327,7 @@
 
     var bentoHtml = "";
     if (rest.length) {
-      bentoHtml = '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.4); padding:24px 2px 12px;">EVERYTHING ELSE</div>' +
+      bentoHtml = '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.4); padding:24px 2px 12px;">EVERYTHING ELSE</div>' +
         '<div style="display:grid; grid-template-columns:1fr 1fr; gap:11px;">' +
           rest.map(bentoCard).join("") + addCard() +
         '</div>';
@@ -359,14 +359,14 @@
   async function openNewSheet(prefill) {
     var editing = !!(prefill && prefill.id);
     var el = app.sheet(
-      '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:1px; color:rgba(43,33,24,0.5); margin:2px 2px 16px;">' + (editing ? "edit recurring · tweak the well" : "new recurring · fill the well") + '</div>' +
+      '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.5); margin:2px 2px 16px;">' + (editing ? "edit recurring · tweak the well" : "new recurring · fill the well") + '</div>' +
 
       // amount hero input
-      '<div style="background:#FFFDF7; border:1px solid rgba(39,117,202,0.3); border-radius:22px; padding:20px; text-align:center; box-shadow:0 12px 30px rgba(43,33,24,0.13);">' +
-        '<div style="font-family:' + MONO + '; font-size:9px; letter-spacing:2px; color:rgba(43,33,24,0.4);">AMOUNT</div>' +
+      '<div style="background:var(--card); border:1px solid rgba(39,117,202,0.3); border-radius:22px; padding:20px; text-align:center; box-shadow:0 12px 30px rgba(var(--shadow-rgb),0.13);">' +
+        '<div style="font-family:' + MONO + '; font-size:9px; letter-spacing:2px; color:rgba(var(--ink-rgb),0.4);">AMOUNT</div>' +
         '<div style="display:flex; align-items:center; justify-content:center; margin-top:12px;">' +
-          '<span style="font-family:' + MONO + '; font-weight:700; font-size:26px; opacity:.5; color:#2B2118;">$</span>' +
-          '<input id="rfAmount" inputmode="decimal" placeholder="0" style="appearance:none; border:none; outline:none; background:transparent; width:auto; max-width:230px; text-align:center; font-family:' + MONO + '; font-weight:700; font-size:48px; line-height:1; letter-spacing:-2px; color:#2B2118; caret-color:#2775CA;" />' +
+          '<span style="font-family:' + MONO + '; font-weight:700; font-size:26px; opacity:.5; color:var(--ink);">$</span>' +
+          '<input id="rfAmount" inputmode="decimal" placeholder="0" style="appearance:none; border:none; outline:none; background:transparent; width:auto; max-width:230px; text-align:center; font-family:' + MONO + '; font-weight:700; font-size:48px; line-height:1; letter-spacing:-2px; color:var(--ink); caret-color:#2775CA;" />' +
         '</div>' +
       '</div>' +
 
@@ -374,20 +374,20 @@
       '<div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">' +
 
         // title row
-        '<div style="display:flex; align-items:center; gap:12px; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
-          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); flex:none;">title</span>' +
-          '<input id="rfTitle" placeholder="rent 🏠" style="appearance:none; border:none; outline:none; background:transparent; flex:1; min-width:0; text-align:right; font-family:' + MONO + '; font-size:13px; color:#2B2118;" />' +
+        '<div style="display:flex; align-items:center; gap:12px; background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 16px;">' +
+          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); flex:none;">title</span>' +
+          '<input id="rfTitle" placeholder="rent 🏠" style="appearance:none; border:none; outline:none; background:transparent; flex:1; min-width:0; text-align:right; font-family:' + MONO + '; font-size:13px; color:var(--ink);" />' +
         '</div>' +
 
         // group picker
-        '<div id="rTripWrap" style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
-          '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-bottom:11px;">group</div>' +
-          '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6);">loading groups…</div>' +
+        '<div id="rTripWrap" style="background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 16px;">' +
+          '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:11px;">group</div>' +
+          '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(var(--ink-rgb),0.6);">loading groups…</div>' +
         '</div>' +
 
         // interval segmented
-        '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
-          '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-bottom:11px;">interval</div>' +
+        '<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 16px;">' +
+          '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:11px;">interval</div>' +
           '<div id="rfInterval" style="display:flex; gap:7px;">' +
             segChip("weekly", "weekly", false) +
             segChip("monthly", "monthly", true) +
@@ -396,26 +396,26 @@
         '</div>' +
 
         // next due
-        '<div style="display:flex; align-items:center; justify-content:space-between; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
-          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">next due</span>' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 16px;">' +
+          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45);">next due</span>' +
           '<span style="display:inline-flex; align-items:center; gap:8px;">' +
-            '<input id="rfDate" type="date" style="appearance:none; border:none; outline:none; background:transparent; font-family:' + MONO + '; font-size:13px; color:#2B2118; color-scheme:dark;" />' +
-            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>' +
+            '<input id="rfDate" type="date" style="appearance:none; border:none; outline:none; background:transparent; font-family:' + MONO + '; font-size:13px; color:var(--ink); color-scheme:dark;" />' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.5)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>' +
           '</span>' +
         '</div>' +
 
         // members
-        '<div id="rfMembers" style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
+        '<div id="rfMembers" style="background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 16px;">' +
           '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-            '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">members</span>' +
-            '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(43,33,24,0.4);">pick a group first</span>' +
+            '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45);">members</span>' +
+            '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(var(--ink-rgb),0.4);">pick a group first</span>' +
           '</div>' +
         '</div>' +
 
       '</div>' +
 
       // set & forget
-      '<button id="rfSave" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9); margin-top:18px;">' +
+      '<button id="rfSave" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9); margin-top:18px;">' +
         '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (editing ? "save changes" : "set &amp; forget") + '</span><span style="font-size:15px;">✨</span>' +
       '</button>'
     );
@@ -461,8 +461,8 @@
     var memWrap = el.querySelector("#rfMembers");
 
     if (!trips.length) {
-      tripWrap.innerHTML = '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-bottom:8px;">group</div>' +
-        '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6);">you need a group first — recurring bills attach to one.</div>' +
+      tripWrap.innerHTML = '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:8px;">group</div>' +
+        '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(var(--ink-rgb),0.6);">you need a group first — recurring bills attach to one.</div>' +
         '<button class="btn ghost" id="rfGoGroups" style="margin-top:10px;">make a group</button>';
       var g = el.querySelector("#rfGoGroups");
       if (g) g.onclick = function () { app.closeSheet(); app.go("groups"); };
@@ -471,7 +471,7 @@
       return;
     }
 
-    tripWrap.innerHTML = '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-bottom:11px;">group</div>' +
+    tripWrap.innerHTML = '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:11px;">group</div>' +
       '<div id="rfTrips" style="display:flex; gap:8px; flex-wrap:wrap;">' +
         trips.map(function (t) {
           return '<div class="chip lower" data-trip="' + app.esc(t.id) + '">' + app.esc(t.name) + '</div>';
@@ -481,13 +481,13 @@
     function renderMembers(trip) {
       if (!trip || !trip.members || !trip.members.length) {
         memWrap.innerHTML = '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">members</span>' +
-          '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(43,33,24,0.4);">no members</span></div>';
+          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45);">members</span>' +
+          '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(var(--ink-rgb),0.4);">no members</span></div>';
         return;
       }
       memWrap.innerHTML = '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:11px;">' +
-          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">members</span>' +
-          '<span style="font-family:' + MONO + '; font-size:10px; color:rgba(43,33,24,0.4);">tap the payer</span>' +
+          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45);">members</span>' +
+          '<span style="font-family:' + MONO + '; font-size:10px; color:rgba(var(--ink-rgb),0.4);">tap the payer</span>' +
         '</div>' +
         '<div id="rfMemChips" style="display:flex; gap:8px; flex-wrap:wrap;">' +
         trip.members.map(function (m, i) {
@@ -620,7 +620,7 @@
   // a segmented-interval chip, lifted from the frame (selected = blue tint)
   function segChip(value, label, selected) {
     var sel = 'background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); font-weight:700; color:#2775CA;';
-    var unsel = 'background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); color:rgba(43,33,24,0.55);';
+    var unsel = 'background:rgba(var(--ink-rgb),0.05); border:1px solid rgba(var(--ink-rgb),0.08); color:rgba(var(--ink-rgb),0.55);';
     return '<div data-int="' + value + '" style="flex:1; text-align:center; padding:9px 0; border-radius:11px; font-family:' + MONO + '; font-size:11px; cursor:pointer; ' + (selected ? sel : unsel) + '">' + label + '</div>';
   }
   function applySeg(el, selected) {
@@ -630,10 +630,10 @@
       el.style.fontWeight = "700";
       el.style.color = "#2775CA";
     } else {
-      el.style.background = "rgba(43,33,24,0.05)";
-      el.style.border = "1px solid rgba(43,33,24,0.08)";
+      el.style.background = "rgba(var(--ink-rgb),0.05)";
+      el.style.border = "1px solid rgba(var(--ink-rgb),0.08)";
       el.style.fontWeight = "400";
-      el.style.color = "rgba(43,33,24,0.55)";
+      el.style.color = "rgba(var(--ink-rgb),0.55)";
     }
   }
 
@@ -657,7 +657,7 @@
 
     // ===== HEADER identity card (blue gradient) =====
     var headerCard =
-      '<div style="position:relative; border-radius:24px; overflow:hidden; padding:20px; background:linear-gradient(150deg,#2f80d6 0%,#2775CA 55%,#1d5e9f 100%); box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+      '<div style="position:relative; border-radius:24px; overflow:hidden; padding:20px; background:linear-gradient(150deg,#2f80d6 0%,#2775CA 55%,#1d5e9f 100%); box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 8%, rgba(255,255,255,0.09) 0 1px, transparent 1px 9px); opacity:.55; pointer-events:none;"></div>' +
         '<div style="position:relative; display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">' +
           '<div style="min-width:0;">' +
@@ -702,27 +702,27 @@
 
         // ===== WHO SPLITS IT =====
         '<div style="display:flex; align-items:center; justify-content:space-between; margin:24px 2px 12px;">' +
-          '<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">WHO SPLITS IT</span>' +
-          '<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.4);">SPLIT ' + n + ' · ' + plain$(share) + ' EACH</span>' +
+          '<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">WHO SPLITS IT</span>' +
+          '<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4);">SPLIT ' + n + ' · ' + plain$(share) + ' EACH</span>' +
         '</div>' +
-        '<div id="rdMembers" style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); overflow:hidden;"><div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6); padding:14px 15px;">loading members…</div></div>' +
+        '<div id="rdMembers" style="background:var(--card); border:2px solid var(--border-ink); border-radius:18px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); overflow:hidden;"><div style="font-family:' + MONO + '; font-size:12px; color:rgba(var(--ink-rgb),0.6); padding:14px 15px;">loading members…</div></div>' +
 
         // ===== THIS RUN (preview — no live run state is persisted yet) =====
-        '<div style="margin:24px 2px 12px; display:flex; align-items:center; gap:7px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">THIS RUN · ' + fmtDate(rule.nextDue).toUpperCase() + '</span><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:rgba(43,33,24,0.4); background:rgba(43,33,24,0.06); border:1px solid rgba(43,33,24,0.12); border-radius:999px; padding:2px 7px;">PREVIEW</span></div>' +
-        '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:16px;">' +
+        '<div style="margin:24px 2px 12px; display:flex; align-items:center; gap:7px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">THIS RUN · ' + fmtDate(rule.nextDue).toUpperCase() + '</span><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4); background:rgba(var(--ink-rgb),0.06); border:1px solid rgba(var(--ink-rgb),0.12); border-radius:999px; padding:2px 7px;">PREVIEW</span></div>' +
+        '<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:18px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:16px;">' +
           '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-            '<span style="font-family:' + DISPLAY + '; font-weight:500; font-size:16px; color:#2B2118;" class="lower">0 of ' + n + ' squared</span>' +
+            '<span style="font-family:' + DISPLAY + '; font-weight:500; font-size:16px; color:var(--ink);" class="lower">0 of ' + n + ' squared</span>' +
             '<span style="font-family:' + MONO + '; font-size:11px; color:#3DE8C7;">$0 in</span>' +
           '</div>' +
           '<div style="display:flex; gap:5px; height:8px; margin-top:13px;">' + thisRunBars(n) + '</div>' +
           '<div id="rdTicks" style="display:flex; align-items:center; gap:14px; margin-top:15px; flex-wrap:wrap;"></div>' +
-          '<div style="display:flex; align-items:center; justify-content:center; gap:7px; margin-top:16px; padding-top:14px; border-top:1px solid rgba(43,33,24,0.06); cursor:pointer;">' +
+          '<div style="display:flex; align-items:center; justify-content:center; gap:7px; margin-top:16px; padding-top:14px; border-top:1px solid rgba(var(--ink-rgb),0.06); cursor:pointer;">' +
             '<span style="font-family:' + MONO + '; font-size:12px; color:#2775CA;">remind the group</span><span style="font-size:13px;">👀</span>' +
           '</div>' +
         '</div>' +
 
         // ===== PAST RUNS (preview — inferred from the cadence, not stored runs) =====
-        '<div style="margin:24px 2px 12px; display:flex; align-items:center; gap:7px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">PAST RUNS</span><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:rgba(43,33,24,0.4); background:rgba(43,33,24,0.06); border:1px solid rgba(43,33,24,0.12); border-radius:999px; padding:2px 7px;">PREVIEW</span></div>' +
+        '<div style="margin:24px 2px 12px; display:flex; align-items:center; gap:7px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">PAST RUNS</span><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4); background:rgba(var(--ink-rgb),0.06); border:1px solid rgba(var(--ink-rgb),0.12); border-radius:999px; padding:2px 7px;">PREVIEW</span></div>' +
         '<div>' + pastRuns(rule) + '</div>' +
 
         // ===== CONTROLS =====
@@ -782,23 +782,23 @@
     }
 
     if (!pids.length) {
-      memBox.innerHTML = '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6); padding:14px 15px;">' + n + ' people · ' + plain$(share) + ' each</div>';
+      memBox.innerHTML = '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(var(--ink-rgb),0.6); padding:14px 15px;">' + n + ' people · ' + plain$(share) + ' each</div>';
     } else {
       var rows = pids.map(function (pid, i) {
         var m = byId[pid] || { id: pid, name: "member" };
         var nm = nameFor(m);
-        return (i > 0 ? '<div style="height:1px; background:rgba(43,33,24,0.06); margin:0 15px;"></div>' : '') +
+        return (i > 0 ? '<div style="height:1px; background:rgba(var(--ink-rgb),0.06); margin:0 15px;"></div>' : '') +
           '<div style="display:flex; align-items:center; gap:12px; padding:13px 15px;">' +
             app.avatar({ name: m.name, id: m.id }, "sm") +
-            '<span style="flex:1; font-family:' + SANS + '; font-weight:500; font-size:15px; color:#2B2118;" class="lower">' + app.esc(nm) + '</span>' +
-            '<span style="font-family:' + MONO + '; font-weight:700; font-size:15px; color:rgba(43,33,24,0.85);">' + plain$(share) + '</span>' +
+            '<span style="flex:1; font-family:' + SANS + '; font-weight:500; font-size:15px; color:var(--ink);" class="lower">' + app.esc(nm) + '</span>' +
+            '<span style="font-family:' + MONO + '; font-weight:700; font-size:15px; color:rgba(var(--ink-rgb),0.85);">' + plain$(share) + '</span>' +
           '</div>';
       }).join("");
       var payer = byId[rule.paidBy];
       var payerNm = payer ? nameFor(payer) : "member";
-      rows += '<div style="display:flex; align-items:center; gap:8px; padding:11px 15px; background:rgba(255,198,92,0.07); border-top:1px solid rgba(43,33,24,0.06);">' +
+      rows += '<div style="display:flex; align-items:center; gap:8px; padding:11px 15px; background:rgba(255,198,92,0.07); border-top:1px solid rgba(var(--ink-rgb),0.06);">' +
         '<span style="font-size:14px;">💳</span>' +
-        '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.3px; color:rgba(43,33,24,0.6);" class="lower">paid by: ' + app.esc(payerNm) + ' · everyone chips in to ' + app.esc(payerNm) + '</span></div>';
+        '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.6);" class="lower">paid by: ' + app.esc(payerNm) + ' · everyone chips in to ' + app.esc(payerNm) + '</span></div>';
       memBox.innerHTML = rows;
 
       // member ticks for "this run" — everyone pending (👀) until a run lands
@@ -806,23 +806,23 @@
         var m = byId[pid] || { id: pid, name: "member" };
         var nm = nameFor(m);
         return '<div style="display:flex; align-items:center; gap:7px;">' +
-          '<div style="position:relative; width:30px; height:30px; border-radius:50%; background:rgba(43,33,24,0.08); border:1.5px dashed rgba(43,33,24,0.25); display:flex; align-items:center; justify-content:center; font-size:13px; opacity:.7;">👀</div>' +
-          '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(43,33,24,0.45);">' + app.esc(nm) + '</span></div>';
+          '<div style="position:relative; width:30px; height:30px; border-radius:50%; background:rgba(var(--ink-rgb),0.08); border:1.5px dashed rgba(var(--ink-rgb),0.25); display:flex; align-items:center; justify-content:center; font-size:13px; opacity:.7;">👀</div>' +
+          '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(var(--ink-rgb),0.45);">' + app.esc(nm) + '</span></div>';
       }).join("");
     }
   }
 
   function thisRunBars(n) {
     var s = "";
-    for (var i = 0; i < n; i++) s += '<div style="flex:1; border-radius:4px; background:rgba(43,33,24,0.1);"></div>';
+    for (var i = 0; i < n; i++) s += '<div style="flex:1; border-radius:4px; background:rgba(var(--ink-rgb),0.1);"></div>';
     return s;
   }
 
   function ctrlBtn(id, path, label, coral) {
-    var stroke = coral ? "#FF6B5E" : "rgba(43,33,24,0.8)";
-    var color = coral ? "#FF6B5E" : "rgba(43,33,24,0.85)";
-    var bg = coral ? "rgba(255,107,94,0.08)" : "#FFFDF7";
-    var bd = coral ? "rgba(255,107,94,0.28)" : "rgba(43,33,24,0.09)";
+    var stroke = coral ? "#FF6B5E" : "rgba(var(--ink-rgb),0.8)";
+    var color = coral ? "#FF6B5E" : "rgba(var(--ink-rgb),0.85)";
+    var bg = coral ? "rgba(255,107,94,0.08)" : "var(--card)";
+    var bd = coral ? "rgba(255,107,94,0.28)" : "rgba(var(--ink-rgb),0.09)";
     return '<button id="' + id + '" style="appearance:none; cursor:pointer; flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; padding:14px 0; border-radius:16px; background:' + bg + '; border:1px solid ' + bd + ';">' +
       '<svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="' + stroke + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>' +
       '<span style="font-family:' + SANS + '; font-weight:500; font-size:13px; color:' + color + ';">' + label + '</span></button>';
@@ -850,20 +850,20 @@
     } catch (_) {}
 
     if (!runs.length) {
-      return '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:16px;"><div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6);" class="lower">no past runs yet — this one\'s fresh ✨</div></div>';
+      return '<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:18px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:16px;"><div style="font-family:' + MONO + '; font-size:12px; color:rgba(var(--ink-rgb),0.6);" class="lower">no past runs yet — this one\'s fresh ✨</div></div>';
     }
     return '<div style="display:flex; flex-direction:column; gap:3px;">' + runs.map(function (date, i) {
-      return (i > 0 ? '<div style="height:1px; background:rgba(43,33,24,0.05); margin:0 6px;"></div>' : '') +
+      return (i > 0 ? '<div style="height:1px; background:rgba(var(--ink-rgb),0.05); margin:0 6px;"></div>' : '') +
         '<div style="display:flex; align-items:center; gap:13px; padding:12px 6px; cursor:pointer;">' +
           '<div style="width:34px; height:34px; border-radius:11px; background:rgba(61,232,199,0.12); display:flex; align-items:center; justify-content:center; font-size:15px; flex:none;">✨</div>' +
           '<div style="flex:1; min-width:0;">' +
-            '<div style="font-family:' + SANS + '; font-weight:500; font-size:14.5px; color:#2B2118;" class="lower">' + fmtDate(date.toISOString()) + '</div>' +
+            '<div style="font-family:' + SANS + '; font-weight:500; font-size:14.5px; color:var(--ink);" class="lower">' + fmtDate(date.toISOString()) + '</div>' +
             '<div style="display:flex; align-items:center; gap:7px; margin-top:3px;">' +
               '<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(61,232,199,0.12); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:1px 8px;"><span style="width:4px; height:4px; border-radius:50%; background:#3DE8C7;"></span><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:#3DE8C7;">ALL SQUARED</span></span>' +
             '</div>' +
           '</div>' +
-          '<span style="font-family:' + MONO + '; font-weight:700; font-size:14px; color:rgba(43,33,24,0.75);">' + plain$(rule.amountCents) + '</span>' +
-          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.35)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>' +
+          '<span style="font-family:' + MONO + '; font-weight:700; font-size:14px; color:rgba(var(--ink-rgb),0.75);">' + plain$(rule.amountCents) + '</span>' +
+          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.35)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>' +
         '</div>';
     }).join("") + '</div>';
   }

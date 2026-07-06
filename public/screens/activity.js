@@ -36,27 +36,27 @@
   function header() {
     var chip = function (path, id) {
       return '<div ' + (id ? 'id="' + id + '" role="button" tabindex="0" aria-label="search" ' : "") +
-        'style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; ' +
-        'border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
-        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.75)" ' +
+        'style="width:38px; height:38px; border-radius:50%; background:var(--card); ' +
+        'border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.75)" ' +
         'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg></div>';
     };
     return '<div style="position:relative; z-index:6; display:flex; align-items:flex-end; ' +
       'justify-content:space-between; padding:6px 20px 14px; flex:none;">' +
       '<h1 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; ' +
-      'font-size:30px; letter-spacing:-0.8px; margin:0; color:#2B2118;" class="jdoodle">activity</h1>' +
+      'font-size:30px; letter-spacing:-0.8px; margin:0; color:var(--ink);" class="jdoodle">activity</h1>' +
       '<div style="display:flex; align-items:center; gap:9px;">' +
         chip('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/>', "acSearch") +
         chip('<path d="M4 6h16M7 12h10M10 18h4"/>') +
       '</div></div>' +
       // collapsible search bar — expands when the search chip is tapped.
       '<div id="acSearchBar" style="display:none; position:relative; z-index:6; padding:0 20px 12px; flex:none;">' +
-        '<div style="display:flex; align-items:center; gap:9px; background:#FFFDF7; border:2px solid #2B2118; ' +
-          'border-radius:14px; box-shadow:3px 3px 0 rgba(43,33,24,0.85); padding:9px 13px;">' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+        '<div style="display:flex; align-items:center; gap:9px; background:var(--card); border:2px solid var(--border-ink); ' +
+          'border-radius:14px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.85); padding:9px 13px;">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.55)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
           '<input id="acSearchInput" type="text" placeholder="search your feed…" autocomplete="off" autocapitalize="off" spellcheck="false" ' +
-            'style="flex:1; min-width:0; background:transparent; border:none; outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:#2B2118; padding:2px 0;" />' +
-          '<span id="acSearchClear" role="button" tabindex="0" aria-label="clear search" style="cursor:pointer; flex:none; line-height:0; display:inline-flex; color:rgba(43,33,24,0.5);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></span>' +
+            'style="flex:1; min-width:0; background:transparent; border:none; outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:var(--ink); padding:2px 0;" />' +
+          '<span id="acSearchClear" role="button" tabindex="0" aria-label="clear search" style="cursor:pointer; flex:none; line-height:0; display:inline-flex; color:rgba(var(--ink-rgb),0.5);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></span>' +
         '</div>' +
       '</div>';
   }
@@ -64,7 +64,7 @@
   // faint money texture + the single soft blue glow from the frame.
   function ambient() {
     return '<div style="position:absolute; inset:0; z-index:0; pointer-events:none; ' +
-      'background-image:repeating-radial-gradient(circle at 84% 2%, rgba(43,33,24,0.028) 0 1px, transparent 1px 8px); opacity:.6;"></div>' +
+      'background-image:repeating-radial-gradient(circle at 84% 2%, rgba(var(--ink-rgb),0.028) 0 1px, transparent 1px 8px); opacity:.6;"></div>' +
       '<div style="position:absolute; left:-40px; top:90px; width:340px; height:300px; border-radius:50%; z-index:0; pointer-events:none; ' +
       'background:radial-gradient(circle, rgba(39,117,202,0.16) 0%, rgba(39,117,202,0) 70%);"></div>';
   }
@@ -165,7 +165,7 @@
   function amountHtml(cents, settled) {
     if (cents == null) return "";
     var pos = cents > 0, zero = cents === 0;
-    var col = zero ? "rgba(43,33,24,0.5)" : pos ? "#2775CA" : "#FF6B5E";
+    var col = zero ? "rgba(var(--ink-rgb),0.5)" : pos ? "#2775CA" : "#FF6B5E";
     var sign = zero ? "$" : pos ? "+$" : "−$";
     var size = zero ? "15px" : "17px";
     var n = Math.abs(cents) / 100;
@@ -189,7 +189,7 @@
   // mono meta line (sep with grey dots) used under one-liners.
   function metaMono(text) {
     return '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; ' +
-      'color:rgba(43,33,24,0.42); margin-top:3px;">' + text + '</div>';
+      'color:rgba(var(--ink-rgb),0.42); margin-top:3px;">' + text + '</div>';
   }
   // "view ↗" link → the receipt route when the backend gives us a real
   // signature/reference; otherwise fall back to the relevant settle/group
@@ -213,10 +213,10 @@
     if (!rs || typeof rs !== "object") return "";
     var chips = [];
     var push = function (emoji, count) {
-      chips.push('<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; ' +
-        'border:1px solid rgba(43,33,24,0.1); border-radius:999px; padding:2px 8px;">' +
+      chips.push('<div style="display:inline-flex; align-items:center; gap:4px; background:var(--card); ' +
+        'border:1px solid rgba(var(--ink-rgb),0.1); border-radius:999px; padding:2px 8px;">' +
         '<span style="font-size:11px;">' + app.face(emoji) + '</span>' +
-        '<span style="font-family:\'Space Mono\',monospace; font-size:9px; color:rgba(43,33,24,0.6);">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:9px; color:rgba(var(--ink-rgb),0.6);">' +
         app.esc(String(count)) + '</span></div>');
     };
     if (Array.isArray(rs)) rs.forEach(function (r) { if (r && r.emoji) push(r.emoji, r.count != null ? r.count : 1); });
@@ -339,7 +339,7 @@
       bits.push(app.esc(relTime(ev.at)));
       subRow = '<div style="display:flex; align-items:center; gap:7px; margin-top:3px; flex-wrap:wrap;">' +
         settledTag(d.settleLabel) +
-        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.42);">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(var(--ink-rgb),0.42);">' +
         bits.join(" · ") + '</span>' +
         (d.settleLabel === "ALL SETTLED" ? "" : viewLink(sig, ev.tripId ? "#/settle/" + encodeURIComponent(ev.tripId) : "")) +
         '</div>';
@@ -366,7 +366,7 @@
     return '<div style="display:flex; align-items:' + align + '; gap:13px; padding:11px 4px;">' +
       avatarHtml +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + d.line + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink);">' + d.line + '</div>' +
         subRow + reacts +
       '</div>' +
       right +
@@ -386,7 +386,7 @@
         if (lastDay !== null) html += '</div>';
         lastDay = k;
         html += '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; ' +
-          'color:rgba(43,33,24,0.4); padding:' + (html ? "20px" : "8px") + ' 2px 10px;">' +
+          'color:rgba(var(--ink-rgb),0.4); padding:' + (html ? "20px" : "8px") + ' 2px 10px;">' +
           app.esc(dayLabel(ev.at)) + '</div>' +
           '<div style="display:flex; flex-direction:column; gap:3px;">';
       }
@@ -433,21 +433,21 @@
       var list = q ? lastItems.filter(function (ev) { return searchText(ev).indexOf(q) >= 0; }) : lastItems;
       if (q && !list.length) {
         scroll.innerHTML = '<div style="text-align:center; padding:44px 20px; font-family:\'General Sans\',sans-serif; ' +
-          'font-size:15px; color:rgba(43,33,24,0.5);">no activity matches “' + app.esc(q) + '” 🔍</div>';
+          'font-size:15px; color:rgba(var(--ink-rgb),0.5);">no activity matches “' + app.esc(q) + '” 🔍</div>';
       } else {
         scroll.innerHTML = buildFeedHtml(list);
       }
     }
     function open() {
       bar.style.display = "block";
-      chip.style.background = "#2B2118";
-      var svg = chip.querySelector("svg"); if (svg) svg.style.stroke = "#F7F1E3";
+      chip.style.background = "var(--ink)";
+      var svg = chip.querySelector("svg"); if (svg) svg.style.stroke = "var(--paper)";
       try { input.focus(); } catch (_) {}
     }
     function close() {
       bar.style.display = "none";
-      chip.style.background = "#FFFDF7";
-      var svg = chip.querySelector("svg"); if (svg) svg.style.stroke = "rgba(43,33,24,0.75)";
+      chip.style.background = "var(--card)";
+      var svg = chip.querySelector("svg"); if (svg) svg.style.stroke = "rgba(var(--ink-rgb),0.75)";
       input.value = "";
       apply();
     }
@@ -464,7 +464,7 @@
 
   // ---- LOADING (shimmer skeleton rows, ~1.3s sweep) — lifted from the frame ----
   function skeletonBlock(extra) {
-    return 'background:#FFFDF7; background-image:linear-gradient(90deg, transparent 0, rgba(43,33,24,0.10) 50%, transparent 100%); ' +
+    return 'background:var(--card); background-image:linear-gradient(90deg, transparent 0, rgba(var(--ink-rgb),0.10) 50%, transparent 100%); ' +
       'background-size:260px 100%; background-repeat:no-repeat; animation:acShimmer 1.3s ease-in-out infinite; ' + (extra || "");
   }
   function skeletonRow(round, w1, w2) {
@@ -506,12 +506,12 @@
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
           'justify-content:center; gap:18px; padding:40px 44px; text-align:center;">' +
           app.mascot({ size: 96, mood: "sleepy", glow: true }) +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(43,33,24,0.65);">' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(var(--ink-rgb),0.65);">' +
             'nothing\'s happened yet 🫥<br>start a tab and the feed wakes up</div>' +
           '<button id="acNew" style="appearance:none; border:none; cursor:pointer; min-height:50px; padding:0 26px; ' +
-            'border-radius:999px; background:#2775CA; border:2px solid #2B2118; ' +
+            'border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); ' +
             'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff; ' +
-            'box-shadow:3px 3px 0 rgba(43,33,24,0.9);">start a tab</button>' +
+            'box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">start a tab</button>' +
         '</div>' +
       '</div>';
     var b = document.getElementById("acNew");
@@ -527,12 +527,12 @@
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
           'justify-content:center; gap:16px; padding:40px 44px; text-align:center;">' +
           app.mascot({ size: 104, mood: "happy", glow: true }) +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(43,33,24,0.65);">' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; line-height:1.45; color:rgba(var(--ink-rgb),0.65);">' +
             'your feed lives here<br>sign in to see who chipped in 💸</div>' +
           '<button id="acConnect" style="appearance:none; border:none; cursor:pointer; min-height:50px; padding:0 26px; ' +
-            'border-radius:999px; background:#2775CA; border:2px solid #2B2118; ' +
+            'border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); ' +
             'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#fff; ' +
-            'box-shadow:3px 3px 0 rgba(43,33,24,0.9);">sign in</button>' +
+            'box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">sign in</button>' +
         '</div>' +
       '</div>';
     var b = document.getElementById("acConnect");
@@ -546,8 +546,8 @@
         '<div style="position:relative; z-index:2;">' + header() + '</div>' +
         '<div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; ' +
           'justify-content:center; gap:10px; padding:40px 44px; text-align:center;">' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; color:rgba(43,33,24,0.65);">couldn\'t load activity</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.42);">' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:16px; color:rgba(var(--ink-rgb),0.65);">couldn\'t load activity</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(var(--ink-rgb),0.42);">' +
             app.esc(msg || "try again") + '</div>' +
         '</div>' +
       '</div>';

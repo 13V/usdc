@@ -33,28 +33,28 @@ const OAUTH_METHODS: Method[] = ["apple", "google"];
 // ---- journal styling (matches Wallet.tsx) -----------------------------------
 const wrap: React.CSSProperties = {
   position: "relative", width: "100%", maxWidth: 430, margin: "0 auto", minHeight: "100vh",
-  background: "#F7F1E3", color: "#2B2118", fontFamily: "'General Sans',sans-serif",
+  background: "var(--paper)", color: "var(--ink)", fontFamily: "'General Sans',sans-serif",
   display: "flex", flexDirection: "column", boxSizing: "border-box",
   // Keep the header clear of the status bar / Dynamic Island in the iOS shell
   // (viewport-fit=cover lets content run under them otherwise).
   padding: "calc(env(safe-area-inset-top, 0px) + 14px) 22px 0",
 };
 const card: React.CSSProperties = {
-  background: "#FFFDF7", border: "2px solid #2B2118", borderRadius: 18,
-  boxShadow: "3px 4px 0 rgba(43,33,24,0.85)",
+  background: "var(--card)", border: "2px solid var(--border-ink)", borderRadius: 18,
+  boxShadow: "3px 4px 0 rgba(var(--shadow-rgb),0.85)",
   padding: 18, width: "100%", margin: "11px 0", boxSizing: "border-box",
 };
 const primary: React.CSSProperties = {
   appearance: "none", cursor: "pointer", width: "100%", minHeight: 54,
-  borderRadius: 999, background: "#2775CA", border: "2px solid #2B2118", color: "#fff",
+  borderRadius: 999, background: "#2775CA", border: "2px solid var(--border-ink)", color: "#fff",
   fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16,
-  boxShadow: "3px 3px 0 rgba(43,33,24,0.9)", marginTop: 12,
+  boxShadow: "3px 3px 0 rgba(var(--shadow-rgb),0.9)", marginTop: 12,
 };
 const linkBtn: React.CSSProperties = {
   appearance: "none", cursor: "pointer", minHeight: 34, padding: "4px 16px",
-  borderRadius: 999, background: "#FFFDF7", border: "2px solid #2B2118", color: "#2B2118",
+  borderRadius: 999, background: "var(--card)", border: "2px solid var(--border-ink)", color: "var(--ink)",
   fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 13,
-  boxShadow: "2px 2px 0 rgba(43,33,24,0.35)", flex: "none",
+  boxShadow: "2px 2px 0 rgba(var(--shadow-rgb),0.35)", flex: "none",
 };
 const mono = "'Space Mono',monospace";
 
@@ -234,8 +234,8 @@ export function ManageLogins() {
     <div style={{ display: "flex", alignItems: "center", gap: 12, height: 60, flex: "none" }}>
       {!handoffLeg && (
         <div onClick={() => (window.location.href = ret)} title="back"
-          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(43,33,24,0.05)", border: "1px solid rgba(43,33,24,0.08)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-          <span style={{ color: "rgba(43,33,24,0.6)", fontSize: 18 }}>‹</span>
+          style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(var(--ink-rgb),0.05)", border: "1px solid rgba(var(--ink-rgb),0.08)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <span style={{ color: "rgba(var(--ink-rgb),0.6)", fontSize: 18 }}>‹</span>
         </div>
       )}
       <span style={{ fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 19 }}>sign-in methods</span>
@@ -250,13 +250,13 @@ export function ManageLogins() {
         {header}
         <div style={card}>
           <div style={{ fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 18 }}>all set — hop back to the app</div>
-          <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(43,33,24,0.55)", marginTop: 6 }}>
+          <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(var(--ink-rgb),0.55)", marginTop: 6 }}>
             your sign-in methods are saved. tap below to finish up in Divvy.
           </div>
           <a href={deepLink} style={{ ...primary, textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
             return to the divvy app
           </a>
-          <div style={{ fontFamily: mono, fontSize: 10.5, color: "rgba(43,33,24,0.35)", marginTop: 12, textAlign: "center" }}>
+          <div style={{ fontFamily: mono, fontSize: 10.5, color: "rgba(var(--ink-rgb),0.35)", marginTop: 12, textAlign: "center" }}>
             this link works for about a minute
           </div>
         </div>
@@ -268,7 +268,7 @@ export function ManageLogins() {
     return (
       <div style={wrap}>
         {header}
-        <p style={{ color: "rgba(43,33,24,0.5)", marginTop: 24 }}>starting…</p>
+        <p style={{ color: "rgba(var(--ink-rgb),0.5)", marginTop: 24 }}>starting…</p>
       </div>
     );
   }
@@ -280,7 +280,7 @@ export function ManageLogins() {
         {header}
         <div style={card}>
           <div style={{ fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16 }}>sign in to divvy first</div>
-          <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(43,33,24,0.55)", marginTop: 6 }}>
+          <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(var(--ink-rgb),0.55)", marginTop: 6 }}>
             managing sign-in methods needs a signed-in account.
           </div>
           <button style={primary} onClick={() => (window.location.href = `/embedded/?return=${encodeURIComponent(ret)}`)}>
@@ -301,18 +301,18 @@ export function ManageLogins() {
           {header}
           <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "2px 2px 4px" }}>
             <span style={{ fontSize: 13 }}>🔒</span>
-            <span style={{ fontFamily: mono, fontSize: 10.5, lineHeight: 1.5, color: "rgba(43,33,24,0.45)" }}>
+            <span style={{ fontFamily: mono, fontSize: 10.5, lineHeight: 1.5, color: "rgba(var(--ink-rgb),0.45)" }}>
               you're in safari because apple &amp; google require sign-in outside the app — you'll bounce right back when you're done.
             </span>
           </div>
           <div style={card}>
             <div style={{ fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16 }}>first, sign in the way you usually do</div>
-            <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(43,33,24,0.55)", marginTop: 6 }}>
+            <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(var(--ink-rgb),0.55)", marginTop: 6 }}>
               use a method that's <b>already on your divvy account</b> — like your email or phone.
               {startMethod ? ` then we'll add ${startMethod} to it automatically.` : " then you can add new ways to sign in."}
             </div>
             <button style={primary} onClick={() => login()}>sign in</button>
-            <div style={{ fontFamily: mono, fontSize: 10.5, lineHeight: 1.6, color: "rgba(43,33,24,0.4)", marginTop: 12 }}>
+            <div style={{ fontFamily: mono, fontSize: 10.5, lineHeight: 1.6, color: "rgba(var(--ink-rgb),0.4)", marginTop: 12 }}>
               heads up: picking a brand-new method here would start a separate account instead of linking this one.
             </div>
           </div>
@@ -327,7 +327,7 @@ export function ManageLogins() {
           {header}
           <div style={card}>
             <div style={{ fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16 }}>manage your sign-in methods in Safari</div>
-            <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(43,33,24,0.55)", marginTop: 6 }}>
+            <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(var(--ink-rgb),0.55)", marginTop: 6 }}>
               your sign-in lives in the browser you signed up with. we'll open it there and bring you right back.
             </div>
             <button style={primary} onClick={() => {
@@ -357,8 +357,8 @@ export function ManageLogins() {
       {header}
 
       <div style={card}>
-        <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 1, color: "rgba(43,33,24,0.4)" }}>WAYS TO SIGN IN</div>
-        <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 12.5, color: "rgba(43,33,24,0.5)", marginTop: 6 }}>
+        <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 1, color: "rgba(var(--ink-rgb),0.4)" }}>WAYS TO SIGN IN</div>
+        <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 12.5, color: "rgba(var(--ink-rgb),0.5)", marginTop: 6 }}>
           all of these open this same account — same wallet, same tabs, same friends.
         </div>
       </div>
@@ -368,7 +368,7 @@ export function ManageLogins() {
           <div style={{ width: 34, height: 34, borderRadius: 11, background: "rgba(39,117,202,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flex: "none" }}>{m.icon}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 15 }}>{m.label}</div>
-            <div style={{ fontFamily: mono, fontSize: 11, color: m.linked ? "#17967f" : "rgba(43,33,24,0.45)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontFamily: mono, fontSize: 11, color: m.linked ? "#17967f" : "rgba(var(--ink-rgb),0.45)", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {m.linked ? `${m.detail || "connected"} ✓` : "not linked"}
             </div>
           </div>
@@ -386,7 +386,7 @@ export function ManageLogins() {
         </button>
       )}
 
-      <div style={{ fontFamily: mono, fontSize: 10.5, lineHeight: 1.6, color: "rgba(43,33,24,0.4)", marginTop: 8 }}>
+      <div style={{ fontFamily: mono, fontSize: 10.5, lineHeight: 1.6, color: "rgba(var(--ink-rgb),0.4)", marginTop: 8 }}>
         link apple or google now so a later "sign in with apple" opens this account instead of starting a new one. hide-my-email is fine — the link remembers it's you.
       </div>
 

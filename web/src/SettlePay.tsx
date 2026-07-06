@@ -21,20 +21,20 @@ function fmt(cents: number) {
 
 const wrap: React.CSSProperties = {
   position: "relative", width: "100%", maxWidth: 430, margin: "0 auto", minHeight: "100vh",
-  background: "#F7F1E3", color: "#2B2118", fontFamily: "'General Sans',sans-serif",
+  background: "var(--paper)", color: "var(--ink)", fontFamily: "'General Sans',sans-serif",
   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
   padding: "0 26px", textAlign: "center",
 };
 const card: React.CSSProperties = {
-  background: "#FFFDF7", border: "2px solid #2B2118", borderRadius: 20,
-  boxShadow: "3px 4px 0 rgba(43,33,24,0.85)",
+  background: "var(--card)", border: "2px solid var(--border-ink)", borderRadius: 20,
+  boxShadow: "3px 4px 0 rgba(var(--shadow-rgb),0.85)",
   padding: 16, width: "100%", maxWidth: 320, margin: "14px 0",
 };
 const primary: React.CSSProperties = {
   appearance: "none", cursor: "pointer", width: "100%", maxWidth: 320,
-  minHeight: 58, borderRadius: 999, background: "#2775CA", border: "2px solid #2B2118",
+  minHeight: 58, borderRadius: 999, background: "#2775CA", border: "2px solid var(--border-ink)",
   color: "#fff", fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600,
-  fontSize: 17, boxShadow: "3px 3px 0 rgba(43,33,24,0.9)",
+  fontSize: 17, boxShadow: "3px 3px 0 rgba(var(--shadow-rgb),0.9)",
 };
 const mono = "'Space Mono',monospace";
 
@@ -152,26 +152,26 @@ export function SettlePay() {
   return (
     <div style={wrap}>
       <div data-act="home" onClick={() => (window.location.href = ret)}
-        style={{ position: "absolute", top: 18, left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(43,33,24,0.05)", border: "1px solid rgba(43,33,24,0.08)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        <span style={{ color: "rgba(43,33,24,0.6)", fontSize: 18 }}>‹</span>
+        style={{ position: "absolute", top: 18, left: 16, width: 36, height: 36, borderRadius: "50%", background: "rgba(var(--ink-rgb),0.05)", border: "1px solid rgba(var(--ink-rgb),0.08)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+        <span style={{ color: "rgba(var(--ink-rgb),0.6)", fontSize: 18 }}>‹</span>
       </div>
 
       <div style={{ fontFamily: mono, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#3DE8C7" }}>{isSend ? "SEND" : "SETTLE UP"}</div>
       <div style={{ fontFamily: mono, fontWeight: 700, fontSize: 52, letterSpacing: -1, margin: "10px 0 0" }}>{fmt(amountCents)}</div>
-      <div style={{ fontFamily: mono, fontSize: 11, color: "rgba(43,33,24,0.45)", marginTop: 6 }}>to {toName} · USDC on devnet</div>
+      <div style={{ fontFamily: mono, fontSize: 11, color: "rgba(var(--ink-rgb),0.45)", marginTop: 6 }}>to {toName} · USDC on devnet</div>
 
       {paid ? (
         <div style={{ ...card, background: "linear-gradient(120deg,#2bccae,#3DE8C7)", color: "#04121a", fontWeight: 700 }}>{isSend ? "✓ sent!" : "✓ settled — thank you!"}</div>
       ) : !ready ? (
-        <p style={{ color: "rgba(43,33,24,0.5)", marginTop: 24 }}>starting…</p>
+        <p style={{ color: "rgba(var(--ink-rgb),0.5)", marginTop: 24 }}>starting…</p>
       ) : !authenticated ? (
         <button style={{ ...primary, marginTop: 24 }} onClick={() => login()}>sign in to pay</button>
       ) : !wallet ? (
-        <p style={{ color: "rgba(43,33,24,0.5)", marginTop: 24 }}>setting up your wallet…</p>
+        <p style={{ color: "rgba(var(--ink-rgb),0.5)", marginTop: 24 }}>setting up your wallet…</p>
       ) : (
         <>
           <div style={card}>
-            <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 1, color: "rgba(43,33,24,0.4)" }}>YOUR BALANCE</div>
+            <div style={{ fontFamily: mono, fontSize: 10, letterSpacing: 1, color: "rgba(var(--ink-rgb),0.4)" }}>YOUR BALANCE</div>
             <div style={{ fontFamily: mono, fontWeight: 700, fontSize: 20, marginTop: 4 }}>
               {balanceCents == null ? "…" : fmt(balanceCents) + " USDC"}
             </div>
@@ -179,9 +179,9 @@ export function SettlePay() {
           <button style={{ ...primary, opacity: busy ? 0.7 : 1 }} onClick={pay} disabled={busy}>
             {busy ? "working…" : (isSend ? `send ${fmt(amountCents)}` : `pay ${fmt(amountCents)}`)}
           </button>
-          {status && <p style={{ fontFamily: mono, fontSize: 12.5, color: "rgba(43,33,24,0.55)", marginTop: 14 }}>{status}</p>}
+          {status && <p style={{ fontFamily: mono, fontSize: 12.5, color: "rgba(var(--ink-rgb),0.55)", marginTop: 14 }}>{status}</p>}
           {error && <p style={{ fontSize: 13, color: "#FF6B5E", marginTop: 12, maxWidth: 320 }}>{error}</p>}
-          <div style={{ fontFamily: mono, fontSize: 10, color: "rgba(43,33,24,0.3)", marginTop: 18 }}>devnet test funds · auto-added if needed</div>
+          <div style={{ fontFamily: mono, fontSize: 10, color: "rgba(var(--ink-rgb),0.3)", marginTop: 18 }}>devnet test funds · auto-added if needed</div>
         </>
       )}
     </div>

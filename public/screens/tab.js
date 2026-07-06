@@ -14,12 +14,12 @@
 
   var S = null; // { view, friendId, d, an, dir, pollTimer }
 
-  var PEN = "#2B2118", BLUE = "#2775CA", CORAL = "#FF6B5E", MINT = "#3DE8C7";
+  var PEN = "var(--ink)", BLUE = "#2775CA", CORAL = "#FF6B5E", MINT = "#3DE8C7";
 
   function topbar() {
     return '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:12px; height:50px; padding:0 16px; flex:none;">' +
-      '<div id="t1Back" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></div>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">tab</span>' +
+      '<div id="t1Back" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.5);">tab</span>' +
     '</div>';
   }
   function wireBack() {
@@ -94,10 +94,10 @@
       var overdue = !!(mine.dueAt && isPast(mine.dueAt));
       var chips = mine.dueAt
         ? dueChipHtml(mine.dueAt, overdue)
-        : '<span style="display:inline-flex; align-items:center; gap:5px; border:1.5px dashed rgba(43,33,24,0.3); border-radius:999px; padding:4px 11px;"><span style="font-size:11px;">🗓️</span><span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.55);">set a due date</span></span>';
+        : '<span style="display:inline-flex; align-items:center; gap:5px; border:1.5px dashed rgba(var(--ink-rgb),0.3); border-radius:999px; padding:4px 11px;"><span style="font-size:11px;">🗓️</span><span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.55);">set a due date</span></span>';
       var on = mine.cadence && mine.cadence !== "off";
-      var mochiCol = on ? "#17A277" : "rgba(43,33,24,0.55)";
-      chips += '<span style="display:inline-flex; align-items:center; gap:5px; background:' + (on ? "rgba(61,232,199,0.16)" : "transparent") + '; border:1.5px ' + (on ? "solid rgba(23,162,119,0.5)" : "dashed rgba(43,33,24,0.3)") + '; border-radius:999px; padding:4px 11px;">' +
+      var mochiCol = on ? "#17A277" : "rgba(var(--ink-rgb),0.55)";
+      chips += '<span style="display:inline-flex; align-items:center; gap:5px; background:' + (on ? "rgba(61,232,199,0.16)" : "transparent") + '; border:1.5px ' + (on ? "solid rgba(23,162,119,0.5)" : "dashed rgba(var(--ink-rgb),0.3)") + '; border-radius:999px; padding:4px 11px;">' +
         '<span style="font-size:11px;">🐸</span>' +
         '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:' + mochiCol + ';">auto-remind: ' + app.esc(cadenceLabel(mine.cadence)) + (mine.sendCount ? " · " + mine.sendCount + " sent" : "") + '</span>' +
       '</span>';
@@ -107,7 +107,7 @@
       var t = an.theirs;
       var html = t.dueAt ? dueChipHtml(t.dueAt, !!(t.dueAt && isPast(t.dueAt))) : "";
       if (t.cadence && t.cadence !== "off") {
-        html += '<span style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">mochi will remind you 🐸</span>';
+        html += '<span style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.5);">mochi will remind you 🐸</span>';
       }
       return '<div style="display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin-top:12px;">' + html + '</div>';
     }
@@ -123,23 +123,23 @@
       var on = (mine.cadence || "off") === c[0];
       return '<button type="button" class="t1Cad" data-c="' + c[0] + '" style="appearance:none; cursor:pointer; padding:0 13px; min-height:38px; border-radius:999px; ' +
         (on ? 'background:rgba(61,232,199,0.2); border:2px solid #17A277; color:#17A277;'
-            : 'background:#FFFDF7; border:1px solid rgba(43,33,24,0.16); color:rgba(43,33,24,0.6);') +
+            : 'background:var(--card); border:1px solid rgba(var(--ink-rgb),0.16); color:rgba(var(--ink-rgb),0.6);') +
         ' font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px;">' + c[1] + '</button>';
     }).join("");
     app.sheet('<div style="padding:4px 4px 10px; text-align:center;">' +
       '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:' + PEN + ';">let mochi handle it 🐸</div>' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:6px;">set a "square up by" date and mochi does the awkward reminding for you.</div>' +
-      '<label style="display:block; text-align:left; margin-top:16px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42);">SQUARE UP BY</label>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.55); margin-top:6px;">set a "square up by" date and mochi does the awkward reminding for you.</div>' +
+      '<label style="display:block; text-align:left; margin-top:16px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.42);">SQUARE UP BY</label>' +
       '<div style="display:flex; align-items:center; gap:8px; margin-top:8px;">' +
         '<input id="t1Due" type="date" value="' + app.esc(dateVal) + '" min="' + minDate + '" max="' + maxDate + '" ' +
-          'style="flex:1; min-height:44px; padding:8px 14px; border-radius:13px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:14px; color:' + PEN + ';">' +
-        '<span id="t1DueClear" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline; flex:none;">clear</span>' +
+          'style="flex:1; min-height:44px; padding:8px 14px; border-radius:13px; background:var(--card-2); border:1px solid rgba(var(--ink-rgb),0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:14px; color:' + PEN + ';">' +
+        '<span id="t1DueClear" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline; flex:none;">clear</span>' +
       '</div>' +
-      '<label style="display:block; text-align:left; margin-top:16px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42);">MOCHI AUTO-REMINDS</label>' +
+      '<label style="display:block; text-align:left; margin-top:16px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.42);">MOCHI AUTO-REMINDS</label>' +
       '<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;">' + chips + '</div>' +
-      '<div id="t1CadHint" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); margin-top:9px; min-height:16px;"></div>' +
+      '<div id="t1CadHint" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(var(--ink-rgb),0.5); margin-top:9px; min-height:16px;"></div>' +
       '<button class="btn" id="t1RemindSave" style="margin-top:14px;">save</button>' +
-      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:8px;">starts after the due date · pauses if they say they paid · caps at the duck 🦆</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:8px;">starts after the due date · pauses if they say they paid · caps at the duck 🦆</div>' +
     '</div>');
     var picked = mine.cadence || "off";
     function hint() {
@@ -153,9 +153,9 @@
         picked = chip.getAttribute("data-c") || "off";
         Array.prototype.forEach.call(document.querySelectorAll(".t1Cad"), function (c2) {
           var on = c2 === chip;
-          c2.style.background = on ? "rgba(61,232,199,0.2)" : "#FFFDF7";
-          c2.style.border = on ? "2px solid #17A277" : "1px solid rgba(43,33,24,0.16)";
-          c2.style.color = on ? "#17A277" : "rgba(43,33,24,0.6)";
+          c2.style.background = on ? "rgba(61,232,199,0.2)" : "var(--card)";
+          c2.style.border = on ? "2px solid #17A277" : "1px solid rgba(var(--ink-rgb),0.16)";
+          c2.style.color = on ? "#17A277" : "rgba(var(--ink-rgb),0.6)";
         });
         hint();
       };
@@ -191,12 +191,12 @@
       ? '<span style="font-size:26px; opacity:.5;">$</span>0<span style="font-size:26px; opacity:.5;">.00</span>'
       : '<span style="font-size:26px; opacity:.5;">' + (owed ? "+$" : "−$") + '</span>' + money3(d.balanceCents);
     return '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:2px 0 0;">' +
-      '<div style="width:64px; height:64px; border-radius:20px; background:' + app.esc(f.color || "rgba(39,117,202,0.18)") + '; display:flex; align-items:center; justify-content:center; font-size:32px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' + app.face(f.emoji || (friendName(d)[0] || "?").toUpperCase()) + '</div>' +
+      '<div style="width:64px; height:64px; border-radius:20px; background:' + app.esc(f.color || "rgba(39,117,202,0.18)") + '; display:flex; align-items:center; justify-content:center; font-size:32px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' + app.face(f.emoji || (friendName(d)[0] || "?").toUpperCase()) + '</div>' +
       '<div style="display:flex; align-items:center; gap:7px; margin-top:10px;">' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; letter-spacing:-0.3px; color:' + PEN + ';">' + app.esc(friendName(d)) + '</span>' +
         (f.handle ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(39,117,202,0.75);">@' + app.esc(f.handle) + '</span>' : '') +
       '</div>' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:10px;">' + app.esc(label) + '</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.55); margin-top:10px;">' + app.esc(label) + '</div>' +
       '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:52px; line-height:.95; letter-spacing:-2px; color:' + col + '; margin-top:6px;">' + big + '</div>' +
     '</div>';
   }
@@ -206,30 +206,30 @@
     return '<button id="' + id + '" type="button" style="appearance:none; cursor:pointer; flex:1; min-height:44px; border-radius:999px; ' +
       'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; ' +
       (on ? 'background:' + color + '1f; border:2px solid ' + color + '; color:' + color + ';'
-          : 'background:#FFFDF7; border:1px solid rgba(43,33,24,0.14); color:rgba(43,33,24,0.6);') +
+          : 'background:var(--card); border:1px solid rgba(var(--ink-rgb),0.14); color:rgba(var(--ink-rgb),0.6);') +
       '">' + label + '</button>';
   }
   function composer(d) {
     var they = S.dir !== "i_owe";
-    return '<div style="position:relative; background:#FFFDF7; border:2px solid ' + PEN + '; border-radius:18px; box-shadow:4px 5px 0 rgba(43,33,24,0.9); padding:16px 16px 15px; margin-top:20px;">' +
-      '<div style="position:absolute; top:-12px; left:36%; width:80px; height:22px; background:rgba(255,198,92,0.6); transform:rotate(-4deg); border-left:1.5px dashed rgba(43,33,24,0.25); border-right:1.5px dashed rgba(43,33,24,0.25); pointer-events:none;"></div>' +
-      '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42);">ADD TO THE TAB</div>' +
+    return '<div style="position:relative; background:var(--card); border:2px solid ' + PEN + '; border-radius:18px; box-shadow:4px 5px 0 rgba(var(--shadow-rgb),0.9); padding:16px 16px 15px; margin-top:20px;">' +
+      '<div style="position:absolute; top:-12px; left:36%; width:80px; height:22px; background:rgba(255,198,92,0.6); transform:rotate(-4deg); border-left:1.5px dashed rgba(var(--ink-rgb),0.25); border-right:1.5px dashed rgba(var(--ink-rgb),0.25); pointer-events:none;"></div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.42);">ADD TO THE TAB</div>' +
       '<div style="display:flex; gap:8px; margin-top:11px;">' +
         dirBtn("t1DirThey", "they owe me", they, BLUE) +
         dirBtn("t1DirI", "i owe them", !they, CORAL) +
       '</div>' +
       '<div style="display:flex; align-items:center; justify-content:center; gap:3px; margin:12px 0 2px;">' +
-        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:26px; color:rgba(43,33,24,0.35);">$</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:26px; color:rgba(var(--ink-rgb),0.35);">$</span>' +
         '<input id="t1Amt" inputmode="decimal" autocomplete="off" placeholder="0" ' +
           'style="width:auto; max-width:170px; min-width:64px; background:transparent; border:none; outline:none; ' +
           'font-family:\'Space Mono\',monospace; font-weight:700; font-size:40px; letter-spacing:-1.5px; ' +
           'color:' + PEN + '; text-align:center;">' +
       '</div>' +
       '<input id="t1Note" maxlength="140" autocomplete="off" placeholder="for what? — coffee ☕️ (optional)" ' +
-        'style="width:100%; min-height:44px; margin-top:8px; padding:10px 14px; border-radius:13px; background:#FBF6EA; ' +
-        'border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:' + PEN + ';">' +
+        'style="width:100%; min-height:44px; margin-top:8px; padding:10px 14px; border-radius:13px; background:var(--card-2); ' +
+        'border:1px solid rgba(var(--ink-rgb),0.12); outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:' + PEN + ';">' +
       '<button id="t1Add" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:50px; margin-top:12px; border-radius:999px; ' +
-        'background:' + (they ? BLUE : CORAL) + '; border:2px solid ' + PEN + '; box-shadow:3px 3px 0 rgba(43,33,24,0.9); ' +
+        'background:' + (they ? BLUE : CORAL) + '; border:2px solid ' + PEN + '; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9); ' +
         'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">add to tab</button>' +
     '</div>';
   }
@@ -256,23 +256,23 @@
     var name = firstName(d);
     var what = "$" + (Math.abs(c.amountCents || 0) / 100).toFixed(2) + " " + (c.methodPhrase || "");
     if (c.iAmCreditor) {
-      return '<div style="background:#FFFDF7; border:2px solid ' + PEN + '; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.9); padding:14px 16px; margin-top:14px;">' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42);">SETTLED OUTSIDE?</div>' +
+      return '<div style="background:var(--card); border:2px solid ' + PEN + '; border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.9); padding:14px 16px; margin-top:14px;">' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.42);">SETTLED OUTSIDE?</div>' +
         '<div style="font-family:\'General Sans\',sans-serif; font-size:14.5px; line-height:1.4; color:' + PEN + '; margin-top:7px;">' +
           app.esc(name) + ' says they paid you <b>' + app.esc(what.trim()) + '</b>' +
-          (c.note ? '<div style="font-size:12.5px; color:rgba(43,33,24,0.55); margin-top:3px;">“' + app.esc(c.note) + '”</div>' : '') +
+          (c.note ? '<div style="font-size:12.5px; color:rgba(var(--ink-rgb),0.55); margin-top:3px;">“' + app.esc(c.note) + '”</div>' : '') +
         '</div>' +
         '<div style="display:flex; gap:9px; margin-top:12px;">' +
-          '<button id="t1OutYes" type="button" style="appearance:none; border:2px solid ' + PEN + '; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:#3DE8C7; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:' + PEN + '; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">confirm ✓</button>' +
-          '<button id="t1OutNo" type="button" style="appearance:none; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:rgba(43,33,24,0.7);">dispute ✗</button>' +
+          '<button id="t1OutYes" type="button" style="appearance:none; border:2px solid ' + PEN + '; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:#3DE8C7; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:' + PEN + '; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">confirm ✓</button>' +
+          '<button id="t1OutNo" type="button" style="appearance:none; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:transparent; border:1px solid rgba(var(--ink-rgb),0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:rgba(var(--ink-rgb),0.7);">dispute ✗</button>' +
         '</div>' +
       '</div>';
     }
     // I'm the debtor — waiting on their confirm.
-    return '<div style="display:flex; align-items:center; gap:10px; background:rgba(255,198,92,0.16); border:1.5px dashed rgba(43,33,24,0.3); border-radius:14px; padding:11px 14px; margin-top:14px;">' +
+    return '<div style="display:flex; align-items:center; gap:10px; background:rgba(255,198,92,0.16); border:1.5px dashed rgba(var(--ink-rgb),0.3); border-radius:14px; padding:11px 14px; margin-top:14px;">' +
       '<span style="font-size:16px; flex:none;">⏳</span>' +
-      '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.7);">waiting for ' + app.esc(name) + ' to confirm your ' + app.esc(what.trim()) + '</span>' +
-      '<span id="t1OutCancel" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline; flex:none;">cancel</span>' +
+      '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.7);">waiting for ' + app.esc(name) + ' to confirm your ' + app.esc(what.trim()) + '</span>' +
+      '<span id="t1OutCancel" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline; flex:none;">cancel</span>' +
     '</div>';
   }
   function outsideAct(verb, btn) {
@@ -312,8 +312,8 @@
         : app.esc(payWho) + " paid · " + relTime(e.createdAt);
       return '<div style="display:flex; align-items:center; gap:10px; height:' + ROW + 'px; padding:0 6px 0 46px;' + (paid ? ' opacity:.5;' : '') + '">' +
         '<div style="flex:1; min-width:0;">' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:' + INK + '; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;' + (paid ? ' text-decoration:line-through rgba(43,33,24,0.35) 1.5px;' : '') + '">' + app.esc(payTitle) + '</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.42); margin-top:1px;">' + paySub + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:' + INK + '; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;' + (paid ? ' text-decoration:line-through rgba(var(--ink-rgb),0.35) 1.5px;' : '') + '">' + app.esc(payTitle) + '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.42); margin-top:1px;">' + paySub + '</div>' +
         '</div>' +
         '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; letter-spacing:-0.4px; color:' + INK + '; flex:none;"><span style="font-size:11px; opacity:.5;">$</span>' + money3(e.amountCents) + '</div>' +
       '</div>';
@@ -321,19 +321,19 @@
     var who = e.addedByMe ? "you" : firstName(d);
     var note = e.note || "(no note)";
     var del = (e.addedByMe && !paid)
-      ? '<button type="button" data-del="' + app.esc(e.id) + '" aria-label="remove entry" style="appearance:none; border:none; cursor:pointer; background:transparent; padding:6px; margin-left:2px; color:rgba(43,33,24,0.3); font-size:13px; flex:none; line-height:1;">✕</button>'
+      ? '<button type="button" data-del="' + app.esc(e.id) + '" aria-label="remove entry" style="appearance:none; border:none; cursor:pointer; background:transparent; padding:6px; margin-left:2px; color:rgba(var(--ink-rgb),0.3); font-size:13px; flex:none; line-height:1;">✕</button>'
       : '';
     return '<div style="display:flex; align-items:center; gap:10px; height:' + ROW + 'px; padding:0 6px 0 46px;' + (paid ? ' opacity:.5;' : '') + '">' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:' + PEN + '; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;' + (paid ? ' text-decoration:line-through rgba(43,33,24,0.35) 1.5px;' : '') + '">' + app.esc(note) + '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.42); margin-top:1px;">' + app.esc(who) + ' · ' + relTime(e.createdAt) + (paid ? ' · <span style="color:' + MINT + ';">settled ✓</span>' : '') + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:' + PEN + '; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;' + (paid ? ' text-decoration:line-through rgba(var(--ink-rgb),0.35) 1.5px;' : '') + '">' + app.esc(note) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.42); margin-top:1px;">' + app.esc(who) + ' · ' + relTime(e.createdAt) + (paid ? ' · <span style="color:' + MINT + ';">settled ✓</span>' : '') + '</div>' +
       '</div>' +
       '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; letter-spacing:-0.4px; color:' + col + '; flex:none;"><span style="font-size:11px; opacity:.5;">' + (mine ? "+$" : "−$") + '</span>' + money3(e.signedCents) + '</div>' +
       del +
     '</div>';
   }
   function ledger(d) {
-    var label = '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); padding:26px 2px 11px;">THE LEDGER</div>';
+    var label = '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.42); padding:26px 2px 11px;">THE LEDGER</div>';
     if (!d.entries.length) {
       return label + '<div class="empty" style="padding:18px 12px 6px;">' +
         app.mascot({ size: 90, mood: "happy" }) +
@@ -345,10 +345,10 @@
     // real ledger page. Rows are exactly ROW px tall so they sit on the lines.
     var rows = d.entries.map(function (e) { return ledgerRow(e, d); }).join("");
     return label +
-      '<div style="background:#FFFDF7; border:2px solid ' + PEN + '; border-radius:16px; box-shadow:3.5px 4.5px 0 rgba(43,33,24,0.9); overflow:hidden;">' +
+      '<div style="background:var(--card); border:2px solid ' + PEN + '; border-radius:16px; box-shadow:3.5px 4.5px 0 rgba(var(--shadow-rgb),0.9); overflow:hidden;">' +
         '<div style="background-image:' +
           'linear-gradient(90deg, transparent 0 36px, rgba(255,107,94,0.35) 36px 37.5px, transparent 37.5px),' +
-          'repeating-linear-gradient(0deg, transparent 0 ' + (ROW - 1) + 'px, rgba(43,33,24,0.09) ' + (ROW - 1) + 'px ' + ROW + 'px);">' +
+          'repeating-linear-gradient(0deg, transparent 0 ' + (ROW - 1) + 'px, rgba(var(--ink-rgb),0.09) ' + (ROW - 1) + 'px ' + ROW + 'px);">' +
           rows +
         '</div>' +
       '</div>';
@@ -470,21 +470,21 @@
       partialHtml = '<div style="margin-top:10px; display:flex; flex-direction:column; align-items:center; gap:4px;">' +
         '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#e0a63a;">paying $' + dollarsOf(s.amountCents) + ' of $' + dollarsOf(fullCents) + '</span>' +
         (iPay
-          ? '<span id="t1PartialReset" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">pay the full amount instead</span>'
-          : '<span style="font-family:\'General Sans\',sans-serif; font-size:11.5px; color:rgba(43,33,24,0.45);">the rest stays on the tab</span>') +
+          ? '<span id="t1PartialReset" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline;">pay the full amount instead</span>'
+          : '<span style="font-family:\'General Sans\',sans-serif; font-size:11.5px; color:rgba(var(--ink-rgb),0.45);">the rest stays on the tab</span>') +
       '</div>';
     } else if (iPay && s.amountCents > 1) {
       partialHtml = '<div style="margin-top:10px;">' +
         '<span id="t1PartialToggle" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:' + BLUE + '; cursor:pointer;">pay part of it →</span>' +
         '<div id="t1PartialBox" style="display:none; margin-top:10px;">' +
           '<div style="display:flex; align-items:center; justify-content:center; gap:8px;">' +
-            '<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; border:2px solid ' + PEN + '; border-radius:12px; box-shadow:2px 3px 0 rgba(43,33,24,0.85); padding:8px 12px;">' +
-              '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(43,33,24,0.5);">$</span>' +
+            '<div style="display:inline-flex; align-items:center; gap:4px; background:var(--card); border:2px solid ' + PEN + '; border-radius:12px; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); padding:8px 12px;">' +
+              '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(var(--ink-rgb),0.5);">$</span>' +
               '<input id="t1PartialInput" inputmode="decimal" enterkeyhint="done" placeholder="0.00" style="width:80px; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:' + PEN + ';">' +
             '</div>' +
-            '<button id="t1PartialSet" type="button" style="appearance:none; border:2px solid ' + PEN + '; cursor:pointer; padding:0 14px; min-height:40px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:' + PEN + '; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">set</button>' +
+            '<button id="t1PartialSet" type="button" style="appearance:none; border:2px solid ' + PEN + '; cursor:pointer; padding:0 14px; min-height:40px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:' + PEN + '; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">set</button>' +
           '</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:7px;">the rest stays on the tab</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:7px;">the rest stays on the tab</div>' +
         '</div>' +
       '</div>';
     }
@@ -495,7 +495,7 @@
       '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:' + PEN + ';">' +
         (iPay ? "settle up with " + app.esc(name) : "request from " + app.esc(name)) + '</div>' +
       '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:40px; letter-spacing:-1.5px; color:' + (iPay ? CORAL : BLUE) + '; margin-top:8px;"><span style="font-size:20px; opacity:.5;">$</span>' + money3(s.amountCents) + '</div>' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:6px;">' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.55); margin-top:6px;">' +
         (iPay ? "pays their wallet directly — settles in seconds." : "show " + app.esc(name) + " the QR, or send them the link.") + '</div>' +
       partialHtml +
       qr +
@@ -503,7 +503,7 @@
       (s.url ? '<button class="btn ghost" id="t1Copy" style="margin-top:10px;">copy payment link</button>' : '') +
       '<button class="btn ghost" id="t1Check" style="margin-top:10px;">' + (iPay ? "i paid — check ✓" : "check for payment ✓") + '</button>' +
       (iPay
-        ? '<div style="margin-top:12px;"><span id="t1Outside" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">settled another way? 💵</span></div>'
+        ? '<div style="margin-top:12px;"><span id="t1Outside" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline;">settled another way? 💵</span></div>'
         : '') +
     '</div>');
     S.checkLabel = iPay ? "i paid — check ✓" : "check for payment ✓";
@@ -578,24 +578,24 @@
       return '<button type="button" class="t1OMethod" data-m="' + m[0] + '" style="appearance:none; cursor:pointer; padding:0 13px; min-height:38px; border-radius:999px; ' +
         (i === 0
           ? 'background:rgba(39,117,202,0.12); border:2px solid ' + BLUE + '; color:' + BLUE + ';'
-          : 'background:#FFFDF7; border:1px solid rgba(43,33,24,0.16); color:rgba(43,33,24,0.6);') +
+          : 'background:var(--card); border:1px solid rgba(var(--ink-rgb),0.16); color:rgba(var(--ink-rgb),0.6);') +
         ' font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px;">' + m[1] + '</button>';
     }).join("");
     app.sheet('<div id="t1OSheet" style="padding:4px 4px 10px; text-align:center;">' +
       '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:' + PEN + ';">settled another way?</div>' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:6px;">already paid ' + app.esc(name) + ' off-app? they confirm it, then the tab updates.</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.55); margin-top:6px;">already paid ' + app.esc(name) + ' off-app? they confirm it, then the tab updates.</div>' +
       '<div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-top:14px;">' + chips + '</div>' +
       '<div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-top:14px;">' +
-        '<div style="display:inline-flex; align-items:center; gap:4px; background:#FFFDF7; border:2px solid ' + PEN + '; border-radius:12px; box-shadow:2px 3px 0 rgba(43,33,24,0.85); padding:8px 12px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(43,33,24,0.5);">$</span>' +
+        '<div style="display:inline-flex; align-items:center; gap:4px; background:var(--card); border:2px solid ' + PEN + '; border-radius:12px; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); padding:8px 12px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:rgba(var(--ink-rgb),0.5);">$</span>' +
           '<input id="t1OAmt" inputmode="decimal" enterkeyhint="done" value="' + dollarsOf(owedCents) + '" style="width:86px; border:none; outline:none; background:transparent; font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:' + PEN + ';">' +
         '</div>' +
       '</div>' +
-      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:6px;">pay less and the rest stays on the tab</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:6px;">pay less and the rest stays on the tab</div>' +
       '<input id="t1ONote" maxlength="140" autocomplete="off" placeholder="note — “at the bar” (optional)" ' +
-        'style="width:100%; min-height:44px; margin-top:12px; padding:10px 14px; border-radius:13px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:' + PEN + ';">' +
+        'style="width:100%; min-height:44px; margin-top:12px; padding:10px 14px; border-radius:13px; background:var(--card-2); border:1px solid rgba(var(--ink-rgb),0.12); outline:none; font-family:\'General Sans\',sans-serif; font-size:14px; color:' + PEN + ';">' +
       '<button class="btn" id="t1OSend" style="margin-top:14px;">ask ' + app.esc(name) + ' to confirm</button>' +
-      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:8px;">nothing changes until they confirm</div>' +
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:8px;">nothing changes until they confirm</div>' +
     '</div>');
     var method = "cash";
     Array.prototype.forEach.call(document.querySelectorAll(".t1OMethod"), function (chip) {
@@ -603,9 +603,9 @@
         method = chip.getAttribute("data-m") || "cash";
         Array.prototype.forEach.call(document.querySelectorAll(".t1OMethod"), function (c2) {
           var on = c2 === chip;
-          c2.style.background = on ? "rgba(39,117,202,0.12)" : "#FFFDF7";
-          c2.style.border = on ? "2px solid " + BLUE : "1px solid rgba(43,33,24,0.16)";
-          c2.style.color = on ? BLUE : "rgba(43,33,24,0.6)";
+          c2.style.background = on ? "rgba(39,117,202,0.12)" : "var(--card)";
+          c2.style.border = on ? "2px solid " + BLUE : "1px solid rgba(var(--ink-rgb),0.16)";
+          c2.style.color = on ? BLUE : "rgba(var(--ink-rgb),0.6)";
         });
       };
     });

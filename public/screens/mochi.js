@@ -9,7 +9,7 @@
   "use strict";
   var app = window.app;
 
-  var INKC = "#2B2118";
+  var INKC = "var(--ink)";
   var MONO = "'Space Mono',monospace";
   var SANS = "'General Sans',sans-serif";
   var DISPLAY = "'Clash Display','General Sans',sans-serif";
@@ -41,13 +41,13 @@
   function header() {
     return '' +
       '<div style="display:flex; align-items:center; gap:11px; height:56px; padding:0 16px; flex:none;">' +
-        '<button id="mBack" aria-label="back" style="appearance:none; cursor:pointer; width:36px; height:36px; border-radius:50%; background:#FFFDF7; border:2px solid ' + INKC + '; display:flex; align-items:center; justify-content:center; flex:none;">' +
+        '<button id="mBack" aria-label="back" style="appearance:none; cursor:pointer; width:36px; height:36px; border-radius:50%; background:var(--card); border:2px solid ' + INKC + '; display:flex; align-items:center; justify-content:center; flex:none;">' +
           '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="' + INKC + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>' +
         '</button>' +
         '<span style="flex:none;">' + (window.Mascot ? window.Mascot.mini(30) : "🐸") + '</span>' +
         '<div style="flex:1; min-width:0;">' +
           '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:19px; letter-spacing:-0.3px; color:' + INKC + ';">ask mochi</div>' +
-          '<div style="font-family:' + MONO + '; font-size:9.5px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">your money, in plain words</div>' +
+          '<div style="font-family:' + MONO + '; font-size:9.5px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.5);">your money, in plain words</div>' +
         '</div>' +
       '</div>';
   }
@@ -57,7 +57,7 @@
   // user note: a slip of card stock, slightly tilted, like a margin scribble.
   function userBubble(text) {
     return '<div class="mochi-in" style="display:flex; justify-content:flex-end; padding:4px 0;">' +
-      '<div style="max-width:78%; background:#FFFDF7; border:2px solid ' + INKC + '; border-radius:15px 15px 4px 15px; box-shadow:2.5px 3px 0 rgba(43,33,24,0.85); padding:10px 14px; transform:rotate(0.8deg);' +
+      '<div style="max-width:78%; background:var(--card); border:2px solid ' + INKC + '; border-radius:15px 15px 4px 15px; box-shadow:2.5px 3px 0 rgba(var(--shadow-rgb),0.85); padding:10px 14px; transform:rotate(0.8deg);' +
         'font-family:' + SANS + '; font-style:italic; font-weight:500; font-size:14.5px; color:' + INKC + '; overflow-wrap:break-word;">' + app.esc(text) + '</div>' +
     '</div>';
   }
@@ -65,7 +65,7 @@
   function mochiBubble(text) {
     return '<div class="mochi-in" style="display:flex; align-items:flex-end; gap:8px; padding:4px 0;">' +
       '<span style="flex:none; margin-bottom:2px;">' + (window.Mascot ? window.Mascot.mini(24) : "🐸") + '</span>' +
-      '<div style="max-width:78%; background:rgba(61,232,199,0.16); border:1.5px solid rgba(43,33,24,0.35); border-radius:15px 15px 15px 4px; padding:10px 14px;' +
+      '<div style="max-width:78%; background:rgba(61,232,199,0.16); border:1.5px solid rgba(var(--ink-rgb),0.35); border-radius:15px 15px 15px 4px; padding:10px 14px;' +
         'font-family:' + SANS + '; font-size:14.5px; color:' + INKC + '; overflow-wrap:break-word;">' + app.esc(text) + '</div>' +
     '</div>';
   }
@@ -77,19 +77,19 @@
     }
     return '<div id="mTyping" class="mochi-in" style="display:flex; align-items:flex-end; gap:8px; padding:4px 0;">' +
       '<span class="mochi-bob" style="flex:none; margin-bottom:2px; display:inline-block; animation:mochiBob .9s ease-in-out infinite;">' + (window.Mascot ? window.Mascot.mini(24) : "🐸") + '</span>' +
-      '<div style="display:flex; gap:5px; align-items:center; background:rgba(61,232,199,0.16); border:1.5px solid rgba(43,33,24,0.35); border-radius:15px 15px 15px 4px; padding:13px 15px;">' + dots + '</div>' +
+      '<div style="display:flex; gap:5px; align-items:center; background:rgba(61,232,199,0.16); border:1.5px solid rgba(var(--ink-rgb),0.35); border-radius:15px 15px 15px 4px; padding:13px 15px;">' + dots + '</div>' +
     '</div>';
   }
 
   // ---- confirm cards (money writes: mochi proposes, the user disposes) ----------
 
   function actionCard(action, idx) {
-    return '<div class="mochi-in" data-action-card="' + idx + '" style="margin:6px 0 6px 32px; background:#FFFDF7; border:2px solid ' + INKC + '; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 14px;">' +
+    return '<div class="mochi-in" data-action-card="' + idx + '" style="margin:6px 0 6px 32px; background:var(--card); border:2px solid ' + INKC + '; border-radius:15px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 14px;">' +
       '<div style="font-family:' + MONO + '; font-size:9.5px; font-weight:700; letter-spacing:1.5px; color:#FF6B5E;">CONFIRM?</div>' +
       '<div style="font-family:' + SANS + '; font-weight:500; font-size:14.5px; color:' + INKC + '; margin:6px 0 12px;">' + app.esc(action.summary) + '</div>' +
       '<div style="display:flex; gap:9px;">' +
-        '<button data-confirm="' + idx + '" style="appearance:none; cursor:pointer; flex:1; min-height:42px; border-radius:999px; background:#2775CA; border:2px solid ' + INKC + '; box-shadow:2.5px 2.5px 0 rgba(43,33,24,0.9); font-family:' + DISPLAY + '; font-weight:600; font-size:14.5px; color:#fff;">confirm ✓</button>' +
-        '<button data-dismiss="' + idx + '" style="appearance:none; cursor:pointer; flex:none; min-height:42px; padding:0 16px; border-radius:999px; background:#FFFDF7; border:2px solid ' + INKC + '; font-family:' + DISPLAY + '; font-weight:600; font-size:14.5px; color:' + INKC + ';">nah</button>' +
+        '<button data-confirm="' + idx + '" style="appearance:none; cursor:pointer; flex:1; min-height:42px; border-radius:999px; background:#2775CA; border:2px solid ' + INKC + '; box-shadow:2.5px 2.5px 0 rgba(var(--shadow-rgb),0.9); font-family:' + DISPLAY + '; font-weight:600; font-size:14.5px; color:#fff;">confirm ✓</button>' +
+        '<button data-dismiss="' + idx + '" style="appearance:none; cursor:pointer; flex:none; min-height:42px; padding:0 16px; border-radius:999px; background:var(--card); border:2px solid ' + INKC + '; font-family:' + DISPLAY + '; font-weight:600; font-size:14.5px; color:' + INKC + ';">nah</button>' +
       '</div>' +
     '</div>';
   }
@@ -99,7 +99,7 @@
   function chipsHtml(items) {
     return '<div id="mChips" style="display:flex; flex-wrap:wrap; gap:8px; padding:8px 0 4px;">' +
       items.map(function (s) {
-        return '<button data-chip="' + app.esc(s) + '" style="appearance:none; cursor:pointer; background:#FFFDF7; border:1.5px dashed rgba(43,33,24,0.35); border-radius:999px; padding:8px 13px; font-family:' + MONO + '; font-size:11.5px; color:rgba(43,33,24,0.75);">' + app.esc(s) + '</button>';
+        return '<button data-chip="' + app.esc(s) + '" style="appearance:none; cursor:pointer; background:var(--card); border:1.5px dashed rgba(var(--ink-rgb),0.35); border-radius:999px; padding:8px 13px; font-family:' + MONO + '; font-size:11.5px; color:rgba(var(--ink-rgb),0.75);">' + app.esc(s) + '</button>';
       }).join("") +
     '</div>';
   }
@@ -107,7 +107,7 @@
   // degraded mode (no key server-side): plain deep links instead of chat answers
   function napLinks() {
     function link(href, label) {
-      return '<a href="' + href + '" style="text-decoration:none; display:flex; align-items:center; gap:9px; background:#FFFDF7; border:1.5px dashed rgba(43,33,24,0.35); border-radius:13px; padding:11px 13px; font-family:' + SANS + '; font-weight:500; font-size:13.5px; color:' + INKC + ';">' + label + ' <span style="margin-left:auto; font-family:' + MONO + '; color:#2775CA;">→</span></a>';
+      return '<a href="' + href + '" style="text-decoration:none; display:flex; align-items:center; gap:9px; background:var(--card); border:1.5px dashed rgba(var(--ink-rgb),0.35); border-radius:13px; padding:11px 13px; font-family:' + SANS + '; font-weight:500; font-size:13.5px; color:' + INKC + ';">' + label + ' <span style="margin-left:auto; font-family:' + MONO + '; color:#2775CA;">→</span></a>';
     }
     return '<div class="mochi-in" style="display:flex; flex-direction:column; gap:8px; margin:6px 0 6px 32px;">' +
       link("#/home", "💰 see who owes you") +
@@ -136,11 +136,11 @@
       '</div>' +
       // composer pinned above the safe area (tab bar is hidden on sub-screens)
       '<div style="position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex; justify-content:center; pointer-events:none;">' +
-        '<div style="width:100%; max-width:430px; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); background:linear-gradient(transparent, #F7F1E3 30%); pointer-events:auto;">' +
-          '<div style="display:flex; align-items:center; gap:8px; background:#FFFDF7; border:2px solid ' + INKC + '; border-radius:999px; box-shadow:3px 3.5px 0 rgba(43,33,24,0.9); padding:6px 6px 6px 16px;">' +
+        '<div style="width:100%; max-width:430px; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); background:linear-gradient(transparent, var(--paper) 30%); pointer-events:auto;">' +
+          '<div style="display:flex; align-items:center; gap:8px; background:var(--card); border:2px solid ' + INKC + '; border-radius:999px; box-shadow:3px 3.5px 0 rgba(var(--shadow-rgb),0.9); padding:6px 6px 6px 16px;">' +
             '<input id="mInput" autocomplete="off" maxlength="500" placeholder="ask or add… &quot;$7 coffee with sam&quot;" style="flex:1; min-width:0; background:transparent; border:none; outline:none; font-family:' + SANS + '; font-size:15px; color:' + INKC + ';">' +
             '<button id="mMic" aria-label="dictate" style="display:none; appearance:none; cursor:pointer; width:38px; height:38px; border-radius:50%; background:transparent; border:none; align-items:center; justify-content:center; flex:none;">' +
-              '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>' +
+              '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>' +
             '</button>' +
             '<button id="mSend" aria-label="send" style="appearance:none; cursor:pointer; width:40px; height:40px; border-radius:50%; background:#2775CA; border:2px solid ' + INKC + '; display:flex; align-items:center; justify-content:center; flex:none;">' +
               '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>' +

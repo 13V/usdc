@@ -349,14 +349,14 @@
     wrap.setAttribute("role", "region");
     wrap.setAttribute("aria-label", "turn on notifications");
     wrap.style.cssText = "position:fixed; left:12px; right:12px; bottom:calc(84px + env(safe-area-inset-bottom)); z-index:150; " +
-      "display:flex; align-items:center; gap:11px; padding:12px 12px 12px 14px; border:2px solid #2B2118; border-radius:16px; " +
-      "background:#FFC65C; box-shadow:3px 4px 0 rgba(43,33,24,0.85); max-width:406px; margin:0 auto; " +
+      "display:flex; align-items:center; gap:11px; padding:12px 12px 12px 14px; border:2px solid var(--border-ink); border-radius:16px; " +
+      "background:#FFC65C; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); max-width:406px; margin:0 auto; " +
       "opacity:0; transform:translateY(8px); transition:opacity .22s, transform .22s;";
     wrap.innerHTML =
       '<span style="font-size:20px; flex:none;">🔔</span>' +
-      '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; line-height:1.3; color:#2B2118;">wanna know when they pay you? turn on notifications.</span>' +
-      '<button id="divvyPushAllow" style="appearance:none; border:2px solid #2B2118; cursor:pointer; flex:none; background:#2775CA; color:#fff; border-radius:999px; padding:8px 13px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; box-shadow:2px 2px 0 rgba(43,33,24,0.85);">turn on</button>' +
-      '<button id="divvyPushLater" aria-label="later" style="appearance:none; border:none; cursor:pointer; flex:none; background:transparent; padding:4px; display:flex; align-items:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.6)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
+      '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:13px; line-height:1.3; color:var(--ink);">wanna know when they pay you? turn on notifications.</span>' +
+      '<button id="divvyPushAllow" style="appearance:none; border:2px solid var(--border-ink); cursor:pointer; flex:none; background:#2775CA; color:#fff; border-radius:999px; padding:8px 13px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; box-shadow:2px 2px 0 rgba(var(--shadow-rgb),0.85);">turn on</button>' +
+      '<button id="divvyPushLater" aria-label="later" style="appearance:none; border:none; cursor:pointer; flex:none; background:transparent; padding:4px; display:flex; align-items:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.6)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
     document.body.appendChild(wrap);
     requestAnimationFrame(function () { wrap.style.opacity = "1"; wrap.style.transform = "translateY(0)"; });
     function close() { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }
@@ -409,7 +409,7 @@
     t.textContent = msg;
     t.style.cssText = "position:fixed;left:50%;bottom:110px;transform:translateX(-50%);z-index:200;" +
       "background:var(--card);border:1px solid var(--line);color:var(--text);font-family:var(--mono);" +
-      "font-size:13px;padding:11px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(43,33,24,0.13);opacity:0;transition:opacity .2s;";
+      "font-size:13px;padding:11px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(var(--shadow-rgb),0.13);opacity:0;transition:opacity .2s;";
     toastRegion().appendChild(t);
     requestAnimationFrame(function () { t.style.opacity = "1"; });
     setTimeout(function () { t.style.opacity = "0"; setTimeout(function () { t.remove(); }, 250); }, 2200);
@@ -559,7 +559,7 @@
     // and boings while the refresh runs.
     ind.innerHTML = window.Mascot && window.Mascot.mini
       ? window.Mascot.mini(30)
-      : '<div style="width:26px;height:26px;border-radius:50%;background:#3DE8C7;border:2px solid #2B2118;"></div>';
+      : '<div style="width:26px;height:26px;border-radius:50%;background:#3DE8C7;border:2px solid var(--border-ink);"></div>';
     if (!document.getElementById("divvy-ptr-css")) {
       var s = document.createElement("style");
       s.id = "divvy-ptr-css";
@@ -695,15 +695,15 @@
     var bar = document.createElement("div");
     bar.id = "demoBanner";
     bar.style.cssText = "position:relative; z-index:5; flex:none; display:flex; align-items:center; gap:10px; " +
-      "padding:9px 12px 9px 14px; margin:8px 10px 0; border:2px solid #2B2118; border-radius:14px; " +
-      "background:#FFC65C; box-shadow:3px 3px 0 rgba(43,33,24,0.85);";
+      "padding:9px 12px 9px 14px; margin:8px 10px 0; border:2px solid var(--border-ink); border-radius:14px; " +
+      "background:#FFC65C; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.85);";
     bar.innerHTML =
       '<span style="font-size:17px; flex:none;">✨</span>' +
-      '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:12.5px; line-height:1.3; color:#2B2118;">' +
+      '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:12.5px; line-height:1.3; color:var(--ink);">' +
         "you're in demo mode — money here isn't real. " +
         '<span style="opacity:.75;">sign in with apple when you\'re ready</span></span>' +
-      '<button id="demoSignIn" style="appearance:none; border:2px solid #2B2118; cursor:pointer; flex:none; background:#2775CA; color:#fff; border-radius:999px; padding:7px 12px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12px; box-shadow:2px 2px 0 rgba(43,33,24,0.85);">sign in</button>' +
-      '<button id="demoDismiss" aria-label="dismiss" style="appearance:none; border:none; cursor:pointer; flex:none; background:transparent; padding:4px; display:flex; align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.6)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
+      '<button id="demoSignIn" style="appearance:none; border:2px solid var(--border-ink); cursor:pointer; flex:none; background:#2775CA; color:#fff; border-radius:999px; padding:7px 12px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:12px; box-shadow:2px 2px 0 rgba(var(--shadow-rgb),0.85);">sign in</button>' +
+      '<button id="demoDismiss" aria-label="dismiss" style="appearance:none; border:none; cursor:pointer; flex:none; background:transparent; padding:4px; display:flex; align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.6)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>';
     // Sits above the scroll area so it's pinned regardless of screen.
     appEl.insertBefore(bar, view);
     var signInBtn = bar.querySelector("#demoSignIn");
@@ -838,19 +838,19 @@
         'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; ' +
         (on
           ? 'background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); color:#2775CA;'
-          : 'background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); color:#2B2118;') +
+          : 'background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); color:var(--ink);') +
         '">' + dollarsLabel(c) + '</button>';
     }).join("");
     var maxHint = (typeof opts.maxCents === "number" && opts.maxCents > 0)
-      ? '<div id="' + idp + '-max" style="text-align:center; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6); margin-top:9px;">balance ' + dollarsLabel(opts.maxCents) + ' available</div>'
+      ? '<div id="' + idp + '-max" style="text-align:center; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.6); margin-top:9px;">balance ' + dollarsLabel(opts.maxCents) + ' available</div>'
       : '';
     return '' +
       '<div style="display:flex; align-items:center; justify-content:center; gap:4px; margin:6px 0 2px;">' +
-        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:34px; color:rgba(43,33,24,0.4);">$</span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:34px; color:rgba(var(--ink-rgb),0.4);">$</span>' +
         '<input id="' + idp + '-input" inputmode="decimal" autocomplete="off" value="' + (def / 100) + '" ' +
           'style="width:auto; max-width:200px; min-width:60px; background:transparent; border:none; outline:none; ' +
           'font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; letter-spacing:-2px; ' +
-          'color:#2B2118; text-align:center;">' +
+          'color:var(--ink); text-align:center;">' +
       '</div>' +
       maxHint +
       '<div style="display:flex; gap:9px; margin-top:18px;">' + chips + '</div>';
@@ -876,9 +876,9 @@
           b.style.border = "1px solid rgba(39,117,202,0.5)";
           b.style.color = "#2775CA";
         } else {
-          b.style.background = "#FFFDF7";
-          b.style.border = "1px solid rgba(43,33,24,0.1)";
-          b.style.color = "#2B2118";
+          b.style.background = "var(--card)";
+          b.style.border = "1px solid rgba(var(--ink-rgb),0.1)";
+          b.style.color = "var(--ink)";
         }
       });
     }
@@ -927,7 +927,7 @@
   // Small honest "test mode" line, shown when the provider keys aren't live yet.
   function testModeNote() {
     return '<div style="text-align:center; margin-top:12px;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6);">test mode · no real charge yet</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.6);">test mode · no real charge yet</span>' +
       '</div>';
   }
 
@@ -947,7 +947,7 @@
   // broken widget link, the money buttons show a soft "coming soon" line.
   function comingSoonNote() {
     return '<div style="text-align:center; margin-top:12px;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(43,33,24,0.6);">coming soon in your region ✨</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.6);">coming soon in your region ✨</span>' +
       '</div>';
   }
   // Visually disable a primary money button (used when the rails aren't live).
@@ -1044,8 +1044,8 @@
     } catch (_) {}
     if (!wallet) {
       sheet('<div style="padding:8px 20px 26px; text-align:center;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:#2B2118;">add money</div>' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.6); margin-top:10px;">create or connect a wallet first, then come back to fund it.</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:20px; color:var(--ink);">add money</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.6); margin-top:10px;">create or connect a wallet first, then come back to fund it.</div>' +
         '</div>');
       return;
     }
@@ -1065,33 +1065,33 @@
     sheet(
       '<div style="padding:4px 20px 26px;">' +
         '<div style="text-align:center; margin-bottom:6px;">' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118;">add money</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.55); margin-top:4px;">straight to your balance — dollars, just faster.</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:var(--ink);">add money</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.55); margin-top:4px;">straight to your balance — dollars, just faster.</div>' +
         '</div>' +
         amountEntryHtml({ idp: "dep", default: DEFAULT }) +
-        '<button id="depCard" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+        '<button id="depCard" type="button" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:54px; margin-top:20px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
           payGlyph +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">' + payLabel + '</span>' +
         '</button>' +
         '<div style="text-align:center; margin-top:9px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6);">takes ~1 min · card fees may apply</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.6);">takes ~1 min · card fees may apply</span>' +
         '</div>' +
         '<div id="depTestNote"></div>' +
         '<button id="depMore" type="button" style="appearance:none; border:none; cursor:pointer; background:transparent; display:block; width:100%; text-align:center; margin-top:16px; padding:6px; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(39,117,202,0.75);">or receive usdc directly ▾</button>' +
         // crypto-native receive block — hidden until "more options" is tapped.
         '<div id="depRecv" style="display:none; margin-top:6px;">' +
           '<div style="text-align:center;">' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">receive usdc · ' + esc(cluster) + '</div>' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.5);">receive usdc · ' + esc(cluster) + '</div>' +
           '</div>' +
           '<div id="depQrWrap" style="width:206px; margin:14px auto 0; background:#fff; border-radius:16px; padding:8px;">' +
             '<img id="depQr" alt="your wallet qr" width="190" height="190" style="display:block; border-radius:8px;" src="' + esc(qrImg(solUrl)) + '">' +
           '</div>' +
-          '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:16px auto 0; max-width:300px; background:#FFFDF7; border:2px solid #2B2118; border-radius:13px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:12px 14px; cursor:pointer;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(43,33,24,0.85);">' + esc(short) + '</span>' +
-            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
+          '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:16px auto 0; max-width:300px; background:var(--card); border:2px solid var(--border-ink); border-radius:13px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:12px 14px; cursor:pointer;">' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(var(--ink-rgb),0.85);">' + esc(short) + '</span>' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
           '</div>' +
           '<div style="text-align:center; margin-top:12px;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6);">send usdc to this address — it shows up in your balance.</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.6);">send usdc to this address — it shows up in your balance.</span>' +
           '</div>' +
         '</div>' +
       '</div>'
@@ -1164,13 +1164,13 @@
     if (qr) qr.onerror = function () {
       var wrap = document.getElementById("depQrWrap");
       if (!wrap) return;
-      wrap.style.background = "#FFFDF7";
-      wrap.style.border = "1px solid rgba(43,33,24,0.1)";
+      wrap.style.background = "var(--card)";
+      wrap.style.border = "1px solid rgba(var(--ink-rgb),0.1)";
       wrap.style.width = "auto";
       wrap.style.padding = "16px";
       wrap.innerHTML =
         '<div style="font-family:\'Space Mono\',monospace; font-size:11px; line-height:1.5; ' +
-        'word-break:break-all; text-align:center; color:rgba(43,33,24,0.9);">' + esc(wallet) + '</div>';
+        'word-break:break-all; text-align:center; color:rgba(var(--ink-rgb),0.9);">' + esc(wallet) + '</div>';
     };
   }
 
@@ -1188,6 +1188,38 @@
     _soundOn = !!on;
     try { localStorage.setItem("divvy.sounds", on ? "on" : "off"); } catch (_) {}
   }
+
+  // ---- theme ("the notebook at night") ----
+  // "divvy.theme" is "auto" | "light" | "dark" (default auto = follow system).
+  // index.html stamps html[data-theme] before first paint; this keeps it live:
+  // system flips in auto mode, manual overrides via app.setTheme (customize).
+  var THEME_KEY = "divvy.theme";
+  var _themeMq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  function theme() {
+    try {
+      var t = localStorage.getItem(THEME_KEY);
+      return t === "light" || t === "dark" ? t : "auto";
+    } catch (_) { return "auto"; }
+  }
+  function applyTheme() {
+    var pref = theme();
+    var dark = pref === "dark" || (pref !== "light" && _themeMq && _themeMq.matches);
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    // keep the browser/OS chrome on the paper color of the active theme
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute("content", dark ? "#1E1913" : "#F7F1E3");
+  }
+  function setTheme(pref) {
+    if (pref !== "light" && pref !== "dark") pref = "auto";
+    try { localStorage.setItem(THEME_KEY, pref); } catch (_) {}
+    applyTheme();
+  }
+  if (_themeMq) {
+    var _onThemeMq = function () { if (theme() === "auto") applyTheme(); };
+    if (_themeMq.addEventListener) _themeMq.addEventListener("change", _onThemeMq);
+    else if (_themeMq.addListener) _themeMq.addListener(_onThemeMq);
+  }
+  applyTheme();
   function audioCtx() {
     var C = window.AudioContext || window.webkitAudioContext;
     if (!C) return null;
@@ -1401,6 +1433,7 @@
     depositSheet: depositSheet, copy: copy, haptic: haptic, pullToRefresh: pullToRefresh,
     share: share, push: push, celebrate: celebrate, countUp: countUp, enter: enter,
     sound: sound, soundsEnabled: soundsEnabled, setSounds: setSounds,
+    theme: theme, setTheme: setTheme,
     tripToken: tripToken, setTripToken: setTripToken,
     qrImg: qrImg, amountEntryHtml: amountEntryHtml, wireAmountEntry: wireAmountEntry,
     openProvider: openProvider, testModeNote: testModeNote, dollarsLabel: dollarsLabel,

@@ -18,10 +18,10 @@
   function brandRow() {
     var me = meIdentity();
     return '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-      '<div style="width:36px; height:36px; border-radius:11px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+      '<div style="width:36px; height:36px; border-radius:11px; background:linear-gradient(150deg,#3286db,#2775CA 60%,#1f5fa8); display:flex; align-items:center; justify-content:center; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:700; font-size:24px; line-height:1; color:#fff; transform:translateY(-1px);">/</span>' +
       '</div>' +
-      '<a href="#/you" aria-label="your profile" style="text-decoration:none; width:36px; height:36px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(43,33,24,0.13);">' + app.face(me.emoji) + '</a>' +
+      '<a href="#/you" aria-label="your profile" style="text-decoration:none; width:36px; height:36px; border-radius:50%; background:' + me.color + '; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(var(--shadow-rgb),0.13);">' + app.face(me.emoji) + '</a>' +
     '</div>';
   }
 
@@ -29,7 +29,7 @@
   function header(count) {
     var sub = count === 1 ? "1 active" : count + " active";
     return '<div style="display:flex; align-items:baseline; gap:11px; margin-top:20px;">' +
-      '<h1 class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:33px; line-height:1; letter-spacing:-0.5px; margin:0; color:#2B2118;">your groups</h1>' +
+      '<h1 class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:33px; line-height:1; letter-spacing:-0.5px; margin:0; color:var(--ink);">your groups</h1>' +
       '<span style="font-family:\'Space Mono\',monospace; font-size:11px; font-weight:700; color:#FF6B5E;">' + sub + '!!</span>' +
     '</div>';
   }
@@ -83,7 +83,7 @@
     }
     var owedSeg = Math.max(owed, 1), oweSeg = Math.max(owe, 1);
     var bar = (owed > 0 || owe > 0)
-      ? '<div style="display:flex; height:30px; border-radius:999px; overflow:hidden; gap:3px; margin-top:18px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+      ? '<div style="display:flex; height:30px; border-radius:999px; overflow:hidden; gap:3px; margin-top:18px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
           (owed > 0 ? '<div style="flex:' + owedSeg + '; background:linear-gradient(90deg,#2775CA,#3f97ee); display:flex; align-items:center; padding-left:9px;">' + ridingAv(owers) + '</div>' : '') +
           (owe > 0 ? '<div style="flex:' + oweSeg + '; background:linear-gradient(90deg,#FF6B5E,#ff8073); display:flex; align-items:center; justify-content:flex-end; padding-right:7px;">' + ridingAv(owees) + '</div>' : '') +
         '</div>' +
@@ -94,9 +94,9 @@
       : "";
 
     return '<div style="margin-top:24px;">' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:12.5px; letter-spacing:0.2px; color:rgba(43,33,24,0.5);">' + label + '</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:12.5px; letter-spacing:0.2px; color:rgba(var(--ink-rgb),0.5);">' + label + '</div>' +
       '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:62px; line-height:1; letter-spacing:-2.5px; color:' + col + '; text-shadow:0 0 34px ' + (pos ? "rgba(39,117,202,0.45)" : "rgba(255,107,94,0.4)") + '; margin-top:6px;"><span style="font-size:33px; opacity:.5;">' + signPrefix + '</span>' + money3(net).replace('opacity:.55;', 'font-size:33px; opacity:.5;') + '</div>' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14px; color:rgba(43,33,24,0.55); margin-top:11px;">' + subline + '</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14px; color:rgba(var(--ink-rgb),0.55); margin-top:11px;">' + subline + '</div>' +
       bar +
     '</div>';
   }
@@ -188,7 +188,7 @@
     var pos = t.netCents > 0;
     var col = pos ? "#2775CA" : "#FF6B5E";
     var label = pos ? "you're owed" : "you owe";
-    var labelCol = pos ? "rgba(43,33,24,0.6)" : "rgba(255,107,94,0.85)";
+    var labelCol = pos ? "rgba(var(--ink-rgb),0.6)" : "rgba(255,107,94,0.85)";
     var sign = pos ? "+$" : "−$";
     var amtFs = big ? "25px" : "21px";
     return '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:' + (big ? "11px" : "10.5px") + '; color:' + labelCol + '; margin-bottom:2px;">' + label + '</div>' +
@@ -199,7 +199,7 @@
   function heroCard(t) {
     var cov = coverFor(t);
     var emoji = groupEmoji(t, cov);
-    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; background:#FFFDF7; border-radius:23px; overflow:hidden; border:1px solid rgba(43,33,24,0.06); box-shadow:0 10px 28px rgba(43,33,24,0.13); display:block;">' +
+    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; background:var(--card); border-radius:23px; overflow:hidden; border:1px solid rgba(var(--ink-rgb),0.06); box-shadow:0 10px 28px rgba(var(--shadow-rgb),0.13); display:block;">' +
       '<div style="position:relative; height:84px; background:' + cov.grad + '; display:flex; align-items:center; padding:0 18px; overflow:hidden;">' +
         coverDeco("74px", cov.dark) +
         '<span style="position:relative; font-size:38px; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.3));">' + emoji + '</span>' +
@@ -207,8 +207,8 @@
       '</div>' +
       '<div style="padding:15px 18px 17px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px;">' +
         '<div style="min-width:0;">' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:13.5px; color:rgba(43,33,24,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + dueBit(t) + '</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:13.5px; color:rgba(var(--ink-rgb),0.55); margin-top:4px;">' + app.esc(metaLine(t)) + dueBit(t) + '</div>' +
         '</div>' +
         '<div style="text-align:right; flex:none;">' + netBlock(t, true) + '</div>' +
       '</div>' +
@@ -219,14 +219,14 @@
   function bentoCard(t) {
     var cov = coverFor(t);
     var emoji = groupEmoji(t, cov);
-    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="text-decoration:none; color:inherit; background:#FFFDF7; border-radius:23px; overflow:hidden; border:1px solid rgba(43,33,24,0.06); box-shadow:0 8px 22px rgba(43,33,24,0.13); display:block;">' +
+    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="text-decoration:none; color:inherit; background:var(--card); border-radius:23px; overflow:hidden; border:1px solid rgba(var(--ink-rgb),0.06); box-shadow:0 8px 22px rgba(var(--shadow-rgb),0.13); display:block;">' +
       '<div style="position:relative; height:62px; background:' + cov.grad + '; display:flex; align-items:center; padding:0 16px; overflow:hidden;">' +
         coverDeco("14px", cov.dark) +
         '<span style="position:relative; font-size:30px; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.28));">' + emoji + '</span>' +
       '</div>' +
       '<div style="padding:13px 16px 15px;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12px; color:rgba(43,33,24,0.55); margin-top:3px;">' + app.esc(metaLine(t)) + dueBit(t) + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:var(--ink);">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12px; color:rgba(var(--ink-rgb),0.55); margin-top:3px;">' + app.esc(metaLine(t)) + dueBit(t) + '</div>' +
         '<div style="margin-top:12px;">' + netBlock(t, false) + '</div>' +
       '</div>' +
     '</a>';
@@ -236,15 +236,15 @@
   function rowCard(t) {
     var cov = coverFor(t);
     var emoji = groupEmoji(t, cov);
-    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; display:flex; background:#FFFDF7; border-radius:23px; overflow:hidden; border:1px solid rgba(43,33,24,0.06); box-shadow:0 8px 22px rgba(43,33,24,0.13); min-height:92px;">' +
+    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; display:flex; background:var(--card); border-radius:23px; overflow:hidden; border:1px solid rgba(var(--ink-rgb),0.06); box-shadow:0 8px 22px rgba(var(--shadow-rgb),0.13); min-height:92px;">' +
       '<div style="position:relative; width:98px; flex:none; background:' + cov.grad + '; display:flex; align-items:center; justify-content:center; overflow:hidden;">' +
         coverDeco("0", cov.dark) +
         '<span style="position:relative; font-size:34px; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.18));">' + emoji + '</span>' +
       '</div>' +
       '<div style="flex:1; min-width:0; padding:15px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;">' +
         '<div style="min-width:0;">' +
-          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(43,33,24,0.55); margin-top:4px;">' + app.esc(metaLine(t)) + dueBit(t) + '</div>' +
+          '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:12.5px; color:rgba(var(--ink-rgb),0.55); margin-top:4px;">' + app.esc(metaLine(t)) + dueBit(t) + '</div>' +
         '</div>' +
         '<div style="text-align:right; flex:none;">' + netBlock(t, false) + '</div>' +
       '</div>' +
@@ -255,13 +255,13 @@
   function archivedCard(t) {
     var cov = coverFor(t);
     var emoji = groupEmoji(t, cov);
-    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; display:flex; align-items:center; gap:12px; background:#FFFDF7; border-radius:16px; border:1px solid rgba(43,33,24,0.08); padding:11px 14px; opacity:0.62;">' +
+    return '<a href="#/group/' + encodeURIComponent(t.id) + '" style="grid-column:1 / -1; text-decoration:none; color:inherit; display:flex; align-items:center; gap:12px; background:var(--card); border-radius:16px; border:1px solid rgba(var(--ink-rgb),0.08); padding:11px 14px; opacity:0.62;">' +
       '<span style="width:40px; height:40px; border-radius:12px; background:' + cov.grad + '; display:flex; align-items:center; justify-content:center; font-size:22px; flex:none;">' + emoji + '</span>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
-        '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); margin-top:2px;">' + app.esc(metaLine(t)) + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((t.name || "").toLowerCase()) + '</div>' +
+        '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(var(--ink-rgb),0.5); margin-top:2px;">' + app.esc(metaLine(t)) + '</div>' +
       '</div>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.5); border:1px solid rgba(43,33,24,0.2); border-radius:999px; padding:3px 9px; flex:none;">archived</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.5); border:1px solid rgba(var(--ink-rgb),0.2); border-radius:999px; padding:3px 9px; flex:none;">archived</span>' +
     '</a>';
   }
 
@@ -271,7 +271,7 @@
     var wrap = view.querySelector("#gArchivedWrap");
     if (!wrap) return;
     if (!archivedTrips.length) { wrap.innerHTML = ""; return; }
-    var link = '<div id="gArchToggle" style="text-align:center; margin-top:20px; cursor:pointer; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.5);">' +
+    var link = '<div id="gArchToggle" style="text-align:center; margin-top:20px; cursor:pointer; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.5);">' +
       (showArchived ? "hide archived" : "archived (" + archivedTrips.length + ")") + '</div>';
     var list = showArchived
       ? '<div style="display:grid; grid-template-columns:1fr; gap:9px; margin-top:14px;">' + archivedTrips.map(archivedCard).join("") + '</div>'
@@ -296,7 +296,7 @@
 
   // ---- "+ new group" button (lifted gradient pill from frame) -----------
   function newGroupBtn() {
-    return '<button id="gNew" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; margin-top:18px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+    return '<button id="gNew" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; margin-top:18px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
       '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
       '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">new group</span>' +
     '</button>';
@@ -318,7 +318,7 @@
       '<input class="input" id="gName" placeholder="tokyo trip" autocomplete="off">' +
       '<label style="margin-top:16px;">what kind?</label>' +
       '<div id="gKindRow" style="display:flex; gap:9px; margin-top:9px;"></div>' +
-      '<div id="gKindHint" style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.4); margin-top:6px; min-height:12px;"></div>' +
+      '<div id="gKindHint" style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.4); margin-top:6px; min-height:12px;"></div>' +
       '<label style="margin-top:16px;">who\'s in</label>' +
       '<div id="gChips" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;"></div>' +
       '<div id="gPicker" style="display:none;"></div>' +
@@ -337,9 +337,9 @@
       kindRow.innerHTML = opts.map(function (o) {
         var on = kind === o[0];
         return '<button type="button" class="gKind" data-kind="' + o[0] + '" style="appearance:none; cursor:pointer; flex:1; min-height:42px; border-radius:999px; ' +
-          'background:' + (on ? "#3DE8C7" : "#FFFDF7") + '; border:2px ' + (on ? "solid" : "dashed") + ' #2B2118; ' +
-          (on ? "box-shadow:2px 3px 0 rgba(43,33,24,0.85); " : "") +
-          'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118;">' + o[1] + '</button>';
+          'background:' + (on ? "#3DE8C7" : "var(--card)") + '; border:2px ' + (on ? "solid" : "dashed") + ' var(--border-ink); ' +
+          (on ? "box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); " : "") +
+          'font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:var(--ink);">' + o[1] + '</button>';
       }).join("");
       if (kindHint) kindHint.textContent = kind === "household"
         ? "rent + utilities + shared subs, one monthly view — prorates when someone moves"
@@ -364,13 +364,13 @@
 
     function renderChips() {
       var html = members.map(function (m, i) {
-        return '<span style="display:inline-flex; align-items:center; gap:7px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; padding:6px 10px 6px 7px; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">' +
+        return '<span style="display:inline-flex; align-items:center; gap:7px; background:var(--card); border:2px solid var(--border-ink); border-radius:999px; padding:6px 10px 6px 7px; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">' +
           chipAv(m) +
-          '<span style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; color:#2B2118; max-width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name) + '</span>' +
+          '<span style="font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; color:var(--ink); max-width:110px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name) + '</span>' +
           (m.you ? "" : '<button class="gDrop" data-i="' + i + '" aria-label="remove ' + app.esc(m.name) + '" style="appearance:none; border:none; cursor:pointer; width:17px; height:17px; border-radius:50%; background:rgba(255,107,94,0.16); color:#FF6B5E; font-size:12px; line-height:1; display:inline-flex; align-items:center; justify-content:center; padding:0;">×</button>') +
         '</span>';
       }).join("") +
-      '<button id="gAddMember" style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:' + (pickerOpen ? "#3DE8C7" : "rgba(39,117,202,0.08)") + '; border:2px ' + (pickerOpen ? "solid" : "dashed") + ' #2B2118; border-radius:999px; padding:6px 13px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; color:#2B2118;' + (pickerOpen ? " box-shadow:2px 3px 0 rgba(43,33,24,0.85);" : "") + '">' +
+      '<button id="gAddMember" style="appearance:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; background:' + (pickerOpen ? "#3DE8C7" : "rgba(39,117,202,0.08)") + '; border:2px ' + (pickerOpen ? "solid" : "dashed") + ' var(--border-ink); border-radius:999px; padding:6px 13px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; color:' + (pickerOpen ? "#2B2118" : "var(--ink)") + ';' + (pickerOpen ? " box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);" : "") + '">' +
         (pickerOpen ? "done" : "+ add person") + '</button>';
       chipsBox.innerHTML = html;
       [].forEach.call(chipsBox.querySelectorAll(".gDrop"), function (b) {
@@ -390,10 +390,10 @@
       var em = f.emoji || "🙂";
       var col = f.color || "#2775CA";
       var sub = f.handle ? ("@" + f.handle) : (f.primaryWallet ? (f.primaryWallet.slice(0, 4) + "…" + f.primaryWallet.slice(-4)) : "");
-      return '<div class="gFriend" data-uid="' + app.esc(f.id) + '" style="display:flex; align-items:center; gap:11px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.07); border-radius:13px; padding:9px 11px; cursor:pointer; margin-bottom:7px;">' +
+      return '<div class="gFriend" data-uid="' + app.esc(f.id) + '" style="display:flex; align-items:center; gap:11px; background:var(--card-2); border:1px solid rgba(var(--ink-rgb),0.07); border-radius:13px; padding:9px 11px; cursor:pointer; margin-bottom:7px;">' +
         '<span style="width:36px; height:36px; border-radius:12px; background:' + col + '; display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;">' + app.face(em) + '</span>' +
-        '<span style="flex:1; min-width:0;"><span style="display:block; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(nm) + '</span>' +
-        (sub ? '<span style="display:block; font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.4); margin-top:1px;">' + app.esc(sub) + '</span>' : "") + '</span>' +
+        '<span style="flex:1; min-width:0;"><span style="display:block; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(nm) + '</span>' +
+        (sub ? '<span style="display:block; font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(var(--ink-rgb),0.4); margin-top:1px;">' + app.esc(sub) + '</span>' : "") + '</span>' +
         '<span style="display:inline-flex; align-items:center; background:rgba(39,117,202,0.12); border:1px solid rgba(39,117,202,0.4); border-radius:999px; padding:4px 11px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:12px; color:#2775CA; flex:none;">+ add</span>' +
       '</div>';
     }
@@ -402,7 +402,7 @@
       var box = pickerBox.querySelector("#gList");
       if (!box) return;
       if (allFriends === null) {
-        box.innerHTML = '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.4); padding:6px 2px;">loading friends…</div>';
+        box.innerHTML = '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(var(--ink-rgb),0.4); padding:6px 2px;">loading friends…</div>';
         return;
       }
       var have = {};
@@ -414,11 +414,11 @@
         return ((f.displayName || "") + " " + (f.handle || "")).toLowerCase().indexOf(q) >= 0;
       });
       if (!allFriends.length) {
-        box.innerHTML = '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; line-height:1.5; color:rgba(43,33,24,0.5); padding:4px 2px;">no friends yet — add people on the <span style="color:#2775CA; font-weight:600;">people</span> tab. for now, type their name below 👇</div>';
+        box.innerHTML = '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; line-height:1.5; color:rgba(var(--ink-rgb),0.5); padding:4px 2px;">no friends yet — add people on the <span style="color:#2775CA; font-weight:600;">people</span> tab. for now, type their name below 👇</div>';
         return;
       }
       box.innerHTML = fs.length ? fs.map(friendRow).join("")
-        : '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.4); padding:6px 2px;">' + (q ? "no match — add them as a guest below" : "everyone\'s already in 🎉") + '</div>';
+        : '<div style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(var(--ink-rgb),0.4); padding:6px 2px;">' + (q ? "no match — add them as a guest below" : "everyone\'s already in 🎉") + '</div>';
       [].forEach.call(box.querySelectorAll(".gFriend"), function (row) {
         row.onclick = function () {
           var f = null, uid = row.getAttribute("data-uid");
@@ -434,17 +434,17 @@
     function renderPicker() {
       if (!pickerOpen) { pickerBox.style.display = "none"; pickerBox.innerHTML = ""; return; }
       pickerBox.style.display = "block";
-      pickerBox.style.cssText += "; margin-top:12px; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; padding:12px; box-shadow:3px 4px 0 rgba(43,33,24,0.85);";
+      pickerBox.style.cssText += "; margin-top:12px; background:var(--card); border:2px solid var(--border-ink); border-radius:16px; padding:12px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85);";
       pickerBox.innerHTML =
-        '<div style="display:flex; align-items:center; gap:9px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.1); border-radius:12px; padding:9px 12px;">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
-          '<input id="gSearch" type="text" placeholder="find a friend…" autocomplete="off" style="flex:1; background:transparent; border:none; outline:none; color:#2B2118; font-family:\'Space Mono\',monospace; font-size:12px;">' +
+        '<div style="display:flex; align-items:center; gap:9px; background:var(--card-2); border:1px solid rgba(var(--ink-rgb),0.1); border-radius:12px; padding:9px 12px;">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.4)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>' +
+          '<input id="gSearch" type="text" placeholder="find a friend…" autocomplete="off" style="flex:1; background:transparent; border:none; outline:none; color:var(--ink); font-family:\'Space Mono\',monospace; font-size:12px;">' +
         '</div>' +
         '<div id="gList" style="max-height:180px; overflow-y:auto; -webkit-overflow-scrolling:touch; margin-top:9px;"></div>' +
-        '<div style="display:flex; align-items:center; gap:10px; margin:10px 0 8px;"><div style="flex:1; height:1px; background:rgba(43,33,24,0.09);"></div><span style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:1px; color:rgba(43,33,24,0.4);">or add a guest</span><div style="flex:1; height:1px; background:rgba(43,33,24,0.09);"></div></div>' +
+        '<div style="display:flex; align-items:center; gap:10px; margin:10px 0 8px;"><div style="flex:1; height:1px; background:rgba(var(--ink-rgb),0.09);"></div><span style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.4);">or add a guest</span><div style="flex:1; height:1px; background:rgba(var(--ink-rgb),0.09);"></div></div>' +
         '<div style="display:flex; gap:8px;">' +
-          '<input id="gGuest" type="text" placeholder="guest name" autocomplete="off" style="flex:1; background:#FBF6EA; border:1px solid rgba(43,33,24,0.1); border-radius:12px; padding:10px 12px; outline:none; color:#2B2118; font-family:\'General Sans\',sans-serif; font-size:14.5px;">' +
-          '<button id="gGuestAdd" style="appearance:none; border:2px solid #2B2118; cursor:pointer; padding:0 17px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">add</button>' +
+          '<input id="gGuest" type="text" placeholder="guest name" autocomplete="off" style="flex:1; background:var(--card-2); border:1px solid rgba(var(--ink-rgb),0.1); border-radius:12px; padding:10px 12px; outline:none; color:var(--ink); font-family:\'General Sans\',sans-serif; font-size:14.5px;">' +
+          '<button id="gGuestAdd" style="appearance:none; border:2px solid var(--border-ink); cursor:pointer; padding:0 17px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">add</button>' +
         '</div>';
       var search = pickerBox.querySelector("#gSearch");
       search.oninput = function () { paintList(); };
@@ -515,8 +515,8 @@
       brandRow() + header(0) +
       '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:50px 30px 0;">' +
         app.mascot({ size: 116, mood: "happy", glow: true }) +
-        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:24px 0 0; color:#2B2118;">sign in to see your groups</h2>' +
-        '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(43,33,24,0.55);">your tabs, trips and roommates live here — split now, settle later.</p>' +
+        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:24px 0 0; color:var(--ink);">sign in to see your groups</h2>' +
+        '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(var(--ink-rgb),0.55);">your tabs, trips and roommates live here — split now, settle later.</p>' +
         '<button class="btn" id="gConnect" style="max-width:300px; margin-top:24px;">sign in</button>' +
       '</div></div>';
     var c = document.getElementById("gConnect");
@@ -529,9 +529,9 @@
       brandRow() + header(0) +
       '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:66px 30px 0;">' +
         app.mascot({ size: 108, mood: "happy", glow: true }) +
-        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:30px 0 0; color:#2B2118;">no tabs yet — start one 🎉</h2>' +
-        '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(43,33,24,0.55);">split a trip, the rent, or last night\'s dinner. settle in dollars, just faster.</p>' +
-        '<button id="gNew" style="appearance:none; border:none; cursor:pointer; min-height:54px; margin-top:26px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; padding:0 26px; display:flex; align-items:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+        '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:23px; letter-spacing:-0.3px; margin:30px 0 0; color:var(--ink);">no tabs yet — start one 🎉</h2>' +
+        '<p style="font-family:\'General Sans\',sans-serif; font-weight:400; font-size:14.5px; line-height:1.45; max-width:240px; margin:11px 0 0; color:rgba(var(--ink-rgb),0.55);">split a trip, the rent, or last night\'s dinner. settle in dollars, just faster.</p>' +
+        '<button id="gNew" style="appearance:none; border:none; cursor:pointer; min-height:54px; margin-top:26px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); padding:0 26px; display:flex; align-items:center; gap:9px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
           '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16.5px; color:#fff;">start a tab</span>' +
         '</button>' +

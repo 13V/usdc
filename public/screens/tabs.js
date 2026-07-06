@@ -11,8 +11,8 @@
 
   function topbar() {
     return '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:12px; height:50px; padding:0 16px; flex:none;">' +
-      '<div id="tbBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></div>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">tabs</span>' +
+      '<div id="tbBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.5);">tabs</span>' +
     '</div>';
   }
   function wireBack() {
@@ -39,7 +39,7 @@
   function firstName(f) { return String(friendName(f)).trim().split(/\s+/)[0].toLowerCase(); }
 
   function sectionLabel(name) {
-    return '<div style="margin:26px 2px 12px;"><span class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:#2B2118;">' + name + '</span></div>';
+    return '<div style="margin:26px 2px 12px;"><span class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.2px; color:var(--ink);">' + name + '</span></div>';
   }
 
   // due-date chip bit for a tab's sub line: "· due sun 🗓️" / coral "overdue".
@@ -64,11 +64,11 @@
     var amt = t.direction === "settled"
       ? '<span style="font-family:\'Space Mono\',monospace; font-size:12px; color:#3DE8C7; flex:none;">square ✨</span>'
       : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:18px; letter-spacing:-0.4px; color:' + col + '; flex:none;"><span style="opacity:.5;">' + (pos ? "+$" : "−$") + '</span>' + money3(t.balanceCents) + '</div>';
-    return '<a href="#/tab/' + encodeURIComponent(f.id || "") + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:15px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px 11px 11px;">' +
+    return '<a href="#/tab/' + encodeURIComponent(f.id || "") + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; background:var(--card); border:2px solid var(--border-ink); border-radius:15px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:11px 14px 11px 11px;">' +
       '<div style="width:44px; height:44px; border-radius:14px; background:' + app.esc(f.color || "rgba(39,117,202,0.18)") + '; display:flex; align-items:center; justify-content:center; font-size:21px; flex:none;">' + app.face(f.emoji || (friendName(f)[0] || "?").toUpperCase()) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(friendName(f)) + '</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + (neg ? "rgba(255,107,94,0.8)" : "rgba(43,33,24,0.6)") + '; margin-top:3px;">' + app.esc(sub) + ' · ' + t.entryCount + (t.entryCount === 1 ? " entry" : " entries") + ' · ' + relTime(t.lastActivity) + dueBit(t, cfg) + '</div>' +
+        '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; letter-spacing:-0.2px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(friendName(f)) + '</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:0.5px; color:' + (neg ? "rgba(255,107,94,0.8)" : "rgba(var(--ink-rgb),0.6)") + '; margin-top:3px;">' + app.esc(sub) + ' · ' + t.entryCount + (t.entryCount === 1 ? " entry" : " entries") + ' · ' + relTime(t.lastActivity) + dueBit(t, cfg) + '</div>' +
       '</div>' + amt + '</a>';
   }
 
@@ -76,8 +76,8 @@
   function friendRow(f) {
     return '<a href="#/tab/' + encodeURIComponent(f.id || "") + '" style="text-decoration:none; display:flex; align-items:center; gap:13px; padding:10px 6px; cursor:pointer;">' +
       '<div style="width:38px; height:38px; border-radius:50%; background:rgba(39,117,202,0.14); display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;">' + app.face(f.emoji || (friendName(f)[0] || "?").toUpperCase()) + '</div>' +
-      '<div style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(friendName(f)) + (f.handle ? ' <span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(39,117,202,0.7);">@' + app.esc(f.handle) + '</span>' : '') + '</div>' +
-      '<span style="display:inline-flex; align-items:center; gap:5px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:2px 2px 0 rgba(43,33,24,0.85); padding:6px 13px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:#2B2118; flex:none;">+ start</span>' +
+      '<div style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(friendName(f)) + (f.handle ? ' <span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(39,117,202,0.7);">@' + app.esc(f.handle) + '</span>' : '') + '</div>' +
+      '<span style="display:inline-flex; align-items:center; gap:5px; background:var(--card); border:2px solid var(--border-ink); border-radius:999px; box-shadow:2px 2px 0 rgba(var(--shadow-rgb),0.85); padding:6px 13px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13px; color:var(--ink); flex:none;">+ start</span>' +
     '</a>';
   }
 

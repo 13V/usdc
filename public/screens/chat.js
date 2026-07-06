@@ -186,7 +186,7 @@
     var chips = {};
     keys.forEach(function (emoji) {
       var capped = capEmoji(emoji);
-      var chip = el('<button type="button" style="appearance:none; display:inline-flex; align-items:center; gap:4px; cursor:pointer; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:3px 9px;"></button>');
+      var chip = el('<button type="button" style="appearance:none; display:inline-flex; align-items:center; gap:4px; cursor:pointer; background:var(--card); border:2px solid var(--border-ink); border-radius:999px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:3px 9px;"></button>');
       chips[emoji] = chip;
       function paint() {
         var st = state[emoji] || { count: 0, mine: false };
@@ -197,13 +197,13 @@
         chip.appendChild(e);
         if (st.count > 0) {
           var n = document.createElement("span");
-          n.style.cssText = "font-family:" + MONO + "; font-size:10px; color:rgba(43,33,24,0.6);";
+          n.style.cssText = "font-family:" + MONO + "; font-size:10px; color:rgba(var(--ink-rgb),0.6);";
           n.textContent = String(st.count);
           chip.appendChild(n);
         }
         var on = st.count > 0;
-        chip.style.borderColor = st.mine ? "rgba(39,117,202,0.8)" : (on ? "rgba(39,117,202,0.45)" : "rgba(43,33,24,0.1)");
-        chip.style.background = st.mine ? "rgba(39,117,202,0.22)" : (on ? "rgba(39,117,202,0.12)" : "#FFFDF7");
+        chip.style.borderColor = st.mine ? "rgba(39,117,202,0.8)" : (on ? "rgba(39,117,202,0.45)" : "rgba(var(--ink-rgb),0.1)");
+        chip.style.background = st.mine ? "rgba(39,117,202,0.22)" : (on ? "rgba(39,117,202,0.12)" : "var(--card)");
       }
       chip.addEventListener("click", function () {
         // OPTIMISTIC: paint the toggled chip state immediately, then reconcile
@@ -273,7 +273,7 @@
       var wrap = el('<div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px; align-self:flex-end; max-width:80%;"></div>');
       var head = el('<div style="display:flex; align-items:center; gap:7px; padding-right:4px;"></div>');
       var tEl = document.createElement("span");
-      tEl.style.cssText = "font-family:" + MONO + "; font-size:9px; color:rgba(43,33,24,0.32);";
+      tEl.style.cssText = "font-family:" + MONO + "; font-size:9px; color:rgba(var(--ink-rgb),0.32);";
       tEl.textContent = when;
       var yEl = document.createElement("span");
       yEl.style.cssText = "font-family:" + MONO + "; font-size:10px; color:rgba(39,117,202,0.7);";
@@ -281,7 +281,7 @@
       head.appendChild(tEl); head.appendChild(yEl);
       wrap.appendChild(head);
 
-      var bubble = el('<div style="background:rgba(39,117,202,0.18); border:1px solid rgba(39,117,202,0.4); border-radius:20px 20px 6px 20px; padding:11px 15px; font-family:' + SANS + '; font-size:15px; line-height:1.35; color:#2B2118; word-break:break-word;"></div>');
+      var bubble = el('<div style="background:rgba(39,117,202,0.18); border:1px solid rgba(39,117,202,0.4); border-radius:20px 20px 6px 20px; padding:11px 15px; font-family:' + SANS + '; font-size:15px; line-height:1.35; color:var(--ink); word-break:break-word;"></div>');
       fillBubble(bubble, msg);
       wrap.appendChild(bubble);
       if (msg.id) wrap.appendChild(messageReactionRow(msg));
@@ -291,10 +291,10 @@
     var lwrap = el('<div style="display:flex; flex-direction:column; align-items:flex-start; gap:5px; max-width:80%;"></div>');
     var lhead = el('<div style="display:flex; align-items:center; gap:7px; padding-left:42px;"></div>');
     var nEl = document.createElement("span");
-    nEl.style.cssText = "font-family:" + MONO + "; font-size:10px; color:rgba(43,33,24,0.55);";
+    nEl.style.cssText = "font-family:" + MONO + "; font-size:10px; color:rgba(var(--ink-rgb),0.55);";
     nEl.textContent = who;
     var wEl = document.createElement("span");
-    wEl.style.cssText = "font-family:" + MONO + "; font-size:9px; color:rgba(43,33,24,0.32);";
+    wEl.style.cssText = "font-family:" + MONO + "; font-size:9px; color:rgba(var(--ink-rgb),0.32);";
     wEl.textContent = when;
     lhead.appendChild(nEl); lhead.appendChild(wEl);
     lwrap.appendChild(lhead);
@@ -303,7 +303,7 @@
     var av = el('<div style="width:33px; height:33px; border-radius:50%; background:' + gradFor(msg.author) + '; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none;"></div>');
     av.textContent = avEmoji(msg.author);
     line.appendChild(av);
-    var bub = el('<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:20px; box-shadow:3px 4px 0 rgba(43,33,24,0.85) 20px 20px 6px; padding:11px 15px; font-family:' + SANS + '; font-size:15px; line-height:1.35; color:#2B2118; word-break:break-word;"></div>');
+    var bub = el('<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:20px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85) 20px 20px 6px; padding:11px 15px; font-family:' + SANS + '; font-size:15px; line-height:1.35; color:var(--ink); word-break:break-word;"></div>');
     fillBubble(bub, msg);
     line.appendChild(bub);
     lwrap.appendChild(line);
@@ -318,7 +318,7 @@
   // put text and/or a tappable receipt photo into a bubble shell.
   function fillBubble(bubble, msg) {
     if (msg.image) {
-      var im = el('<img alt="receipt photo" style="display:block; width:200px; max-width:60vw; border-radius:14px; margin:1px 0; cursor:pointer; border:1px solid rgba(43,33,24,0.1);" />');
+      var im = el('<img alt="receipt photo" style="display:block; width:200px; max-width:60vw; border-radius:14px; margin:1px 0; cursor:pointer; border:1px solid rgba(var(--ink-rgb),0.1);" />');
       im.src = msg.image; // data: URL from server — set via property, not raw HTML
       im.addEventListener("click", function () { enlarge(msg.image); });
       bubble.appendChild(im);
@@ -345,31 +345,31 @@
 
     var wrap = el('<div style="display:flex; flex-direction:column; align-items:flex-start; gap:6px; width:100%;"></div>');
 
-    var card = el('<div style="position:relative; width:100%; background:#FFFDF7; border:1px solid rgba(39,117,202,0.28); border-radius:20px; overflow:hidden; box-shadow:0 12px 30px rgba(43,33,24,0.13); cursor:pointer;"></div>');
+    var card = el('<div style="position:relative; width:100%; background:var(--card); border:1px solid rgba(39,117,202,0.28); border-radius:20px; overflow:hidden; box-shadow:0 12px 30px rgba(var(--shadow-rgb),0.13); cursor:pointer;"></div>');
     card.appendChild(el('<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 90% 6%, rgba(255,255,255,0.04) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>'));
     card.appendChild(el('<div style="position:absolute; left:0; top:0; bottom:0; width:4px; background:linear-gradient(180deg,#2775CA,#3f97ee);"></div>'));
 
     var inner = el('<div style="position:relative; padding:15px 16px 13px;"></div>');
 
     var top = el('<div style="display:flex; align-items:center; gap:12px;"></div>');
-    var ico = el('<div style="width:46px; height:46px; border-radius:14px; background:#F7F1E3; display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;"></div>');
+    var ico = el('<div style="width:46px; height:46px; border-radius:14px; background:var(--paper); display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;"></div>');
     ico.textContent = emoji;
     top.appendChild(ico);
 
     var mid = el('<div style="flex:1; min-width:0;"></div>');
     var titleRow = el('<div style="display:flex; align-items:center; gap:6px;"></div>');
     var tSpan = document.createElement("span");
-    tSpan.style.cssText = "font-family:" + DISPLAY + "; font-weight:500; font-size:16.5px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;";
+    tSpan.style.cssText = "font-family:" + DISPLAY + "; font-weight:500; font-size:16.5px; letter-spacing:-0.2px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;";
     tSpan.textContent = title.toLowerCase();
     titleRow.appendChild(tSpan);
     var sub = document.createElement("div");
-    sub.style.cssText = "font-family:" + MONO + "; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.48); margin-top:3px;";
+    sub.style.cssText = "font-family:" + MONO + "; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.48); margin-top:3px;";
     sub.textContent = "new tab · " + paidBy + " paid · split " + splitN;
     mid.appendChild(titleRow); mid.appendChild(sub);
     top.appendChild(mid);
 
     var amtBox = el('<div style="text-align:right; flex:none;"></div>');
-    var amt = el('<div style="font-family:' + MONO + '; font-weight:700; font-size:21px; letter-spacing:-0.6px; color:#2B2118;"></div>');
+    var amt = el('<div style="font-family:' + MONO + '; font-weight:700; font-size:21px; letter-spacing:-0.6px; color:var(--ink);"></div>');
     amt.innerHTML = bigMoney(e.amountCents || 0);
     amtBox.appendChild(amt);
     if (owe != null && owe > 0) {
@@ -381,11 +381,11 @@
     top.appendChild(amtBox);
     inner.appendChild(top);
 
-    var foot = el('<div style="display:flex; align-items:center; justify-content:space-between; margin-top:13px; padding-top:12px; border-top:1px dashed rgba(43,33,24,0.12);"></div>');
+    var foot = el('<div style="display:flex; align-items:center; justify-content:space-between; margin-top:13px; padding-top:12px; border-top:1px dashed rgba(var(--ink-rgb),0.12);"></div>');
     var stack = el('<div style="display:flex; align-items:center;"></div>');
     var stackNames = names.length ? names : [paidBy];
     stackNames.slice(0, 4).forEach(function (nm, i) {
-      var a = el('<div style="width:22px; height:22px; border-radius:50%; background:' + gradFor(nm) + '; border:1.5px solid #FFFDF7; display:flex; align-items:center; justify-content:center; font-size:11px;' + (i ? " margin-left:-7px;" : "") + '"></div>');
+      var a = el('<div style="width:22px; height:22px; border-radius:50%; background:' + gradFor(nm) + '; border:1.5px solid var(--card); display:flex; align-items:center; justify-content:center; font-size:11px;' + (i ? " margin-left:-7px;" : "") + '"></div>');
       a.textContent = avEmoji(nm);
       stack.appendChild(a);
     });
@@ -412,8 +412,8 @@
     var who = p.fromName ? String(p.fromName).toLowerCase() : "someone";
 
     var wrap = el('<div style="display:flex; flex-direction:column; align-items:flex-start; gap:6px; width:100%;"></div>');
-    var border = el('<div style="position:relative; width:100%; border-radius:20px; padding:1.5px; background:linear-gradient(90deg,#2775CA,#3DE8C7,#2775CA); background-size:200% 100%; animation:gcKinetic 4s linear infinite; box-shadow:3px 3px 0 rgba(43,33,24,0.9);"></div>');
-    var card = el('<div style="position:relative; border-radius:18.5px; background:#FFFDF7; overflow:hidden;"></div>');
+    var border = el('<div style="position:relative; width:100%; border-radius:20px; padding:1.5px; background:linear-gradient(90deg,#2775CA,#3DE8C7,#2775CA); background-size:200% 100%; animation:gcKinetic 4s linear infinite; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);"></div>');
+    var card = el('<div style="position:relative; border-radius:18.5px; background:var(--card); overflow:hidden;"></div>');
     card.appendChild(el('<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 8% 100%, rgba(61,232,199,0.05) 0 1px, transparent 1px 9px); opacity:.7; pointer-events:none;"></div>'));
 
     var rowInner = el('<div style="position:relative; display:flex; align-items:center; gap:13px; padding:14px 16px;"></div>');
@@ -426,7 +426,7 @@
     rowInner.appendChild(blob);
 
     var mid = el('<div style="flex:1; min-width:0;"></div>');
-    var line = el('<div style="font-family:' + SANS + '; font-size:14px; line-height:1.3; color:#2B2118;"></div>');
+    var line = el('<div style="font-family:' + SANS + '; font-size:14px; line-height:1.3; color:var(--ink);"></div>');
     line.appendChild(document.createTextNode(who + " chipped in "));
     var amtSpan = document.createElement("span");
     amtSpan.style.cssText = "font-family:" + MONO + "; font-weight:700; color:#3DE8C7;";
@@ -455,7 +455,7 @@
   function dividerNode(label) {
     var d = el('<div style="display:flex; justify-content:center;"></div>');
     var s = document.createElement("span");
-    s.style.cssText = "font-family:" + MONO + "; font-size:9.5px; letter-spacing:1.5px; color:rgba(43,33,24,0.4); background:rgba(43,33,24,0.05); border-radius:999px; padding:4px 12px;";
+    s.style.cssText = "font-family:" + MONO + "; font-size:9.5px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.4); background:rgba(var(--ink-rgb),0.05); border-radius:999px; padding:4px 12px;";
     s.textContent = label;
     d.appendChild(s);
     return d;
@@ -554,7 +554,7 @@
         '<div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.35) 0%, rgba(61,232,199,0) 68%); animation:gcPulse 3s ease-in-out infinite;"></div>' +
         '<div style="position:relative; animation:gcSquish 4s ease-in-out infinite;">' + (window.Mascot ? window.Mascot.mini(72) : "") + '</div>' +
       '</div>' +
-      '<div style="font-family:' + SANS + '; font-size:16px; line-height:1.45; color:rgba(43,33,24,0.65);">no messages yet — say hi<br>or drop a receipt 📷</div>' +
+      '<div style="font-family:' + SANS + '; font-size:16px; line-height:1.45; color:rgba(var(--ink-rgb),0.65);">no messages yet — say hi<br>or drop a receipt 📷</div>' +
     '</div>');
     feedEl.appendChild(box);
   }
@@ -643,7 +643,7 @@
       "@keyframes gcRise{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}" +
       "@keyframes gcShimmer{0%{background-position:-200% 0;}100%{background-position:200% 0;}}" +
       ".gc-scroll::-webkit-scrollbar{width:0;height:0;}" +
-      ".gc-skel{height:46px;border-radius:20px;background:linear-gradient(100deg,#FFFDF7 30%,#EFE7D3 50%,#FFFDF7 70%);" +
+      ".gc-skel{height:46px;border-radius:20px;background:linear-gradient(100deg,var(--card) 30%,var(--paper-deep) 50%,var(--card) 70%);" +
         "background-size:200% 100%;animation:gcShimmer 1.3s linear infinite;}" +
       "@media (prefers-reduced-motion:reduce){.gc-scroll *{animation:none!important;}}";
     var style = document.createElement("style");
@@ -665,17 +665,17 @@
     if (!wrap) return;
     if (!pendingImage) {
       wrap.style.display = "none"; wrap.innerHTML = "";
-      if (btn) { btn.style.background = "rgba(255,198,92,0.55)"; btn.style.borderColor = "#2B2118"; }
+      if (btn) { btn.style.background = "rgba(255,198,92,0.55)"; btn.style.borderColor = "var(--border-ink)"; }
       return;
     }
     wrap.style.display = "flex"; wrap.innerHTML = "";
-    var im = el('<img alt="selected receipt" style="width:40px; height:40px; object-fit:cover; border-radius:11px; border:1px solid rgba(43,33,24,0.1);" />');
+    var im = el('<img alt="selected receipt" style="width:40px; height:40px; object-fit:cover; border-radius:11px; border:1px solid rgba(var(--ink-rgb),0.1);" />');
     im.src = pendingImage;
-    var lbl = el('<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:rgba(43,33,24,0.6);">photo attached</span>');
-    var x = el('<button type="button" style="margin-left:auto; appearance:none; background:none; border:0; color:rgba(43,33,24,0.6); font-family:' + MONO + '; font-size:11px; cursor:pointer; padding:4px 8px;">✕ remove</button>');
+    var lbl = el('<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:rgba(var(--ink-rgb),0.6);">photo attached</span>');
+    var x = el('<button type="button" style="margin-left:auto; appearance:none; background:none; border:0; color:rgba(var(--ink-rgb),0.6); font-family:' + MONO + '; font-size:11px; cursor:pointer; padding:4px 8px;">✕ remove</button>');
     x.addEventListener("click", function () { pendingImage = null; renderPreview(); });
     wrap.appendChild(im); wrap.appendChild(lbl); wrap.appendChild(x);
-    if (btn) { btn.style.background = "#2775CA"; btn.style.borderColor = "#2B2118"; }
+    if (btn) { btn.style.background = "#2775CA"; btn.style.borderColor = "var(--border-ink)"; }
   }
   async function onPhotoPicked(ev) {
     var file = ev.target.files && ev.target.files[0];
@@ -747,7 +747,7 @@
     var box = el('<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:0 40px; text-align:center; margin:auto 0;"></div>');
     box.innerHTML = app.mascot({ size: 80, mood: "worried", glow: false });
     var p = document.createElement("div");
-    p.style.cssText = "font-family:" + SANS + "; font-size:16px; line-height:1.45; color:rgba(43,33,24,0.65);";
+    p.style.cssText = "font-family:" + SANS + "; font-size:16px; line-height:1.45; color:rgba(var(--ink-rgb),0.65);";
     p.textContent = err && err.status === 403
       ? "no access to this chat — ask someone to share the link 🔒"
       : "couldn't load this chat — " + ((err && err.message) || "try again");
@@ -823,47 +823,47 @@
   function buildShell(view) {
     view.innerHTML = "";
     screenEl = el(
-      '<div style="position:fixed; inset:0; z-index:40; background:#F7F1E3; color:#2B2118; font-family:' + SANS + '; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column; overflow:hidden;">' +
+      '<div style="position:fixed; inset:0; z-index:40; background:var(--paper); color:var(--ink); font-family:' + SANS + '; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column; overflow:hidden;">' +
 
         // faint money texture + soft blue glow (lifted)
-        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(43,33,24,0.028) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>' +
+        '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(var(--ink-rgb),0.028) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none;"></div>' +
         '<div style="position:absolute; left:-60px; top:380px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.13) 0%, rgba(39,117,202,0) 70%); pointer-events:none;"></div>' +
 
         // top bar
-        '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:11px; height:58px; padding:0 14px; flex:none; background:#F7F1E3; border-bottom:1.5px dashed rgba(43,33,24,0.22);">' +
-          '<button class="gc-back" type="button" aria-label="back" style="appearance:none; width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;">' +
-            '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+        '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:11px; height:58px; padding:0 14px; flex:none; background:var(--paper); border-bottom:1.5px dashed rgba(var(--ink-rgb),0.22);">' +
+          '<button class="gc-back" type="button" aria-label="back" style="appearance:none; width:38px; height:38px; border-radius:50%; background:var(--card); border:2px solid var(--border-ink); box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; padding:0;">' +
+            '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
           '<div style="position:relative; width:40px; height:40px; flex:none;">' +
-            '<div class="gc-gavatar-emoji" style="width:40px; height:40px; border-radius:13px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; font-size:19px; overflow:hidden;">👥</div>' +
-            '<div style="position:absolute; right:-2px; bottom:-2px; width:14px; height:14px; border-radius:50%; background:#3DE8C7; border:2.5px solid #2B2118; box-shadow:0 0 8px rgba(61,232,199,0.7);"></div>' +
+            '<div class="gc-gavatar-emoji" style="width:40px; height:40px; border-radius:13px; background:linear-gradient(135deg,#3a93ec,#2775CA 60%,#1d5697); border:2px solid var(--border-ink); box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); display:flex; align-items:center; justify-content:center; font-size:19px; overflow:hidden;">👥</div>' +
+            '<div style="position:absolute; right:-2px; bottom:-2px; width:14px; height:14px; border-radius:50%; background:#3DE8C7; border:2.5px solid var(--border-ink); box-shadow:0 0 8px rgba(61,232,199,0.7);"></div>' +
           '</div>' +
           '<div style="flex:1; min-width:0;">' +
-            '<div class="gc-name" style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">group</div>' +
+            '<div class="gc-name" style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; letter-spacing:-0.2px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">group</div>' +
             '<div class="gc-online" style="font-family:' + MONO + '; font-size:9.5px; letter-spacing:.5px; color:#17a98c; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">loading…</div>' +
           '</div>' +
-          '<div style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; flex:none;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
+          '<div style="width:38px; height:38px; border-radius:50%; background:var(--card); border:2px solid var(--border-ink); box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); display:flex; align-items:center; justify-content:center; flex:none;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2.4" stroke-linecap="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
         '</div>' +
 
         // feed (scroll)
         '<div class="gc-scroll gc-feed" style="position:relative; z-index:2; flex:1; overflow-y:auto; scrollbar-width:none; padding:16px 16px 14px; display:flex; flex-direction:column; gap:14px;"></div>' +
 
         // status line (sending / errors)
-        '<div class="gc-status" style="position:relative; z-index:6; display:none; flex:none; font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.6); padding:6px 16px 0; text-align:center; background:rgba(247,241,227,0.96);"></div>' +
+        '<div class="gc-status" style="position:relative; z-index:6; display:none; flex:none; font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.6); padding:6px 16px 0; text-align:center; background:rgba(var(--paper-rgb),0.96);"></div>' +
 
         // photo preview strip
-        '<div class="gc-preview" style="position:relative; z-index:6; display:none; flex:none; align-items:center; gap:8px; padding:8px 16px; background:rgba(247,241,227,0.96); border-top:1.5px dashed rgba(43,33,24,0.18);"></div>' +
+        '<div class="gc-preview" style="position:relative; z-index:6; display:none; flex:none; align-items:center; gap:8px; padding:8px 16px; background:rgba(var(--paper-rgb),0.96); border-top:1.5px dashed rgba(var(--ink-rgb),0.18);"></div>' +
 
         // composer (lifted: 📷 circle, input pill w/ "＋ tab", glowing send)
-        '<div style="position:relative; z-index:6; flex:none; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); background:#F7F1E3; border-top:1.5px dashed rgba(43,33,24,0.2); display:flex; align-items:center; gap:9px;">' +
-          '<button class="gc-attach" type="button" aria-label="attach receipt" style="appearance:none; width:40px; height:40px; border-radius:50%; background:rgba(255,198,92,0.55); border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer; flex:none; padding:0;">📷</button>' +
+        '<div style="position:relative; z-index:6; flex:none; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); background:var(--paper); border-top:1.5px dashed rgba(var(--ink-rgb),0.2); display:flex; align-items:center; gap:9px;">' +
+          '<button class="gc-attach" type="button" aria-label="attach receipt" style="appearance:none; width:40px; height:40px; border-radius:50%; background:rgba(255,198,92,0.55); border:2px solid var(--border-ink); box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer; flex:none; padding:0;">📷</button>' +
           '<input class="gc-file" type="file" accept="image/*" capture="environment" style="display:none" />' +
-          '<div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:0 6px 0 16px; min-height:44px;">' +
-            '<input class="gc-input" type="text" placeholder="message…" aria-label="message" style="flex:1; min-width:0; border:0; outline:none; background:transparent; color:#2B2118; font-family:' + SANS + '; font-size:15px; padding:11px 0;" />' +
+          '<div style="flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:var(--card); border:2px solid var(--border-ink); border-radius:999px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:0 6px 0 16px; min-height:44px;">' +
+            '<input class="gc-input" type="text" placeholder="message…" aria-label="message" style="flex:1; min-width:0; border:0; outline:none; background:transparent; color:var(--ink); font-family:' + SANS + '; font-size:15px; padding:11px 0;" />' +
             '<button class="gc-tabbtn" type="button" aria-label="new tab" style="appearance:none; display:inline-flex; align-items:center; gap:5px; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.4); border-radius:999px; padding:6px 11px; cursor:pointer; flex:none;">' +
               '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
               '<span style="font-family:' + MONO + '; font-weight:700; font-size:10.5px; color:#2775CA;">tab</span></button>' +
           '</div>' +
-          '<button class="gc-send" type="button" aria-label="send" style="appearance:none; width:46px; height:46px; border-radius:50%; border:2px solid #2B2118; background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+          '<button class="gc-send" type="button" aria-label="send" style="appearance:none; width:46px; height:46px; border-radius:50%; border:2px solid var(--border-ink); background:linear-gradient(135deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
             '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>' +
         '</div>' +
       '</div>');
@@ -923,7 +923,7 @@
           var box = el('<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:0 40px; text-align:center; margin:auto 0;"></div>');
           box.innerHTML = app.mascot({ size: 80, mood: "worried", glow: false });
           var p = document.createElement("div");
-          p.style.cssText = "font-family:" + SANS + "; font-size:16px; color:rgba(43,33,24,0.65);";
+          p.style.cssText = "font-family:" + SANS + "; font-size:16px; color:rgba(var(--ink-rgb),0.65);";
           p.textContent = "no group selected";
           box.appendChild(p);
           feedEl.appendChild(box);

@@ -320,7 +320,7 @@
       '<g class="mq-leg-l"><path d="M60,132 v9 M51,141 h15" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
       '<g class="mq-leg-r"><path d="M110,132 v9 M104,141 h15" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
       // landing dust (visible only during the hop's touchdown)
-      '<g class="mq-dust"><path d="M38,143 q-7,2 -12,-1 M132,143 q7,2 12,-1" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="3" stroke-linecap="round"/></g>' +
+      '<g class="mq-dust"><path d="M38,143 q-7,2 -12,-1 M132,143 q7,2 12,-1" fill="none" stroke="rgba(var(--ink-rgb, 43,33,24),0.4)" stroke-width="3" stroke-linecap="round"/></g>' +
       '<g class="mq-bodygroup">' +
         // arms (attach at the body sides)
         '<g class="mq-arm-l"><path d="M27,98 q-11,3 -13,13" fill="none" ' + STROKE + ' stroke-width="4"/></g>' +
@@ -364,7 +364,7 @@
       '<div class="dmascot" style="position:relative;width:' + px(170) + 'px;height:' + px(150) + 'px;display:flex;align-items:center;justify-content:center;flex:none;">' +
         glowEl +
         '<div style="position:relative;width:100%;height:100%;animation:mFloat 5.5s ease-in-out infinite;">' +
-          '<div class="dmascot-drawn" style="position:relative;width:100%;height:100%;filter:drop-shadow(' + Math.max(2, px(3)) + 'px ' + Math.max(3, px(4)) + 'px 0 rgba(43,33,24,0.45));">' +
+          '<div class="dmascot-drawn" style="position:relative;width:100%;height:100%;filter:drop-shadow(' + Math.max(2, px(3)) + 'px ' + Math.max(3, px(4)) + 'px 0 rgba(var(--shadow-rgb, 43,33,24),0.45));">' +
             frogSvg(mood, mood === "wave") +
             sparkles +
           '</div>' +
@@ -377,7 +377,7 @@
   function mini(pxSize) {
     pxSize = pxSize || 28;
     return '' +
-    '<svg viewBox="0 0 120 100" width="' + pxSize + '" height="' + Math.round(pxSize * 0.83) + '" style="overflow:visible; display:block; filter:drop-shadow(2px 3px 0 rgba(43,33,24,0.55));">' +
+    '<svg viewBox="0 0 120 100" width="' + pxSize + '" height="' + Math.round(pxSize * 0.83) + '" style="overflow:visible; display:block; filter:drop-shadow(2px 3px 0 rgba(var(--shadow-rgb, 43,33,24),0.55));">' +
       '<g class="mq-eye-l"><circle cx="38" cy="26" r="14" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/><circle class="mq-pupil" cx="38" cy="26" r="4.6" fill="' + INK + '"/></g>' +
       '<g class="mq-eye-r"><circle cx="82" cy="26" r="14" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/><circle class="mq-pupil" cx="82" cy="26" r="4.6" fill="' + INK + '"/></g>' +
       '<path d="M14,64 Q14,38 60,38 Q106,38 106,64 Q106,88 60,88 Q14,88 14,64 Z" fill="' + MINT + '" ' + STROKE + ' stroke-width="4"/>' +

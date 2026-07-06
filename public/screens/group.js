@@ -24,7 +24,7 @@
     return '<div style="display:inline-flex; align-items:center; gap:7px; margin-top:14px; border:1px solid ' + col + '55; background:' + col + '1f; border-radius:999px; padding:5px 12px;">' +
       '<span style="width:6px; height:6px; border-radius:50%; background:' + col + '; box-shadow:0 0 7px ' + col + 'cc;"></span>' +
       '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:11px; color:' + col + ';">' + dollars + '</span>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.55);">' + label + '</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.55);">' + label + '</span>' +
     '</div>';
   }
   var REACTS = ["😋", "🔥", "🫡"]; // the receipt-sheet chip set (frame style)
@@ -47,15 +47,15 @@
     Object.keys(state).forEach(function (e) { if (keys.indexOf(e) < 0) keys.push(e); });
     var chips = {};
     keys.forEach(function (emoji) {
-      var chip = elFrom('<div style="display:inline-flex; align-items:center; gap:5px; background:#FFFDF7; border:2px solid #2B2118; border-radius:999px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:5px 11px; cursor:pointer;"></div>');
+      var chip = elFrom('<div style="display:inline-flex; align-items:center; gap:5px; background:var(--card); border:2px solid var(--border-ink); border-radius:999px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:5px 11px; cursor:pointer;"></div>');
       chips[emoji] = chip;
       function paint() {
         var st = state[emoji] || { count: 0, mine: false };
         chip.innerHTML = '<span style="font-size:13px;">' + emoji + '</span>' +
-          (st.count > 0 ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.7);">' + st.count + '</span>' : '');
+          (st.count > 0 ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(var(--ink-rgb),0.7);">' + st.count + '</span>' : '');
         var on = st.count > 0;
-        chip.style.borderColor = st.mine ? "rgba(39,117,202,0.8)" : (on ? "rgba(39,117,202,0.45)" : "rgba(43,33,24,0.1)");
-        chip.style.background = st.mine ? "rgba(39,117,202,0.22)" : (on ? "rgba(39,117,202,0.12)" : "#FFFDF7");
+        chip.style.borderColor = st.mine ? "rgba(39,117,202,0.8)" : (on ? "rgba(39,117,202,0.45)" : "rgba(var(--ink-rgb),0.1)");
+        chip.style.background = st.mine ? "rgba(39,117,202,0.22)" : (on ? "rgba(39,117,202,0.12)" : "var(--card)");
       }
       chip.onclick = function () {
         app.api.post("/api/trips/" + encodeURIComponent(tripId) + "/reactions", { target: target, emoji: emoji })
@@ -156,14 +156,14 @@
   function topbar(trip, emoji) {
     return '' +
     '<div style="display:flex; align-items:center; justify-content:space-between; height:56px; padding:0 16px; flex:none;">' +
-      '<div id="gBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<div id="gBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></div>' +
       '<div style="display:flex; align-items:center; gap:7px; min-width:0;">' +
-        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((trip && trip.name) || "group") + '</span>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc((trip && trip.name) || "group") + '</span>' +
         '<span id="gEmoji" style="font-size:16px;">' + emoji + '</span>' +
       '</div>' +
-      '<div id="gMore" role="button" aria-label="group options" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
-        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
+      '<div id="gMore" role="button" aria-label="group options" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg></div>' +
     '</div>';
   }
   function wireBack() {
@@ -182,11 +182,11 @@
     var members = trip.members || [];
     var stack = members.slice(0, 5).map(function (m, i) {
       return '<div style="width:36px; height:36px; border-radius:50%; background:' + memberGrad(m) +
-        '; border:2px solid #2B2118;' + (i ? " margin-left:-10px;" : "") +
+        '; border:2px solid var(--border-ink);' + (i ? " margin-left:-10px;" : "") +
         ' display:flex; align-items:center; justify-content:center; font-size:17px;">' + app.face(memberEmoji(m)) + '</div>';
     }).join("");
     var more = members.length > 5
-      ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(43,33,24,0.55); margin-left:8px;">+' + (members.length - 5) + '</span>'
+      ? '<span style="font-family:\'Space Mono\',monospace; font-size:11px; color:rgba(var(--ink-rgb),0.55); margin-left:8px;">+' + (members.length - 5) + '</span>'
       : "";
 
     var since = "";
@@ -200,18 +200,18 @@
       " · " + ntabs + " " + (ntabs === 1 ? "TAB" : "TABS") + since;
 
     return '' +
-    '<div style="position:relative; margin:14px 16px 0; border-radius:20px; padding:18px 18px 15px; background:#FFFDF7; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); transform:rotate(-0.4deg);">' +
+    '<div style="position:relative; margin:14px 16px 0; border-radius:20px; padding:18px 18px 15px; background:var(--card); border:2px solid var(--border-ink); box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); transform:rotate(-0.4deg);">' +
       // washi tape holding the card into the journal
-      '<div style="position:absolute; top:-11px; left:50%; width:88px; height:22px; transform:translateX(-50%) rotate(-2deg); background:rgba(61,232,199,0.75); opacity:.9; border-left:1.5px dashed rgba(43,33,24,0.25); border-right:1.5px dashed rgba(43,33,24,0.25);"></div>' +
+      '<div style="position:absolute; top:-11px; left:50%; width:88px; height:22px; transform:translateX(-50%) rotate(-2deg); background:rgba(61,232,199,0.75); opacity:.9; border-left:1.5px dashed rgba(var(--ink-rgb),0.25); border-right:1.5px dashed rgba(var(--ink-rgb),0.25);"></div>' +
       '<div style="position:relative; display:flex; align-items:center; justify-content:space-between;">' +
         '<div style="display:flex; align-items:center;">' + stack + more + '</div>' +
         '<div style="text-align:right;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">GROUP TOTAL</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.5);">GROUP TOTAL</div>' +
           '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:22px; letter-spacing:-1px; color:#2775CA; margin-top:2px;"><span style="font-size:14px; opacity:.55;">$</span>' + moneyParts(trip.totalCents || 0, "14px", ".55") + '</div>' +
         '</div>' +
       '</div>' +
       '<div style="position:relative; display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px;">' +
-        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.55);">' + meta + ' <span style="color:#FF6B5E;">!!</span></span>' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.55);">' + meta + ' <span style="color:#FF6B5E;">!!</span></span>' +
         dueChip(trip.dueAt, trip.overdue) +
       '</div>' +
     '</div>';
@@ -250,9 +250,9 @@
     var slots = unclaimedSlots(trip);
     var rows = slots.map(function (m) {
       return '<div class="gClaimSlot" data-mid="' + app.esc(m.id) + '" role="button" tabindex="0" ' +
-        'style="display:flex; align-items:center; gap:12px; background:#F7F1E3; border:1px solid rgba(61,232,199,0.28); border-radius:14px; padding:11px 14px; cursor:pointer;">' +
+        'style="display:flex; align-items:center; gap:12px; background:var(--paper); border:1px solid rgba(61,232,199,0.28); border-radius:14px; padding:11px 14px; cursor:pointer;">' +
         gavatar(m, 34) +
-        '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name || "someone") + '</span>' +
+        '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name || "someone") + '</span>' +
         '<span style="font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.5px; color:#3DE8C7;">claim →</span>' +
       '</div>';
     }).join("");
@@ -260,12 +260,12 @@
     var html = '' +
     '<div style="margin:22px 0 4px; border-radius:20px; padding:18px 18px 16px; ' +
       'background:linear-gradient(150deg, rgba(61,232,199,0.12), rgba(39,117,202,0.10)); ' +
-      'border:1px solid rgba(61,232,199,0.35); box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+      'border:1px solid rgba(61,232,199,0.35); box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
       '<div style="display:flex; align-items:center; gap:9px;">' +
         '<span style="font-size:20px;">✨</span>' +
-        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.3px; color:#2B2118;">is one of these you?</span>' +
+        '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:18px; letter-spacing:-0.3px; color:var(--ink);">is one of these you?</span>' +
       '</div>' +
-      '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(43,33,24,0.65); margin-top:6px;">claim your spot so the group can settle up to you.</div>' +
+      '<div style="font-family:\'General Sans\',sans-serif; font-size:13.5px; color:rgba(var(--ink-rgb),0.65); margin-top:6px;">claim your spot so the group can settle up to you.</div>' +
       '<div style="display:flex; flex-direction:column; gap:9px; margin-top:14px;">' + rows + '</div>' +
     '</div>';
 
@@ -342,7 +342,7 @@
       bigSign = net > 0 ? "+$" : net < 0 ? "−$" : "$";
     } else {
       eyebrow = "GROUP TOTAL";
-      col = "#2B2118";
+      col = "var(--ink)";
       label = "across this group";
       bigSign = "$";
       net = trip.totalCents || 0;
@@ -375,15 +375,15 @@
         '</div>' +
       '</div>';
     } else {
-      bar = '<div style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(43,33,24,0.5); margin-top:14px;">no open tabs yet — start one below ✨</div>';
+      bar = '<div style="font-family:\'Space Mono\',monospace; font-size:12px; color:rgba(var(--ink-rgb),0.5); margin-top:14px;">no open tabs yet — start one below ✨</div>';
     }
 
     return '' +
     '<div style="padding:22px 22px 0;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">' + eyebrow + '</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.5);">' + eyebrow + '</span>' +
       '<div style="display:flex; align-items:baseline; gap:11px; margin-top:9px;">' +
         '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:' + col + '; text-shadow:none;"><span style="font-size:25px; opacity:.55;">' + bigSign + '</span>' + moneyParts(bigCents, "25px", ".55") + '</div>' +
-        '<span style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.55);">' + label + '</span>' +
+        '<span style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.55);">' + label + '</span>' +
       '</div>' +
       bar +
       ((haveNet && net < 0) ? walletReadyChip(Math.abs(net)) : "") +
@@ -405,29 +405,29 @@
     var rows = claims.map(function (c) {
       var fromYou = c.from === meId, toYou = c.to === meId;
       var what = "$" + ((c.amountCents || 0) / 100).toFixed(2) + " " + (c.methodPhrase || "");
-      var note = c.note ? '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); margin-top:3px;">“' + app.esc(c.note) + '”</div>' : "";
+      var note = c.note ? '<div style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(var(--ink-rgb),0.5); margin-top:3px;">“' + app.esc(c.note) + '”</div>' : "";
       if (toYou) {
-        return '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.9); padding:14px 16px;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.42);">SETTLED OUTSIDE?</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:14.5px; line-height:1.4; color:#2B2118; margin-top:7px;">' +
+        return '<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.9); padding:14px 16px;">' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.42);">SETTLED OUTSIDE?</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:14.5px; line-height:1.4; color:var(--ink); margin-top:7px;">' +
             app.esc((c.fromName || "someone").toLowerCase()) + ' says they paid you <b>' + app.esc(what.trim()) + '</b>' + note +
           '</div>' +
           '<div style="display:flex; gap:9px; margin-top:12px;">' +
-            '<button type="button" class="gOutAct" data-cid="' + app.esc(c.id) + '" data-verb="confirm" style="appearance:none; border:2px solid #2B2118; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:#3DE8C7; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">confirm ✓</button>' +
-            '<button type="button" class="gOutAct" data-cid="' + app.esc(c.id) + '" data-verb="decline" style="appearance:none; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:rgba(43,33,24,0.7);">dispute ✗</button>' +
+            '<button type="button" class="gOutAct" data-cid="' + app.esc(c.id) + '" data-verb="confirm" style="appearance:none; border:2px solid var(--border-ink); cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:#3DE8C7; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14.5px; color:#2B2118; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">confirm ✓</button>' +
+            '<button type="button" class="gOutAct" data-cid="' + app.esc(c.id) + '" data-verb="decline" style="appearance:none; cursor:pointer; flex:1; min-height:44px; border-radius:999px; background:transparent; border:1px solid rgba(var(--ink-rgb),0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:rgba(var(--ink-rgb),0.7);">dispute ✗</button>' +
           '</div>' +
         '</div>';
       }
       if (fromYou) {
-        return '<div style="display:flex; align-items:center; gap:10px; background:rgba(255,198,92,0.16); border:1.5px dashed rgba(43,33,24,0.3); border-radius:14px; padding:11px 14px;">' +
+        return '<div style="display:flex; align-items:center; gap:10px; background:rgba(255,198,92,0.16); border:1.5px dashed rgba(var(--ink-rgb),0.3); border-radius:14px; padding:11px 14px;">' +
           '<span style="font-size:16px; flex:none;">⏳</span>' +
-          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.7);">waiting for ' + app.esc((c.toName || "them").toLowerCase()) + ' to confirm your ' + app.esc(what.trim()) + '</span>' +
-          '<span class="gOutAct" data-cid="' + app.esc(c.id) + '" data-verb="cancel" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline; flex:none;">cancel</span>' +
+          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.7);">waiting for ' + app.esc((c.toName || "them").toLowerCase()) + ' to confirm your ' + app.esc(what.trim()) + '</span>' +
+          '<span class="gOutAct" data-cid="' + app.esc(c.id) + '" data-verb="cancel" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline; flex:none;">cancel</span>' +
         '</div>';
       }
       return '<div style="display:flex; align-items:center; gap:8px; padding:2px 4px;">' +
         '<span style="font-size:13px; flex:none;">💵</span>' +
-        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5);">' +
+        '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.5);">' +
           app.esc((c.fromName || "someone").toLowerCase()) + ' says they paid ' + app.esc((c.toName || "someone").toLowerCase()) + ' ' + app.esc(what.trim()) + ' · waiting</span>' +
       '</div>';
     }).join("");
@@ -437,9 +437,9 @@
   // ---------- quick pills: 💬 chat · ✨ recap · ↗ share ----------
   function pillRow() {
     function pill(id, emoji, efs, label, bg, tilt) {
-      return '<div id="' + id + '" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; min-height:42px; border-radius:13px; background:' + bg + '; border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); cursor:pointer; transform:rotate(' + tilt + 'deg);">' +
+      return '<div id="' + id + '" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; min-height:42px; border-radius:13px; background:' + bg + '; border:2px solid var(--border-ink); box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); cursor:pointer; transform:rotate(' + tilt + 'deg);">' +
         '<span style="font-size:' + efs + ';">' + emoji + '</span>' +
-        '<span style="font-family:\'General Sans\',sans-serif; font-size:13px; font-weight:600; color:#2B2118;">' + label + '</span></div>';
+        '<span style="font-family:\'General Sans\',sans-serif; font-size:13px; font-weight:600; color:var(--ink);">' + label + '</span></div>';
     }
     return '<div style="display:flex; gap:10px; margin-top:18px;">' +
       pill("gChat", "💬", "14px", "chat", "rgba(39,117,202,0.13)", -0.6) +
@@ -478,7 +478,7 @@
     return edges.slice(0, 6);
   }
   function arrowSvg() {
-    return '<svg width="20" height="11" viewBox="0 0 26 14" fill="none" stroke="rgba(43,33,24,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>';
+    return '<svg width="20" height="11" viewBox="0 0 26 14" fill="none" stroke="rgba(var(--ink-rgb),0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 7h22m-5-5 5 5-5 5"/></svg>';
   }
   function whoOwesWho(trip, me) {
     var edges = simplifiedEdges(trip);
@@ -492,11 +492,11 @@
       // amount color: getting paid to you = blue, you paying out = coral, else blue
       var amtColor = toYou ? "#2775CA" : fromYou ? "#FF6B5E" : "#2775CA";
       var fromNameStyle = fromYou
-        ? 'font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.5);'
-        : 'font-family:\'General Sans\',sans-serif; font-size:14px; font-weight:500; color:#2B2118;';
+        ? 'font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.5);'
+        : 'font-family:\'General Sans\',sans-serif; font-size:14px; font-weight:500; color:var(--ink);';
       var toNameStyle = toYou
-        ? 'font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(43,33,24,0.5);'
-        : 'font-family:\'General Sans\',sans-serif; font-size:14px; font-weight:500; color:#2B2118;';
+        ? 'font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.5);'
+        : 'font-family:\'General Sans\',sans-serif; font-size:14px; font-weight:500; color:var(--ink);';
       // your payment → tappable: deep-links into settle pre-scoped to this person
       var payHint = fromYou
         ? '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:#FF6B5E; white-space:nowrap;">settle →</span>'
@@ -504,7 +504,7 @@
       var rowAttrs = fromYou
         ? ' class="gSimpPay" data-to="' + app.esc(e.to) + '" role="button" tabindex="0"'
         : "";
-      return '<div' + rowAttrs + ' style="display:flex; align-items:center; gap:10px; background:#FFFDF7; border:2px solid #2B2118; border-radius:14px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:11px 14px;' + (fromYou ? ' cursor:pointer;' : '') + '">' +
+      return '<div' + rowAttrs + ' style="display:flex; align-items:center; gap:10px; background:var(--card); border:2px solid var(--border-ink); border-radius:14px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:11px 14px;' + (fromYou ? ' cursor:pointer;' : '') + '">' +
         gavatar(fromM, 28) +
         '<span style="' + fromNameStyle + '">' + app.esc(fromName) + '</span>' +
         arrowSvg() +
@@ -524,7 +524,7 @@
       : "";
     return '' +
     '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin:24px 0 11px;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">WHO OWES WHO</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.5);">WHO OWES WHO</span>' +
       badge +
     '</div>' +
     '<div style="display:flex; flex-direction:column; gap:9px;">' + rows + '</div>';
@@ -596,7 +596,7 @@
         '<div style="width:42px; height:42px; border-radius:13px; background:rgba(61,232,199,0.22); display:flex; align-items:center; justify-content:center; font-size:20px; flex:none;">💵</div>' +
         '<div style="flex:1; min-width:0;">' +
           '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#17A277; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(e.title || "settled outside") + '</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.55); margin-top:3px;">' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.55); margin-top:3px;">' +
             app.esc((e.paidByName || "someone").toLowerCase()) + ' paid ' + app.esc(toName) + ' · confirmed ✓' + (t ? ' · ' + t : "") +
           '</div>' +
         '</div>' +
@@ -608,11 +608,11 @@
       ? '<div style="font-family:\'Space Mono\',monospace; font-size:9px; color:' + d.color + '; margin-top:2px;">' + d.sign + (d.cents / 100).toFixed(2) + '</div>'
       : "";
     return '' +
-    '<div class="gTab" data-eid="' + app.esc(e.id) + '" style="display:flex; align-items:center; gap:13px; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 15px; cursor:pointer;">' +
-      '<div style="width:42px; height:42px; border-radius:13px; background:#F7F1E3; display:flex; align-items:center; justify-content:center; font-size:21px; flex:none;">' + tabEmoji(e.title) + '</div>' +
+    '<div class="gTab" data-eid="' + app.esc(e.id) + '" style="display:flex; align-items:center; gap:13px; background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 15px; cursor:pointer;">' +
+      '<div style="width:42px; height:42px; border-radius:13px; background:var(--paper); display:flex; align-items:center; justify-content:center; font-size:21px; flex:none;">' + tabEmoji(e.title) + '</div>' +
       '<div style="flex:1; min-width:0;">' +
-        '<div style="display:flex; align-items:center; gap:7px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(e.title || "a tab") + '</span></div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.6); margin-top:3px;">' +
+        '<div style="display:flex; align-items:center; gap:7px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(e.title || "a tab") + '</span></div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.6); margin-top:3px;">' +
           app.esc((e.paidByName || "someone").toLowerCase()) + ' paid · ' +
           (e.itemized ? '<span style="color:#2775CA;">itemized 🧾</span> · ' + n : 'split ' + n) + (t ? ' · ' + t : "") +
           (e.dueAt ? ' · <span style="color:' + (e.overdue ? "#FF6B5E" : "#2775CA") + ';">' + (e.overdue ? "overdue" : "due " + app.esc(dueLabel(e.dueAt))) + ' 🗓️</span>' : "") +
@@ -622,9 +622,9 @@
         // foreign receipts show the ORIGINAL currency prominently ("¥3,000")
         // with the USD ledger value subordinate — balances stay USD.
         (e.fxOriginalFmt
-          ? '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#2B2118;">' + app.esc(e.fxOriginalFmt) + '</div>' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; color:rgba(43,33,24,0.5); margin-top:1px;">' + plain(e.amountCents || 0) + '</div>'
-          : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:#2B2118;">' + plain(e.amountCents || 0) + '</div>') +
+          ? '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:var(--ink);">' + app.esc(e.fxOriginalFmt) + '</div>' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; color:rgba(var(--ink-rgb),0.5); margin-top:1px;">' + plain(e.amountCents || 0) + '</div>'
+          : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:16px; color:var(--ink);">' + plain(e.amountCents || 0) + '</div>') +
         delta +
       '</div>' +
     '</div>';
@@ -637,12 +637,12 @@
       return '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:30px 20px 6px; gap:8px;">' +
         app.mascot({ size: 90, mood: "happy" }) +
         '<div style="font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:18px;">no tabs yet</div>' +
-        '<div style="color:rgba(43,33,24,0.6); font-size:14px;">add the first one and start splitting 🎉</div>' +
+        '<div style="color:rgba(var(--ink-rgb),0.6); font-size:14px;">add the first one and start splitting 🎉</div>' +
       '</div>';
     }
     var header = '<div style="display:flex; align-items:center; justify-content:space-between; margin:24px 0 11px;">' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">TABS</span>' +
-      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.4);">' + exp.length + ' TOTAL</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.5);">TABS</span>' +
+      '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4);">' + exp.length + ' TOTAL</span>' +
     '</div>';
     return header + '<div style="display:flex; flex-direction:column; gap:9px;">' + exp.map(function (e) { return tabRow(e, me); }).join("") + '</div>';
   }
@@ -650,9 +650,9 @@
   // ---------- sticky bottom: settle up + add a tab ----------
   function stickyBar() {
     return '' +
-    '<div style="position:fixed; left:0; right:0; bottom:0; z-index:40; padding:12px 18px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(247,241,227,0) 0%, #F7F1E3 26%); display:flex; gap:11px; max-width:520px; margin:0 auto;">' +
-      '<button id="gSettle" style="appearance:none; cursor:pointer; flex:none; width:128px; min-height:54px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">settle up</button>' +
-      '<button id="gAdd" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+    '<div style="position:fixed; left:0; right:0; bottom:0; z-index:40; padding:12px 18px calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(180deg, rgba(var(--paper-rgb),0) 0%, var(--paper) 26%); display:flex; gap:11px; max-width:520px; margin:0 auto;">' +
+      '<button id="gSettle" style="appearance:none; cursor:pointer; flex:none; width:128px; min-height:54px; border-radius:999px; background:transparent; border:1px solid rgba(var(--ink-rgb),0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink);">settle up</button>' +
+      '<button id="gAdd" style="appearance:none; border:none; cursor:pointer; flex:1; min-height:54px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' +
         '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:16px; color:#fff;">add a tab</span>' +
       '</button>' +
@@ -692,7 +692,7 @@
       var each = shareOf(pid);
       var amtColor, tag;
       if (isPayer) {
-        amtColor = "rgba(43,33,24,0.85)";
+        amtColor = "rgba(var(--ink-rgb),0.85)";
         tag = '<span style="display:inline-flex; align-items:center; gap:4px; flex:none; white-space:nowrap; background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); border-radius:999px; padding:3px 9px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:9px; letter-spacing:.5px; color:#2775CA;">PAID</span></span>';
       } else if (isYou) {
         youOwe = each;
@@ -709,55 +709,55 @@
         // highlighted "you owe" row
         return '<div style="display:flex; align-items:center; gap:11px; padding:11px 8px; margin:4px -4px 0; border-radius:13px; background:rgba(255,107,94,0.07); border:1px solid rgba(255,107,94,0.22);">' +
           avatar +
-          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">you</span>' +
+          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink);">you</span>' +
           '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:14px; color:' + amtColor + ';">' + plain(each) + '</span>' +
           tag +
         '</div>';
       }
       return '<div style="display:flex; align-items:center; gap:11px; padding:9px 4px;">' +
           avatar +
-          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118;">' + app.esc(name) + '</span>' +
+          '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink);">' + app.esc(name) + '</span>' +
           '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:14px; color:' + amtColor + ';">' + plain(each) + '</span>' +
           tag +
         '</div>' +
-        '<div style="height:1px; background:rgba(43,33,24,0.06); margin:0 4px;"></div>';
+        '<div style="height:1px; background:rgba(var(--ink-rgb),0.06); margin:0 4px;"></div>';
     }).join("");
 
     var settleBtn = youOwe > 0
-      ? '<button id="gTabSettle" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#FF8A7E,#FF6B5E); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(43,33,24,0.9); margin-top:14px;">' +
+      ? '<button id="gTabSettle" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:linear-gradient(120deg,#FF8A7E,#FF6B5E); display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9); margin-top:14px;">' +
           '<span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:17px; color:#fff;">settle your ' + plain(youOwe) + '</span>' +
         '</button>'
-      : '<button id="gTabSettle" style="appearance:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:transparent; border:1px solid rgba(43,33,24,0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:#2B2118; margin-top:14px;">settle up</button>';
+      : '<button id="gTabSettle" style="appearance:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:transparent; border:1px solid rgba(var(--ink-rgb),0.18); font-family:\'General Sans\',sans-serif; font-weight:500; font-size:16px; color:var(--ink); margin-top:14px;">settle up</button>';
 
     var html = '' +
     '<div style="margin:0 -20px;">' +
       // receipt sheet
-      '<div style="position:relative; background:#FFFDF7; border-radius:24px; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); overflow:hidden; margin:0 20px;">' +
+      '<div style="position:relative; background:var(--card); border-radius:24px; border:2px solid var(--border-ink); box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); overflow:hidden; margin:0 20px;">' +
         '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 4%, rgba(255,255,255,0.045) 0 1px, transparent 1px 8px); opacity:.7; pointer-events:none;"></div>' +
         '<div style="position:absolute; left:0; right:0; top:0; height:5px; background:linear-gradient(90deg,#2775CA,#3DE8C7);"></div>' +
         // head
         '<div style="position:relative; padding:24px 22px 16px; text-align:center;">' +
-          '<div style="width:60px; height:60px; border-radius:18px; background:#F7F1E3; display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto;">' + tabEmoji(e.title) + '</div>' +
-          '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:22px; letter-spacing:-0.3px; margin:13px 0 0; color:#2B2118;">' + app.esc(e.title || "a tab") + '</h2>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:1px; color:rgba(43,33,24,0.5); margin-top:4px;">' + app.esc(subline) + '</div>' +
+          '<div style="width:60px; height:60px; border-radius:18px; background:var(--paper); display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto;">' + tabEmoji(e.title) + '</div>' +
+          '<h2 style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:22px; letter-spacing:-0.3px; margin:13px 0 0; color:var(--ink);">' + app.esc(e.title || "a tab") + '</h2>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10.5px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.5); margin-top:4px;">' + app.esc(subline) + '</div>' +
           // foreign receipts: the original currency is the headline number;
           // the USD ledger value sits under it ("¥3,000 · $20.14 usd").
           (e.fxOriginalFmt
-            ? '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:42px; line-height:1; letter-spacing:-1.5px; color:#2B2118; margin-top:16px;">' + app.esc(e.fxOriginalFmt) + '</div>' +
-              '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:15px; color:rgba(43,33,24,0.55); margin-top:7px;">' + plain(e.amountCents || 0) + ' <span style="font-weight:400; font-size:10px; letter-spacing:1px;">USD</span></div>'
-            : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:#2B2118; margin-top:16px;"><span style="font-size:25px; opacity:.5;">$</span>' + moneyParts(e.amountCents || 0, "25px", ".5") + '</div>') +
-          '<div style="display:inline-flex; align-items:center; gap:8px; margin-top:12px; background:#F7F1E3; border:1px solid rgba(43,33,24,0.09); border-radius:999px; padding:5px 12px;">' +
+            ? '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:42px; line-height:1; letter-spacing:-1.5px; color:var(--ink); margin-top:16px;">' + app.esc(e.fxOriginalFmt) + '</div>' +
+              '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:15px; color:rgba(var(--ink-rgb),0.55); margin-top:7px;">' + plain(e.amountCents || 0) + ' <span style="font-weight:400; font-size:10px; letter-spacing:1px;">USD</span></div>'
+            : '<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:46px; line-height:1; letter-spacing:-2px; color:var(--ink); margin-top:16px;"><span style="font-size:25px; opacity:.5;">$</span>' + moneyParts(e.amountCents || 0, "25px", ".5") + '</div>') +
+          '<div style="display:inline-flex; align-items:center; gap:8px; margin-top:12px; background:var(--paper); border:1px solid rgba(var(--ink-rgb),0.09); border-radius:999px; padding:5px 12px;">' +
             '<div style="width:20px; height:20px; border-radius:50%; background:' + memberGrad(payerM) + '; display:flex; align-items:center; justify-content:center; font-size:11px;">' + memberEmoji(payerM) + '</div>' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.7);">' + app.esc(payerName + " paid" + when) + '</span>' +
+            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.7);">' + app.esc(payerName + " paid" + when) + '</span>' +
           '</div>' +
         '</div>' +
         // perforation
-        '<div style="position:relative; height:1px; margin:6px 0 0; border-top:1.5px dashed rgba(43,33,24,0.14);"><div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div><div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:#F7F1E3;"></div></div>' +
+        '<div style="position:relative; height:1px; margin:6px 0 0; border-top:1.5px dashed rgba(var(--ink-rgb),0.14);"><div style="position:absolute; left:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:var(--paper);"></div><div style="position:absolute; right:-9px; top:-9px; width:18px; height:18px; border-radius:50%; background:var(--paper);"></div></div>' +
         // itemized: the receipt lines (qty× label · who had it · price) + the
         // "everything else" strip (tip & tax, split by what each person had)
         (isItemized ?
           '<div style="position:relative; padding:8px 16px 0;">' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); padding:8px 4px 4px;">WHO HAD WHAT 🧾</div>' +
+            '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.42); padding:8px 4px 4px;">WHO HAD WHAT 🧾</div>' +
             (e.items || []).map(function (it) {
               var qty = it.qty > 1 ? it.qty + '× ' : '';
               var who = (it.names || []).map(function (nm, wi) {
@@ -766,22 +766,22 @@
               }).join(", ");
               return '<div style="display:flex; align-items:baseline; gap:10px; padding:6px 4px;">' +
                 '<div style="flex:1; min-width:0;">' +
-                  '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + qty + app.esc(it.label || "item") + '</div>' +
-                  '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:' + (who ? 'rgba(43,33,24,0.5)' : 'rgba(255,107,94,0.8)') + ';">' + (who ? app.esc(who) : "unassigned → tip &amp; tax pot") + '</div>' +
+                  '<div style="font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + qty + app.esc(it.label || "item") + '</div>' +
+                  '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:' + (who ? 'rgba(var(--ink-rgb),0.5)' : 'rgba(255,107,94,0.8)') + ';">' + (who ? app.esc(who) : "unassigned → tip &amp; tax pot") + '</div>' +
                 '</div>' +
                 // foreign itemized receipts: line prices are in the original
                 // currency (server-formatted, e.g. "¥1,200"); USD otherwise.
-                '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:13px; color:#2B2118; flex:none;">' + app.esc(it.fmt || plain(it.cents || 0)) + '</span>' +
+                '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:13px; color:var(--ink); flex:none;">' + app.esc(it.fmt || plain(it.cents || 0)) + '</span>' +
               '</div>';
             }).join("") +
             '<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:4px; padding:8px 10px; background:rgba(39,117,202,0.07); border:1.5px dashed rgba(39,117,202,0.4); border-radius:11px;">' +
-              '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.55);">INCL. TIP &amp; TAX — SPLIT BY WHAT YOU HAD</span>' +
+              '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.55);">INCL. TIP &amp; TAX — SPLIT BY WHAT YOU HAD</span>' +
               '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:12px; color:#2775CA; flex:none;">' + app.esc(e.extrasFmt || plain(e.extrasCents || 0)) + '</span>' +
             '</div>' +
           '</div>' : '') +
         // per-person
         '<div style="position:relative; padding:8px 16px 16px;">' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(43,33,24,0.42); padding:8px 4px 4px;">' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.42); padding:8px 4px 4px;">' +
             (isItemized ? 'EACH PERSON OWES · EXACT' : 'SPLIT ' + n + ' · ' + plain(each) + ' EACH') + '</div>' +
           rowsHtml +
         '</div>' +
@@ -794,9 +794,9 @@
         // itemized expenses can't be partially edited (exact per-person shares
         // would desync from the items) — delete & re-add instead.
         (isItemized ? '' :
-          '<span id="gTabEdit" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">edit</span>' +
-          '<span style="width:3px; height:3px; border-radius:50%; background:rgba(43,33,24,0.3);"></span>') +
-        '<span id="gTabDelete" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(43,33,24,0.5); cursor:pointer;">delete</span>' +
+          '<span id="gTabEdit" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.5); cursor:pointer;">edit</span>' +
+          '<span style="width:3px; height:3px; border-radius:50%; background:rgba(var(--ink-rgb),0.3);"></span>') +
+        '<span id="gTabDelete" style="font-family:\'General Sans\',sans-serif; font-size:14px; color:rgba(var(--ink-rgb),0.5); cursor:pointer;">delete</span>' +
       '</div>' +
     '</div>';
 
@@ -824,14 +824,14 @@
           armed = true;
           del.textContent = "tap again to delete";
           del.style.color = "#FF6B5E";
-          armTimer = setTimeout(function () { armed = false; del.textContent = "delete"; del.style.color = "rgba(43,33,24,0.5)"; }, 3000);
+          armTimer = setTimeout(function () { armed = false; del.textContent = "delete"; del.style.color = "rgba(var(--ink-rgb),0.5)"; }, 3000);
           return;
         }
         if (armTimer) clearTimeout(armTimer);
         del.textContent = "deleting…";
         app.api.del("/api/trips/" + encodeURIComponent(trip.id) + "/expenses/" + encodeURIComponent(e.id))
           .then(function () { app.closeSheet(); app.toast("tab deleted"); load(view_, trip.id); })
-          .catch(function (err) { app.toast(err.message); del.textContent = "delete"; del.style.color = "rgba(43,33,24,0.5)"; armed = false; });
+          .catch(function (err) { app.toast(err.message); del.textContent = "delete"; del.style.color = "rgba(var(--ink-rgb),0.5)"; armed = false; });
       };
     }
   }
@@ -864,7 +864,7 @@
     var emojiChips = emojiPool.map(function (em) {
       var on = em === cur;
       return '<button class="gsEmoji" data-em="' + app.esc(em) + '" style="appearance:none; cursor:pointer; width:44px; height:44px; border-radius:13px; background:' +
-        (on ? "#3DE8C7" : "#FFFDF7") + '; border:2px solid #2B2118; box-shadow:' + (on ? "3px 4px 0 rgba(43,33,24,0.85)" : "2px 3px 0 rgba(43,33,24,0.85)") +
+        (on ? "#3DE8C7" : "var(--card)") + '; border:2px solid var(--border-ink); box-shadow:' + (on ? "3px 4px 0 rgba(var(--shadow-rgb),0.85)" : "2px 3px 0 rgba(var(--shadow-rgb),0.85)") +
         '; font-size:22px; display:flex; align-items:center; justify-content:center; flex:none;">' + em + '</button>';
     }).join("");
 
@@ -876,12 +876,12 @@
         right = '<button class="gsRemove" data-mid="' + app.esc(m.id) + '" data-name="' + app.esc(m.name || "") + '" ' +
           'style="appearance:none; cursor:pointer; border:1px solid rgba(255,107,94,0.5); background:rgba(255,107,94,0.1); color:#FF6B5E; border-radius:999px; padding:5px 12px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:12.5px; flex:none;">remove</button>';
       } else {
-        right = '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.5); text-align:right; flex:none; white-space:nowrap;">in a tab</span>';
+        right = '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.5); text-align:right; flex:none; white-space:nowrap;">in a tab</span>';
       }
       return '<div style="display:flex; align-items:center; gap:11px; padding:9px 2px;">' +
         gavatar(m, 32) +
-        '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' +
-          app.esc(m.name || "someone") + (isMe ? ' <span style="color:rgba(43,33,24,0.4); font-size:12px;">· you</span>' : "") + '</span>' +
+        '<span style="flex:1; min-width:0; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:15px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' +
+          app.esc(m.name || "someone") + (isMe ? ' <span style="color:rgba(var(--ink-rgb),0.4); font-size:12px;">· you</span>' : "") + '</span>' +
         right +
       '</div>';
     }).join("");
@@ -896,14 +896,14 @@
     var maxDate = new Date(Date.now() + 364 * 86400000).toISOString().slice(0, 10);
     var dueVal = trip.dueAt ? String(trip.dueAt).slice(0, 10) : "";
     var dueSection =
-      '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">SETTLE BY</label>' +
+      '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.5);">SETTLE BY</label>' +
       '<div style="display:flex; gap:8px; margin-top:8px; align-items:center;">' +
         '<input id="gsDue" type="date" value="' + app.esc(dueVal) + '" min="' + minDate + '" max="' + maxDate + '" ' +
-          'style="flex:1; min-height:44px; padding:8px 14px; border-radius:13px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:14px; color:#2B2118;">' +
-        '<button id="gsDueSave" style="appearance:none; border:2px solid #2B2118; cursor:pointer; padding:0 16px; min-height:44px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">set</button>' +
-        (dueVal ? '<span id="gsDueClear" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline; flex:none;">clear</span>' : '') +
+          'style="flex:1; min-height:44px; padding:8px 14px; border-radius:13px; background:var(--card-2); border:1px solid rgba(var(--ink-rgb),0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:14px; color:var(--ink);">' +
+        '<button id="gsDueSave" style="appearance:none; border:2px solid var(--border-ink); cursor:pointer; padding:0 16px; min-height:44px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">set</button>' +
+        (dueVal ? '<span id="gsDueClear" role="button" tabindex="0" style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline; flex:none;">clear</span>' : '') +
       '</div>' +
-      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:6px;">the group\'s "square up by" date — chips turn coral when it passes</div>';
+      '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:6px;">the group\'s "square up by" date — chips turn coral when it passes</div>';
     // mochi auto-remind: shown only when the viewer is owed money (creditor).
     var CADENCES = [
       ["off", "off", "mochi stays out of it"],
@@ -912,36 +912,36 @@
       ["spicy", "spicy 🌶️", "daily. mochi shows no mercy"],
     ];
     var remindSection = (me && myNet > 0)
-      ? '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">MOCHI AUTO-REMINDS WHO OWES YOU</label>' +
+      ? '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.5);">MOCHI AUTO-REMINDS WHO OWES YOU</label>' +
         '<div id="gsCadRow" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:9px;">' +
           CADENCES.map(function (c) {
-            return '<button type="button" class="gsCad" data-c="' + c[0] + '" disabled style="appearance:none; cursor:pointer; padding:0 13px; min-height:38px; border-radius:999px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.16); color:rgba(43,33,24,0.6); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; opacity:.55;">' + c[1] + '</button>';
+            return '<button type="button" class="gsCad" data-c="' + c[0] + '" disabled style="appearance:none; cursor:pointer; padding:0 13px; min-height:38px; border-radius:999px; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.16); color:rgba(var(--ink-rgb),0.6); font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; opacity:.55;">' + c[1] + '</button>';
           }).join("") +
         '</div>' +
-        '<div id="gsCadHint" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(43,33,24,0.5); margin-top:8px; min-height:16px;">loading…</div>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:4px;">starts after the settle-by date · pauses on "i paid you" claims · caps at the duck 🦆</div>'
+        '<div id="gsCadHint" style="font-family:\'General Sans\',sans-serif; font-size:12px; color:rgba(var(--ink-rgb),0.5); margin-top:8px; min-height:16px;">loading…</div>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:4px;">starts after the settle-by date · pauses on "i paid you" claims · caps at the duck 🦆</div>'
       : "";
 
     // household: move-in / move-out dates per member (day granularity) — a
     // mid-month move prorates that month's recurring bills in the hub.
     var isHousehold = trip.kind === "household";
     var residencySection = isHousehold
-      ? '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">MOVE-IN / MOVE-OUT 🏠</label>' +
-        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:4px;">a mid-month move prorates that month\'s bills by days lived here</div>' +
-        '<div style="margin-top:8px; border:2px solid #2B2118; border-radius:16px; background:#FFFDF7; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:10px 12px;">' +
+      ? '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.5);">MOVE-IN / MOVE-OUT 🏠</label>' +
+        '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:4px;">a mid-month move prorates that month\'s bills by days lived here</div>' +
+        '<div style="margin-top:8px; border:2px solid var(--border-ink); border-radius:16px; background:var(--card); box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:10px 12px;">' +
           (trip.members || []).map(function (m, i) {
             var inVal = m.movedInAt ? String(m.movedInAt).slice(0, 10) : "";
             var outVal = m.movedOutAt ? String(m.movedOutAt).slice(0, 10) : "";
-            return '<div style="padding:8px 0;' + (i ? " border-top:1px dashed rgba(43,33,24,0.1);" : "") + '">' +
+            return '<div style="padding:8px 0;' + (i ? " border-top:1px dashed rgba(var(--ink-rgb),0.1);" : "") + '">' +
               '<div style="display:flex; align-items:center; gap:9px;">' + gavatar(m, 26) +
-                '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name || "someone") + '</span>' +
+                '<span style="flex:1; font-family:\'General Sans\',sans-serif; font-weight:500; font-size:14px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(m.name || "someone") + '</span>' +
                 (outVal ? '<span style="font-family:\'Space Mono\',monospace; font-size:8.5px; letter-spacing:.5px; color:#FF6B5E; flex:none;">MOVED OUT</span>' : "") +
               '</div>' +
               '<div style="display:flex; gap:8px; margin-top:7px;">' +
-                '<label style="flex:1; display:block;"><span style="display:block; font-family:\'Space Mono\',monospace; font-size:8px; letter-spacing:1px; color:rgba(43,33,24,0.42);">MOVED IN</span>' +
-                  '<input type="date" class="gsResIn" data-mid="' + app.esc(m.id) + '" value="' + app.esc(inVal) + '" style="width:100%; min-height:38px; margin-top:3px; padding:5px 9px; border-radius:10px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:12px; color:#2B2118;"></label>' +
-                '<label style="flex:1; display:block;"><span style="display:block; font-family:\'Space Mono\',monospace; font-size:8px; letter-spacing:1px; color:rgba(43,33,24,0.42);">MOVED OUT</span>' +
-                  '<input type="date" class="gsResOut" data-mid="' + app.esc(m.id) + '" value="' + app.esc(outVal) + '" style="width:100%; min-height:38px; margin-top:3px; padding:5px 9px; border-radius:10px; background:#FBF6EA; border:1px solid rgba(43,33,24,0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:12px; color:#2B2118;"></label>' +
+                '<label style="flex:1; display:block;"><span style="display:block; font-family:\'Space Mono\',monospace; font-size:8px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.42);">MOVED IN</span>' +
+                  '<input type="date" class="gsResIn" data-mid="' + app.esc(m.id) + '" value="' + app.esc(inVal) + '" style="width:100%; min-height:38px; margin-top:3px; padding:5px 9px; border-radius:10px; background:var(--card-2); border:1px solid rgba(var(--ink-rgb),0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:12px; color:var(--ink);"></label>' +
+                '<label style="flex:1; display:block;"><span style="display:block; font-family:\'Space Mono\',monospace; font-size:8px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.42);">MOVED OUT</span>' +
+                  '<input type="date" class="gsResOut" data-mid="' + app.esc(m.id) + '" value="' + app.esc(outVal) + '" style="width:100%; min-height:38px; margin-top:3px; padding:5px 9px; border-radius:10px; background:var(--card-2); border:1px solid rgba(var(--ink-rgb),0.12); outline:none; font-family:\'Space Mono\',monospace; font-size:12px; color:var(--ink);"></label>' +
               '</div>' +
             '</div>';
           }).join("") +
@@ -951,27 +951,27 @@
     var html = '' +
       '<h2 class="lower" style="font-size:22px; margin:2px 0 14px;">group settings</h2>' +
       // rename
-      '<label style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">NAME</label>' +
+      '<label style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.5);">NAME</label>' +
       '<div style="display:flex; gap:8px; margin-top:8px;">' +
         '<input class="input" id="gsName" autocomplete="off" style="flex:1;" value="' + app.esc(trip.name || "") + '" placeholder="group name">' +
-        '<button id="gsSave" style="appearance:none; border:2px solid #2B2118; cursor:pointer; padding:0 16px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">save</button>' +
+        '<button id="gsSave" style="appearance:none; border:2px solid var(--border-ink); cursor:pointer; padding:0 16px; border-radius:12px; background:#FFC65C; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:14px; color:#2B2118; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">save</button>' +
       '</div>' +
       // emoji
-      '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">EMOJI</label>' +
+      '<label style="display:block; margin-top:18px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.5);">EMOJI</label>' +
       '<div id="gsEmojiRow" style="display:flex; flex-wrap:wrap; gap:9px; margin-top:9px;">' + emojiChips + '</div>' +
       // settle-by date + mochi auto-remind
       dueSection +
       remindSection +
       // members
-      '<label style="display:block; margin-top:20px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(43,33,24,0.5);">MEMBERS</label>' +
-      '<div style="margin-top:6px; border:2px solid #2B2118; border-radius:16px; background:#FFFDF7; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:6px 12px;">' + memberRows + '</div>' +
+      '<label style="display:block; margin-top:20px; font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.5);">MEMBERS</label>' +
+      '<div style="margin-top:6px; border:2px solid var(--border-ink); border-radius:16px; background:var(--card); box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:6px 12px;">' + memberRows + '</div>' +
       // household residency (move-in / move-out) — household groups only
       residencySection +
       // household on/off — unlocks the "this month" bills hub on this screen
-      '<button id="gsHouse" style="appearance:none; cursor:pointer; width:100%; margin-top:18px; min-height:48px; border-radius:14px; background:' + (isHousehold ? "transparent" : "rgba(61,232,199,0.16)") + '; border:' + (isHousehold ? "1px solid rgba(43,33,24,0.18)" : "2px solid #2B2118") + ';' + (isHousehold ? "" : " box-shadow:2px 3px 0 rgba(43,33,24,0.85);") + ' display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118;"><span style="font-size:16px;">🏠</span> ' + (isHousehold ? "not a household anymore" : "make this a household") + '</button>' +
-      (isHousehold ? "" : '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(43,33,24,0.35); margin-top:6px; text-align:center;">roommates? get rent, utilities &amp; shared subs in one monthly view</div>') +
+      '<button id="gsHouse" style="appearance:none; cursor:pointer; width:100%; margin-top:18px; min-height:48px; border-radius:14px; background:' + (isHousehold ? "transparent" : "rgba(61,232,199,0.16)") + '; border:' + (isHousehold ? "1px solid rgba(var(--ink-rgb),0.18)" : "2px solid var(--border-ink)") + ';' + (isHousehold ? "" : " box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);") + ' display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:var(--ink);"><span style="font-size:16px;">🏠</span> ' + (isHousehold ? "not a household anymore" : "make this a household") + '</button>' +
+      (isHousehold ? "" : '<div style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.35); margin-top:6px; text-align:center;">roommates? get rent, utilities &amp; shared subs in one monthly view</div>') +
       // chat (keep the old ⋯ → chat path alive)
-      '<button id="gsChat" style="appearance:none; cursor:pointer; width:100%; margin-top:11px; min-height:48px; border-radius:14px; background:rgba(39,117,202,0.1); border:2px solid #2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:#2B2118;"><span style="font-size:16px;">💬</span> open chat</button>' +
+      '<button id="gsChat" style="appearance:none; cursor:pointer; width:100%; margin-top:11px; min-height:48px; border-radius:14px; background:rgba(39,117,202,0.1); border:2px solid var(--border-ink); box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85); display:flex; align-items:center; justify-content:center; gap:8px; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px; color:var(--ink);"><span style="font-size:16px;">💬</span> open chat</button>' +
       // archive
       '<button id="gsArchive" style="appearance:none; cursor:pointer; width:100%; margin-top:11px; min-height:48px; border-radius:14px; background:transparent; border:1px solid rgba(255,107,94,0.6); color:#FF6B5E; font-family:\'General Sans\',sans-serif; font-weight:600; font-size:15px;">' + archiveLabel + '</button>';
 
@@ -1007,9 +1007,9 @@
         var on = c.getAttribute("data-c") === cur;
         c.disabled = false;
         c.style.opacity = "1";
-        c.style.background = on ? "rgba(61,232,199,0.2)" : "#FFFDF7";
-        c.style.border = on ? "2px solid #17A277" : "1px solid rgba(43,33,24,0.16)";
-        c.style.color = on ? "#17A277" : "rgba(43,33,24,0.6)";
+        c.style.background = on ? "rgba(61,232,199,0.2)" : "var(--card)";
+        c.style.border = on ? "2px solid #17A277" : "1px solid rgba(var(--ink-rgb),0.16)";
+        c.style.color = on ? "#17A277" : "rgba(var(--ink-rgb),0.6)";
       });
       if (cadHint) {
         for (var i = 0; i < CADENCES.length; i++) if (CADENCES[i][0] === cur) cadHint.textContent = CADENCES[i][2];
@@ -1068,8 +1068,8 @@
             // re-highlight in the sheet
             Array.prototype.forEach.call(el.querySelectorAll(".gsEmoji"), function (b) {
               var on = b.getAttribute("data-em") === em;
-              b.style.background = on ? "#3DE8C7" : "#FFFDF7";
-              b.style.boxShadow = on ? "3px 4px 0 rgba(43,33,24,0.85)" : "2px 3px 0 rgba(43,33,24,0.85)";
+              b.style.background = on ? "#3DE8C7" : "var(--card)";
+              b.style.boxShadow = on ? "3px 4px 0 rgba(var(--ink-rgb),0.85)" : "2px 3px 0 rgba(var(--ink-rgb),0.85)";
             });
             // live-update the header emoji
             var hdr = document.getElementById("gEmoji");
@@ -1210,12 +1210,12 @@
       ? '<div style="margin-top:6px;"><span class="hubAdjust" data-eid="' + app.esc(b.adjustExpenseId || "") + '" role="button" tabindex="0" ' +
           'style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:#FF6B5E; cursor:pointer; text-decoration:underline;">someone moved — prorate this month\'s split →</span></div>'
       : "";
-    return '<div style="padding:11px 2px;' + (isLast ? "" : " border-bottom:1.5px dashed rgba(43,33,24,0.12);") + '">' +
+    return '<div style="padding:11px 2px;' + (isLast ? "" : " border-bottom:1.5px dashed rgba(var(--ink-rgb),0.12);") + '">' +
       '<div style="display:flex; align-items:center; gap:11px;">' +
-        '<div style="width:30px; height:30px; border-radius:9px; background:#F7F1E3; display:flex; align-items:center; justify-content:center; font-size:15px; flex:none;">' + emoji + '</div>' +
+        '<div style="width:30px; height:30px; border-radius:9px; background:var(--paper); display:flex; align-items:center; justify-content:center; font-size:15px; flex:none;">' + emoji + '</div>' +
         '<div style="flex:1; min-width:0;">' +
-          '<div style="display:flex; align-items:center; gap:6px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(b.title) + '</span>' + prorated + '</div>' +
-          '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.55); margin-top:2px;">' + app.esc(b.monthlyFmt) + '/mo' + yours + '</div>' +
+          '<div style="display:flex; align-items:center; gap:6px;"><span style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:500; font-size:14.5px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + app.esc(b.title) + '</span>' + prorated + '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:9.5px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.55); margin-top:2px;">' + app.esc(b.monthlyFmt) + '/mo' + yours + '</div>' +
         '</div>' +
         '<div style="text-align:right; flex:none;">' + status + '</div>' +
       '</div>' + adjust +
@@ -1228,9 +1228,9 @@
       inner =
         '<div style="display:flex; flex-direction:column; align-items:center; text-align:center; padding:14px 8px 6px; gap:7px;">' +
           app.mascot({ size: 74, mood: "happy" }) +
-          '<div style="font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:15.5px; color:#2B2118;">no bills yet — add rent to get started 🏠</div>' +
-          '<div style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(43,33,24,0.55);">recurring bills and shared subs land here every month.</div>' +
-          '<button id="hubAddBill" style="appearance:none; border:2px solid #2B2118; cursor:pointer; margin-top:4px; min-height:40px; border-radius:999px; background:#FFC65C; padding:0 18px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; color:#2B2118; box-shadow:2px 3px 0 rgba(43,33,24,0.85);">＋ add rent</button>' +
+          '<div style="font-family:\'Clash Display\',sans-serif; font-weight:600; font-size:15.5px; color:var(--ink);">no bills yet — add rent to get started 🏠</div>' +
+          '<div style="font-family:\'General Sans\',sans-serif; font-size:12.5px; color:rgba(var(--ink-rgb),0.55);">recurring bills and shared subs land here every month.</div>' +
+          '<button id="hubAddBill" style="appearance:none; border:2px solid var(--border-ink); cursor:pointer; margin-top:4px; min-height:40px; border-radius:999px; background:#FFC65C; padding:0 18px; font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:13.5px; color:#2B2118; box-shadow:2px 3px 0 rgba(var(--shadow-rgb),0.85);">＋ add rent</button>' +
         '</div>';
     } else {
       var rows = bills.map(function (b, i) { return hubBillRow(b, i === bills.length - 1); }).join("");
@@ -1239,20 +1239,20 @@
       var stripAmt = haveYours ? hub.totals.yourMonthFmt : hub.totals.monthFmt;
       inner = rows +
         '<div style="display:flex; align-items:center; justify-content:space-between; margin-top:13px; background:rgba(39,117,202,0.08); border:1.5px dashed rgba(39,117,202,0.45); border-radius:12px; padding:10px 14px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(43,33,24,0.55);">' + stripLabel + '</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.55);">' + stripLabel + '</span>' +
           '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:18px; letter-spacing:-0.5px; color:#2775CA;">' + app.esc(stripAmt || "$0.00") + '</span>' +
         '</div>' +
         '<div style="display:flex; gap:14px; justify-content:center; margin-top:11px;">' +
-          '<span id="hubAddRec" role="button" tabindex="0" style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">＋ recurring bill</span>' +
-          '<span id="hubAddSub" role="button" tabindex="0" style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(43,33,24,0.5); cursor:pointer; text-decoration:underline;">＋ subscription</span>' +
+          '<span id="hubAddRec" role="button" tabindex="0" style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline;">＋ recurring bill</span>' +
+          '<span id="hubAddSub" role="button" tabindex="0" style="font-family:\'Space Mono\',monospace; font-size:10px; color:rgba(var(--ink-rgb),0.5); cursor:pointer; text-decoration:underline;">＋ subscription</span>' +
         '</div>';
     }
     var html =
-      '<div style="position:relative; margin:22px 0 0; border-radius:20px; padding:16px 16px 13px; background:#FFFDF7; border:2px solid #2B2118; box-shadow:3px 4px 0 rgba(43,33,24,0.85); transform:rotate(0.35deg);">' +
-        '<div style="position:absolute; top:-11px; left:50%; width:84px; height:22px; transform:translateX(-50%) rotate(1.8deg); background:rgba(255,107,94,0.6); opacity:.9; border-left:1.5px dashed rgba(43,33,24,0.25); border-right:1.5px dashed rgba(43,33,24,0.25);"></div>' +
+      '<div style="position:relative; margin:22px 0 0; border-radius:20px; padding:16px 16px 13px; background:var(--card); border:2px solid var(--border-ink); box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); transform:rotate(0.35deg);">' +
+        '<div style="position:absolute; top:-11px; left:50%; width:84px; height:22px; transform:translateX(-50%) rotate(1.8deg); background:rgba(255,107,94,0.6); opacity:.9; border-left:1.5px dashed rgba(var(--ink-rgb),0.25); border-right:1.5px dashed rgba(var(--ink-rgb),0.25);"></div>' +
         '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.5);">THIS MONTH 🏠</span>' +
-          '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(43,33,24,0.4);">' + app.esc(hubMonthLabel(hub && hub.month)) + '</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.5);">THIS MONTH 🏠</span>' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:9px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4);">' + app.esc(hubMonthLabel(hub && hub.month)) + '</span>' +
         '</div>' +
         inner +
       '</div>';

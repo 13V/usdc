@@ -67,16 +67,16 @@
 
   // faint money texture + glow (frame canvas)
   function canvasTexture() {
-    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(43,33,24,0.025) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none; z-index:0;"></div>' +
+    return '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 2%, rgba(var(--ink-rgb),0.025) 0 1px, transparent 1px 8px); opacity:.6; pointer-events:none; z-index:0;"></div>' +
       '<div style="position:absolute; left:-40px; top:120px; width:340px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(39,117,202,0.15) 0%, rgba(39,117,202,0) 70%); pointer-events:none; z-index:0;"></div>';
   }
 
   function topbar(subhead) {
     return '<div style="position:relative; z-index:6; display:flex; align-items:center; gap:12px; height:54px; padding:0 16px; flex:none;">' +
-      '<div id="sBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+      '<div id="sBack" role="button" aria-label="back" tabindex="0" style="width:38px; height:38px; border-radius:50%; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.1); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:none;"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--border-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
       '<div style="flex:1;">' +
-        '<h1 style="font-family:' + DISPLAY + '; font-weight:600; font-size:23px; letter-spacing:-0.5px; margin:0; color:#2B2118;">subscriptions</h1>' +
-        '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(43,33,24,0.45); margin-top:1px;">' + app.esc(subhead || "") + '</div>' +
+        '<h1 style="font-family:' + DISPLAY + '; font-weight:600; font-size:23px; letter-spacing:-0.5px; margin:0; color:var(--ink);">subscriptions</h1>' +
+        '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.45); margin-top:1px;">' + app.esc(subhead || "") + '</div>' +
       '</div>' +
     '</div>';
   }
@@ -91,7 +91,7 @@
       '<div class="appscroll" style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:40px;">' +
         '<div style="margin:6px 0 4px;">' + app.mascot({ size: 124, mood: "happy", glow: true }) + '</div>' +
         '<h1 style="font-family:' + DISPLAY + '; font-weight:600; font-size:22px; max-width:280px; margin-top:16px;" class="lower">the squad\'s subscriptions, sorted</h1>' +
-        '<p style="font-family:' + SANS + '; font-size:14px; color:rgba(43,33,24,0.6); max-width:260px; margin:11px 0 0;">sign in to split netflix, spotify & co automatically every renewal 🍿</p>' +
+        '<p style="font-family:' + SANS + '; font-size:14px; color:rgba(var(--ink-rgb),0.6); max-width:260px; margin:11px 0 0;">sign in to split netflix, spotify & co automatically every renewal 🍿</p>' +
         '<button class="btn" id="sConnect" style="max-width:300px; margin-top:24px;">sign in</button>' +
       '</div>';
     wireBack();
@@ -116,8 +116,8 @@
     view.innerHTML = canvasTexture() + topbar("nothing shared yet") +
       '<div style="position:relative; z-index:2; min-height:60vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:40px 44px 120px; text-align:center;">' +
         app.mascot({ size: 120, mood: "happy", glow: true }) +
-        '<div style="font-family:' + SANS + '; font-size:16px; line-height:1.5; color:rgba(43,33,24,0.65);">split the group netflix once —<br>never chase $4.25 again 🍿</div>' +
-        '<button id="sNew" style="appearance:none; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-height:50px; padding:0 24px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+        '<div style="font-family:' + SANS + '; font-size:16px; line-height:1.5; color:rgba(var(--ink-rgb),0.65);">split the group netflix once —<br>never chase $4.25 again 🍿</div>' +
+        '<button id="sNew" style="appearance:none; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-height:50px; padding:0 24px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
           '<svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
           '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:16px; color:#fff;">add a subscription</span>' +
         '</button>' +
@@ -132,12 +132,12 @@
     var mine = totals && totals.yourMonthlyCents > 0;
     var cents = mine ? totals.yourMonthlyCents : (totals ? totals.monthlyCents : 0);
     var label = mine ? "your subscriptions cost you" : "the squad's subs run";
-    return '<div style="position:relative; display:flex; align-items:center; gap:11px; background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px; margin:6px 0 20px; transform:rotate(0.4deg);">' +
-      '<div style="position:absolute; top:-11px; right:22%; width:64px; height:20px; background:rgba(255,198,92,0.5); transform:rotate(4deg); border-left:1.5px dashed rgba(43,33,24,0.25); border-right:1.5px dashed rgba(43,33,24,0.25); pointer-events:none;"></div>' +
+    return '<div style="position:relative; display:flex; align-items:center; gap:11px; background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 16px; margin:6px 0 20px; transform:rotate(0.4deg);">' +
+      '<div style="position:absolute; top:-11px; right:22%; width:64px; height:20px; background:rgba(255,198,92,0.5); transform:rotate(4deg); border-left:1.5px dashed rgba(var(--ink-rgb),0.25); border-right:1.5px dashed rgba(var(--ink-rgb),0.25); pointer-events:none;"></div>' +
       '<span style="font-size:19px; flex:none;">🧾</span>' +
-      '<span style="flex:1; font-family:' + MONO + '; font-size:11px; letter-spacing:.4px; color:rgba(43,33,24,0.6);">' + label + '</span>' +
+      '<span style="flex:1; font-family:' + MONO + '; font-size:11px; letter-spacing:.4px; color:rgba(var(--ink-rgb),0.6);">' + label + '</span>' +
       '<span style="font-family:' + MONO + '; font-weight:700; font-size:19px; letter-spacing:-0.5px; color:#FF6B5E;"><span style="opacity:.5;">$</span>' + moneyParts(cents).whole + '<span style="opacity:.5;">' + moneyParts(cents).dec + '</span></span>' +
-      '<span style="font-family:' + MONO + '; font-size:10px; color:rgba(43,33,24,0.45);">/mo · ' + count + '</span>' +
+      '<span style="font-family:' + MONO + '; font-size:10px; color:rgba(var(--ink-rgb),0.45);">/mo · ' + count + '</span>' +
     '</div>';
   }
 
@@ -146,9 +146,9 @@
     var shown = (members || []).slice(0, 4);
     var extra = (members || []).length - shown.length;
     var html = shown.map(function (m, i) {
-      return '<div style="width:24px;height:24px;border-radius:50%;background:' + (m.color || "rgba(39,117,202,0.18)") + ';border:2px solid #FFFDF7;' + (i ? "margin-left:-8px;" : "") + 'display:flex;align-items:center;justify-content:center;font-size:12px;">' + app.face(m.emoji || (m.name || "?")[0]) + '</div>';
+      return '<div style="width:24px;height:24px;border-radius:50%;background:' + (m.color || "rgba(39,117,202,0.18)") + ';border:2px solid var(--card);' + (i ? "margin-left:-8px;" : "") + 'display:flex;align-items:center;justify-content:center;font-size:12px;">' + app.face(m.emoji || (m.name || "?")[0]) + '</div>';
     }).join("");
-    if (extra > 0) html += '<div style="width:24px;height:24px;border-radius:50%;background:rgba(43,33,24,0.08);border:2px solid #FFFDF7;margin-left:-8px;display:flex;align-items:center;justify-content:center;font-family:' + MONO + ';font-size:9px;color:rgba(43,33,24,0.6);">+' + extra + '</div>';
+    if (extra > 0) html += '<div style="width:24px;height:24px;border-radius:50%;background:rgba(var(--ink-rgb),0.08);border:2px solid var(--card);margin-left:-8px;display:flex;align-items:center;justify-content:center;font-family:' + MONO + ';font-size:9px;color:rgba(var(--ink-rgb),0.6);">+' + extra + '</div>';
     return '<div style="display:flex; align-items:center;">' + html + '</div>';
   }
 
@@ -162,20 +162,20 @@
     var share = sub.yourShareCents != null
       ? 'your share <span style="color:#FF6B5E; font-weight:700;">' + plain$(sub.yourShareCents) + '</span>'
       : 'split ' + ((sub.members && sub.members.length) || 1) + ' ways';
-    return '<div data-sid="' + app.esc(sub.id) + '" role="button" tabindex="0" style="position:relative; background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:15px 16px 13px; margin:16px 0; transform:rotate(' + rot + 'deg); cursor:pointer;">' +
+    return '<div data-sid="' + app.esc(sub.id) + '" role="button" tabindex="0" style="position:relative; background:var(--card); border:2px solid var(--border-ink); border-radius:18px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:15px 16px 13px; margin:16px 0; transform:rotate(' + rot + 'deg); cursor:pointer;">' +
       // washi tape holding the clipping down
-      '<div style="position:absolute; top:-12px; ' + (i % 2 === 0 ? "left:12%" : "right:14%") + '; width:78px; height:22px; background:' + tape + '; transform:rotate(' + (i % 2 === 0 ? -5 : 4) + 'deg); border-left:1.5px dashed rgba(43,33,24,0.25); border-right:1.5px dashed rgba(43,33,24,0.25); pointer-events:none;"></div>' +
+      '<div style="position:absolute; top:-12px; ' + (i % 2 === 0 ? "left:12%" : "right:14%") + '; width:78px; height:22px; background:' + tape + '; transform:rotate(' + (i % 2 === 0 ? -5 : 4) + 'deg); border-left:1.5px dashed rgba(var(--ink-rgb),0.25); border-right:1.5px dashed rgba(var(--ink-rgb),0.25); pointer-events:none;"></div>' +
       '<div style="display:flex; align-items:center; gap:13px;">' +
-        '<div style="width:46px; height:46px; border-radius:13px; background:rgba(39,117,202,0.14); border:1.5px solid rgba(43,33,24,0.14); display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;">' + app.face(iconOf(sub)) + '</div>' +
+        '<div style="width:46px; height:46px; border-radius:13px; background:rgba(39,117,202,0.14); border:1.5px solid rgba(var(--ink-rgb),0.14); display:flex; align-items:center; justify-content:center; font-size:23px; flex:none;">' + app.face(iconOf(sub)) + '</div>' +
         '<div style="flex:1; min-width:0;">' +
-          '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:16.5px; letter-spacing:-0.2px; color:#2B2118; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(sub.name) + '</div>' +
-          '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.4px; color:rgba(43,33,24,0.5); margin-top:3px;" class="lower">' + app.esc(sub.tripName || "group") + ' · ' + share + '</div>' +
+          '<div style="font-family:' + DISPLAY + '; font-weight:600; font-size:16.5px; letter-spacing:-0.2px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" class="lower">' + app.esc(sub.name) + '</div>' +
+          '<div style="font-family:' + MONO + '; font-size:10px; letter-spacing:.4px; color:rgba(var(--ink-rgb),0.5); margin-top:3px;" class="lower">' + app.esc(sub.tripName || "group") + ' · ' + share + '</div>' +
         '</div>' +
         '<div style="text-align:right; flex:none;">' +
-          '<div style="font-family:' + MONO + '; font-weight:700; font-size:19px; letter-spacing:-0.5px; color:#2B2118;"><span style="opacity:.5;">$</span>' + mp.whole + '<span style="opacity:.5;">' + mp.dec + '</span><span style="font-size:10px; opacity:.45;">' + cadShort(sub.interval) + '</span></div>' +
+          '<div style="font-family:' + MONO + '; font-weight:700; font-size:19px; letter-spacing:-0.5px; color:var(--ink);"><span style="opacity:.5;">$</span>' + mp.whole + '<span style="opacity:.5;">' + mp.dec + '</span><span style="font-size:10px; opacity:.45;">' + cadShort(sub.interval) + '</span></div>' +
         '</div>' +
       '</div>' +
-      '<div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px; padding-top:11px; border-top:1.5px dashed rgba(43,33,24,0.14);">' +
+      '<div style="display:flex; align-items:center; justify-content:space-between; margin-top:12px; padding-top:11px; border-top:1.5px dashed rgba(var(--ink-rgb),0.14);">' +
         avatarStack(sub.members) +
         '<span style="display:inline-flex; align-items:center; gap:6px; background:' + (dueSoon ? "rgba(255,107,94,0.1)" : "rgba(61,232,199,0.12)") + '; border:1px solid ' + (dueSoon ? "rgba(255,107,94,0.35)" : "rgba(61,232,199,0.4)") + '; border-radius:999px; padding:4px 11px;">' +
           '<span style="width:5px; height:5px; border-radius:50%; background:' + (dueSoon ? "#FF6B5E" : "#3DE8C7") + ';"></span>' +
@@ -242,15 +242,15 @@
 
   // ---- create / edit sheet ----------------------------------------------------
   function quickChip(q, selected) {
-    var sel = selected ? "background:rgba(39,117,202,0.14); border:2px solid #2775CA;" : "background:#FFFDF7; border:2px solid rgba(43,33,24,0.14);";
+    var sel = selected ? "background:rgba(39,117,202,0.14); border:2px solid #2775CA;" : "background:var(--card); border:2px solid rgba(var(--ink-rgb),0.14);";
     return '<div data-qp="' + app.esc(q.key) + '" role="button" tabindex="0" style="display:flex; flex-direction:column; align-items:center; gap:5px; padding:11px 2px 9px; border-radius:14px; cursor:pointer; ' + sel + '">' +
       '<span style="font-size:22px;">' + q.icon + '</span>' +
-      '<span style="font-family:' + MONO + '; font-size:9.5px; letter-spacing:.3px; color:rgba(43,33,24,0.65); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;">' + q.label + '</span>' +
+      '<span style="font-family:' + MONO + '; font-size:9.5px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.65); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;">' + q.label + '</span>' +
     '</div>';
   }
   function segChip(value, label, selected) {
     var sel = 'background:rgba(39,117,202,0.16); border:1px solid rgba(39,117,202,0.5); font-weight:700; color:#2775CA;';
-    var unsel = 'background:rgba(43,33,24,0.05); border:1px solid rgba(43,33,24,0.08); color:rgba(43,33,24,0.55);';
+    var unsel = 'background:rgba(var(--ink-rgb),0.05); border:1px solid rgba(var(--ink-rgb),0.08); color:rgba(var(--ink-rgb),0.55);';
     return '<div data-int="' + value + '" style="flex:1; text-align:center; padding:9px 0; border-radius:11px; font-family:' + MONO + '; font-size:11px; cursor:pointer; ' + (selected ? sel : unsel) + '">' + label + '</div>';
   }
   function applySeg(el, selected) {
@@ -258,19 +258,19 @@
       el.style.background = "rgba(39,117,202,0.16)"; el.style.border = "1px solid rgba(39,117,202,0.5)";
       el.style.fontWeight = "700"; el.style.color = "#2775CA";
     } else {
-      el.style.background = "rgba(43,33,24,0.05)"; el.style.border = "1px solid rgba(43,33,24,0.08)";
-      el.style.fontWeight = "400"; el.style.color = "rgba(43,33,24,0.55)";
+      el.style.background = "rgba(var(--ink-rgb),0.05)"; el.style.border = "1px solid rgba(var(--ink-rgb),0.08)";
+      el.style.fontWeight = "400"; el.style.color = "rgba(var(--ink-rgb),0.55)";
     }
   }
   function rowShell(inner) {
-    return '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' + inner + '</div>';
+    return '<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 16px;">' + inner + '</div>';
   }
 
   async function openEditSheet(prefill) {
     var editing = !!(prefill && prefill.id);
     var el = app.sheet(
       '<div style="max-height:82vh; overflow-y:auto; margin:-2px -6px 0; padding:0 6px 4px;">' +
-      '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:1px; color:rgba(43,33,24,0.5); margin:2px 2px 14px;">' + (editing ? "edit subscription" : "new subscription · what's the squad on?") + '</div>' +
+      '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:1px; color:rgba(var(--ink-rgb),0.5); margin:2px 2px 14px;">' + (editing ? "edit subscription" : "new subscription · what's the squad on?") + '</div>' +
 
       // quick-pick grid
       '<div id="sfPick" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">' +
@@ -281,43 +281,43 @@
 
         // name row
         rowShell('<div style="display:flex; align-items:center; gap:12px;">' +
-          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); flex:none;">name</span>' +
-          '<input id="sfName" placeholder="netflix" maxlength="80" style="appearance:none; border:none; outline:none; background:transparent; flex:1; min-width:0; text-align:right; font-family:' + MONO + '; font-size:13px; color:#2B2118;" /></div>') +
+          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); flex:none;">name</span>' +
+          '<input id="sfName" placeholder="netflix" maxlength="80" style="appearance:none; border:none; outline:none; background:transparent; flex:1; min-width:0; text-align:right; font-family:' + MONO + '; font-size:13px; color:var(--ink);" /></div>') +
 
         // amount hero
-        '<div style="background:#FFFDF7; border:1px solid rgba(39,117,202,0.3); border-radius:22px; padding:18px; text-align:center; box-shadow:0 12px 30px rgba(43,33,24,0.13);">' +
-          '<div style="font-family:' + MONO + '; font-size:9px; letter-spacing:2px; color:rgba(43,33,24,0.4);">AMOUNT</div>' +
+        '<div style="background:var(--card); border:1px solid rgba(39,117,202,0.3); border-radius:22px; padding:18px; text-align:center; box-shadow:0 12px 30px rgba(var(--shadow-rgb),0.13);">' +
+          '<div style="font-family:' + MONO + '; font-size:9px; letter-spacing:2px; color:rgba(var(--ink-rgb),0.4);">AMOUNT</div>' +
           '<div style="display:flex; align-items:center; justify-content:center; margin-top:10px;">' +
-            '<span style="font-family:' + MONO + '; font-weight:700; font-size:24px; opacity:.5; color:#2B2118;">$</span>' +
-            '<input id="sfAmount" inputmode="decimal" placeholder="0" style="appearance:none; border:none; outline:none; background:transparent; width:auto; max-width:210px; text-align:center; font-family:' + MONO + '; font-weight:700; font-size:44px; line-height:1; letter-spacing:-2px; color:#2B2118; caret-color:#2775CA;" />' +
+            '<span style="font-family:' + MONO + '; font-weight:700; font-size:24px; opacity:.5; color:var(--ink);">$</span>' +
+            '<input id="sfAmount" inputmode="decimal" placeholder="0" style="appearance:none; border:none; outline:none; background:transparent; width:auto; max-width:210px; text-align:center; font-family:' + MONO + '; font-weight:700; font-size:44px; line-height:1; letter-spacing:-2px; color:var(--ink); caret-color:#2775CA;" />' +
           '</div>' +
         '</div>' +
 
         // interval + renewal day
-        rowShell('<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-bottom:11px;">billed</div>' +
+        rowShell('<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:11px;">billed</div>' +
           '<div id="sfInterval" style="display:flex; gap:7px;">' + segChip("monthly", "monthly", true) + segChip("yearly", "yearly", false) + '</div>') +
         rowShell('<div style="display:flex; align-items:center; gap:12px;">' +
-          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); flex:1;">renews on the</span>' +
+          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); flex:1;">renews on the</span>' +
           '<input id="sfDay" inputmode="numeric" maxlength="2" style="appearance:none; border:none; outline:none; background:rgba(39,117,202,0.08); border-radius:10px; width:52px; padding:7px 0; text-align:center; font-family:' + MONO + '; font-weight:700; font-size:16px; color:#2775CA;" />' +
-          '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(43,33,24,0.45);">of the month</span></div>') +
+          '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(var(--ink-rgb),0.45);">of the month</span></div>') +
 
         // group picker
-        '<div id="sfTripWrap" style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
-          '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-bottom:11px;">group</div>' +
-          '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6);">loading groups…</div>' +
+        '<div id="sfTripWrap" style="background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 16px;">' +
+          '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:11px;">group</div>' +
+          '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(var(--ink-rgb),0.6);">loading groups…</div>' +
         '</div>' +
 
         // members (toggle) + payer
-        '<div id="sfMembers" style="background:#FFFDF7; border:2px solid #2B2118; border-radius:16px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); padding:13px 16px;">' +
+        '<div id="sfMembers" style="background:var(--card); border:2px solid var(--border-ink); border-radius:16px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:13px 16px;">' +
           '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-            '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">who splits it</span>' +
-            '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(43,33,24,0.4);">pick a group first</span>' +
+            '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45);">who splits it</span>' +
+            '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(var(--ink-rgb),0.4);">pick a group first</span>' +
           '</div>' +
         '</div>' +
 
       '</div>' +
 
-      '<button id="sfSave" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(43,33,24,0.9); margin-top:18px;">' +
+      '<button id="sfSave" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:56px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9); margin-top:18px;">' +
         '<span style="font-family:' + DISPLAY + '; font-weight:600; font-size:17px; color:#fff;">' + (editing ? "save changes" : "start splitting") + '</span><span style="font-size:15px;">🍿</span>' +
       '</button>' +
       '</div>'
@@ -330,8 +330,8 @@
     function markPick() {
       Array.prototype.forEach.call(el.querySelectorAll("[data-qp]"), function (c) {
         var on = c.getAttribute("data-qp") === chosenService;
-        c.style.background = on ? "rgba(39,117,202,0.14)" : "#FFFDF7";
-        c.style.border = on ? "2px solid #2775CA" : "2px solid rgba(43,33,24,0.14)";
+        c.style.background = on ? "rgba(39,117,202,0.14)" : "var(--card)";
+        c.style.border = on ? "2px solid #2775CA" : "2px solid rgba(var(--ink-rgb),0.14)";
       });
     }
     Array.prototype.forEach.call(el.querySelectorAll("[data-qp]"), function (c) {
@@ -381,8 +381,8 @@
     var payerId = null;
 
     if (!trips.length) {
-      tripWrap.innerHTML = '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-bottom:8px;">group</div>' +
-        '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6);">you need a group first — the split lands on its tab.</div>' +
+      tripWrap.innerHTML = '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:8px;">group</div>' +
+        '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(var(--ink-rgb),0.6);">you need a group first — the split lands on its tab.</div>' +
         '<button class="btn ghost" id="sfGoGroups" style="margin-top:10px;">make a group</button>';
       var g = el.querySelector("#sfGoGroups");
       if (g) g.onclick = function () { app.closeSheet(); app.go("groups"); };
@@ -391,7 +391,7 @@
       return;
     }
 
-    tripWrap.innerHTML = '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin-bottom:11px;">group</div>' +
+    tripWrap.innerHTML = '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); margin-bottom:11px;">group</div>' +
       '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
         trips.map(function (t) { return '<div class="chip lower" data-trip="' + app.esc(t.id) + '">' + app.esc(t.name) + '</div>'; }).join("") +
       '</div>';
@@ -399,8 +399,8 @@
     function renderMembers() {
       if (!tripMembers.length) {
         memWrap.innerHTML = '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">who splits it</span>' +
-          '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(43,33,24,0.4);">no members</span></div>';
+          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45);">who splits it</span>' +
+          '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(var(--ink-rgb),0.4);">no members</span></div>';
         return;
       }
       var chips = tripMembers.map(function (m) {
@@ -415,12 +415,12 @@
       }).join("");
       memWrap.innerHTML =
         '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:11px;">' +
-          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45);">who splits it</span>' +
-          '<span style="font-family:' + MONO + '; font-size:10px; color:rgba(43,33,24,0.4);">even split · tap to toggle</span>' +
+          '<span style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45);">who splits it</span>' +
+          '<span style="font-family:' + MONO + '; font-size:10px; color:rgba(var(--ink-rgb),0.4);">even split · tap to toggle</span>' +
         '</div>' +
         '<div style="display:flex; gap:8px; flex-wrap:wrap;">' + chips + '</div>' +
-        '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(43,33,24,0.45); margin:14px 0 10px;">who pays the provider</div>' +
-        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' + (payerChips || '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(43,33,24,0.4);">pick members first</span>') + '</div>';
+        '<div style="font-family:' + MONO + '; font-size:11px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.45); margin:14px 0 10px;">who pays the provider</div>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' + (payerChips || '<span style="font-family:' + MONO + '; font-size:11px; color:rgba(var(--ink-rgb),0.4);">pick members first</span>') + '</div>';
     }
 
     memWrap.onclick = function (ev) {
@@ -529,19 +529,19 @@
     function nameFor(m) { return (m.userId && meId && m.userId === meId) ? "you" : (m.name || "member"); }
 
     var memberRows = members.map(function (m, i) {
-      return (i > 0 ? '<div style="height:1px; background:rgba(43,33,24,0.06); margin:0 15px;"></div>' : '') +
+      return (i > 0 ? '<div style="height:1px; background:rgba(var(--ink-rgb),0.06); margin:0 15px;"></div>' : '') +
         '<div style="display:flex; align-items:center; gap:12px; padding:12px 15px;">' +
           '<div style="width:32px;height:32px;border-radius:50%;background:' + (m.color || "rgba(39,117,202,0.18)") + ';display:flex;align-items:center;justify-content:center;font-size:15px;flex:none;">' + app.face(m.emoji || (m.name || "?")[0]) + '</div>' +
-          '<span style="flex:1; font-family:' + SANS + '; font-weight:500; font-size:15px; color:#2B2118;" class="lower">' + app.esc(nameFor(m)) + (m.weight > 1 ? ' <span style="font-family:' + MONO + '; font-size:10px; color:rgba(43,33,24,0.4);">×' + m.weight + '</span>' : '') + '</span>' +
+          '<span style="flex:1; font-family:' + SANS + '; font-weight:500; font-size:15px; color:var(--ink);" class="lower">' + app.esc(nameFor(m)) + (m.weight > 1 ? ' <span style="font-family:' + MONO + '; font-size:10px; color:rgba(var(--ink-rgb),0.4);">×' + m.weight + '</span>' : '') + '</span>' +
           (m.isPayer ? '<span style="font-family:' + MONO + '; font-size:9px; letter-spacing:.5px; background:rgba(255,198,92,0.15); border:1px solid rgba(255,198,92,0.4); border-radius:999px; padding:2px 8px; color:#b8862e;">PAYS 💳</span>' : '') +
-          '<span style="font-family:' + MONO + '; font-weight:700; font-size:15px; color:rgba(43,33,24,0.85);">' + app.esc(m.shareFmt || plain$(m.shareCents || 0)) + '</span>' +
+          '<span style="font-family:' + MONO + '; font-weight:700; font-size:15px; color:rgba(var(--ink-rgb),0.85);">' + app.esc(m.shareFmt || plain$(m.shareCents || 0)) + '</span>' +
         '</div>';
     }).join("");
 
     var el = app.sheet(
       '<div style="max-height:80vh; overflow-y:auto; margin:-2px -6px 0; padding:0 6px;">' +
         // header — taped-in identity card
-        '<div style="position:relative; border-radius:22px; overflow:hidden; padding:19px; background:linear-gradient(150deg,#2f80d6 0%,#2775CA 55%,#1d5e9f 100%); box-shadow:3px 3px 0 rgba(43,33,24,0.9);">' +
+        '<div style="position:relative; border-radius:22px; overflow:hidden; padding:19px; background:linear-gradient(150deg,#2f80d6 0%,#2775CA 55%,#1d5e9f 100%); box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9);">' +
           '<div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 88% 8%, rgba(255,255,255,0.09) 0 1px, transparent 1px 9px); opacity:.55; pointer-events:none;"></div>' +
           '<div style="position:relative; display:flex; align-items:center; gap:12px;">' +
             '<div style="width:48px; height:48px; border-radius:14px; background:rgba(11,22,34,0.28); border:1px solid rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:24px; flex:none;">' + app.face(iconOf(sub)) + '</div>' +
@@ -559,25 +559,25 @@
 
         // members + shares
         '<div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 12px;">' +
-          '<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">WHO SPLITS IT</span>' +
-          '<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(43,33,24,0.4);">SPLIT ' + members.length + '</span>' +
+          '<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">WHO SPLITS IT</span>' +
+          '<span style="font-family:' + MONO + '; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.4);">SPLIT ' + members.length + '</span>' +
         '</div>' +
-        '<div style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); overflow:hidden;">' +
-          (memberRows || '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6); padding:14px 15px;">no members</div>') +
+        '<div style="background:var(--card); border:2px solid var(--border-ink); border-radius:18px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); overflow:hidden;">' +
+          (memberRows || '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(var(--ink-rgb),0.6); padding:14px 15px;">no members</div>') +
         '</div>' +
 
         // renewal history
-        '<div style="margin:22px 2px 12px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(43,33,24,0.45);">RENEWALS</span></div>' +
-        '<div id="sdHistory" style="background:#FFFDF7; border:2px solid #2B2118; border-radius:18px; box-shadow:3px 4px 0 rgba(43,33,24,0.85); overflow:hidden;">' +
-          '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6); padding:14px 15px;">loading…</div>' +
+        '<div style="margin:22px 2px 12px;"><span style="font-family:' + MONO + '; font-size:10px; letter-spacing:1.5px; color:rgba(var(--ink-rgb),0.45);">RENEWALS</span></div>' +
+        '<div id="sdHistory" style="background:var(--card); border:2px solid var(--border-ink); border-radius:18px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); overflow:hidden;">' +
+          '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(var(--ink-rgb),0.6); padding:14px 15px;">loading…</div>' +
         '</div>' +
 
         // actions
-        '<button id="sdPay" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid #2B2118; box-shadow:3px 3px 0 rgba(43,33,24,0.9); margin-top:22px; font-family:' + DISPLAY + '; font-weight:600; font-size:16px; color:#fff;">' +
+        '<button id="sdPay" style="appearance:none; border:none; cursor:pointer; width:100%; min-height:52px; border-radius:999px; background:#2775CA; border:2px solid var(--border-ink); box-shadow:3px 3px 0 rgba(var(--shadow-rgb),0.9); margin-top:22px; font-family:' + DISPLAY + '; font-weight:600; font-size:16px; color:#fff;">' +
           (iAmPayer ? "open the group tab →" : "pay your share →") + '</button>' +
         (sub.canEdit
           ? '<div style="display:flex; gap:9px; margin-top:11px;">' +
-              '<button id="sdEdit" style="appearance:none; cursor:pointer; flex:1; min-height:46px; border-radius:999px; background:#FFFDF7; border:1px solid rgba(43,33,24,0.14); font-family:' + SANS + '; font-weight:500; font-size:14px; color:rgba(43,33,24,0.85);">edit</button>' +
+              '<button id="sdEdit" style="appearance:none; cursor:pointer; flex:1; min-height:46px; border-radius:999px; background:var(--card); border:1px solid rgba(var(--ink-rgb),0.14); font-family:' + SANS + '; font-weight:500; font-size:14px; color:rgba(var(--ink-rgb),0.85);">edit</button>' +
               '<button id="sdDelete" style="appearance:none; cursor:pointer; flex:1; min-height:46px; border-radius:999px; background:rgba(255,107,94,0.08); border:1px solid rgba(255,107,94,0.28); font-family:' + SANS + '; font-weight:500; font-size:14px; color:#FF6B5E;">delete</button>' +
             '</div>'
           : '') +
@@ -613,15 +613,15 @@
     try { detail = await app.api.get("/api/subscriptions/" + encodeURIComponent(sub.id)); } catch (_) {}
     var renewals = (detail && detail.renewals) || [];
     if (!renewals.length) {
-      hist.innerHTML = '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(43,33,24,0.6); padding:14px 15px;" class="lower">no renewals yet — first one lands ' + fmtDate(sub.nextRenewal) + ' ✨</div>';
+      hist.innerHTML = '<div style="font-family:' + MONO + '; font-size:12px; color:rgba(var(--ink-rgb),0.6); padding:14px 15px;" class="lower">no renewals yet — first one lands ' + fmtDate(sub.nextRenewal) + ' ✨</div>';
     } else {
       hist.innerHTML = renewals.map(function (r, i) {
-        return (i > 0 ? '<div style="height:1px; background:rgba(43,33,24,0.06); margin:0 15px;"></div>' : '') +
+        return (i > 0 ? '<div style="height:1px; background:rgba(var(--ink-rgb),0.06); margin:0 15px;"></div>' : '') +
           '<div style="display:flex; align-items:center; gap:12px; padding:12px 15px;">' +
             '<div style="width:32px; height:32px; border-radius:10px; background:rgba(61,232,199,0.12); display:flex; align-items:center; justify-content:center; font-size:14px; flex:none;">🔁</div>' +
-            '<span style="flex:1; font-family:' + SANS + '; font-weight:500; font-size:14.5px; color:#2B2118;" class="lower">' + fmtDate(r.period) + '</span>' +
+            '<span style="flex:1; font-family:' + SANS + '; font-weight:500; font-size:14.5px; color:var(--ink);" class="lower">' + fmtDate(r.period) + '</span>' +
             '<span style="display:inline-flex; align-items:center; gap:4px; background:rgba(61,232,199,0.12); border:1px solid rgba(61,232,199,0.4); border-radius:999px; padding:1px 8px;"><span style="font-family:' + MONO + '; font-weight:700; font-size:8px; letter-spacing:.5px; color:#1fbfa3;">SPLIT ✨</span></span>' +
-            '<span style="font-family:' + MONO + '; font-weight:700; font-size:14px; color:rgba(43,33,24,0.75);">' + app.esc(r.amountFmt || "") + '</span>' +
+            '<span style="font-family:' + MONO + '; font-weight:700; font-size:14px; color:rgba(var(--ink-rgb),0.75);">' + app.esc(r.amountFmt || "") + '</span>' +
           '</div>';
       }).join("");
     }
