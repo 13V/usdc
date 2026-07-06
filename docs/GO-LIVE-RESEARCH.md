@@ -150,3 +150,36 @@ research with sources. Informational only — compliance section is NOT legal ad
 **Offramp ship order**: MoonPay Sell first (verified fit, merchant of record) →
 Coinbase Offramp as parallel 0%-fee rail for Coinbase-account users → consider Bridge
 when offramp becomes core and unit economics matter.
+
+---
+
+## Appendix: Onramp deep-dive (verified 2026-07-06) — REVISES the topline onramp rec
+
+**Revised recommendation: Stripe onramp via Privy's native Embedded Components as
+PRIMARY; Coinbase Onramp as fallback; MoonPay demoted to third.**
+
+- Privy natively routes fiat funding through Meld, MoonPay, Coinbase, and **Stripe**
+  (useFiatOnramp; Ramp/Transak are NOT native). Stripe Embedded Components inside
+  Privy EXPLICITLY supports USDC on Solana; payment methods credit/debit/Apple Pay/
+  Google Pay/ACH (US only); available US-wide EXCLUDING NEW YORK; needs
+  @privy-io/react-auth >= 3.32.0 + @stripe/crypto.
+  https://docs.privy.io/wallets/funding/fiat-onramp
+- Stripe onramp application review is documented at ~48 hours — the fastest
+  documented approval of the five. Fees are spread-based, disclosed at quote time
+  (opaque until then). https://docs.stripe.com/crypto/onramp
+- Coinbase Onramp (also Privy-native): trial mode day one; cheapest PUBLISHED fees
+  (2.5% card / 0.5% ACH, 0% USDC promo); guest Apple Pay now requires the separate
+  Headless Onramp API (post-June-30-2026), US phone + access fee + ~$2.5K/wk card cap.
+- MoonPay verified live for usdc_sol (min buy $5 per currencies API — conflicts with
+  the $20 figure in their help center; widget config likely differs) but 4.5% card +
+  $3.99 minimum fee stings on sub-$20 Gen Z splits, and KYB has no published timeline.
+  Signed URLs are MANDATORY when passing walletAddress.
+  https://dev.moonpay.com/docs/on-ramp-enhance-security-using-signed-urls
+- Asset-locking to the user's embedded wallet is supported on all three (session
+  tokens / signed URLs / locked destination params); Coinbase requires a domain
+  allowlist in the CDP portal.
+
+**Morning action order (revised): 1) Stripe onramp application (48h documented),
+2) Coinbase CDP application (trial instantly, 0%-fee USDC), 3) MoonPay KYB
+(fallback + the offramp story via MoonPay Sell), all in parallel — they're free
+options on each other.**
