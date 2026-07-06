@@ -25,7 +25,19 @@
     try {
       if (t) localStorage.setItem(TOKEN_KEY, t);
       else localStorage.removeItem(TOKEN_KEY);
+      // Any successful sign-in ends the explicit signed-out state, so the
+      // silent local-wallet resume (init) is allowed again next boot.
+      if (t) localStorage.removeItem(SIGNED_OUT_KEY);
     } catch (_) { /* storage may be unavailable; auth simply won't persist */ }
+  }
+
+  // Explicit sign-out marker: distinguishes "chose to log out" from "token
+  // missing/expired". While set, init() must NOT silently re-sign-in with the
+  // local burner wallet — otherwise tapping apple/google on the welcome screen
+  // races a background wallet login and appears to "instantly make a wallet".
+  const SIGNED_OUT_KEY = "divvy.signedOut";
+  function explicitlySignedOut() {
+    try { return localStorage.getItem(SIGNED_OUT_KEY) === "1"; } catch (_) { return false; }
   }
 
   // authFetch — like fetch() but injects the Bearer header when signed in.
@@ -83,8 +95,9 @@
     if (!token()) {
       Auth.user = null;
       // Best-effort: a returning user with a local wallet but no session gets
-      // silently re-signed-in. Never block init on it; ignore any failure.
-      if (hasLocalWallet()) {
+      // silently re-signed-in — unless they explicitly logged out, in which
+      // case the welcome screen must stay put so they can pick a real method.
+      if (hasLocalWallet() && !explicitlySignedOut()) {
         try {
           await signInWithCreatedWallet(); // fires onChange on success
           return;
@@ -384,6 +397,11 @@
   function signOut() {
     setToken(null);
     Auth.user = null;
+    cacheUser(null);
+    // Mark the sign-out as deliberate. The local burner wallet key stays in
+    // storage (for wallet-created accounts it's the only way back in), but it
+    // won't be used to silently re-sign-in until the user signs in again.
+    try { localStorage.setItem(SIGNED_OUT_KEY, "1"); } catch (_) { /* non-persistent */ }
     fire();
   }
 
