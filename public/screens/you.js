@@ -159,7 +159,13 @@
       '<div style="position:relative; z-index:6; display:flex; align-items:center; justify-content:space-between; height:88px; padding:0 20px; flex:none;">' +
         '<div style="display:flex; align-items:center; gap:12px;">' +
           '<h1 class="jdoodle" style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:28px; letter-spacing:-0.8px; margin:0; color:#2B2118;">you</h1>' +
-          '<div id="yGear" role="button" aria-label="settings" tabindex="0" style="width:36px; height:36px; border-radius:50%; background:#FFFDF7; border:1px solid rgba(43,33,24,0.1); display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="rgba(43,33,24,0.75)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a1.8 1.8 0 0 0 .36 1.98l.07.07a2.2 2.2 0 1 1-3.11 3.11l-.07-.07a1.8 1.8 0 0 0-3.04 1.28V21a2.2 2.2 0 0 1-4.4 0v-.1A1.8 1.8 0 0 0 5.5 19.4l-.07.07a2.2 2.2 0 1 1-3.11-3.11l.07-.07a1.8 1.8 0 0 0-1.28-3.04H1a2.2 2.2 0 0 1 0-4.4h.1A1.8 1.8 0 0 0 2.6 5.5l-.07-.07a2.2 2.2 0 1 1 3.11-3.11l.07.07a1.8 1.8 0 0 0 1.98.36H8a1.8 1.8 0 0 0 1.1-1.65V1a2.2 2.2 0 0 1 4.4 0v.1a1.8 1.8 0 0 0 3.04 1.28l.07-.07a2.2 2.2 0 1 1 3.11 3.11l-.07.07A1.8 1.8 0 0 0 21.9 8H22a2.2 2.2 0 0 1 0 4.4h-.1a1.8 1.8 0 0 0-1.5 1.1z"/></svg></div>' +
+          '<div id="yGear" role="button" aria-label="settings" tabindex="0" style="width:36px; height:36px; border-radius:50%; background:#FFFDF7; border:2px solid #2B2118; box-shadow:2px 2px 0 rgba(43,33,24,0.35); display:flex; align-items:center; justify-content:center; cursor:pointer;">' +
+            // Hand-inked spoke gear (hub + 8 ticks) — stays crisp at small sizes,
+            // unlike the lobed feather cog it replaces.
+            '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2118" stroke-width="2" stroke-linecap="round">' +
+              '<circle cx="12" cy="12" r="3.4"/>' +
+              '<path d="M18.3 12h3M5.7 12h-3M12 5.7v-3M12 18.3v3M16.46 7.54l2.12-2.12M7.54 7.54 5.42 5.42M16.46 16.46l2.12 2.12M7.54 16.46l-2.12 2.12"/>' +
+            '</svg></div>' +
         '</div>' +
         // full-body mascot companion (window.Mascot, wave mood), scaled into the
         // 78px header slot the frame reserves. No glow: at this size against the
