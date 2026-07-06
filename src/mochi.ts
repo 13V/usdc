@@ -41,6 +41,7 @@ import { computeBalances, minimalSettlement } from "./ledger";
 import { computeTabBalance, TabEntryLike } from "./tabs";
 import { getUser, serializeUser } from "./users";
 import { fmt, toCents, distributeWeighted } from "./split";
+import { LEDGER_MAX_CENTS } from "./limits";
 
 // ---- Config / limits ---------------------------------------------------------
 
@@ -52,7 +53,7 @@ const MAX_HISTORY_TEXT = 1000;
 const MAX_ROUNDS = 5; // hard cap on the tool loop
 const MAX_ACTIONS = 3; // pending confirm cards per ask
 
-export const MAX_AMOUNT_CENTS = 100000000; // mirror ious/tabs/trips routes
+export const MAX_AMOUNT_CENTS = LEDGER_MAX_CENTS; // shared env-tunable cap (src/limits.ts)
 const MAX_NOTE = 140; // mirror tabs.ts MAX_NOTE
 const MAX_TITLE = 140; // mirror server.ts MAX_EXPENSE_TITLE
 

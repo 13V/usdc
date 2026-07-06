@@ -41,6 +41,11 @@ import { cardOptions, ramsConfigured, MOONPAY_MIN_CENTS } from "./onramp";
 import { cashoutOptions } from "./offramp";
 import { distributeWeighted, fmt, toCents, withTip, SplitMode } from "./split";
 import { Cluster, buildSolanaPayUrl, newReference, USDC_MINT } from "./solanaPay";
+// Validated + normalized cluster (hard-fails the boot on a garbage CLUSTER,
+// normalizes "mainnet" → "mainnet-beta" — see src/cluster.ts).
+import { CLUSTER, clusterMismatchError } from "./cluster";
+// Env-tunable ledger amount cap (LEDGER_MAX_CENTS; default $1M) — see src/limits.ts.
+import { LEDGER_MAX_CENTS } from "./limits";
 import { computeBalances, minimalSettlement, Transfer } from "./ledger";
 import { simplifyDebts, pairwiseDebts, simplifySummary } from "./simplify";
 import {
@@ -108,6 +113,8 @@ import {
   fxNoteFor,
   fxOriginal,
   fxOriginalFmt,
+  fxSourceUsableOnCluster,
+  FX_FALLBACK_UNAVAILABLE,
   isSupported,
   isZeroDecimal,
   majorFromMinor,
@@ -159,7 +166,6 @@ import { legalRouter } from "./legal";
 import { memesRouter } from "./memes";
 
 const PORT = Number(process.env.PORT || 3000);
-const CLUSTER = (process.env.CLUSTER as Cluster) || "devnet";
 
 // The fixed-window per-IP limiter itself lives in ./ratelimit (shared with the
 // feature routers, and audited there for bucket cleanup + trust-proxy). The
@@ -441,7 +447,10 @@ app.use(telemetryRouter(rateLimit(12, 60_000)));
 // ---- Auth & identity (progressive, optional) ------------------------------
 
 app.get("/api/auth/config", (_req: Request, res: Response) => {
-  res.json({ siws: true, privy: privyConfigured() });
+  // `cluster` is public, non-secret config: the client gates devnet-only UX
+  // (burner wallets, faucet copy, devnet badges) on it. Server-pinned — the
+  // client can never choose the chain, only render honestly for it.
+  res.json({ siws: true, privy: privyConfigured(), cluster: CLUSTER });
 });
 
 // Readiness probe for uptime monitoring: liveness + a cheap data-store ping +
@@ -1021,6 +1030,12 @@ app.get("/api/bills/:id", async (req: Request, res: Response) => {
 app.post("/api/bills/:id/verify", moneyRateLimit, requireAuth, async (req: Request, res: Response) => {
   const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).json({ error: "not found" });
+  // H1/B4: a bill stamped on a different cluster must never be verified against
+  // this server's chain — a devnet-era bill would either stall forever against
+  // mainnet or, worse, match a real transfer. Refuse with a clear closed state.
+  if (bill.cluster !== CLUSTER) {
+    return res.status(409).json({ error: clusterMismatchError(bill.cluster), crossCluster: true });
+  }
   try {
     const connection = new Connection(rpcUrl(bill.cluster), "confirmed");
     const updated: string[] = [];
@@ -1149,10 +1164,15 @@ app.post("/api/scan", requireAuth, scanRateLimit, async (req: Request, res: Resp
   }
 });
 
+// Cheap read limiter for the public /api/fx/* endpoints — each quote can hit
+// the upstream rate API (cache misses), so keep an anonymous client from using
+// us as a free FX proxy. Generous enough that the currency picker never bites.
+const fxRateLimit = rateLimit(60, 60_000); // ~60 req/min per IP
+
 // The currency picker's menu: the offline-known whitelist + display metadata.
 // `enabled:false` (DIVVY_FX=off) tells the client to hide the picker entirely —
 // the app is fully usable USD-only.
-app.get("/api/fx/currencies", (_req: Request, res: Response) => {
+app.get("/api/fx/currencies", fxRateLimit, (_req: Request, res: Response) => {
   if (!fxEnabled()) {
     return res.json({ enabled: false, currencies: ["USD"], symbols: { USD: "$" }, zeroDecimal: [] });
   }
@@ -1169,7 +1189,7 @@ app.get("/api/fx/currencies", (_req: Request, res: Response) => {
 
 // FX quote: convert a local-currency MAJOR amount to USD at the current locked
 // rate. e.g. GET /api/fx/THB/2450 -> USD value + rate/source/timestamp.
-app.get("/api/fx/:from/:amount", async (req: Request, res: Response) => {
+app.get("/api/fx/:from/:amount", fxRateLimit, async (req: Request, res: Response) => {
   if (!fxEnabled()) return res.status(400).json({ error: "multi-currency is off" });
   const from = String(req.params.from || "").toUpperCase();
   const amount = Number(req.params.amount);
@@ -1284,7 +1304,9 @@ function memberName(trip: Trip, id: string): string {
 const MAX_TRIP_NAME = 120;
 const MAX_MEMBER_NAME = 80;
 const MAX_EXPENSE_TITLE = 140;
-const MAX_AMOUNT_CENTS = 100_000_000; // $1,000,000 cap
+// Ledger amount cap — env-tunable via LEDGER_MAX_CENTS (default $1,000,000).
+// One shared constant across server/tabs/ious/mochi/subscriptions (src/limits.ts).
+const MAX_AMOUNT_CENTS = LEDGER_MAX_CENTS;
 const MAX_MEMBERS = 50;
 const MAX_EXPENSES = 2000;
 
@@ -1371,6 +1393,10 @@ function assertLen(value: string, label: string, min: number, max: number): stri
 async function serializeSettlement(trip: Trip) {
   const stored = await getSettlement(trip.id);
   if (!stored) return null;
+  // H1/B4: a settlement built on another cluster carries pay URLs for the
+  // wrong chain — strip them so no client ever renders a payable request, and
+  // say why. Paid history still shows.
+  const crossCluster = trip.cluster !== CLUSTER;
   const transfers = stored.transfers.map((t: SettlementTransfer) => ({
     from: t.from,
     fromName: memberName(trip, t.from),
@@ -1378,14 +1404,20 @@ async function serializeSettlement(trip: Trip) {
     toName: memberName(trip, t.to),
     amountCents: t.amountCents,
     amountFmt: fmt(t.amountCents),
-    url: t.url || null,
+    url: crossCluster ? null : t.url || null,
     reference: t.reference || null,
     needsWallet: !t.url,
     paid: !!t.paid,
   }));
   const payable = transfers.filter((t) => !t.needsWallet);
   const allPaid = payable.length > 0 && payable.every((t) => t.paid);
-  return { transfers, allPaid, createdAt: stored.createdAt };
+  return {
+    transfers,
+    allPaid,
+    createdAt: stored.createdAt,
+    crossCluster,
+    ...(crossCluster ? { crossClusterNote: clusterMismatchError(trip.cluster) } : {}),
+  };
 }
 
 async function serializeTrip(trip: Trip, opts?: { refUserId?: string | null }) {
@@ -1850,6 +1882,12 @@ async function resolveEntryFx(
     return { error: "originalAmount must be an integer amount in minor units (1..10^10)" };
   }
   const { usdCents, rate, asOf, source } = await convertMinorToUsd(originalAmount, currency);
+  // M4: on mainnet a stale offline fallback table must never price real money.
+  // New FX entries are refused (400) until live rates return; stored rows keep
+  // displaying fine (their fx blob carries the rate locked at entry).
+  if (!fxSourceUsableOnCluster(source, CLUSTER)) {
+    return { error: FX_FALLBACK_UNAVAILABLE };
+  }
   if (usdCents < 1) {
     return { error: `that's less than a cent in USD (${formatForeign(majorFromMinor(originalAmount, currency), currency)})` };
   }
@@ -2162,6 +2200,11 @@ app.post("/api/trips/:id/settle", moneyRateLimit, async (req: Request, res: Resp
     if (!authorizeTrip(req, trip)) {
       return res.status(403).json({ error: "not authorized for this trip" });
     }
+    // H1/B4: never build payment requests for a group stamped on another
+    // cluster — a devnet-era balance must not become a real mainnet ask.
+    if (trip.cluster !== CLUSTER) {
+      return res.status(409).json({ error: clusterMismatchError(trip.cluster), crossCluster: true });
+    }
 
     const memberIds = trip.members.map((m) => m.id);
     const balances = computeBalances(
@@ -2281,6 +2324,11 @@ app.post("/api/trips/:id/settle/verify", moneyRateLimit, async (req: Request, re
   if (!trip) return res.status(404).json({ error: "not found" });
   if (!authorizeTrip(req, trip)) {
     return res.status(403).json({ error: "not authorized for this trip" });
+  }
+  // H1/B4: verifying a foreign-cluster settlement would query the wrong chain
+  // (rpcUrl() returns this server's RPC regardless) — refuse with a clear error.
+  if (trip.cluster !== CLUSTER) {
+    return res.status(409).json({ error: clusterMismatchError(trip.cluster), crossCluster: true });
   }
   const stored = await getSettlement(trip.id);
   if (!stored) return res.status(400).json({ error: "no settlement to verify; call /settle first" });
@@ -2637,6 +2685,11 @@ app.get("/t/:token", async (req: Request, res: Response) => {
 app.get("/pay/:id", async (req: Request, res: Response) => {
   const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).send("Tab not found");
+  // Cross-cluster tab (H1/B4): its Solana Pay URLs point at the wrong chain —
+  // never render payable UI for it.
+  if (bill.cluster !== CLUSTER) {
+    return res.status(410).type("html").send(renderClosedPayPage(bill.title, bill.cluster));
+  }
   if (req.query.ref) setRefCookie(res, req.query.ref); // invite attribution
   const base = `${req.protocol}://${req.get("host")}`;
   res.type("html").send(renderBillLanding(bill, base));
@@ -2645,6 +2698,9 @@ app.get("/pay/:id", async (req: Request, res: Response) => {
 app.get("/pay/:id/:name", async (req: Request, res: Response) => {
   const bill = await store.get(req.params.id);
   if (!bill) return res.status(404).send("Bill not found");
+  if (bill.cluster !== CLUSTER) {
+    return res.status(410).type("html").send(renderClosedPayPage(bill.title, bill.cluster));
+  }
   if (req.query.ref) setRefCookie(res, req.query.ref); // invite attribution
   const name = decodeURIComponent(req.params.name);
   const p = bill.participants.find((x) => x.name === name);
@@ -2696,12 +2752,17 @@ function serializeBill(bill: Bill) {
         bill.fx.sourceCurrency
       } @ $${bill.fx.rate.toFixed(4)} (as of ${bill.fx.asOf})`
     : undefined;
+  // Cross-cluster closed state (H1/B4): a row stamped on another cluster keeps
+  // rendering (history), but the client must show it as closed — no pay CTA.
+  const crossCluster = bill.cluster !== CLUSTER;
   return {
     ...bill,
     totalFmt: fmt(bill.totalCents),
     collectedFmt: fmt(collectedCents(bill)),
     outstandingFmt: fmt(outstandingCents(bill)),
     settled: outstandingCents(bill) === 0,
+    crossCluster,
+    ...(crossCluster ? { crossClusterNote: clusterMismatchError(bill.cluster) } : {}),
     fx: bill.fx ?? null,
     ...(fxNote ? { fxNote } : {}),
     participants: bill.participants.map((p) => ({
@@ -2733,6 +2794,36 @@ function jsonForScript(value: unknown): string {
     .replace(/&/g, "\\u0026")
     .replace(/\u2028/g, "\\u2028")
     .replace(/\u2029/g, "\\u2029");
+}
+
+/**
+ * Static "this tab is closed" page for a bill stamped on another cluster
+ * (H1/B4). No pay UI, no QR, no JS — just an honest explanation.
+ */
+function renderClosedPayPage(title: string, rowCluster: string): string {
+  const note = clusterMismatchError(rowCluster);
+  return `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${esc(title)} — closed</title>
+<style>
+  :root { color-scheme: light; }
+  body { font-family: -apple-system, system-ui, "Segoe UI", sans-serif; margin: 0;
+         padding: 40px 22px; max-width: 440px; margin-inline: auto; background: #F7F1E3;
+         color: #2B2118; line-height: 1.5; text-align: center; }
+  .card { background: #FFFDF7; border: 2px solid #2B2118; border-radius: 20px;
+          padding: 26px 22px; box-shadow: 6px 6px 0 #2B2118; margin-top: 40px; }
+  h1 { font-size: 1.25rem; margin: 0 0 8px; }
+  p { color: #7c7266; font-size: .95rem; margin: 8px 0 0; }
+  a { display: inline-block; margin-top: 18px; color: #2775CA; font-weight: 700; text-decoration: none; }
+</style></head><body>
+  <div class="card">
+    <h1>${esc(title)}</h1>
+    <p>${esc(note)}</p>
+    <p>nothing is owed here — if this split is still live, ask for a fresh link.</p>
+    <a href="/">open divvy →</a>
+  </div>
+</body></html>`;
 }
 
 function renderBillLanding(bill: Bill, baseUrl = ""): string {
@@ -3037,20 +3128,59 @@ process.on("uncaughtException", (err) => {
 function assertMainnetReadiness(): void {
   if (CLUSTER !== "mainnet-beta") return;
   const problems: string[] = [];
+  // Defense-in-depth: src/cluster.ts already validated/normalized CLUSTER at
+  // import (hard-failing on garbage), but assert the invariant here too so the
+  // gate is self-contained if the boot order ever changes.
+  if (process.env.CLUSTER !== "mainnet-beta") {
+    problems.push('CLUSTER must be exactly "mainnet-beta"');
+  }
   if (!process.env.RPC_URL) problems.push("RPC_URL must be a paid mainnet endpoint (not the public default)");
   if (!process.env.SESSION_SECRET) problems.push("SESSION_SECRET must be set");
   if (!usingSupabase) problems.push("DATA_BACKEND must be supabase (SQLite is ephemeral on Railway — money data would vanish on redeploy)");
   if (COLLECTOR === "11111111111111111111111111111111") problems.push("COLLECTOR_WALLET must be set");
-  if (fundingConfigured()) problems.push("the devnet faucet (MINT_AUTHORITY_SECRET) must be removed on mainnet");
+  // Devnet faucet remnants: require EACH var individually absent. The old
+  // fundingConfigured() check only tripped when the PAIR was present, so a
+  // lone leftover secret or test mint sailed through.
+  if (process.env.MINT_AUTHORITY_SECRET) {
+    problems.push("MINT_AUTHORITY_SECRET (devnet faucet authority) must be removed on mainnet");
+  }
+  if (process.env.TEST_USDC_MINT) {
+    problems.push("TEST_USDC_MINT (devnet test mint override) must be removed on mainnet");
+  }
   if (process.env.CONSUMED_SIG_FAIL_OPEN === "1") problems.push("CONSUMED_SIG_FAIL_OPEN must not be enabled on mainnet");
+  // Sign-up/sign-in is Privy-backed — without BOTH server-side vars, new users
+  // simply cannot be created on mainnet (dead signup). Hard fail.
+  if (!process.env.PRIVY_APP_ID || !process.env.PRIVY_APP_SECRET) {
+    problems.push("PRIVY_APP_ID and PRIVY_APP_SECRET must both be set — without them sign-up is dead");
+  }
+  // MoonPay key hygiene (B2): a pk_test_ key on mainnet opens the SANDBOX
+  // widget — users think they added money and nothing arrives. A live key
+  // without the secret can't produce the signed URLs MoonPay requires in prod.
+  const mp = process.env.MOONPAY_API_KEY;
+  if (mp && !/PLACEHOLDER/i.test(mp) && !mp.startsWith("pk_live_")) {
+    problems.push("MOONPAY_API_KEY is a test key (pk_test_) — use a pk_live_ key on mainnet, or unset it to keep rails dark");
+  }
+  if (mp && !process.env.MOONPAY_SECRET_KEY) {
+    problems.push("MOONPAY_SECRET_KEY is required when MOONPAY_API_KEY is set (MoonPay requires signed URLs in production)");
+  }
   if (process.env.RAILS_REQUIRE_LIVE === "1" && !ramsConfigured()) {
     problems.push("on/off-ramp provider keys must be configured (RAILS_REQUIRE_LIVE=1)");
+  }
+  // Warn-only (boot proceeds): ops niceties the launch can survive without,
+  // but the operator should know they're dark.
+  if (!process.env.ALERT_WEBHOOK_URL) {
+    // eslint-disable-next-line no-console
+    console.warn("⚠  ALERT_WEBHOOK_URL is not set — money-path anomaly alerts have nowhere to go.");
+  }
+  if (!process.env.ADMIN_TOKEN) {
+    // eslint-disable-next-line no-console
+    console.warn("⚠  ADMIN_TOKEN is not set — /api/telemetry/recent (error read-back) is disabled.");
   }
   if (problems.length) {
     throw new Error(
       "Refusing to boot on mainnet-beta — unsafe configuration:\n  - " +
         problems.join("\n  - ") +
-        "\nSee docs/PRE-MAINNET.md."
+        "\nSee docs/GO-LIVE.md and docs/PRE-MAINNET.md."
     );
   }
 }

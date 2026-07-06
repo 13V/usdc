@@ -50,6 +50,8 @@ import {
   USDC_MINT,
   Cluster,
 } from "./solanaPay";
+import { CLUSTER, clusterMismatchError } from "./cluster";
+import { LEDGER_MAX_CENTS } from "./limits";
 import { validatePayment } from "./verify";
 import { claimSignature } from "./consumedSignatures";
 import { alert } from "./alerts";
@@ -73,7 +75,7 @@ import {
 
 // ---- Config ----------------------------------------------------------------
 
-const cluster = (process.env.CLUSTER || "devnet") as Cluster;
+const cluster: Cluster = CLUSTER;
 const rpcUrl = process.env.RPC_URL || clusterApiUrl(cluster);
 
 // ---- Schema (idempotent) ---------------------------------------------------
@@ -100,9 +102,28 @@ db.exec(`
     pay_wallet TEXT,
     status TEXT NOT NULL,
     signature TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    cluster TEXT
   );
 `);
+
+// Additive migration (B4): stamp each settlement with the cluster it was
+// created on, so a devnet-era open settlement can never be presented (or
+// verified) as a real mainnet payment request after the flip. Existing rows
+// all predate mainnet — backfill 'devnet'. Mirrored in supabase/schema.sql.
+{
+  const cols = db.prepare("PRAGMA table_info(tab_settlements)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "cluster")) {
+    db.exec("ALTER TABLE tab_settlements ADD COLUMN cluster TEXT");
+  }
+  db.exec("UPDATE tab_settlements SET cluster = 'devnet' WHERE cluster IS NULL");
+}
+
+/** The cluster a settlement row was created on. NULL-safe: any pre-migration
+ *  row is devnet-era by definition. */
+function rowCluster(row: { cluster?: string | null }): string {
+  return row.cluster || "devnet";
+}
 
 // ---- Types -----------------------------------------------------------------
 
@@ -134,6 +155,9 @@ interface TabSettlementRow {
   status: string;
   signature: string | null;
   created_at: string;
+  // Cluster stamped at creation (B4). NULL only on pre-migration rows, which
+  // are devnet-era by definition (rowCluster() treats NULL as 'devnet').
+  cluster: string | null;
 }
 
 // ---- Pure balance math (exported for tabs.selftest.ts) ----------------------
@@ -315,7 +339,7 @@ export function cashPaymentEntry(
 // ---- Input validation --------------------------------------------------------
 
 const MAX_NOTE = 140;
-const MAX_AMOUNT_CENTS = 100000000; // mirror ious.ts
+const MAX_AMOUNT_CENTS = LEDGER_MAX_CENTS; // shared env-tunable cap (src/limits.ts)
 
 /**
  * User ids are crypto.randomUUID()s. Enforce that shape defensively so ids are
@@ -516,6 +540,7 @@ async function insertSettlement(row: TabSettlementRow): Promise<void> {
       status: row.status,
       signature: row.signature,
       created_at: row.created_at,
+      cluster: row.cluster,
     });
     if (error) throw new Error(`tabs.insertSettlement: ${error.message}`);
     return;
@@ -523,8 +548,8 @@ async function insertSettlement(row: TabSettlementRow): Promise<void> {
   db.prepare(
     `INSERT INTO tab_settlements
        (id, payer_user_id, payee_user_id, amount_cents, reference, pay_wallet,
-        status, signature, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        status, signature, created_at, cluster)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     row.id,
     row.payer_user_id,
@@ -534,7 +559,8 @@ async function insertSettlement(row: TabSettlementRow): Promise<void> {
     row.pay_wallet,
     row.status,
     row.signature,
-    row.created_at
+    row.created_at,
+    row.cluster
   );
 }
 
@@ -630,9 +656,15 @@ function serializeEntry(row: TabEntryRow, meId: string) {
   };
 }
 
-/** Rebuild the Solana Pay url from the stored reference + pay_wallet. */
+/**
+ * Rebuild the Solana Pay url from the stored reference + pay_wallet.
+ * B4: rebuilding uses the CURRENT cluster's mint, so a row stamped on a
+ * different cluster must never produce a URL — a devnet-era open settlement
+ * would otherwise become a real mainnet payment request after the flip.
+ */
 function settlementUrl(row: TabSettlementRow): string | null {
   if (!row.reference || !row.pay_wallet) return null;
+  if (rowCluster(row) !== cluster) return null;
   return buildSolanaPayUrl({
     recipient: row.pay_wallet,
     amountCents: row.amount_cents,
@@ -644,6 +676,8 @@ function settlementUrl(row: TabSettlementRow): string | null {
 }
 
 function serializeSettlement(row: TabSettlementRow, meId: string) {
+  // Cross-cluster (B4): surfaced as a closed request — no url, an honest note.
+  const crossCluster = rowCluster(row) !== cluster;
   return {
     id: row.id,
     payerUserId: row.payer_user_id,
@@ -658,6 +692,8 @@ function serializeSettlement(row: TabSettlementRow, meId: string) {
     partial: row.status === "open_partial",
     signature: row.signature,
     createdAt: row.created_at,
+    crossCluster,
+    ...(crossCluster ? { crossClusterNote: clusterMismatchError(row.cluster) } : {}),
   };
 }
 
@@ -890,9 +926,19 @@ tabsRouter.post(
     const target = resolveSettleRequest(balanceCents, meId, friendId, partialCents);
     if ("error" in target) return res.status(target.status).json({ error: target.error });
 
+    // Cross-cluster open settlement (B4): the pair's outstanding request was
+    // created on a different network. Do NOT supersede it with a fresh
+    // real-money request — return it in its closed state so the UI explains.
+    const existing = await getOpenSettlement(meId, friendId);
+    if (existing && rowCluster(existing) !== cluster) {
+      return res.status(409).json({
+        error: clusterMismatchError(existing.cluster),
+        crossCluster: true,
+        settlement: serializeSettlement(existing, meId),
+      });
+    }
     // Reuse an open request that still matches what's being asked for;
     // otherwise it's superseded — cancel it and build a fresh one.
-    const existing = await getOpenSettlement(meId, friendId);
     if (existing) {
       if (canReuseSettlement(existing, target, partialCents != null)) {
         return res.json(serializeSettlement(existing, meId));
@@ -920,6 +966,7 @@ tabsRouter.post(
       status: target.partial ? "open_partial" : "open",
       signature: null,
       created_at: new Date().toISOString(),
+      cluster, // stamped at creation (B4) — this request pays on THIS chain only
     };
     await insertSettlement(row);
     return res.status(201).json(serializeSettlement(row, meId));
@@ -946,6 +993,15 @@ tabsRouter.post(
 
     const row = await getOpenSettlement(meId, friendId);
     if (!row) return res.status(400).json({ error: "no open settlement to verify" });
+    // B4/H1: never verify a settlement stamped on a different cluster — the
+    // connection below is THIS server's chain, so the check would either stall
+    // forever or (worse) match a real transfer against a test-era request.
+    if (rowCluster(row) !== cluster) {
+      return res.status(409).json({
+        error: clusterMismatchError(row.cluster),
+        crossCluster: true,
+      });
+    }
     if (!row.reference || !row.pay_wallet) {
       return res.status(400).json({ error: "this settlement has no payable request to verify" });
     }

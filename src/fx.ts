@@ -136,6 +136,21 @@ export function __setRatesForTest(
 }
 
 /**
+ * M4 guard predicate: may a rate from `source` be used to CREATE a new money
+ * row on `cluster`? On devnet the static fallback table is fine (test value).
+ * On mainnet-beta a stale offline table must never price real money — new FX
+ * entries are refused until the live rate source is reachable again. Display
+ * of already-stored fx blobs is unaffected (they carry their own locked rate).
+ */
+export function fxSourceUsableOnCluster(source: string, cluster: string): boolean {
+  return !(cluster === "mainnet-beta" && source === "fallback");
+}
+
+/** The friendly refusal used when fxSourceUsableOnCluster says no. */
+export const FX_FALLBACK_UNAVAILABLE =
+  "live exchange rates are unavailable right now — enter the amount in USD, or try again in a few minutes";
+
+/**
  * Kill switch: set DIVVY_FX=off to disable multi-currency entry entirely.
  * The rate source itself is keyless (with an offline fallback table), so FX is
  * available by default — this exists so the app degrades to USD-only cleanly.

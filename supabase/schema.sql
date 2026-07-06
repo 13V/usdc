@@ -128,9 +128,40 @@ create table if not exists ious (
   reference           text,
   pay_wallet          text,
   signature           text,
-  created_at          text not null
+  created_at          text not null,
+  cluster             text
 );
 create index if not exists ious_owner_idx on ious (owner_user_id);
+
+-- ---- one-on-one tabs (src/tabs.ts) ------------------------------------------
+create table if not exists tab_entries (
+  id             text primary key,
+  created_by     text not null,
+  friend_user_id text not null,
+  direction      text not null,
+  amount_cents   bigint not null,
+  note           text,
+  status         text not null,
+  settlement_id  text,
+  created_at     text not null
+);
+create index if not exists tab_entries_created_by_idx on tab_entries (created_by);
+create index if not exists tab_entries_friend_idx on tab_entries (friend_user_id);
+
+create table if not exists tab_settlements (
+  id            text primary key,
+  payer_user_id text not null,
+  payee_user_id text not null,
+  amount_cents  bigint not null,
+  reference     text,
+  pay_wallet    text,
+  status        text not null,
+  signature     text,
+  created_at    text not null,
+  cluster       text
+);
+create index if not exists tab_settlements_payer_idx on tab_settlements (payer_user_id);
+create index if not exists tab_settlements_payee_idx on tab_settlements (payee_user_id);
 
 -- ---- recurring splits (src/recurring.ts) ----------------------------------
 create table if not exists recurring (
@@ -367,6 +398,14 @@ alter table expenses      add column if not exists kind     text;
 -- due dates (src/trips.ts): group "settle by" + per-expense "pay back by".
 alter table trips         add column if not exists due_at   text;
 alter table expenses      add column if not exists due_at   text;
+-- cross-cluster settlement guard (B4, src/ious.ts + src/tabs.ts): each payable
+-- request is stamped with the cluster it was created on; rows on a different
+-- cluster than the running server are refused for pay-URL rebuild + verify.
+-- Rows that predate the column are devnet-era by definition — backfill.
+alter table ious            add column if not exists cluster text;
+alter table tab_settlements add column if not exists cluster text;
+update ious            set cluster = 'devnet' where cluster is null;
+update tab_settlements set cluster = 'devnet' where cluster is null;
 
 -- ---- grants ---------------------------------------------------------------
 -- The server talks to Postgres as `service_role` (which also bypasses RLS).

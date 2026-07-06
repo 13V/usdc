@@ -33,6 +33,7 @@ import { usingSupabase, supabase } from "./supabase";
 import { requireAuth } from "./auth";
 import { getTrip, addExpense, listTripsForUser, Trip } from "./trips";
 import { toCents, fmt, distributeWeighted } from "./split";
+import { LEDGER_MAX_CENTS } from "./limits";
 import { writeRateLimit } from "./ratelimit";
 import { sendPush } from "./push";
 
@@ -696,7 +697,7 @@ export async function materializeDueSubscriptions(ownerUserId?: string): Promise
 
 // ---- Input validation --------------------------------------------------------
 
-const MAX_AMOUNT_CENTS = 100000000; // mirror ious.ts / recurring.ts
+const MAX_AMOUNT_CENTS = LEDGER_MAX_CENTS; // shared env-tunable cap (src/limits.ts)
 const MAX_NAME = 80;
 const MAX_ICON = 16;
 const MAX_SERVICE = 32;

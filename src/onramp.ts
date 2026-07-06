@@ -13,6 +13,8 @@
 
 import { createHmac } from "crypto";
 import { dollars } from "./split";
+import { CLUSTER } from "./cluster";
+import type { Cluster } from "./solanaPay";
 
 export interface OnrampParams {
   /** Collector wallet (base58) — where the purchased USDC is delivered. */
@@ -148,9 +150,22 @@ export function cardOptions(params: OnrampParams): CardOptions {
  * Whether the money rails are "live" — i.e. a real provider key is present and
  * not a placeholder. Shared by both the on-ramp and off-ramp routes so the
  * client can tell test-mode (URLs build but won't charge/pay out) from real.
+ *
+ * CLUSTER-AWARE (B2): on mainnet-beta a MoonPay pk_test_ key must NOT count as
+ * live — moonpayHost() derives the SANDBOX widget domain from the key prefix,
+ * so a test key on mainnet would report railsLive:true, open
+ * buy-sandbox.moonpay.com, let the user "add money", and deliver nothing. On
+ * mainnet MoonPay counts only with a pk_live_ key AND the secret key present
+ * (MoonPay requires signed URLs in production). Keys unset still degrade
+ * gracefully to the "coming soon" UI everywhere.
  */
-export function ramsConfigured(): boolean {
+export function ramsConfigured(cluster: Cluster = CLUSTER): boolean {
   const mp = process.env.MOONPAY_API_KEY;
   const cb = process.env.COINBASE_ONRAMP_APP_ID;
-  return Boolean((mp && !/PLACEHOLDER/i.test(mp)) || (cb && !/PLACEHOLDER/i.test(cb)));
+  const mpSet = Boolean(mp && !/PLACEHOLDER/i.test(mp));
+  const cbSet = Boolean(cb && !/PLACEHOLDER/i.test(cb));
+  if (cluster !== "mainnet-beta") return mpSet || cbSet;
+  const mpLive =
+    mpSet && (mp as string).startsWith("pk_live_") && Boolean(process.env.MOONPAY_SECRET_KEY);
+  return mpLive || cbSet;
 }

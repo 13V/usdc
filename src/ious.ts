@@ -28,6 +28,8 @@ import {
   USDC_MINT,
   Cluster,
 } from "./solanaPay";
+import { CLUSTER, clusterMismatchError } from "./cluster";
+import { LEDGER_MAX_CENTS } from "./limits";
 import { validatePayment } from "./verify";
 import { claimSignature } from "./consumedSignatures";
 import { alert } from "./alerts";
@@ -36,7 +38,7 @@ import { moneyRateLimit, writeRateLimit } from "./ratelimit";
 
 // ---- Config ----------------------------------------------------------------
 
-const cluster = (process.env.CLUSTER || "devnet") as Cluster;
+const cluster: Cluster = CLUSTER;
 const rpcUrl = process.env.RPC_URL || clusterApiUrl(cluster);
 
 // ---- Schema (idempotent) ---------------------------------------------------
@@ -54,9 +56,27 @@ db.exec(`
     reference TEXT,
     pay_wallet TEXT,
     signature TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    cluster TEXT
   );
 `);
+
+// Additive migration (B4): stamp each IOU with the cluster it was created on,
+// so a devnet-era open IOU never rebuilds into a real mainnet payment request.
+// Existing rows all predate mainnet — backfill 'devnet'. Mirrored in
+// supabase/schema.sql.
+{
+  const cols = db.prepare("PRAGMA table_info(ious)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "cluster")) {
+    db.exec("ALTER TABLE ious ADD COLUMN cluster TEXT");
+  }
+  db.exec("UPDATE ious SET cluster = 'devnet' WHERE cluster IS NULL");
+}
+
+/** The cluster an IOU row was created on (NULL = pre-migration = devnet-era). */
+function rowCluster(row: { cluster?: string | null }): string {
+  return row.cluster || "devnet";
+}
 
 // ---- Types -----------------------------------------------------------------
 
@@ -75,13 +95,21 @@ interface IouRow {
   pay_wallet: string | null;
   signature: string | null;
   created_at: string;
+  // Cluster stamped at creation (B4). NULL only on pre-migration (devnet) rows.
+  cluster: string | null;
 }
 
 // ---- Serialization ---------------------------------------------------------
 
-/** Rebuild the Solana Pay url from the stored reference + pay_wallet, if payable. */
+/**
+ * Rebuild the Solana Pay url from the stored reference + pay_wallet, if payable.
+ * B4: rebuilding uses the CURRENT cluster's mint, so a row stamped on a
+ * different cluster must never produce a URL — a devnet-era open IOU would
+ * otherwise become a real mainnet payment request after the flip.
+ */
 function rebuildUrl(row: IouRow): string | null {
   if (!row.reference || !row.pay_wallet) return null;
+  if (rowCluster(row) !== cluster) return null;
   return buildSolanaPayUrl({
     recipient: row.pay_wallet,
     amountCents: row.amount_cents,
@@ -93,6 +121,8 @@ function rebuildUrl(row: IouRow): string | null {
 }
 
 function serialize(row: IouRow) {
+  // Cross-cluster (B4): surfaced as a closed request — no url, an honest note.
+  const crossCluster = rowCluster(row) !== cluster;
   return {
     id: row.id,
     direction: row.direction,
@@ -106,6 +136,8 @@ function serialize(row: IouRow) {
     reference: row.reference,
     signature: row.signature,
     createdAt: row.created_at,
+    crossCluster,
+    ...(crossCluster ? { crossClusterNote: clusterMismatchError(row.cluster) } : {}),
   };
 }
 
@@ -147,6 +179,7 @@ async function insertIou(row: IouRow): Promise<void> {
       pay_wallet: row.pay_wallet,
       signature: row.signature,
       created_at: row.created_at,
+      cluster: row.cluster,
     });
     if (error) throw new Error(`ious.insertIou: ${error.message}`);
     return;
@@ -154,8 +187,9 @@ async function insertIou(row: IouRow): Promise<void> {
   db.prepare(
     `INSERT INTO ious
        (id, owner_user_id, direction, counterparty_name, counterparty_wallet,
-        amount_cents, note, status, reference, pay_wallet, signature, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        amount_cents, note, status, reference, pay_wallet, signature, created_at,
+        cluster)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     row.id,
     row.owner_user_id,
@@ -168,7 +202,8 @@ async function insertIou(row: IouRow): Promise<void> {
     row.reference,
     row.pay_wallet,
     row.signature,
-    row.created_at
+    row.created_at,
+    row.cluster
   );
 }
 
@@ -265,11 +300,11 @@ iouRouter.post("/api/ious", writeRateLimit, requireAuth, async (req: Request, re
   if (
     !Number.isInteger(amountCents) ||
     amountCents < 1 ||
-    amountCents > 100000000
+    amountCents > LEDGER_MAX_CENTS
   ) {
     return res
       .status(400)
-      .json({ error: "amountCents must be an integer in 1..100000000" });
+      .json({ error: `amountCents must be an integer in 1..${LEDGER_MAX_CENTS}` });
   }
 
   // Validate counterparty wallet, if provided.
@@ -321,6 +356,7 @@ iouRouter.post("/api/ious", writeRateLimit, requireAuth, async (req: Request, re
     pay_wallet: payWallet,
     signature: null,
     created_at: createdAt,
+    cluster, // stamped at creation (B4) — this request pays on THIS chain only
   });
 
   const row = (await getOwnedIou(id, userId)) as IouRow;
@@ -348,6 +384,14 @@ iouRouter.post(
     const row = await getOwnedIou(req.params.id, userId);
     if (!row) return res.status(404).json({ error: "not found" });
 
+    // B4/H1: never verify an IOU stamped on a different cluster — the
+    // connection below is THIS server's chain.
+    if (rowCluster(row) !== cluster) {
+      return res.status(409).json({
+        error: clusterMismatchError(row.cluster),
+        crossCluster: true,
+      });
+    }
     if (!row.reference || !row.pay_wallet) {
       return res
         .status(400)
