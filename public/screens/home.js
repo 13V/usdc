@@ -559,8 +559,31 @@
     var si = document.getElementById("hSignIn"),
         ph = document.getElementById("hPhone"),
         tryBtn = document.getElementById("hTry");
-    // Onboarding goes through the Privy embedded-wallet flow at /embedded.
-    if (si) si.onclick = function () { app.signIn(); };
+    // Onboarding: on the iOS shell, "continue with apple" tries the NATIVE
+    // Apple sheet first (Face ID, no Safari round-trip). Returning users sign
+    // straight in, and brand-new Apple accounts are created server-side too
+    // (Privy user + embedded wallet pregenerated) — the Safari setup via the
+    // existing /embedded Privy flow is a LAST-RESORT fallback (server missing
+    // PRIVY_APP_SECRET, Privy outage), signalled by 404 needsSetup. A
+    // dismissed sheet is a deliberate decline — stay put, no error UI. Plain
+    // web/PWA (or an old binary without the plugin) resolves "unavailable" and
+    // uses the existing flow unchanged.
+    if (si) si.onclick = function () {
+      if (!(ios && window.Auth && typeof window.Auth.signInWithAppleNative === "function")) {
+        app.signIn();
+        return;
+      }
+      window.Auth.signInWithAppleNative().then(function (outcome) {
+        if (outcome === "success" || outcome === "cancelled") return; // success re-renders via Auth.onChange
+        if (outcome === "needsSetup") {
+          app.toast("one-time setup — finishing in safari 🔒");
+          // Let the toast land before the /embedded navigation replaces the page.
+          setTimeout(function () { app.signIn(); }, 900);
+          return;
+        }
+        app.signIn(); // "unavailable" / "error" → existing flow unchanged
+      }).catch(function () { app.signIn(); });
+    };
     if (ph) ph.onclick = function () { app.signIn("phone"); };
     // "try it first": instant burner + seeded demo world (see startDemo).
     if (tryBtn) tryBtn.onclick = function () { startDemo(tryBtn.querySelector("span:last-child") || tryBtn); };

@@ -6,6 +6,10 @@
      GET   /api/auth/nonce             -> { nonce, message }
      POST  /api/auth/siws/verify       { pubkey, signature(base64), message } -> { token, user }
      POST  /api/auth/privy/verify      { token, wallet? } -> { token, user } (501 if not configured)
+     POST  /api/auth/apple/verify      { identityToken, rawNonce? } -> { token, user }
+                                       (first-timers are created server-side via Privy; 401 bad
+                                        token; 404 { needsSetup:true } only when that creation
+                                        path is unavailable — Safari flow is the fallback)
      POST  /api/auth/handoff           (auth) -> { code }   single-use, 60s TTL
      POST  /api/auth/handoff/exchange  { code } -> { token, user } (401 unknown/expired/reused)
      GET   /api/me                     -> { user | null }
@@ -383,6 +387,80 @@
     return Auth.user;
   }
 
+  // ── Native Sign in with Apple (Capacitor iOS shell) ─────────────────────────
+  // The OS Face-ID sheet via @capawesome/capacitor-apple-sign-in (registered on
+  // the native bridge as Capacitor.Plugins.AppleSignIn — no JS import needed).
+  // Nonce binding: the plugin is handed SHA-256(rawNonce); Apple embeds that
+  // verbatim in the identity token's `nonce` claim; the server re-hashes the
+  // rawNonce we POST and requires a match.
+
+  function randomNonce() {
+    var bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    var hex = "";
+    for (var i = 0; i < bytes.length; i++) hex += (bytes[i] + 256).toString(16).slice(1);
+    return hex;
+  }
+
+  async function sha256Hex(str) {
+    var digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    var arr = new Uint8Array(digest);
+    var hex = "";
+    for (var i = 0; i < arr.length; i++) hex += (arr[i] + 256).toString(16).slice(1);
+    return hex;
+  }
+
+  // Attempt NATIVE Apple sign-in. Never throws; resolves to one of:
+  //   "success"     — signed in (token stored, onChange fired)
+  //   "needsSetup"  — Apple verified us but no Divvy account exists yet;
+  //                   caller runs the one-time Safari setup flow
+  //   "cancelled"   — user dismissed the OS sheet; caller stays silent
+  //   "unavailable" — not the iOS shell, or an old binary without the plugin
+  //   "error"       — plugin/server hiccup; caller falls back to the web flow
+  async function signInWithAppleNative() {
+    var cap = window.Capacitor;
+    if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return "unavailable";
+    var plugin = cap.Plugins && cap.Plugins.AppleSignIn;
+    if (!plugin || typeof plugin.signIn !== "function") return "unavailable";
+
+    var rawNonce, hashedNonce;
+    try {
+      rawNonce = randomNonce();
+      hashedNonce = await sha256Hex(rawNonce);
+    } catch (_) {
+      return "unavailable"; // no WebCrypto — can't do nonce binding, use web flow
+    }
+
+    var result;
+    try {
+      result = await plugin.signIn({ scopes: ["EMAIL", "FULL_NAME"], nonce: hashedNonce });
+    } catch (err) {
+      // The plugin rejects with code SIGN_IN_CANCELED when the sheet is closed —
+      // that's a deliberate decline, not an error (no toast, no fallback nav).
+      if (err && (err.code === "SIGN_IN_CANCELED" || /cancel/i.test(err.message || ""))) {
+        return "cancelled";
+      }
+      return "error";
+    }
+    var idToken = result && result.idToken;
+    if (!idToken) return "error";
+
+    try {
+      var data = await authJson("/api/auth/apple/verify", {
+        method: "POST",
+        body: JSON.stringify({ identityToken: idToken, rawNonce: rawNonce }),
+      });
+      setToken(data.token); // also clears the explicit signed-out flag
+      Auth.user = (data && data.user) || null;
+      cacheUser(Auth.user);
+      fire();
+      return "success";
+    } catch (err) {
+      if (err && err.status === 404 && err.data && err.data.needsSetup) return "needsSetup";
+      return "error";
+    }
+  }
+
   // ── update profile (handle / displayName) ───────────────────────────────────
   async function updateProfile(patch) {
     const data = await authJson("/api/me", {
@@ -489,6 +567,7 @@
     ready,
     signInWithWallet,
     signInWithPrivy,
+    signInWithAppleNative,
     updateProfile,
     signOut,
     // Self-custodial in-browser wallet (Ed25519 / Web Crypto).

@@ -74,7 +74,11 @@ import {
   verifySiws,
   privyConfigured,
   verifyPrivyToken,
-  fetchPrivyWallets,
+  fetchPrivyLinkedAccounts,
+  extractPrivyWallets,
+  extractPrivyOAuthIdentities,
+  verifyAppleIdentityToken,
+  createPrivyUserForApple,
   signSession,
   mintHandoffCode,
   exchangeHandoffCode,
@@ -82,6 +86,8 @@ import {
 import {
   upsertUserByWallet,
   upsertUserByIdentity,
+  getIdentity,
+  linkIdentityIfFree,
   getUser,
   getPrimaryWallet,
   setHandle,
@@ -526,7 +532,10 @@ app.post("/api/auth/privy/verify", authRateLimit, async (req: Request, res: Resp
     // matching, and receipt access. Link only a wallet Privy authoritatively
     // confirms this user owns. If the client claimed a wallet, it must be in the
     // confirmed set; otherwise we link the first confirmed (embedded) wallet.
-    const ownedWallets = await fetchPrivyWallets(verified.subject);
+    // One server-side lookup per verify (auth-time only, not a hot path); null
+    // means PRIVY_APP_SECRET is unset or Privy errored — skip gracefully.
+    const linkedAccounts = await fetchPrivyLinkedAccounts(verified.subject);
+    const ownedWallets = extractPrivyWallets(linkedAccounts || []);
     let wallet: string | undefined;
     if (body.wallet && ownedWallets.includes(body.wallet)) wallet = body.wallet;
     else if (ownedWallets.length) wallet = ownedWallets[0];
@@ -534,9 +543,84 @@ app.post("/api/auth/privy/verify", authRateLimit, async (req: Request, res: Resp
       logMoney("privy.wallet_unverified", req, { subject: verified.subject, claimed: body.wallet });
     }
     const user = await upsertUserByIdentity("privy", verified.subject, { wallet });
+    // Identity LEARNING: Privy just proved which Apple/Google accounts this
+    // person owns, so record ("apple", sub) / ("google", sub) on the same Divvy
+    // user. That's what lets the NATIVE Apple sign-in resolve directly on every
+    // later launch. Best-effort and never steals — linkIdentityIfFree skips
+    // (with a warn) any subject already mapped to a different user.
+    if (linkedAccounts) {
+      for (const ident of extractPrivyOAuthIdentities(linkedAccounts)) {
+        try {
+          await linkIdentityIfFree(ident.provider, ident.subject, user.id);
+        } catch {
+          /* identity learning must never fail the sign-in itself */
+        }
+      }
+    }
     res.json({ token: signSession(user.id), user: await serializeUser(user) });
   } catch (err) {
     res.status(401).json({ error: (err as Error).message });
+  }
+});
+
+// ---- Native Sign in with Apple (Capacitor iOS shell) ------------------------
+// The OS Face-ID sheet hands the shell an Apple identity token; verifying it
+// here (signature/iss/aud/exp/nonce — see verifyAppleIdentityToken) signs a
+// RETURNING user straight in. A subject we've never seen gets a FULLY NATIVE
+// first run too: we pregenerate their Privy account server-side (apple_oauth +
+// Solana embedded wallet + linked email when Apple shared one — see
+// createPrivyUserForApple) and issue a session, indistinguishable from a
+// returning user's 200. Only when that creation path is unavailable
+// (PRIVY_APP_SECRET unset, Privy outage, unresolvable conflict) does the
+// client get 404 { needsSetup: true } and fall back to the one-time Safari
+// flow, whose Privy verify then LEARNS the ("apple", sub) identity. The 404
+// body is identical regardless of the reason no account could be resolved.
+// Tokens are bearer credentials — never logged.
+app.post("/api/auth/apple/verify", authRateLimit, async (req: Request, res: Response) => {
+  const body = (req.body || {}) as { identityToken?: unknown; rawNonce?: unknown };
+  const identityToken = typeof body.identityToken === "string" ? body.identityToken : "";
+  const rawNonce = typeof body.rawNonce === "string" ? body.rawNonce : undefined;
+  // Field-size caps: real Apple identity tokens are ~1 KB and raw nonces are
+  // 32 hex chars — anything wildly bigger is garbage; reject before crypto.
+  if (
+    !identityToken ||
+    identityToken.length > 4096 ||
+    (rawNonce !== undefined && rawNonce.length > 256)
+  ) {
+    return res.status(401).json({ error: "invalid token" });
+  }
+  const verified = await verifyAppleIdentityToken(identityToken, rawNonce);
+  if (!verified) return res.status(401).json({ error: "invalid token" });
+  try {
+    const userId = await getIdentity("apple", verified.subject);
+    let user = userId ? await getUser(userId) : undefined;
+    if (!user) {
+      // First-time native user. ONLY reachable after full JWKS verification of
+      // the identity token (above). Create the Privy account (the same shape a
+      // web-flow user gets) and mirror it as a Divvy user: primary identity
+      // ("privy", did), secondary ("apple", sub), pregenerated wallet linked.
+      const created = await createPrivyUserForApple({
+        subject: verified.subject,
+        email: verified.email,
+      });
+      if (created) {
+        user = await upsertUserByIdentity("privy", created.did, { wallet: created.wallets[0] });
+        const linked = await linkIdentityIfFree("apple", verified.subject, user.id);
+        if (!linked) {
+          // Lost a race for the apple mapping — first mapping wins, so this
+          // session belongs to whoever holds it now.
+          const winnerId = await getIdentity("apple", verified.subject);
+          const winner = winnerId ? await getUser(winnerId) : undefined;
+          if (winner) user = winner;
+        }
+      }
+    }
+    if (!user) return res.status(404).json({ needsSetup: true });
+    res.json({ token: signSession(user.id), user: await serializeUser(user) });
+  } catch {
+    // Store hiccup: indistinguishable from "not found" — the Safari fallback
+    // still signs the user in, so this fails toward the working path.
+    res.status(404).json({ needsSetup: true });
   }
 });
 

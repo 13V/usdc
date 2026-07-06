@@ -123,7 +123,7 @@ export async function findByHandle(handle: string): Promise<User | undefined> {
   return row ? hydrateUser(row) : undefined;
 }
 
-async function getIdentity(provider: string, subject: string): Promise<string | undefined> {
+export async function getIdentity(provider: string, subject: string): Promise<string | undefined> {
   if (usingSupabase) {
     const { data, error } = await supabase()
       .from("identities")
@@ -287,6 +287,36 @@ export async function upsertUserByWallet(wallet: string): Promise<User> {
   const user = await createUser();
   await addWallet(user.id, wallet, true);
   return user;
+}
+
+/**
+ * Link a SECONDARY identity (e.g. ("apple", sub) learned from Privy's linked
+ * accounts) onto an existing user. NEVER steals: if the identity is already
+ * mapped to a DIFFERENT user, the first mapping wins — we log a warning and
+ * skip. Returns true iff the identity maps to `userId` afterwards.
+ *
+ * Race-safe: the underlying insert is INSERT OR IGNORE / upsert-ignore on the
+ * (provider, subject) primary key, so even two concurrent calls can't overwrite
+ * an existing mapping.
+ */
+export async function linkIdentityIfFree(
+  provider: string,
+  subject: string,
+  userId: string
+): Promise<boolean> {
+  const existing = await getIdentity(provider, subject);
+  if (existing === userId) return true;
+  if (existing) {
+    // Deliberately no subjects/user ids in the log line — provider is enough
+    // to investigate, and identities shouldn't leak into logs.
+    console.warn(
+      `users.linkIdentityIfFree: ${provider} identity already mapped to a different user — skipping (first mapping wins)`
+    );
+    return false;
+  }
+  await linkIdentity(provider, subject, userId);
+  // Re-read: a concurrent racer may have won the INSERT OR IGNORE.
+  return (await getIdentity(provider, subject)) === userId;
 }
 
 export async function upsertUserByIdentity(

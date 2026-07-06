@@ -8,5 +8,13 @@
 	     sandbox automatically. See docs/PUSH.md. -->
 	<key>aps-environment</key>
 	<string>production</string>
+	<!-- Native Sign in with Apple (the OS Face-ID sheet). The capability is
+	     already enabled on the App ID com.divvysol.app in the Developer portal;
+	     fastlane match (readonly: false) regenerates the provisioning profile to
+	     include it when the stored one is stale/invalid. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>

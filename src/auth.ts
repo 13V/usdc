@@ -12,7 +12,7 @@
 import * as crypto from "crypto";
 import { Request, Response, NextFunction } from "express";
 import nacl from "tweetnacl";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createLocalJWKSet, createRemoteJWKSet, jwtVerify } from "jose";
 import { PublicKey } from "@solana/web3.js";
 import { userExists } from "./users";
 import { db } from "./db";
@@ -332,41 +332,270 @@ export async function verifyPrivyToken(token: string): Promise<{ subject: string
 }
 
 /**
- * Authoritative wallet list for a Privy user, fetched from Privy's server API
- * with the app SECRET — the ONLY trustworthy source of which wallets a Privy
- * account owns. The access-token JWT does not prove wallet ownership, and the
- * client-supplied wallet must NEVER be trusted (an attacker can claim any
- * address). Returns the lowercased/base58 wallet addresses Privy confirms.
+ * Authoritative linked-accounts list for a Privy user, fetched from Privy's
+ * server API with the app SECRET — the ONLY trustworthy source of which
+ * wallets/OAuth accounts a Privy account owns. The access-token JWT does not
+ * prove any of that, and client-supplied claims must NEVER be trusted.
  *
- * Fails SAFE: if PRIVY_APP_SECRET is unset or the call errors, returns [] so the
- * caller links no wallet rather than a forged one. (Enabling Privy server-side
- * therefore REQUIRES PRIVY_APP_SECRET to get embedded wallets linked.)
+ * Returns null when the lookup is unavailable (PRIVY_APP_SECRET unset, or the
+ * API call errors) so callers can distinguish "no accounts" from "couldn't
+ * ask" — both are handled fail-safe (link nothing). One call per verify; this
+ * is an auth-time lookup, not a hot path.
+ *
+ * Test seam: __setPrivyAccountsFetcherForTest injects the fetcher so selftests
+ * exercise the parsing/linking logic offline (same pattern as fx.ts rates).
  */
-export async function fetchPrivyWallets(subject: string): Promise<string[]> {
+export type PrivyLinkedAccount = Record<string, unknown>;
+
+let injectedPrivyAccountsFetcher:
+  | ((subject: string) => Promise<PrivyLinkedAccount[] | null>)
+  | null = null;
+
+/** TEST-ONLY: inject the Privy linked-accounts fetcher; null restores the real one. */
+export function __setPrivyAccountsFetcherForTest(
+  fetcher: ((subject: string) => Promise<PrivyLinkedAccount[] | null>) | null
+): void {
+  injectedPrivyAccountsFetcher = fetcher;
+}
+
+export async function fetchPrivyLinkedAccounts(
+  subject: string
+): Promise<PrivyLinkedAccount[] | null> {
+  if (injectedPrivyAccountsFetcher) return injectedPrivyAccountsFetcher(subject);
   const appId = process.env.PRIVY_APP_ID;
   const appSecret = process.env.PRIVY_APP_SECRET;
-  if (!appId || !appSecret) return [];
+  if (!appId || !appSecret) return null; // gracefully skip — no secret, no lookup
   try {
     const auth = Buffer.from(`${appId}:${appSecret}`).toString("base64");
     const r = await fetch(`https://auth.privy.io/api/v1/users/${encodeURIComponent(subject)}`, {
       headers: { authorization: `Basic ${auth}`, "privy-app-id": appId },
     });
-    if (!r.ok) return [];
+    if (!r.ok) return null;
     const data = (await r.json()) as { linked_accounts?: Array<Record<string, unknown>> };
-    const accounts = Array.isArray(data.linked_accounts) ? data.linked_accounts : [];
-    const wallets: string[] = [];
-    for (const a of accounts) {
-      // Solana embedded/external wallets surface as type "wallet" with an address.
-      if ((a.type === "wallet" || a.type === "smart_wallet") && typeof a.address === "string") {
-        const chain = String(a.chain_type || a.chainType || "");
-        // Keep Solana addresses only (this app settles on Solana).
-        if (!chain || chain === "solana") wallets.push(a.address);
-      }
-    }
-    return wallets;
+    return Array.isArray(data.linked_accounts) ? data.linked_accounts : [];
   } catch {
-    return [];
+    return null;
   }
+}
+
+/**
+ * Solana wallet addresses out of a Privy linked-accounts payload. Fails SAFE:
+ * an empty/None payload yields [] so the caller links no wallet rather than a
+ * forged one. (Enabling Privy server-side therefore REQUIRES PRIVY_APP_SECRET
+ * to get embedded wallets linked.)
+ */
+export function extractPrivyWallets(accounts: PrivyLinkedAccount[]): string[] {
+  const wallets: string[] = [];
+  for (const a of accounts) {
+    // Solana embedded/external wallets surface as type "wallet" with an address.
+    if ((a.type === "wallet" || a.type === "smart_wallet") && typeof a.address === "string") {
+      const chain = String(a.chain_type || a.chainType || "");
+      // Keep Solana addresses only (this app settles on Solana).
+      if (!chain || chain === "solana") wallets.push(a.address);
+    }
+  }
+  return wallets;
+}
+
+/**
+ * OAuth identities (apple/google subjects) out of a Privy linked-accounts
+ * payload. Used for identity LEARNING: when a Privy login proves ownership of
+ * an Apple/Google account, the same Divvy user gains ("apple", sub) /
+ * ("google", sub) identities — so a later NATIVE Sign in with Apple resolves
+ * straight to this account without any web round-trip.
+ */
+export function extractPrivyOAuthIdentities(
+  accounts: PrivyLinkedAccount[]
+): Array<{ provider: "apple" | "google"; subject: string }> {
+  const out: Array<{ provider: "apple" | "google"; subject: string }> = [];
+  for (const a of accounts) {
+    const subject = typeof a.subject === "string" ? a.subject : "";
+    if (!subject) continue;
+    if (a.type === "apple_oauth") out.push({ provider: "apple", subject });
+    else if (a.type === "google_oauth") out.push({ provider: "google", subject });
+  }
+  return out;
+}
+
+// ---- Native Sign in with Apple (identity-token verification) ----------------
+// The iOS shell's native ASAuthorization sheet yields an Apple identity token
+// (a JWT signed by Apple). We verify it against Apple's JWKS: RS256 signature,
+// issuer, audience (our bundle id), expiry — plus the nonce binding when the
+// client supplied one (the plugin passes SHA-256(rawNonce) to the OS, Apple
+// embeds it verbatim in the token's `nonce` claim, and the client sends us the
+// RAW nonce to re-hash). Tokens are never logged.
+
+const APPLE_ISSUER = "https://appleid.apple.com";
+const APPLE_JWKS_URL = "https://appleid.apple.com/auth/keys";
+
+/** Audience = the native app's bundle id (Services-ID web tokens are NOT accepted here). */
+function appleAudience(): string {
+  return process.env.APPLE_BUNDLE_ID || "com.divvysol.app";
+}
+
+// jose's createRemoteJWKSet caches fetched keys and re-fetches (with a
+// cooldown) when it sees an unknown kid — Apple key rotation is handled for
+// free. The injected local set is the offline test seam.
+let remoteAppleJwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+let injectedAppleJwks: ReturnType<typeof createLocalJWKSet> | null = null;
+
+/** TEST-ONLY: inject a local JWKS ({ keys: [...] }) for Apple verification; null restores remote. */
+export function __setAppleJwksForTest(jwks: { keys: object[] } | null): void {
+  injectedAppleJwks = jwks ? createLocalJWKSet(jwks as Parameters<typeof createLocalJWKSet>[0]) : null;
+}
+
+function appleKeySource(): NonNullable<typeof injectedAppleJwks> {
+  if (injectedAppleJwks) return injectedAppleJwks;
+  if (!remoteAppleJwks) remoteAppleJwks = createRemoteJWKSet(new URL(APPLE_JWKS_URL));
+  return remoteAppleJwks;
+}
+
+/**
+ * Verify a native Apple identity token. Returns the stable Apple subject (and
+ * the email claim when Apple included one — real or private-relay) on success,
+ * null on ANY failure (bad signature/iss/aud, expired, nonce mismatch) —
+ * callers must not learn why.
+ */
+export async function verifyAppleIdentityToken(
+  identityToken: string,
+  rawNonce?: string
+): Promise<{ subject: string; email?: string } | null> {
+  if (!identityToken || typeof identityToken !== "string") return null;
+  try {
+    const { payload } = await jwtVerify(identityToken, appleKeySource(), {
+      issuer: APPLE_ISSUER,
+      audience: appleAudience(),
+      algorithms: ["RS256"],
+    });
+    if (!payload.sub) return null;
+    // Nonce binding: if Apple echoed a nonce AND the client claims the raw one,
+    // they must match (SHA-256, constant-time). A token with a nonce claim but
+    // no rawNonce supplied still verifies — old clients — but a WRONG rawNonce
+    // always fails.
+    if (typeof payload.nonce === "string" && rawNonce) {
+      const expected = crypto.createHash("sha256").update(rawNonce).digest("hex");
+      const got = Buffer.from(payload.nonce);
+      const want = Buffer.from(expected);
+      if (got.length !== want.length || !crypto.timingSafeEqual(got, want)) return null;
+    }
+    const email =
+      typeof payload.email === "string" && payload.email.includes("@")
+        ? payload.email
+        : undefined;
+    return { subject: String(payload.sub), ...(email ? { email } : {}) };
+  } catch {
+    return null;
+  }
+}
+
+// ---- Privy server API: user creation (fully native first-run) ---------------
+// A brand-new Apple user shouldn't need a Safari round-trip: after the identity
+// token fully verifies, we PREGENERATE their Privy account server-side (Privy's
+// documented import/pregeneration API) with the apple_oauth account, a Solana
+// embedded wallet, and — when Apple shared an email (real or private relay) —
+// a linked email account, so a later in-webview Privy EMAIL login (OTP) can
+// reach the embedded wallet without ever leaving the shell.
+
+/** Minimal HTTP seam over Privy's server API (https://api.privy.io/v1). */
+export type PrivyApiResult = { status: number; json: unknown };
+type PrivyApiRequester = (
+  path: string,
+  init: { method: string; body?: unknown }
+) => Promise<PrivyApiResult | null>;
+
+let injectedPrivyApi: PrivyApiRequester | null = null;
+
+/** TEST-ONLY: inject the Privy server-API requester; null restores the real one. */
+export function __setPrivyApiForTest(requester: PrivyApiRequester | null): void {
+  injectedPrivyApi = requester;
+}
+
+async function privyApi(
+  path: string,
+  init: { method: string; body?: unknown }
+): Promise<PrivyApiResult | null> {
+  if (injectedPrivyApi) return injectedPrivyApi(path, init);
+  const appId = process.env.PRIVY_APP_ID;
+  const appSecret = process.env.PRIVY_APP_SECRET;
+  if (!appId || !appSecret) return null; // gracefully unavailable
+  try {
+    const auth = Buffer.from(`${appId}:${appSecret}`).toString("base64");
+    const r = await fetch(`https://api.privy.io/v1${path}`, {
+      method: init.method,
+      headers: {
+        authorization: `Basic ${auth}`,
+        "privy-app-id": appId,
+        ...(init.body !== undefined ? { "content-type": "application/json" } : {}),
+      },
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+    });
+    return { status: r.status, json: await r.json().catch(() => null) };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Create (pregenerate) a Privy user for a natively-verified Apple account.
+ * Returns the new user's DID plus any Solana wallets Privy pregenerated, or
+ * null when the API is unavailable/failed — the caller then degrades to the
+ * 404 needsSetup → Safari fallback (degrade, never break).
+ *
+ * MUST only be called with a subject from a fully verified identity token.
+ *
+ * Idempotency: Privy rejects a second user with the same apple_oauth subject.
+ * There is no documented lookup-by-apple-subject endpoint, so on a conflict we
+ * resolve via the email lookup (when Apple gave us an email) and accept the
+ * found user ONLY if Privy confirms it carries this exact apple subject.
+ */
+export async function createPrivyUserForApple(input: {
+  subject: string;
+  email?: string;
+}): Promise<{ did: string; wallets: string[] } | null> {
+  const linked: Array<Record<string, unknown>> = [
+    { type: "apple_oauth", subject: input.subject, ...(input.email ? { email: input.email } : {}) },
+  ];
+  // Linked email = an in-webview OTP login path to the embedded wallet later.
+  if (input.email) linked.push({ type: "email", address: input.email });
+
+  const created = await privyApi("/users", {
+    method: "POST",
+    body: { linked_accounts: linked, wallets: [{ chain_type: "solana" }] },
+  });
+  if (!created) return null;
+
+  const asUser = (json: unknown): { did: string; wallets: string[] } | null => {
+    const u = json as { id?: unknown; linked_accounts?: unknown } | null;
+    if (!u || typeof u.id !== "string" || !u.id) return null;
+    const accounts = Array.isArray(u.linked_accounts)
+      ? (u.linked_accounts as PrivyLinkedAccount[])
+      : [];
+    return { did: u.id, wallets: extractPrivyWallets(accounts) };
+  };
+
+  if (created.status >= 200 && created.status < 300) return asUser(created.json);
+
+  // Conflict: the apple subject (or email) already belongs to a Privy user —
+  // e.g. a racing native verify or a prior web sign-in whose mapping we lost.
+  // Resolve to the EXISTING user via email lookup, but only when that user
+  // verifiably owns this apple subject (never attach to a stranger's account).
+  if (input.email) {
+    const found = await privyApi("/users/email/address", {
+      method: "POST",
+      body: { address: input.email },
+    });
+    if (found && found.status === 200) {
+      const u = found.json as { linked_accounts?: unknown } | null;
+      const accounts = Array.isArray(u?.linked_accounts)
+        ? (u!.linked_accounts as PrivyLinkedAccount[])
+        : [];
+      const ownsSubject = accounts.some(
+        (a) => a.type === "apple_oauth" && a.subject === input.subject
+      );
+      if (ownsSubject) return asUser(found.json);
+    }
+  }
+  return null;
 }
 
 // ---- Express middleware ----------------------------------------------------
