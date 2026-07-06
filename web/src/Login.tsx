@@ -173,10 +173,33 @@ export function Login() {
   // handoff code and deep-link back into the shell instead of redirecting.
   const handoffNative = params.get("handoff") === "native";
 
+  // Explicit sign-out (main app sets divvy.signedOut) means the user came here
+  // to CHOOSE a method — never silently resume a lingering Privy session, which
+  // otherwise instant-completes into whatever account was last used here.
+  // Safari has separate storage from the shell's webview, so the flag also
+  // travels on the URL (?fresh=1) when the shell diverts to the system browser.
+  const freshRequested =
+    params.get("fresh") === "1" ||
+    (() => { try { return localStorage.getItem("divvy.signedOut") === "1"; } catch { return false; } })();
+  const [resumeBlocked, setResumeBlocked] = useState(freshRequested);
+  const freshLogoutRef = useRef(false);
+
   // Open Privy's login as soon as it's ready (the user already tapped a sign-in
   // button), with the connecting frame behind the modal.
   useEffect(() => {
-    if (!ready || authenticated || autoLoginRef.current || error) return;
+    if (!ready || autoLoginRef.current || error) return;
+    // Lingering Privy session after an explicit sign-out: end it first so the
+    // user actually gets to pick a method, then fall through to a fresh login.
+    if (resumeBlocked) {
+      if (authenticated && !freshLogoutRef.current) {
+        freshLogoutRef.current = true;
+        logout().finally(() => setResumeBlocked(false));
+        return;
+      }
+      if (!authenticated) setResumeBlocked(false);
+      return;
+    }
+    if (authenticated) return;
     autoLoginRef.current = true;
     if (method === "phone" || method === "email") {
       // Email/phone never needs OAuth — works in the shell's webview as-is.
@@ -187,7 +210,9 @@ export function Login() {
       // wouldn't reach the shell). The Safari leg hands the session back via
       // the divvy:// deep link. If no out-of-webview route exists (old binary
       // without the Browser plugin), fall back to today's in-webview modal.
-      openInSystemBrowser(`${window.location.origin}/embedded/?handoff=native`).then((opened) => {
+      // Carry the fresh-choice flag across — Safari can't see our localStorage.
+      const freshParam = freshRequested ? "&fresh=1" : "";
+      openInSystemBrowser(`${window.location.origin}/embedded/?handoff=native${freshParam}`).then((opened) => {
         if (opened) {
           // Park the webview back on the welcome screen — nothing is broken if
           // the user closes Safari, and the deep link signs them in from there.
@@ -199,12 +224,13 @@ export function Login() {
     } else {
       login();
     }
-  }, [ready, authenticated, login, error, method, handoffNative]);
+  }, [ready, authenticated, login, logout, error, method, handoffNative, resumeBlocked, freshRequested]);
 
   // Once authenticated, exchange for a Divvy session (after the embedded wallet
   // provisions, with a short fallback) and hand off to the app.
   useEffect(() => {
-    if (!ready || !authenticated || verifiedRef.current) return;
+    // resumeBlocked: a stale session is being torn down — do NOT exchange it.
+    if (!ready || !authenticated || verifiedRef.current || resumeBlocked) return;
     const run = async () => {
       if (verifiedRef.current) return;
       verifiedRef.current = true;
@@ -221,6 +247,9 @@ export function Login() {
         const data = await res.json().catch(() => null);
         if (!res.ok) throw new Error((data && data.error) || "verify-failed");
         try { localStorage.setItem(DIVVY_TOKEN_KEY, data.token); } catch { /* private mode */ }
+        // A successful sign-in ends the explicit signed-out state (the main
+        // app's auth.js does the same when it stores a token).
+        try { localStorage.removeItem("divvy.signedOut"); } catch { /* ignore */ }
         try { sessionStorage.setItem("divvy.onboardVia", "privy"); } catch { /* ignore */ }
         if (handoffNative && !isNativeShell()) {
           // Safari leg of the native handoff: mint a single-use code bound to
@@ -249,7 +278,7 @@ export function Login() {
     const delay = wallet?.address ? 0 : 4000;
     const t = setTimeout(run, delay);
     return () => clearTimeout(t);
-  }, [ready, authenticated, wallet?.address, getAccessToken, returnTo]);
+  }, [ready, authenticated, wallet?.address, getAccessToken, returnTo, resumeBlocked]);
 
   if (handoffLink) return <HandoffReturn deepLink={handoffLink} />;
   if (error) {
