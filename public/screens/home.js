@@ -574,7 +574,27 @@
         return;
       }
       window.Auth.signInWithAppleNative().then(function (outcome) {
-        if (outcome === "success" || outcome === "cancelled") return; // success re-renders via Auth.onChange
+        if (outcome === "cancelled") return; // deliberate decline — stay put
+        if (outcome === "success-new") {
+          // Brand-new account: same "wallet ready" celebration web signups get.
+          try { sessionStorage.setItem("divvy.onboardVia", "privy"); } catch (_) {}
+          location.hash = "#/welcome";
+          return;
+        }
+        if (outcome === "success") {
+          // Returning user: soften the hard cut into home with a short
+          // welcome-back veil that fades out over the fresh render.
+          try {
+            var veil = document.createElement("div");
+            veil.style.cssText = "position:fixed; inset:0; z-index:9999; background:#F7F1E3; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; opacity:1; transition:opacity .5s ease;";
+            veil.innerHTML = (app.mascot ? app.mascot({ size: 92, mood: "happy" }) : "") +
+              '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:19px; color:#2B2118;">welcome back</div>';
+            document.body.appendChild(veil);
+            setTimeout(function () { veil.style.opacity = "0"; }, 650);
+            setTimeout(function () { try { veil.remove(); } catch (_) {} }, 1250);
+          } catch (_) { /* re-render alone is fine */ }
+          return; // Auth.onChange re-renders home beneath the veil
+        }
         if (outcome === "needsSetup") {
           app.toast("one-time setup — finishing in safari 🔒");
           // Let the toast land before the /embedded navigation replaces the page.

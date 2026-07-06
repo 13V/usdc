@@ -454,6 +454,12 @@
       Auth.user = (data && data.user) || null;
       cacheUser(Auth.user);
       fire();
+      // First-run vs returning: a just-created account (server stamps
+      // createdAt at creation) gets the "wallet ready" welcome moment.
+      try {
+        var age = Date.now() - new Date(Auth.user && Auth.user.createdAt).getTime();
+        if (isFinite(age) && age >= 0 && age < 5 * 60 * 1000) return "success-new";
+      } catch (_) { /* fall through to plain success */ }
       return "success";
     } catch (err) {
       if (err && err.status === 404 && err.data && err.data.needsSetup) return "needsSetup";

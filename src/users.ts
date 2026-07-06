@@ -33,6 +33,9 @@ export interface SerializedUser {
   color: string | null;
   wallets: string[];
   primaryWallet: string | null;
+  /** Account creation time — lets the client tell a first-run sign-in
+      (welcome moment) from a returning one. Not sensitive. */
+  createdAt: string | null;
 }
 
 // ---- Schema (idempotent) ---------------------------------------------------
@@ -377,6 +380,7 @@ export async function serializeUser(user: User): Promise<SerializedUser> {
     color: user.color || null,
     wallets: await getWallets(user.id),
     primaryWallet: await getPrimaryWallet(user.id),
+    createdAt: user.createdAt || null,
   };
 }
 
