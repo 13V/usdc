@@ -6,6 +6,8 @@
      GET   /api/auth/nonce             -> { nonce, message }
      POST  /api/auth/siws/verify       { pubkey, signature(base64), message } -> { token, user }
      POST  /api/auth/privy/verify      { token, wallet? } -> { token, user } (501 if not configured)
+     POST  /api/auth/handoff           (auth) -> { code }   single-use, 60s TTL
+     POST  /api/auth/handoff/exchange  { code } -> { token, user } (401 unknown/expired/reused)
      GET   /api/me                     -> { user | null }
      PATCH /api/me                     { handle?, displayName? } -> { user } (409 if taken)
    Authenticated requests send `Authorization: Bearer <token>`.
@@ -384,6 +386,69 @@
     Auth.user = null;
     fire();
   }
+
+  // ── Native OAuth handoff (Capacitor iOS shell deep link) ────────────────────
+  // Social sign-in runs in the SYSTEM browser (Google blocks OAuth inside the
+  // shell's WKWebView), which deep-links back with a single-use code:
+  //   divvy://auth?code=<code>  →  POST /api/auth/handoff/exchange → { token, user }
+  // Plain web/PWA: window.Capacitor is absent and all of this is a no-op.
+  function parseHandoffCode(url) {
+    var m = /^divvy:\/\/auth\/?\?(.*)$/i.exec(String(url || ""));
+    if (!m) return null;
+    try { return new URLSearchParams(m[1]).get("code"); } catch (_) { return null; }
+  }
+
+  var handledHandoffUrls = {};
+  function handleAppUrl(url) {
+    var code = parseHandoffCode(url);
+    if (!code) return;
+    // getLaunchUrl (cold start) and appUrlOpen (warm) can both deliver the same
+    // URL — exchange it once; the server rejects a replay anyway.
+    if (handledHandoffUrls[url]) return;
+    handledHandoffUrls[url] = true;
+    authJson("/api/auth/handoff/exchange", {
+      method: "POST",
+      body: JSON.stringify({ code: code }),
+    }).then(function (data) {
+      setToken(data.token);
+      Auth.user = (data && data.user) || null;
+      cacheUser(Auth.user);
+      fire();
+      // Land on the signed-in entry via a full reload (re-runs init() with the
+      // token present) — same destination the in-page /embedded flow uses.
+      try { sessionStorage.setItem("divvy.onboardVia", "privy"); } catch (_) {}
+      try { window.location.href = "/#/welcome"; } catch (_) { /* keep current screen */ }
+    }).catch(function () {
+      // Expired/reused code (user lingered in Safari) — stay signed out; the
+      // welcome screen still works and a fresh sign-in mints a fresh code.
+    });
+  }
+
+  function initNativeHandoff() {
+    try {
+      var cap = window.Capacitor;
+      if (!cap || !cap.isNativePlatform || !cap.isNativePlatform()) return;
+      var AppPlugin = cap.Plugins && cap.Plugins.App;
+      if (!AppPlugin) return; // old binary without @capacitor/app — no-op
+      AppPlugin.addListener("appUrlOpen", function (ev) {
+        // Close the in-app Safari sheet the login opened, if any.
+        try {
+          if (cap.Plugins.Browser && cap.Plugins.Browser.close) {
+            cap.Plugins.Browser.close().catch(function () {});
+          }
+        } catch (_) {}
+        handleAppUrl(ev && ev.url);
+      });
+      // Cold start: the deep link may have LAUNCHED the app before the listener
+      // above existed.
+      if (AppPlugin.getLaunchUrl) {
+        AppPlugin.getLaunchUrl().then(function (r) {
+          if (r && r.url) handleAppUrl(r.url);
+        }).catch(function () {});
+      }
+    } catch (_) { /* never let the native hook break web auth */ }
+  }
+  initNativeHandoff();
 
   const Auth = {
     user: null,

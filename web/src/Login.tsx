@@ -9,6 +9,50 @@ import "./onboarding.css";
 // redirecting back signs the user in — no postMessage needed.
 const DIVVY_TOKEN_KEY = "divvy.token";
 
+// ---- Native OAuth handoff (Capacitor iOS shell) -----------------------------
+// Google refuses OAuth inside an embedded WKWebView ("disallowed_useragent"),
+// and a session completed in the system browser lands in Safari's storage, not
+// the shell's. So inside the shell, social sign-in diverts to the system
+// browser with ?handoff=native; that Safari session completes Privy normally,
+// then mints a single-use code (POST /api/auth/handoff) and deep-links back
+// into the shell via divvy://auth?code=… where public/auth.js exchanges it for
+// the session token. Email/phone sign-in never diverts — it works in-webview.
+
+function isNativeShell(): boolean {
+  try {
+    return !!(window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.();
+  } catch {
+    return false;
+  }
+}
+
+// Open a URL in the system browser from inside the shell. Prefers the
+// @capacitor/browser plugin (SFSafariViewController — a real browser context
+// Google accepts); falls back to the Cordova-style window.open target. Returns
+// false if no out-of-webview route exists (old binary) so the caller can fall
+// back to today's in-webview flow.
+async function openInSystemBrowser(url: string): Promise<boolean> {
+  const cap = (window as unknown as {
+    Capacitor?: { Plugins?: { Browser?: { open: (o: { url: string }) => Promise<void> } } };
+  }).Capacitor;
+  const browser = cap?.Plugins?.Browser;
+  if (browser?.open) {
+    try {
+      await browser.open({ url });
+      return true;
+    } catch {
+      /* fall through */
+    }
+  }
+  try {
+    const w = window.open(url, "_system");
+    return !!w;
+  } catch {
+    return false;
+  }
+}
+
 const FRAME_OUTER =
   "position:relative; width:100%; max-width:430px; margin:0 auto; min-height:100vh; background:#F7F1E3; overflow:hidden; font-family:'General Sans',sans-serif; color:#2B2118; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;";
 
@@ -73,6 +117,33 @@ function errorHtml(refCode: string): string {
   </div>`;
 }
 
+// ---- handoff return frame (native OAuth handoff, Safari leg) ----------------
+// Shown in the SYSTEM browser once the session is ready to hand back to the
+// shell. The deep link is attempted automatically, but Safari can block
+// custom-scheme navigations without a user gesture — the big button is the
+// guaranteed path. The code is base64url (attribute-safe by construction).
+function handoffHtml(deepLink: string): string {
+  return `<div style="${FRAME_OUTER} align-items:center; justify-content:center;">
+    <div style="position:absolute; inset:0; background-image:repeating-radial-gradient(circle at 84% 4%, rgba(43,33,24,0.022) 0 1px, transparent 1px 9px); opacity:.6; pointer-events:none;"></div>
+    <div style="position:absolute; left:50%; top:42%; width:480px; height:480px; transform:translateX(-50%); border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.1) 0%, rgba(39,117,202,0.07) 40%, rgba(39,117,202,0) 66%); pointer-events:none;"></div>
+    <div style="position:relative; z-index:2; width:150px; height:150px; display:flex; align-items:center; justify-content:center;">
+      <div style="position:absolute; left:50%; top:50%; width:170px; height:170px; border-radius:50%; background:radial-gradient(circle, rgba(61,232,199,0.28) 0%, rgba(61,232,199,0.08) 44%, rgba(61,232,199,0) 68%); animation:cgHalo 3s ease-in-out infinite;"></div>
+      <div style="position:relative; width:130px; height:130px; animation:cgFloat 3.4s ease-in-out infinite; display:flex; align-items:center; justify-content:center;">${mochi(126, "happy")}</div>
+    </div>
+    <div style="position:relative; z-index:2; font-family:'Space Mono',monospace; font-size:11px; font-weight:700; letter-spacing:3px; color:#3DE8C7; margin-top:34px;">YOU'RE IN</div>
+    <h1 style="position:relative; z-index:2; font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:30px; letter-spacing:-0.8px; margin:12px 0 0; color:#2B2118; text-align:center; padding:0 30px;">hop back to the app</h1>
+    <p style="position:relative; z-index:2; font-family:'General Sans',sans-serif; font-weight:400; font-size:14.5px; line-height:1.5; color:rgba(43,33,24,0.55); max-width:300px; margin:12px 0 0; text-align:center;">you're signed in — tap below to finish up in Divvy.</p>
+    <div style="position:relative; z-index:6; width:100%; padding:26px 26px 0;">
+      <a href="${deepLink}" style="text-decoration:none; appearance:none; border:none; cursor:pointer; width:100%; min-height:58px; border-radius:999px; background:linear-gradient(120deg,#3286db,#2775CA); display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 14px 34px rgba(39,117,202,0.55), inset 0 1px 0 rgba(255,255,255,0.28);"><span style="font-family:'Clash Display','General Sans',sans-serif; font-weight:600; font-size:17px; color:#fff;">return to the divvy app</span></a>
+      <div style="text-align:center; margin-top:14px;"><span style="font-family:'Space Mono',monospace; font-size:10.5px; letter-spacing:.5px; color:rgba(43,33,24,0.35);">this link works for about a minute</span></div>
+    </div>
+  </div>`;
+}
+
+function HandoffReturn({ deepLink }: { deepLink: string }) {
+  return <div dangerouslySetInnerHTML={{ __html: handoffHtml(deepLink) }} />;
+}
+
 function Connecting() {
   const [i, setI] = useState(0);
   useEffect(() => {
@@ -117,6 +188,9 @@ export function Login() {
   const wallet = wallets[0];
 
   const [error, setError] = useState<string | null>(null);
+  // Set on the Safari leg of the native handoff once a single-use code is
+  // minted: renders the "return to the divvy app" frame instead of redirecting.
+  const [handoffLink, setHandoffLink] = useState<string | null>(null);
   const verifiedRef = useRef(false);
   const autoLoginRef = useRef(false);
 
@@ -127,6 +201,9 @@ export function Login() {
   // "phone" → open straight to phone/email entry; anything else → full modal
   // (Apple leads on iOS via the provider config's loginMethodsAndOrder).
   const method = params.get("method");
+  // Set on the URL the shell opens in the system browser: after sign-in, mint a
+  // handoff code and deep-link back into the shell instead of redirecting.
+  const handoffNative = params.get("handoff") === "native";
 
   // Open Privy's login as soon as it's ready (the user already tapped a sign-in
   // button), with the connecting frame behind the modal.
@@ -134,11 +211,27 @@ export function Login() {
     if (!ready || authenticated || autoLoginRef.current || error) return;
     autoLoginRef.current = true;
     if (method === "phone" || method === "email") {
+      // Email/phone never needs OAuth — works in the shell's webview as-is.
       login({ loginMethods: ["sms", "email"] });
+    } else if (isNativeShell() && !handoffNative) {
+      // Social sign-in inside the shell: divert the WHOLE login to the system
+      // browser (Google blocks OAuth in the webview; Safari-completed sessions
+      // wouldn't reach the shell). The Safari leg hands the session back via
+      // the divvy:// deep link. If no out-of-webview route exists (old binary
+      // without the Browser plugin), fall back to today's in-webview modal.
+      openInSystemBrowser(`${window.location.origin}/embedded/?handoff=native`).then((opened) => {
+        if (opened) {
+          // Park the webview back on the welcome screen — nothing is broken if
+          // the user closes Safari, and the deep link signs them in from there.
+          window.location.href = "/";
+        } else {
+          login();
+        }
+      });
     } else {
       login();
     }
-  }, [ready, authenticated, login, error, method]);
+  }, [ready, authenticated, login, error, method, handoffNative]);
 
   // Once authenticated, exchange for a Divvy session (after the embedded wallet
   // provisions, with a short fallback) and hand off to the app.
@@ -161,6 +254,24 @@ export function Login() {
         if (!res.ok) throw new Error((data && data.error) || "verify-failed");
         try { localStorage.setItem(DIVVY_TOKEN_KEY, data.token); } catch { /* private mode */ }
         try { sessionStorage.setItem("divvy.onboardVia", "privy"); } catch { /* ignore */ }
+        if (handoffNative && !isNativeShell()) {
+          // Safari leg of the native handoff: mint a single-use code bound to
+          // this fresh session and deep-link it back into the shell. The code —
+          // never logged, 60s TTL, consumed on first exchange — is the only
+          // thing that crosses the browser/app boundary.
+          const hr = await fetch("/api/auth/handoff", {
+            method: "POST",
+            headers: { "content-type": "application/json", authorization: `Bearer ${data.token}` },
+          });
+          const hd = await hr.json().catch(() => null);
+          if (!hr.ok || !hd || typeof hd.code !== "string") throw new Error("handoff-failed");
+          const deepLink = `divvy://auth?code=${encodeURIComponent(hd.code)}`;
+          setHandoffLink(deepLink);
+          // Best-effort auto-return; Safari may require the explicit tap the
+          // rendered frame provides (custom schemes can need a user gesture).
+          window.location.href = deepLink;
+          return;
+        }
         window.location.href = returnTo && returnTo !== "/" ? returnTo : "/#/welcome";
       } catch (e) {
         verifiedRef.current = false;
@@ -172,6 +283,7 @@ export function Login() {
     return () => clearTimeout(t);
   }, [ready, authenticated, wallet?.address, getAccessToken, returnTo]);
 
+  if (handoffLink) return <HandoffReturn deepLink={handoffLink} />;
   if (error) {
     const refCode = /timeout/i.test(error) ? "auth-timeout" : error.slice(0, 24).replace(/\s+/g, "-") || "signin-failed";
     return (

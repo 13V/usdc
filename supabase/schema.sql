@@ -235,6 +235,18 @@ create table if not exists consumed_signatures (
   created_at text not null
 );
 
+-- ---- auth_handoff_codes (src/auth.ts) ---------------------------------------
+-- Single-use, short-TTL (60s) codes for the native OAuth handoff: the iOS
+-- shell's system browser completes OAuth, mints a code bound to the signed-in
+-- user, and the shell redeems it exactly once (atomic delete…returning) for a
+-- session token. Only SHA-256(code) is stored — a leaked row can't be replayed.
+create table if not exists auth_handoff_codes (
+  code_hash  text primary key,
+  user_id    text not null,
+  expires_at bigint not null,
+  created_at text not null
+);
+
 -- ---- nudges (src/nudges.ts) -----------------------------------------------
 -- Payment reminders. NON-money: never moves funds. to_user_id is nullable
 -- because a nudge can target someone who isn't a reachable Divvy user (then

@@ -15,6 +15,8 @@ import nacl from "tweetnacl";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { PublicKey } from "@solana/web3.js";
 import { userExists } from "./users";
+import { db } from "./db";
+import { usingSupabase, supabase } from "./supabase";
 
 // Express Request augmentation: req.userId is set by authOptional.
 declare global {
@@ -174,6 +176,125 @@ export function verifySiws(input: {
     return false;
   }
   return verifySignature(message, sigBytes, pubkey);
+}
+
+// ---- Native OAuth handoff codes (Capacitor shell) ---------------------------
+// The iOS shell's WKWebView can't complete Google OAuth ("disallowed_useragent")
+// and an OAuth session completed in the system browser lands in Safari's
+// storage, not the shell's. The standard fix: the system browser finishes the
+// login, then hands the session back to the shell via a SINGLE-USE, short-TTL
+// code carried on a divvy:// deep link.
+//
+// Design (deliberately stateful): a stateless signed code cannot be PROVABLY
+// single-use (nothing records that it was already redeemed), so codes live in
+// the same dual sqlite/Supabase store as the other single-use money guards
+// (see consumedSignatures.ts). Only SHA-256(code) is stored — a leaked DB row
+// can't be replayed as a code — and the exchange looks rows up BY that hash, so
+// no raw-code string comparison ever happens server-side (the hash lookup is
+// the constant-time-compare equivalent: index timing can't leak code bytes
+// without a preimage). Codes are never logged. Redemption is one atomic
+// DELETE…RETURNING, so two concurrent exchanges can never both succeed.
+
+const HANDOFF_CODE_BYTES = 16; // 128-bit crypto-random
+
+// TTL is read per-call (not module-load) so the selftest can shrink it at
+// runtime without a separate server process. Production default: 60 seconds.
+function handoffTtlMs(): number {
+  const v = Number(process.env.HANDOFF_TTL_MS);
+  return Number.isFinite(v) && v > 0 ? v : 60_000;
+}
+
+function hashHandoffCode(code: string): string {
+  return crypto.createHash("sha256").update(code).digest("hex");
+}
+
+// SQLite: create the table locally (Supabase is provisioned via schema.sql).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS auth_handoff_codes (
+    code_hash  TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    created_at TEXT NOT NULL
+  );
+`);
+
+/**
+ * Mint a single-use handoff code bound to `userId`. Returns the raw code (the
+ * caller relays it to the client exactly once) or null if the store is
+ * unavailable — fail CLOSED: no session handoff without proof of single-use.
+ */
+export async function mintHandoffCode(userId: string): Promise<string | null> {
+  const code = crypto.randomBytes(HANDOFF_CODE_BYTES).toString("base64url");
+  const codeHash = hashHandoffCode(code);
+  const now = Date.now();
+  const expiresAt = now + handoffTtlMs();
+  const createdAt = new Date(now).toISOString();
+
+  if (usingSupabase) {
+    try {
+      // Opportunistic prune of expired rows keeps the table tiny (mint is
+      // authenticated + rate-limited, so growth is bounded anyway).
+      await supabase().from("auth_handoff_codes").delete().lt("expires_at", now);
+      const { error } = await supabase()
+        .from("auth_handoff_codes")
+        .insert([{ code_hash: codeHash, user_id: userId, expires_at: expiresAt, created_at: createdAt }]);
+      return error ? null : code;
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    db.prepare("DELETE FROM auth_handoff_codes WHERE expires_at <= ?").run(now);
+    db.prepare(
+      "INSERT INTO auth_handoff_codes (code_hash, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)"
+    ).run(codeHash, userId, expiresAt, createdAt);
+    return code;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Redeem a handoff code. Returns the bound userId on the FIRST valid use, null
+ * otherwise (unknown, expired, already used, or store error — all fail closed).
+ * The row is consumed atomically in the same statement that reads it, so a
+ * replayed or concurrent exchange finds nothing.
+ */
+export async function exchangeHandoffCode(code: string): Promise<string | null> {
+  // Cheap shape gate before any store work (codes are 22-char base64url).
+  if (typeof code !== "string" || code.length < 16 || code.length > 64) return null;
+  const codeHash = hashHandoffCode(code);
+  const now = Date.now();
+
+  if (usingSupabase) {
+    try {
+      // Single-statement DELETE with RETURNING (PostgREST return=representation)
+      // — atomic: exactly one caller can ever see the row.
+      const { data, error } = await supabase()
+        .from("auth_handoff_codes")
+        .delete()
+        .eq("code_hash", codeHash)
+        .select("user_id, expires_at");
+      if (error || !data || data.length !== 1) return null;
+      // Expired codes are rejected (and are now deleted either way).
+      if (Number(data[0].expires_at) <= now) return null;
+      return String(data[0].user_id);
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const row = db
+      .prepare("DELETE FROM auth_handoff_codes WHERE code_hash = ? RETURNING user_id, expires_at")
+      .get(codeHash) as { user_id: string; expires_at: number } | undefined;
+    if (!row) return null;
+    if (Number(row.expires_at) <= now) return null;
+    return row.user_id;
+  } catch {
+    return null;
+  }
 }
 
 // ---- Privy (gated by PRIVY_APP_ID) -----------------------------------------

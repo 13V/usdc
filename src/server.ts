@@ -76,6 +76,8 @@ import {
   verifyPrivyToken,
   fetchPrivyWallets,
   signSession,
+  mintHandoffCode,
+  exchangeHandoffCode,
 } from "./auth";
 import {
   upsertUserByWallet,
@@ -536,6 +538,34 @@ app.post("/api/auth/privy/verify", authRateLimit, async (req: Request, res: Resp
   } catch (err) {
     res.status(401).json({ error: (err as Error).message });
   }
+});
+
+// ---- Native OAuth handoff (Capacitor iOS shell) ----------------------------
+// Google OAuth can't run inside the shell's WKWebView ("disallowed_useragent"),
+// so social sign-in completes in the system browser and hands the session back
+// via a single-use, 60s-TTL code on a divvy:// deep link (see src/auth.ts for
+// the storage/single-use guarantees). Codes are bearer credentials for the
+// minting user — they are NEVER logged, and responses carry no identifiers
+// beyond what the caller already holds.
+
+// Mint: requires a signed-in session (the Safari leg just finished the normal
+// Privy verify and holds a fresh Divvy token).
+app.post("/api/auth/handoff", authRateLimit, requireAuth, async (req: Request, res: Response) => {
+  const code = await mintHandoffCode(req.userId as string);
+  // Store unavailable → fail closed (no unprovable single-use codes).
+  if (!code) return res.status(503).json({ error: "handoff unavailable, try again" });
+  res.json({ code });
+});
+
+// Exchange: unauthenticated by design (the shell has no session yet). One valid
+// use returns a session; unknown/expired/reused codes are indistinguishable 401s.
+app.post("/api/auth/handoff/exchange", authRateLimit, async (req: Request, res: Response) => {
+  const body = (req.body || {}) as { code?: string };
+  const userId = await exchangeHandoffCode(typeof body.code === "string" ? body.code : "");
+  if (!userId) return res.status(401).json({ error: "invalid or expired code" });
+  const user = await getUser(userId);
+  if (!user) return res.status(401).json({ error: "invalid or expired code" });
+  res.json({ token: signSession(user.id), user: await serializeUser(user) });
 });
 
 app.get("/api/me", async (req: Request, res: Response) => {
