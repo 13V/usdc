@@ -183,3 +183,35 @@ PRIMARY; Coinbase Onramp as fallback; MoonPay demoted to third.**
 2) Coinbase CDP application (trial instantly, 0%-fee USDC), 3) MoonPay KYB
 (fallback + the offramp story via MoonPay Sell), all in parallel — they're free
 options on each other.**
+
+---
+
+## Appendix: Compliance deep-dive highlights (2026-07-06, NOT legal advice)
+
+- **Federal baseline solid**: FIN-2019-G001 §4.2.1/§4.2.2 — self-custodial wallet
+  software (incl. 2-of-2 key-share providers that cannot act without the user) is
+  not money transmission. GENIUS Act §3(c) (12 USC 5902(c)) EXPRESSLY carves out
+  "software or hardware wallet that facilitates an individual's own custody" and
+  "direct transfer of digital assets between two individuals acting on their own
+  behalf... without an intermediary" — Divvy's exact shape.
+- **The §1960 tension is real**: DOJ's Blanche memo (Apr 2025) says no charges for
+  truly non-custodial P2P software absent willfulness, but Storm's conviction stands
+  (retrial Oct 2026) and Samourai pleaded — "non-custodial" is not a per se defense
+  where the operator routes funds or anonymizes. Divvy must never route P2P value
+  through an operator address, never skim fees in-flight (fee = separate
+  user-authorized transfer if ever monetized per-tx), never add mixing/relay features.
+- **Comparable precedent**: Sling Money (closest comparable — self-custodial USDC on
+  Solana) still registered with FinCEN as MSB + NMLS defensively, with Paxos/Bridge/
+  Beam handling all fiat legs. Phantom runs pure non-custodial posture with a CFTC
+  no-action letter. Decide deliberately: rely on non-custodial status vs register
+  defensively.
+- **CA DFAL (effective July 1, 2026)**: no express self-hosted-wallet exemption; the
+  out is definitional ("control" = power to execute unilaterally or prevent
+  indefinitely). Counsel should specifically analyze the Privy 2-of-2 config, any
+  gas-sponsorship/fee-payer key, and whether any operator capability can block or
+  execute a user tx. Watch DFPI final regs.
+- **Counsel to-do list**: Privy custody-configuration memo for the record; 50-state
+  MTL sweep; on/offramp contracts papered so the operator never accepts funds;
+  burner-wallet consumer-protection/UDAP review (non-custodial status removes
+  licensing, not consumer-protection law or OFAC prudence); verify Circle's formal
+  PPSI designation before calling USDC "GENIUS-compliant".
