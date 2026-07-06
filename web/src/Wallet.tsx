@@ -11,7 +11,9 @@ import { safeReturnPath } from "./safeReturn";
 const wrap: React.CSSProperties = {
   position: "relative", width: "100%", maxWidth: 430, margin: "0 auto", minHeight: "100vh",
   background: "#F7F1E3", color: "#2B2118", fontFamily: "'General Sans',sans-serif",
-  display: "flex", flexDirection: "column", padding: "0 22px", boxSizing: "border-box",
+  display: "flex", flexDirection: "column", boxSizing: "border-box",
+  // Keep the header clear of the status bar / Dynamic Island in the iOS shell.
+  padding: "calc(env(safe-area-inset-top, 0px) + 14px) 22px 0",
 };
 const card: React.CSSProperties = {
   background: "#FFFDF7", border: "2px solid #2B2118", borderRadius: 18,

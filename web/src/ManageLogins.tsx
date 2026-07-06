@@ -34,7 +34,10 @@ const OAUTH_METHODS: Method[] = ["apple", "google"];
 const wrap: React.CSSProperties = {
   position: "relative", width: "100%", maxWidth: 430, margin: "0 auto", minHeight: "100vh",
   background: "#F7F1E3", color: "#2B2118", fontFamily: "'General Sans',sans-serif",
-  display: "flex", flexDirection: "column", padding: "0 22px", boxSizing: "border-box",
+  display: "flex", flexDirection: "column", boxSizing: "border-box",
+  // Keep the header clear of the status bar / Dynamic Island in the iOS shell
+  // (viewport-fit=cover lets content run under them otherwise).
+  padding: "calc(env(safe-area-inset-top, 0px) + 14px) 22px 0",
 };
 const card: React.CSSProperties = {
   background: "#FFFDF7", border: "2px solid #2B2118", borderRadius: 18,
@@ -296,6 +299,12 @@ export function ManageLogins() {
       return (
         <div style={wrap}>
           {header}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "2px 2px 4px" }}>
+            <span style={{ fontSize: 13 }}>🔒</span>
+            <span style={{ fontFamily: mono, fontSize: 10.5, lineHeight: 1.5, color: "rgba(43,33,24,0.45)" }}>
+              you're in safari because apple &amp; google require sign-in outside the app — you'll bounce right back when you're done.
+            </span>
+          </div>
           <div style={card}>
             <div style={{ fontFamily: "'Clash Display','General Sans',sans-serif", fontWeight: 600, fontSize: 16 }}>first, sign in the way you usually do</div>
             <div style={{ fontFamily: "'General Sans',sans-serif", fontSize: 13.5, lineHeight: 1.5, color: "rgba(43,33,24,0.55)", marginTop: 6 }}>
