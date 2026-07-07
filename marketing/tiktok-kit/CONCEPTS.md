@@ -249,6 +249,19 @@ All are FULLY RENDERED in `assets/carousels/<slug>/01.png…NN.png` (1080×1350,
 - Post as IG carousel (also works as single pins — each slide stands alone) +
   TikTok photo mode with a soft lo-fi sound.
 
+**29. the photo-editorial travel deck (concept 27, photography theme)** · ZERO · `assets/carousels/travel-photo/` (8 slides)
+- Same 10 tips + chat payoff + CTA as concept 27, restyled as an aesthetic
+  travel page: full-bleed licensed photography (Bali villa cover, infinity
+  pool, rice-field scooter, patio dinner, Maldives beach, plane window,
+  sunset — sources in `assets-src/photos/CREDITS.md`) under Fraunces
+  editorial serif. Cover hook is the same researched "wish i knew" line —
+  a photo cover trades Notes-app camouflage for raw scroll-stopping power,
+  so A/B it against concept 27 and keep the winner.
+- Slide 7 floats the girls-trip chat over the blurred villa ("tip 6, in the
+  wild:"); slide 8 is the cream CTA card (Mochi + wordmark + early-access
+  pill) over the sunset.
+- Caption: same as concept 27.
+
 <!-- Provenance — concept 28 tip sources (research run 2026-07-07):
   1. 24-hour ask window (72% of Venmo users; pay within 24h of a request):
      https://www.phillyvoice.com/venmo-request-etiquette/
