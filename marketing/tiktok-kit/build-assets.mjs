@@ -1306,6 +1306,139 @@ function startServer(port, dbPath) {
 }
 function pngSize(buf) { return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) }; }
 
+// ── photo-editorial travel deck (1080×1350) — full-bleed photography theme ────
+// The "aesthetic travel page" take on the flagship: licensed photos
+// (assets-src/photos/, see CREDITS.md) under Fraunces editorial serif. Cover is
+// the villa hero; tip slides are photo-over-cream-panel (two tips each, same 10
+// tips as the Notes deck, tightened); slide 7 floats the girls-trip chat still
+// over the blurred villa; slide 8 is the CTA card over the sunset.
+
+function srcAsset(...p) { return join(__dirname, "assets-src", ...p); }
+function photoData(file) {
+  return `data:image/jpeg;base64,${readFileSync(srcAsset("photos", file)).toString("base64")}`;
+}
+// Fraunces variable font (SIL OFL, vendored by the sourcing step) — ttf or woff2.
+function frauncesFace(base, style) {
+  for (const [ext, mime, fmt] of [["ttf", "font/ttf", "truetype"], ["woff2", "font/woff2", "woff2"]]) {
+    const p = srcAsset("fonts", `${base}.${ext}`);
+    if (existsSync(p)) return `@font-face{font-family:'Fraunces';font-weight:100 900;font-style:${style};src:url(data:${mime};base64,${readFileSync(p).toString("base64")}) format('${fmt}');}`;
+  }
+  throw new Error(`missing assets-src/fonts/${base}.(ttf|woff2) — vendor Fraunces first (see HOOKS.md)`);
+}
+const FRAUNCES = `'Fraunces',Georgia,serif`;
+const CREAM = "#FBF3E4";
+
+const PHOTO_DECK = {
+  slug: "travel-photo",
+  kicker: "the group-trip notebook",
+  cover: {
+    img: "cover-villa.jpg",
+    title: `things i wish<br>i knew before my<br>first <em>girls trip</em>`,
+    sub: "number 6 saved a friendship. not exaggerating.",
+  },
+  // five photo slides × two tips — same 10 tips as the Notes deck, tightened
+  // to one breath each so they read over photography.
+  tipSlides: [
+    { img: "pool.jpg", tips: [
+      { h: "one fronter per lane, not per moment", b: "one books the villa, one covers food, one does transport — you come home to 3 clean debts, not 40 tiny mysteries." },
+      { h: "say the number out loud", b: "whoever pays announces it at the table and it's written down in 10 seconds. everyone remembers paying MORE than they did." },
+    ] },
+    { img: "scooter.jpg", tips: [
+      { h: "agree the split before you leave", b: "even? by use? do non-drinkers subsidize the bar tab? any answer works — deciding after the money is spent is the only wrong one." },
+      { h: "money asks are same-day asks", b: "“villa came to $168 each” lands fine on day one. it lands weird in month three. ask fast, stay friends." },
+    ] },
+    { img: "dinner.jpg", tips: [
+      { h: "price the rooms like rent", b: "the ensuite master is not the pull-out couch. can't agree? sealed bids — the winner pays a number they chose themselves." },
+      { h: "kill the spreadsheet — send pay links", b: "one link where everyone sees their exact share and taps once. the spreadsheet dies in the chat; the link gets paid that night." },
+    ] },
+    { img: "beach.jpg", tips: [
+      { h: "set the no-show rule at booking", b: "drop out after the villa's booked? your bed is still your share, unless someone fills it. agree it while it's still about nobody." },
+      { h: "run a day-one kitty for the small stuff", b: "$50 each into a pot: tolls, ice, the 3am pizza. micro-debts are where trips go to die — the kitty eats them." },
+    ] },
+    { img: "airport.jpg", tips: [
+      { h: "net the debts before anyone pays", b: "don't do A pays B, B pays C, C pays A. total who's net up and net down — most trips collapse to one or two transfers." },
+      { h: "settle before the airport", b: "square up while the sunburn is still fresh — at the gate at the latest. “no rush lol” is a resentment loop wearing a friendly face." },
+    ] },
+  ],
+  shot: { img: "cover-villa.jpg", chat: "chat-girls-trip.png", h: "tip 6, in the wild:" },
+  cta: { img: "sunset.jpg" },
+};
+const PHOTO_ACCENTS = [CORAL, "#E09E2F", "#1FA98C", BLUE, "#985FDE"];
+const PHOTO_SLIDES_N = 2 + PHOTO_DECK.tipSlides.length + 1; // cover + tips + shot + cta
+
+function photoShell(body) {
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+  ${FONT_CSS}${frauncesFace("Fraunces-VF", "normal")}${frauncesFace("Fraunces-Italic-VF", "italic")}${FREEZE_CSS}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px;overflow:hidden}
+  body{position:relative;background:${CREAM};font-family:'General Sans',sans-serif;color:${INK}}
+  .ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .kick{font-family:'Space Mono',monospace;font-size:25px;letter-spacing:7px;text-transform:uppercase}
+  em{font-style:italic;font-weight:560}
+  </style></head><body>${body}</body></html>`;
+}
+
+function photoCoverHtml() {
+  const c = PHOTO_DECK.cover;
+  return photoShell(`
+    <img class="ph" src="${photoData(c.img)}">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,15,9,0.34) 0%,rgba(22,15,9,0.02) 34%,rgba(22,15,9,0.10) 58%,rgba(22,15,9,0.66) 100%)"></div>
+    <div class="kick" style="position:absolute;top:74px;left:0;right:0;text-align:center;color:rgba(251,243,228,0.92)">${PHOTO_DECK.kicker}</div>
+    <div style="position:absolute;left:84px;right:84px;bottom:96px">
+      <div style="font-family:${FRAUNCES};font-weight:430;font-size:97px;line-height:1.09;letter-spacing:-1px;color:${CREAM}">${c.title}</div>
+      <div style="width:104px;height:3px;background:rgba(251,243,228,0.55);margin:36px 0 30px"></div>
+      <div style="font-size:31px;font-weight:500;color:rgba(251,243,228,0.90)">${c.sub}</div>
+    </div>`);
+}
+
+function photoTipHtml(idx) {
+  const s = PHOTO_DECK.tipSlides[idx];
+  const accent = PHOTO_ACCENTS[idx % PHOTO_ACCENTS.length];
+  const nums = [idx * 2 + 1, idx * 2 + 2];
+  const tips = s.tips.map((t, j) => `
+    <div style="display:flex;gap:34px;${j ? "margin-top:44px;padding-top:44px;border-top:1px solid rgba(43,33,24,0.13)" : ""}">
+      <div style="font-family:${FRAUNCES};font-style:italic;font-weight:520;font-size:64px;line-height:1;color:${accent};min-width:74px;text-align:right">${nums[j]}</div>
+      <div>
+        <div style="font-family:${FRAUNCES};font-weight:600;font-size:41px;letter-spacing:-0.4px;line-height:1.16">${t.h}</div>
+        <div style="font-size:27.5px;line-height:1.5;color:rgba(43,33,24,0.66);margin-top:14px">${t.b}</div>
+      </div>
+    </div>`).join("");
+  return photoShell(`
+    <div style="position:absolute;left:0;top:0;right:0;height:600px;overflow:hidden">
+      <img class="ph" src="${photoData(s.img)}" style="height:600px">
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,15,9,0.16),rgba(22,15,9,0) 30%)"></div>
+      <div class="kick" style="position:absolute;top:56px;right:70px;color:rgba(251,243,228,0.95);letter-spacing:5px">${String(idx + 2).padStart(2, "0")} / ${String(PHOTO_SLIDES_N).padStart(2, "0")}</div>
+    </div>
+    <div style="position:absolute;left:0;right:0;top:600px;bottom:0;background:${CREAM};padding:66px 84px 0">${tips}</div>`);
+}
+
+function photoShotHtml() {
+  const s = PHOTO_DECK.shot;
+  const chat = readFileSync(join(OUT, s.chat)).toString("base64");
+  return photoShell(`
+    <img class="ph" src="${photoData(s.img)}" style="filter:blur(16px) saturate(1.05);transform:scale(1.14)">
+    <div style="position:absolute;inset:0;background:rgba(20,13,8,0.52)"></div>
+    <div style="position:absolute;top:88px;left:0;right:0;text-align:center;font-family:${FRAUNCES};font-style:italic;font-weight:480;font-size:58px;color:${CREAM}">${s.h}</div>
+    <div style="position:absolute;top:206px;left:0;right:0;text-align:center">
+      <img src="data:image/png;base64,${chat}" style="height:1044px;border-radius:30px;border:1px solid rgba(251,243,228,0.28);box-shadow:0 34px 90px rgba(0,0,0,0.55)">
+    </div>`);
+}
+
+function photoCtaHtml() {
+  return photoShell(`
+    <img class="ph" src="${photoData(PHOTO_DECK.cta.img)}">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,15,9,0.18),rgba(22,15,9,0.5))"></div>
+    <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:780px;background:${CREAM};border-radius:36px;box-shadow:0 40px 110px rgba(0,0,0,0.5);padding:64px 64px 58px;text-align:center">
+      <div id="stage" style="height:150px;display:flex;align-items:center;justify-content:center"></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:80px;letter-spacing:-2.4px;color:${INK};margin-top:6px">
+        <span style="width:42px;height:42px;border-radius:13px;background:${BLUE};border:4px solid ${INK};box-shadow:5px 5px 0 rgba(43,33,24,0.85)"></span>divvy
+      </div>
+      <div style="font-family:'Space Mono',monospace;font-weight:700;font-size:27px;color:rgba(43,33,24,0.72);margin-top:14px">split the bill. not the friendship.</div>
+      <div style="font-size:28px;line-height:1.5;color:rgba(43,33,24,0.66);margin-top:30px">the app from tip 6 — scan the receipt,<br>everyone pays their share in one tap.</div>
+      <div style="display:inline-block;margin-top:34px;background:${INK};color:${CREAM};border-radius:999px;padding:24px 46px;font-family:'Clash Display',sans-serif;font-weight:600;font-size:30px">get early access → divvysol.com</div>
+    </div>`);
+}
+
 async function shoot(browser, { html, width, height, mood, mascot, file }) {
   const page = await (await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 })).newPage();
   await page.setContent(html, { waitUntil: "load" });
@@ -1444,6 +1577,21 @@ async function run() {
       });
     }
 
+    // 3e) photo-editorial travel deck (licensed photography + Fraunces) — 1080×1350
+    if (want(PHOTO_DECK.slug)) {
+      if (!existsSync(srcAsset("photos", "cover-villa.jpg"))) {
+        process.stdout.write("  NOTE: skipping travel-photo — assets-src/photos/ not vendored on this machine.\n");
+      } else {
+        const dir = join("carousels", PHOTO_DECK.slug);
+        await shoot(browser, { html: photoCoverHtml(), width: 1080, height: 1350, file: join(dir, "01.png") });
+        for (let i = 0; i < PHOTO_DECK.tipSlides.length; i++) {
+          await shoot(browser, { html: photoTipHtml(i), width: 1080, height: 1350, file: join(dir, `${String(i + 2).padStart(2, "0")}.png`) });
+        }
+        await shoot(browser, { html: photoShotHtml(), width: 1080, height: 1350, file: join(dir, `${String(PHOTO_SLIDES_N - 1).padStart(2, "0")}.png`) });
+        await shoot(browser, { html: photoCtaHtml(), width: 1080, height: 1350, mood: "wave", file: join(dir, `${String(PHOTO_SLIDES_N).padStart(2, "0")}.png`) });
+      }
+    }
+
     // 4) pfp + banner
     if (want("pfp.png")) await shoot(browser, { html: pfpHtml(), width: 1000, height: 1000, mood: "happy", file: "pfp.png" });
     if (want("banner.png")) await shoot(browser, { html: bannerHtml(), width: 1500, height: 500, mood: "wave", file: "banner.png" });
@@ -1491,11 +1639,12 @@ async function run() {
 
 run().then(
   () => {
+    const photoOk = existsSync(srcAsset("photos", "cover-villa.jpg"));
     const slideCount = CAROUSELS.reduce((n, c) => n + c.slides.length, 0)
       + NOTES_CAROUSELS.reduce((n, c) => n + c.sections.length, 0)
       + LISTICLES.reduce((n, c) => n + c.slides.length, 0)
-      + SIX_TIPS.slides.length + 1;
-    const carCount = CAROUSELS.length + NOTES_CAROUSELS.length + LISTICLES.length + 1;
+      + SIX_TIPS.slides.length + 1 + (photoOk ? PHOTO_SLIDES_N : 0);
+    const carCount = CAROUSELS.length + NOTES_CAROUSELS.length + LISTICLES.length + 1 + (photoOk ? 1 : 0);
     process.stdout.write(ONLY
       ? `=== PASS — rendered only [${ONLY.join(", ")}] in marketing/tiktok-kit/assets ===\n`
       : `=== PASS — ${SCENES.length + CHAT_SCENARIOS.length + MEMES.length + 2} stills + ${CHAT_SCENARIOS.length} videos + ${carCount} carousels (${slideCount} slides) in marketing/tiktok-kit/assets ===\n`);
