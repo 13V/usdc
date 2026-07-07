@@ -293,3 +293,17 @@ time (25–35s of hold, built-in rewatch on the receipt punchline). **Highest
 save-rate bets: #27** (the flagship travel deck) and **#23** (copy-paste
 texts) — "screenshot-and-use-later" content is what the 2026 carousel meta
 rewards, and saves outweigh likes for reach.
+
+**30. your worst bags aren't onchain (CT deck)** · ZERO · `assets/ct/deck-worst-bags/` (8 slides, 1080×1350)
+- The crypto-twitter carousel (voice + rules in `marketing/ct-kit/STRATEGY.md`):
+  trenches-terminal skin (dark, mono, mint grid), same proven shape as the
+  flagship — hook cover → 5 rules (one per slide, RULE_01…05) → the boys-trip
+  chat as slide 7 ("> the protocol in the wild:") → RULE_06 hard CTA ("automate
+  rules 1–5", Mochi + wordmark + early-access pill).
+- Rules: name the number same day · mark friend debt to market (with the
+  "odds of repayment vs days held" decay chart) · split at booking, not
+  checkout · net the debts · settle before the flight home.
+- Post to X as a photo carousel + IG. Caption: `the recovery protocol for
+  friend debt. rule 2 hurts because it's true. no token. just settled tabs 🫡`
+- Every slide footers "no token. just settled tabs." — the memecoin-signal
+  disclaimer IS the brand line.

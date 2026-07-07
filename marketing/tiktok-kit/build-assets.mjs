@@ -1494,6 +1494,133 @@ function ctReceiptHtml(r) {
   </body></html>`;
 }
 
+// ── CT carousel: "your worst bags aren't onchain" (8×1080×1350) ───────────────
+// The crypto-twitter deck (marketing/ct-kit/STRATEGY.md): same proven shape as
+// the flagship (hook cover → rules → artifact payoff on 7 → hard CTA on 8) but
+// in the trenches-terminal skin: dark, mono, mint grid, coral losses. Voice:
+// lowercase, deadpan, degen-literate, zero rockets. Mochi appears small on the
+// cover and big on the CTA only — cute art, dry words.
+
+const CT_DECK = {
+  slug: "worst-bags",
+  dir: join("ct", "deck-worst-bags"),
+  rules: [
+    { n: "01", h: "name the number, same day", lines: [
+      `“<b>the $38 from the airbnb</b>” gets paid.`,
+      `“that thing from breakpoint” becomes a donation.`,
+      `unnamed debts trend to zero. every time.`,
+    ] },
+    { n: "02", h: "mark your friend debt to market", lines: [
+      `90+ days unpaid is not a loan anymore. it's <span class="red">unrealized loss</span>.`,
+      `you're not lending, ser. you're providing exit liquidity.`,
+    ], chart: true },
+    { n: "03", h: "split at booking, not at checkout", lines: [
+      `the villa share is agreed <b>the day it's booked</b>, while it's still about nobody.`,
+      `deciding after the money is spent is how PvE becomes PvP.`,
+    ] },
+    { n: "04", h: "net the debts before anyone sends", lines: [
+      `A owes B owes C owes A is three transfers of pure gas.`,
+      `net it down — most trips collapse to <b>one transfer</b>.`,
+    ] },
+    { n: "05", h: "settle before the flight home", lines: [
+      `square up at the gate at the latest.`,
+      `“no rush ser” compounds worse than any funding rate.`,
+    ] },
+  ],
+};
+
+function ctShell(body) {
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+  ${FONT_CSS}${FREEZE_CSS}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px;overflow:hidden}
+  body{position:relative;background:#100D09;color:#F3EAD9;font-family:'Space Mono',monospace;
+    background-image:linear-gradient(rgba(61,232,199,0.045) 1px,transparent 1px),linear-gradient(90deg,rgba(61,232,199,0.045) 1px,transparent 1px);
+    background-size:44px 44px}
+  .wm{display:flex;align-items:center;gap:12px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:34px;letter-spacing:-0.8px}
+  .wm .dot{width:20px;height:20px;border-radius:7px;background:${BLUE};border:3px solid rgba(243,234,217,0.9)}
+  .eyebrow{font-size:19px;letter-spacing:5px;color:rgba(243,234,217,0.35);text-transform:uppercase}
+  .tag{font-weight:700;font-size:22px;letter-spacing:5px;color:${MINT}}
+  .red{color:${CORAL}}  b{color:#FFFDF7}
+  .h{font-family:'Clash Display',sans-serif;font-weight:700;color:#FBF3E4}
+  .ln{font-size:31px;line-height:1.62;color:rgba(243,234,217,0.66);margin-top:26px}
+  .foot{position:absolute;left:84px;bottom:52px;font-size:19px;letter-spacing:2px;color:rgba(243,234,217,0.35)}
+  </style></head><body>${body}</body></html>`;
+}
+
+function ctTopBar(idx) {
+  return `<div style="position:absolute;top:64px;left:84px;right:84px;display:flex;align-items:center;justify-content:space-between">
+    <div class="wm"><span class="dot"></span>divvy</div>
+    <div class="eyebrow">${String(idx).padStart(2, "0")} / 08</div>
+  </div>`;
+}
+
+function ctCoverHtml() {
+  return ctShell(`
+    ${ctTopBar(1)}
+    <div style="position:absolute;left:84px;right:84px;top:300px">
+      <div class="tag">● RECOVERY PROTOCOL — FRIEND DEBT</div>
+      <div class="h" style="font-size:104px;line-height:1.06;letter-spacing:-2.5px;margin-top:34px">your worst bags aren't onchain 💀</div>
+      <div class="ln" style="font-size:33px;margin-top:42px">6 rules for the money side of the group chat.<br>from the frog who always settles up.</div>
+    </div>
+    <div style="position:absolute;left:84px;right:84px;bottom:170px;border:1px solid rgba(61,232,199,0.25);border-radius:18px;background:rgba(16,13,9,0.7);padding:34px 40px">
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:29px"><span>JAKE/USDC</span><span class="red">-$38.00</span><span style="color:rgba(243,234,217,0.4)">held 247 days</span><span class="red">▼ DOWN BAD</span></div>
+    </div>
+    <div class="foot">no token. just settled tabs.</div>
+    <div id="stage" style="position:absolute;right:84px;top:190px;width:96px;height:92px"></div>`);
+}
+
+function ctRuleHtml(i) {
+  const r = CT_DECK.rules[i];
+  const chart = r.chart ? `
+    <svg width="912" height="330" viewBox="0 0 912 330" style="margin-top:56px">
+      <g stroke="rgba(243,234,217,0.14)" stroke-width="1">${[60, 130, 200, 270].map((y) => `<line x1="70" y1="${y}" x2="892" y2="${y}"/>`).join("")}</g>
+      <line x1="70" y1="20" x2="70" y2="290" stroke="rgba(243,234,217,0.4)" stroke-width="2"/>
+      <line x1="70" y1="290" x2="892" y2="290" stroke="rgba(243,234,217,0.4)" stroke-width="2"/>
+      <path d="M70 40 C 240 50, 320 120, 430 200 S 700 282, 892 286" fill="none" stroke="${CORAL}" stroke-width="6" stroke-linecap="round"/>
+      <text x="70" y="326" fill="rgba(243,234,217,0.45)" font-family="Space Mono" font-size="21">day 0</text>
+      <text x="806" y="326" fill="rgba(243,234,217,0.45)" font-family="Space Mono" font-size="21">day 90</text>
+      <text x="84" y="44" fill="rgba(243,234,217,0.45)" font-family="Space Mono" font-size="21">odds of repayment</text>
+      <text x="600" y="250" fill="${CORAL}" font-family="Space Mono" font-size="23" font-weight="700">▼ your $40</text>
+    </svg>` : "";
+  return ctShell(`
+    ${ctTopBar(i + 2)}
+    <div style="position:absolute;left:84px;right:84px;top:250px">
+      <div class="tag" style="font-size:27px">RULE_${r.n}</div>
+      <div class="h" style="font-size:72px;line-height:1.12;letter-spacing:-1.5px;margin-top:30px">${r.h}</div>
+      <div style="width:110px;height:3px;background:rgba(61,232,199,0.5);margin-top:40px"></div>
+      <div style="margin-top:22px">${r.lines.map((l) => `<div class="ln">${l}</div>`).join("")}</div>
+      ${chart}
+    </div>
+    <div class="foot">divvy — no token. just settled tabs.</div>`);
+}
+
+function ctShotHtml() {
+  const b64 = readFileSync(join(OUT, "chat-boys-trip.png")).toString("base64");
+  return ctShell(`
+    ${ctTopBar(7)}
+    <div class="tag" style="position:absolute;top:196px;left:84px;font-size:27px">&gt; THE PROTOCOL IN THE WILD:</div>
+    <div style="position:absolute;top:270px;left:0;right:0;text-align:center">
+      <img src="data:image/png;base64,${b64}" style="height:960px;border-radius:26px;border:1px solid rgba(61,232,199,0.35);box-shadow:0 30px 80px rgba(0,0,0,0.6)">
+    </div>
+    <div class="foot" style="left:0;right:0;text-align:center">six figures of chat history. one message of money talk.</div>`);
+}
+
+function ctCtaHtml() {
+  return ctShell(`
+    ${ctTopBar(8)}
+    <div style="position:absolute;left:84px;right:84px;top:236px;text-align:center">
+      <div class="tag" style="font-size:27px">RULE_06</div>
+      <div class="h" style="font-size:78px;letter-spacing:-1.5px;margin-top:26px">automate rules 1–5</div>
+      <div id="stage" style="height:190px;display:flex;align-items:center;justify-content:center;margin-top:40px"></div>
+      <div class="wm" style="justify-content:center;font-size:78px;gap:18px;margin-top:6px"><span class="dot" style="width:40px;height:40px;border-radius:13px;border-width:4px"></span>divvy</div>
+      <div style="font-weight:700;font-size:27px;color:rgba(243,234,217,0.72);margin-top:18px">split the bill. not the friendship.</div>
+      <div class="ln" style="margin-top:36px">scan the receipt. the boys pay their share in one tap.<br>settles in seconds. network fee: <b>$0.0004</b>.</div>
+      <div style="display:inline-block;margin-top:48px;background:${MINT};color:#100D09;border-radius:999px;padding:26px 52px;font-weight:700;font-size:31px">get early access → divvysol.com</div>
+    </div>
+    <div class="foot" style="left:0;right:0;text-align:center">no token. just settled tabs. 🫡</div>`);
+}
+
 async function shoot(browser, { html, width, height, mood, mascot, file }) {
   const page = await (await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 })).newPage();
   await page.setContent(html, { waitUntil: "load" });
@@ -1645,6 +1772,16 @@ async function run() {
         await shoot(browser, { html: photoShotHtml(), width: 1080, height: 1350, file: join(dir, `${String(PHOTO_SLIDES_N - 1).padStart(2, "0")}.png`) });
         await shoot(browser, { html: photoCtaHtml(), width: 1080, height: 1350, mood: "wave", file: join(dir, `${String(PHOTO_SLIDES_N).padStart(2, "0")}.png`) });
       }
+    }
+
+    // 3e2) CT carousel "your worst bags aren't onchain" — 8×1080×1350
+    if (want(CT_DECK.slug)) {
+      await shoot(browser, { html: ctCoverHtml(), width: 1080, height: 1350, mascot: { kind: "mini", px: 92 , all: "#stage" }, file: join(CT_DECK.dir, "01.png") });
+      for (let i = 0; i < CT_DECK.rules.length; i++) {
+        await shoot(browser, { html: ctRuleHtml(i), width: 1080, height: 1350, file: join(CT_DECK.dir, `${String(i + 2).padStart(2, "0")}.png`) });
+      }
+      await shoot(browser, { html: ctShotHtml(), width: 1080, height: 1350, file: join(CT_DECK.dir, "07.png") });
+      await shoot(browser, { html: ctCtaHtml(), width: 1080, height: 1350, mood: "wave", file: join(CT_DECK.dir, "08.png") });
     }
 
     // 3f) CT settle-receipt PnL cards — 1600×900 (X-native)
