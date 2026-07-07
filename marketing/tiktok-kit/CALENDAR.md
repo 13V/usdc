@@ -11,7 +11,7 @@ and use the matching still as slide 1 of an IG carousel.
 
 | Week | Day | Concept | Format | Effort | Asset |
 |------|-----|---------|--------|--------|-------|
-| **1** | Mon | **27 — 10 tips for traveling with friends** (flagship) | carousel | ZERO | `carousels/travel-with-friends/` |
+| **1** | Mon | **27 — things i wish i knew before my first girls trip** (flagship) | carousel | ZERO | `carousels/travel-with-friends/` |
 | 1 | Tue | **15 — new phone who dis** (strong opener) | chat video | ZERO | `videos/dave-2019.webm` + `chat-2019.png` |
 | 1 | Thu | **21 — stop losing money on group trips** | carousel | ZERO | `carousels/group-trips/` |
 | 1 | Sat | **1 — "i'll get you back", 2019** | Mochi card | ZERO | `scene-2019.png` |

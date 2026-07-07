@@ -212,13 +212,23 @@ All are FULLY RENDERED in `assets/carousels/<slug>/01.png…NN.png` (1080×1350,
 - Reveal: "we built divvy so nobody has to be the bank."
 - Caption: `number 5. i said what i said. #friendship #payme #etiquette #relatable #moneytips`
 
-**27. 10 tips for traveling with friends (FLAGSHIP)** · ZERO · `assets/carousels/travel-with-friends/` (8 slides, Notes skin)
+**27. things i wish i knew before my first girls trip (FLAGSHIP)** · ZERO · `assets/carousels/travel-with-friends/` (8 slides, Notes skin)
 - The founder-designed hybrid deck: Notes-app note, TWO dense tips per slide
   (10 tips across slides 2–6), slide 7 is the girls-trip chat screenshot pasted
   into the note ("tip 6 in the wild:") as the payoff beat, slide 8 is the CTA in
   the note's own idiom ("the app from that screenshot is divvy 🐸 — get early
   access → divvysol.com") with Mochi + wordmark.
-- Caption: `how to split costs on a group trip — the 10 rules that kept us friends. save for the trip chat 🧳 #grouptrip #travelhacks #splitthebill #friendship #moneytips`
+- Cover hook (researched, see HOOKS.md): title "things i wish i knew before my
+  first girls trip" + sub "- number 6 saved a friendship. not exaggerating." —
+  the "wish i knew" insider format is the most-validated travel hook of
+  2025–26, and teasing #6 opens a loop the slide-7 screenshot pays off.
+  Two alternate rendered covers live in `hook-options/`: a-group-chat.png
+  ("how to get the trip out of the group chat" — the niche's own meme) and
+  b-trip-planner.png ("if you're the friend who plans the whole trip" —
+  identity call-out, top-scoring hook pattern in 2026 testing). Swap by
+  copying one over 01.png (or edit the cover in build-assets.mjs and re-run
+  `--only travel-with-friends`).
+- Caption: `number 6 is the one. save this for the trip chat 🧳 #girlstrip #grouptrip #travelhacks #splitthebill #friendship`
 - Post IG carousel + TikTok photo mode; this is the save-rate flagship, slot it first.
 
 **28. money etiquette — the six-tips journal set (Pinterest-pretty)** · ZERO · `assets/carousels/six-tips/` (6 slides + optional 07 CTA)

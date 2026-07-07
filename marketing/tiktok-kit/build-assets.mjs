@@ -883,9 +883,8 @@ const NOTES_CAROUSELS = [
     date: "July 7, 2026 at 9:12 AM",
     time: "9:14",
     sections: [
-      { kind: "cover", title: "10 tips for traveling with friends", lines: [
-        "(without a group-chat war)",
-        "- from someone who fronted the villa twice. never again.",
+      { kind: "cover", title: "things i wish i knew before my first girls trip", lines: [
+        "- number 6 saved a friendship. not exaggerating.",
       ] },
       { kind: "tips2", tips: [
         { h: "1. one fronter per lane, not per moment", lines: [
