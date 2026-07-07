@@ -1,4 +1,4 @@
-# 27 post concepts — hooks, scripts, captions, effort
+# 28 post concepts — hooks, scripts, captions, effort
 
 Effort levels:
 - **ZERO** — post the provided file as-is (add any trending/lo-fi sound in-app).
@@ -220,6 +220,44 @@ All are FULLY RENDERED in `assets/carousels/<slug>/01.png…NN.png` (1080×1350,
   access → divvysol.com") with Mochi + wordmark.
 - Caption: `how to split costs on a group trip — the 10 rules that kept us friends. save for the trip chat 🧳 #grouptrip #travelhacks #splitthebill #friendship #moneytips`
 - Post IG carousel + TikTok photo mode; this is the save-rate flagship, slot it first.
+
+**28. money etiquette — the six-tips journal set (Pinterest-pretty)** · ZERO · `assets/carousels/six-tips/` (6 slides + optional 07 CTA)
+- The aesthetic-first set: each researched tip is its own journal page — cream
+  paper + ruled lines + grain, Clash Display headline, ONE accent per slide
+  (washi tape / highlighter / hand-drawn underline) rotating coral → amber →
+  mint → teal → blue → purple so the six read as a rainbow set on a grid.
+  Mochi is a small margin doodle (different mood + corner each slide) with a
+  tiny pencil note. Branded-soft throughout — no logo until 07.
+- Slides: (1) ask within 24 hours, not month three (72% call same-day the
+  polite ask) · (2) you invited? you're the host — hosts pay · (3) never lend
+  money you can't lose (nearly half of friend loans end badly) · (4) can't
+  agree on the big room? auction it (sealed bids) · (5) collect trip budgets
+  in dms, never the chat · (6) under $5? let it ride.
+- `07.png` is a separately numbered soft CTA ("saved these? divvy remembers
+  who owes what → divvysol.com", Mochi + wordmark) — post 6 or 7 slides.
+- Caption: `money etiquette nobody teaches you: how to ask a friend to pay you back, splitting the dinner bill with friends, group trip budgets — the 6 unwritten rules that keep money from getting weird. save the set 📌 #moneytok #etiquette #splitthebill #friendship #adulting`
+- Post as IG carousel (also works as single pins — each slide stands alone) +
+  TikTok photo mode with a soft lo-fi sound.
+
+<!-- Provenance — concept 28 tip sources (research run 2026-07-07):
+  1. 24-hour ask window (72% of Venmo users; pay within 24h of a request):
+     https://www.phillyvoice.com/venmo-request-etiquette/
+     https://newsroom.paypal-corp.com/A-guide-to-Venmo-etiquette,-straight-from-the-Venmo-community
+  2. Inviter-as-host pays; co-planned meals split, agreed in advance (Lizzie
+     Post / Emily Post Institute): https://www.kiplinger.com/personal-finance/spending/money-etiquette-gifts-tips-splitting-bills
+  3. Treat friend loans as gifts / never lend what you can't afford to lose
+     (Bankrate: 46% of lenders report a negative outcome):
+     https://www.cnbc.com/2020/07/05/loaning-money-to-friends-and-family-treat-it-as-a-gift-and-not-a-loan.html
+     https://www.npr.org/2024/05/08/1248683940/the-dos-and-donts-of-lending-money
+  4. Sealed-bid rent/room auction (fair-division method):
+     https://blogs.ams.org/mathgradblog/2013/10/12/splitting-apartment-rent-case-fair-division/
+     https://www.npr.org/2019/02/01/690822752/a-lesson-in-classic-fair-division-problems-and-the-solutions
+  5. Ask trip budgets privately, not in the group chat (people inflate in
+     public): https://www.fodors.com/news/travel-tips/how-do-i-ask-my-friends-if-they-can-afford-the-group-trip-im-planning
+  6. Sub-$5 requests read petty; $10–20 is the comfortable request floor:
+     https://money.com/venmo-payment-app-etiquette-zelle-cash/
+     https://thefiscalfemme.com/articles/venmo-etiquett-survey
+-->
 
 ---
 

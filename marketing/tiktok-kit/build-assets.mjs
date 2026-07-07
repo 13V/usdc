@@ -1112,6 +1112,159 @@ const LISTICLES = [
   },
 ];
 
+// ── six-tips journal cards (1080×1350) — the Pinterest-pretty etiquette set ───
+// Six researched money-etiquette tips, one per slide, art-directed as journal
+// pages: cream paper + ruled lines + grain, Clash Display headline, General
+// Sans support line, Space Mono kicker ("money etiquette · 01"), ONE accent
+// element per slide (washi tape / highlighter swipe / hand-drawn underline)
+// rotating through a warm→cool rainbow (coral, amber, mint, teal, blue,
+// purple) so the grid reads as a set. Mochi is SMALL — a margin doodle with a
+// tiny pencil note, different mood + corner per slide. 07.png is a separately
+// numbered soft CTA so the founder can post 6 or 7.
+// Sources for each tip are footnoted in CONCEPTS.md (concept 28).
+
+const TIP_PURPLE = "#985FDE", TIP_TEAL = "#1FA98C";
+
+// hand-drawn underline as an inline-SVG background (kept on short phrases so
+// the stroke never has to wrap)
+function underCss(color) {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 26' preserveAspectRatio='none'><path d='M5 15 C 58 6, 118 21, 178 11 S 268 9, 295 15' fill='none' stroke='${color}' stroke-width='10' stroke-linecap='round'/></svg>`;
+  return `background-image:url("data:image/svg+xml,${encodeURIComponent(svg)}");background-repeat:no-repeat;background-position:0 100%;background-size:100% 26px;padding-bottom:16px`;
+}
+// fine paper grain, tiled (multiply, very low alpha)
+const GRAIN_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='240' height='240' filter='url(%23n)'/></svg>`;
+
+const SIX_TIPS = {
+  slug: "six-tips",
+  kicker: "money etiquette",
+  slides: [
+    {
+      c: CORAL, accent: "mark", mood: "watching", corner: "right",
+      h: `ask within <span class="mark">24 hours</span>. not month three.`,
+      s: `the same-day ask is the polite one — 72% agree. waiting is what makes it weird.`,
+      note: "mochi counts the hours",
+    },
+    {
+      c: SUN, accent: "tape", mood: "happy", corner: "left", hz: 98,
+      h: `you invited? you're the host. hosts pay.`,
+      s: `planned it together instead? then split — but say how before anyone orders.`,
+      note: "his party, his tab",
+    },
+    {
+      c: MINT, accent: "under", mood: "worried", corner: "right",
+      h: `never lend money you <span class="under">can't lose</span>`,
+      s: `nearly half of friend loans end badly. budget it as a gift — repayment becomes a bonus.`,
+      note: "prepared for the worst",
+    },
+    {
+      c: TIP_TEAL, accent: "mark", mood: "sparkle", corner: "left",
+      h: `can't agree on the big room? <span class="mark">auction it</span>`,
+      s: `sealed bids — highest number takes the room and pays that number. nobody argues with their own price.`,
+      note: "math frog strikes again",
+    },
+    {
+      c: BLUE, accent: "tape", mood: "wave", corner: "right", hz: 98,
+      h: `collect trip budgets in dms, never the chat`,
+      s: `people inflate what they can afford in public. private asks get honest numbers — before anything is booked.`,
+      note: "sliding in politely",
+    },
+    {
+      c: TIP_PURPLE, accent: "under", mood: "sleepy", corner: "left",
+      h: `under $5? <span class="under">let it ride</span>`,
+      s: `tiny requests read petty — fold it into the next round. anything bigger deserves a same-day ask.`,
+      note: "not worth losing sleep",
+    },
+  ],
+};
+
+// highlighter swipe / tape tints per accent color
+function tipMarkBg(c) {
+  const a = c === BLUE ? 0.28 : c === TIP_TEAL ? 0.34 : 0.45;
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  return `linear-gradient(180deg,transparent 6%,rgba(${r},${g},${b},${a}) 12%,rgba(${r},${g},${b},${a}) 90%,transparent 96%)`;
+}
+function tipTape(c) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+  return `<div style="position:absolute;right:-64px;top:84px;width:400px;height:80px;transform:rotate(6deg);
+    background-color:rgba(${r},${g},${b},0.62);opacity:.92;box-shadow:0 10px 24px rgba(43,33,24,0.14);
+    background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.28) 0 20px,rgba(255,255,255,0) 20px 40px)"></div>`;
+}
+
+function sixTipsSlideHtml(idx) {
+  const s = SIX_TIPS.slides[idx];
+  const num = String(idx + 1).padStart(2, "0");
+  const doodleSide = s.corner === "left"
+    ? "left:132px;align-items:flex-start" : "right:120px;align-items:flex-end";
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+  ${FONT_CSS}${FREEZE_CSS}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px;overflow:hidden}
+  body{background:${PAPER};color:${INK};position:relative;font-family:'General Sans',sans-serif;
+    background-image:repeating-linear-gradient(180deg,transparent 0 94px,rgba(39,117,202,0.10) 94px 96px)}
+  body::before{content:"";position:absolute;top:0;bottom:0;left:88px;width:4px;background:rgba(255,107,94,0.18)}
+  .grain{position:absolute;inset:0;opacity:0.05;mix-blend-mode:multiply;pointer-events:none;
+    background-image:url("data:image/svg+xml,${encodeURIComponent(GRAIN_SVG)}")}
+  .pad{position:absolute;inset:0;padding:118px 118px 120px 128px;display:flex;flex-direction:column}
+  .kick{font-family:'Space Mono',monospace;font-weight:700;font-size:29px;letter-spacing:6px;
+    text-transform:uppercase;color:rgba(43,33,24,0.42)}
+  .kick b{color:${s.c};font-weight:700}
+  .head{font-family:'Clash Display',sans-serif;font-weight:700;font-size:${s.hz || 104}px;line-height:1.12;
+    letter-spacing:-2px;word-spacing:0.24em;margin-top:172px;max-width:${s.hz ? 13 : 12}ch}
+  .head .mark{background:${tipMarkBg(s.c)};padding:0 14px;margin:0 -6px;border-radius:10px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+  .head .under{${underCss(s.c)}}
+  .sub{font-size:42px;font-weight:500;line-height:1.55;color:rgba(43,33,24,0.72);margin-top:64px;max-width:23ch}
+  .doodle{position:absolute;bottom:100px;${doodleSide};display:flex;flex-direction:column;gap:10px}
+  .stage{transform:scale(1.15);transform-origin:bottom ${s.corner};height:150px;display:flex;align-items:flex-end}
+  .note{font-family:'Space Mono',monospace;font-size:25px;color:rgba(43,33,24,0.48);transform:rotate(-4deg)}
+  </style></head><body>
+  <div class="grain"></div>
+  ${s.accent === "tape" ? tipTape(s.c) : ""}
+  <div class="pad">
+    <div class="kick">${SIX_TIPS.kicker} · <b>${num}</b></div>
+    <div class="head">${s.h}</div>
+    <div class="sub">${s.s}</div>
+  </div>
+  <div class="doodle"><div class="stage" id="stage"></div><div class="note">${s.note}</div></div>
+  </body></html>`;
+}
+
+// slide 07 — soft CTA, same paper, Mochi + wordmark, numbered separately
+function sixTipsCtaHtml() {
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+  ${FONT_CSS}${FREEZE_CSS}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px;overflow:hidden}
+  body{background:${PAPER};color:${INK};position:relative;font-family:'General Sans',sans-serif;
+    background-image:linear-gradient(rgba(61,232,199,0.10),rgba(61,232,199,0.10)),
+      repeating-linear-gradient(180deg,transparent 0 94px,rgba(39,117,202,0.10) 94px 96px)}
+  body::before{content:"";position:absolute;top:0;bottom:0;left:88px;width:4px;background:rgba(255,107,94,0.18)}
+  .grain{position:absolute;inset:0;opacity:0.05;mix-blend-mode:multiply;pointer-events:none;
+    background-image:url("data:image/svg+xml,${encodeURIComponent(GRAIN_SVG)}")}
+  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:150px 100px 120px}
+  .kick{font-family:'Space Mono',monospace;font-weight:700;font-size:29px;letter-spacing:6px;text-transform:uppercase;color:rgba(43,33,24,0.42)}
+  .head{font-family:'Clash Display',sans-serif;font-weight:700;font-size:128px;letter-spacing:-4px;word-spacing:0.24em;margin-top:120px}
+  .glow{position:absolute;left:50%;top:565px;width:560px;height:560px;border-radius:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(61,232,199,0.35) 0%,rgba(61,232,199,0) 65%)}
+  .stage{position:relative;margin-top:64px;transform:scale(2.1);transform-origin:top center;height:300px}
+  .word{display:flex;align-items:center;gap:20px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:96px;letter-spacing:-3px;margin-top:6px}
+  .word .dot{width:52px;height:52px;border-radius:15px;background:${BLUE};border:4px solid ${INK};box-shadow:6px 6px 0 rgba(43,33,24,0.85)}
+  .line{font-family:'Space Mono',monospace;font-weight:700;font-size:41px;line-height:1.55;color:rgba(43,33,24,0.78);margin-top:52px;max-width:21ch}
+  .line .hl{background:linear-gradient(180deg,transparent 10%,rgba(61,232,199,0.5) 14%,rgba(61,232,199,0.5) 86%,transparent 90%);padding:0 8px}
+  .soft{margin-top:auto;font-family:'Space Mono',monospace;font-size:28px;color:rgba(43,33,24,0.45)}
+  </style></head><body>
+  <div class="grain"></div>
+  <div class="wrap">
+    <div class="kick">money etiquette · the margin note</div>
+    <div class="head">saved these?</div>
+    <div class="glow"></div>
+    <div class="stage" id="stage"></div>
+    <div class="word"><span class="dot"></span>divvy</div>
+    <div class="line">divvy remembers who owes what — <span class="hl">divvysol.com</span></div>
+    <div class="soft">🐸 mochi remembers. mochi always remembers.</div>
+  </div>
+  </body></html>`;
+}
+
 // ── meme-lab pair (boots the real server, drives /memes) ──────────────────────
 const MEMES = [
   { file: "meme-waiting.png", pose: "watching", tint: "paper", top: "", bottom: "me waiting for my $12" },
@@ -1274,6 +1427,24 @@ async function run() {
       }
     }
 
+    // 3d) six-tips journal cards (Clash Display, one accent per slide) — 1080×1350
+    if (want(SIX_TIPS.slug)) {
+      for (let i = 0; i < SIX_TIPS.slides.length; i++) {
+        await shoot(browser, {
+          html: sixTipsSlideHtml(i),
+          width: 1080, height: 1350,
+          mood: SIX_TIPS.slides[i].mood,
+          file: join("carousels", SIX_TIPS.slug, `${String(i + 1).padStart(2, "0")}.png`),
+        });
+      }
+      await shoot(browser, {
+        html: sixTipsCtaHtml(),
+        width: 1080, height: 1350,
+        mood: "wave",
+        file: join("carousels", SIX_TIPS.slug, "07.png"),
+      });
+    }
+
     // 4) pfp + banner
     if (want("pfp.png")) await shoot(browser, { html: pfpHtml(), width: 1000, height: 1000, mood: "happy", file: "pfp.png" });
     if (want("banner.png")) await shoot(browser, { html: bannerHtml(), width: 1500, height: 500, mood: "wave", file: "banner.png" });
@@ -1323,8 +1494,9 @@ run().then(
   () => {
     const slideCount = CAROUSELS.reduce((n, c) => n + c.slides.length, 0)
       + NOTES_CAROUSELS.reduce((n, c) => n + c.sections.length, 0)
-      + LISTICLES.reduce((n, c) => n + c.slides.length, 0);
-    const carCount = CAROUSELS.length + NOTES_CAROUSELS.length + LISTICLES.length;
+      + LISTICLES.reduce((n, c) => n + c.slides.length, 0)
+      + SIX_TIPS.slides.length + 1;
+    const carCount = CAROUSELS.length + NOTES_CAROUSELS.length + LISTICLES.length + 1;
     process.stdout.write(ONLY
       ? `=== PASS — rendered only [${ONLY.join(", ")}] in marketing/tiktok-kit/assets ===\n`
       : `=== PASS — ${SCENES.length + CHAT_SCENARIOS.length + MEMES.length + 2} stills + ${CHAT_SCENARIOS.length} videos + ${carCount} carousels (${slideCount} slides) in marketing/tiktok-kit/assets ===\n`);
