@@ -1,0 +1,26 @@
+{
+  "file": "chat-girls-trip.png",
+  "kind": "group",
+  "title": "girls trip 🌴",
+  "time": "5:09",
+  "members": [
+    { "n": "Em", "i": "E", "g": ["#6EB7F7", "#3D8DEB"] },
+    { "n": "Sof", "i": "S", "g": ["#C08CF5", "#985FDE"] },
+    { "n": "Liv", "i": "L", "g": ["#7ED88F", "#43B75C"] }
+  ],
+  "rows": [
+    { "who": "Sof", "text": "the villa was $840 and i paid all of it 🙃" },
+    { "who": "Liv", "text": "i paid brunch and the boat and the little hats" },
+    { "who": "Em", "text": "lol not the hats" },
+    { "me": true, "text": "i don't even know who i owe anymore" },
+    { "who": "Sof", "text": "should i make a spreadsheet", "beat": 500 },
+    { "me": true, "text": "NOT THE SPREADSHEET", "status": "Read 4:41 PM" },
+    { "who": "Em", "text": "the spreadsheet ended the last trip", "tapback": { "e": "💀", "n": 2 } },
+    { "ts": "Today 5:02 PM", "beat": 900 },
+    { "who": "Sof", "text": "wiat." },
+    { "who": "Sof", "text": "ok try this instead" },
+    { "who": "Sof", "card": { "title": "girls trip 🌴 — your share is $168", "sub": "pay in one tap", "domain": "divvysol.com" }, "tapback": { "e": "❤️" } },
+    { "who": "Liv", "text": "WAIT this is so much better" },
+    { "typing": true, "who": "Em" }
+  ]
+}

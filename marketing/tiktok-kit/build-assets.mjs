@@ -7,12 +7,16 @@
  *
  *   • 7 Mochi scene cards, 1080×1920 — the REAL mascot rig (public/mascot.js,
  *     loaded verbatim via addScriptTag) over journal paper with big hook text.
- *   • fake group-chat screenshots, 1080×1920 — iMessage-style owed-money drama.
- *     chat-girls-trip.png + chat-rent.png use the v3 renderer: status bar,
- *     gradient monogram avatars (header cluster + per-sender), grouped bubbles
- *     with real tails, corner-overlapping tapbacks, read receipt, input bar +
- *     home indicator, closing typing indicator, SF-adjacent Inter — the reveal
- *     is a divvy pay-request link-preview card INSIDE the thread (diegetic).
+ *   • fake iMessage chats (scenarios/*.json → still PNG + fake-text VIDEO).
+ *     v3 renderer: status bar, gradient monogram avatars (group cluster or
+ *     single 1:1 avatar), grouped bubbles with real tails, corner-overlapping
+ *     tapbacks, read receipts, input bar + home indicator, closing typing
+ *     indicator, SF-adjacent Inter — the reveal is a divvy pay-request
+ *     link-preview card INSIDE the thread (diegetic). Videos are the same
+ *     thread played out beat-by-beat (typing → pop-in → tapbacks → card),
+ *     recorded at 1080×1920 to assets/videos/<slug>.webm (+ .mp4 when an
+ *     mp4-capable ffmpeg exists). `--stills-only` skips videos. GENERATOR.md
+ *     documents the scenario format.
  *   • value carousels, 1080×1350 — get-paid-back/ is rendered as authentic
  *     Apple-Notes screenshots (one tall note, 8 scroll-position captures);
  *     the rest still use the v1 "designed" look until they're converted.
@@ -27,9 +31,9 @@
  *   node marketing/tiktok-kit/build-assets.mjs
  *   node marketing/tiktok-kit/build-assets.mjs --only get-paid-back,chat-girls-trip
  */
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:net";
-import { mkdtempSync, rmSync, existsSync, writeFileSync, readFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync, writeFileSync, readFileSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -207,155 +211,175 @@ const SCENES = [
   },
 ];
 
-// ── fake iMessage chats, 1080×1920 ────────────────────────────────────────────
-function chatShell({ title, subtitle, rows }) {
-  const bubbles = rows.map((r) => {
-    if (r.ts) return `<div class="ts">${r.ts}</div>`;
-    if (r.typing) return `<div class="row left"><div class="who">${r.who || ""}</div><div class="bubble grey typing"><span></span><span></span><span></span></div></div>`;
-    const side = r.me ? "right" : "left";
-    const cls = r.me ? "blue" : "grey";
-    const who = !r.me && r.who ? `<div class="who">${r.who}</div>` : "";
-    const status = r.status ? `<div class="status">${r.status}</div>` : "";
-    return `<div class="row ${side}">${who}<div class="bubble ${cls}">${r.text}</div>${status}</div>`;
-  }).join("\n");
-
-  return `<!doctype html><html><head><meta charset="utf-8"><style>
-  ${FONT_CSS}
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{width:1080px;height:1920px;overflow:hidden}
-  body{background:#fff;font-family:'General Sans','Noto Color Emoji',sans-serif;color:#000;display:flex;flex-direction:column}
-  header{flex:none;padding:56px 40px 26px;background:rgba(249,249,249,0.98);border-bottom:1px solid rgba(0,0,0,0.12);text-align:center;position:relative}
-  header .back{position:absolute;left:44px;top:88px;font-size:56px;color:#007AFF;font-weight:400}
-  header .av{width:120px;height:120px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;
-    font-family:'General Sans',sans-serif;font-weight:500;font-size:52px;color:#fff;background:linear-gradient(180deg,#A9B2BC,#8E97A1)}
-  header .nm{font-weight:500;font-size:34px;letter-spacing:0.2px}
-  header .nm small{color:rgba(0,0,0,0.35);font-size:30px;font-weight:400}
-  header .sub{margin-top:4px;font-size:26px;color:rgba(0,0,0,0.4)}
-  main{flex:1;padding:44px 44px 60px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
-  .ts{text-align:center;font-size:26px;color:rgba(0,0,0,0.4);font-weight:500;margin:26px 0 12px}
-  .row{display:flex;flex-direction:column;max-width:76%}
-  .row.left{align-self:flex-start;align-items:flex-start}
-  .row.right{align-self:flex-end;align-items:flex-end}
-  .who{font-size:24px;color:rgba(0,0,0,0.4);margin:14px 0 4px 26px}
-  .bubble{padding:20px 30px;border-radius:40px;font-size:36px;line-height:1.32;letter-spacing:0.1px}
-  .bubble.grey{background:#E9E9EB;color:#000;border-bottom-left-radius:10px}
-  .bubble.blue{background:#007AFF;color:#fff;border-bottom-right-radius:10px}
-  .status{font-size:24px;color:rgba(0,0,0,0.4);margin:8px 10px 0;font-weight:500}
-  .typing{display:flex;gap:12px;align-items:center;padding:28px 34px}
-  .typing span{width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.3)}
-  footer{flex:none;padding:0 44px 54px}
-  .inputbar{display:flex;align-items:center;gap:18px}
-  .plus{width:70px;height:70px;border-radius:50%;background:#E9E9EB;color:rgba(0,0,0,0.45);font-size:44px;display:flex;align-items:center;justify-content:center}
-  .field{flex:1;height:70px;border:2px solid rgba(0,0,0,0.16);border-radius:38px;display:flex;align-items:center;padding:0 28px;font-size:30px;color:rgba(0,0,0,0.35)}
-  .wm{position:fixed;right:30px;bottom:8px;font-family:'Space Mono',monospace;font-weight:700;font-size:22px;color:rgba(0,0,0,0.22);letter-spacing:1px}
-  </style></head><body>
-  <header>
-    <div class="back">‹</div>
-    <div class="av">${title.replace(/[^A-Za-z ]/g, "").trim().split(/\s+/).slice(0, 2).map(w => w[0] || "").join("").toUpperCase() || "🐸"}</div>
-    <div class="nm">${title} <small>›</small></div>
-    ${subtitle ? `<div class="sub">${subtitle}</div>` : ""}
-  </header>
-  <main>${bubbles}</main>
-  <footer><div class="inputbar"><div class="plus">＋</div><div class="field">iMessage</div></div></footer>
-  <div class="wm">divvy 🐸</div>
-  </body></html>`;
-}
-
-const CHATS = [
-  {
-    file: "chat-2019.png", title: "Dave", subtitle: null,
-    rows: [
-      { ts: "Mar 12, 2019, 11:48 PM" },
-      { me: true, text: "yo you good for the $23 from the game?" },
-      { text: "yeah yeah venmo's being weird, i'll get you back 👍" },
-      { me: true, text: "all good 🤝" },
-      { ts: "Today 8:03 PM" },
-      { me: true, text: "so. about that $23" },
-      { text: "new phone who dis" },
-      { me: true, text: "DAVE" },
-      { typing: true },
-    ],
-  },
-  {
-    file: "chat-roommates.png", title: "the apartment 🏠", subtitle: "4 people",
-    rows: [
-      { ts: "Today 10:12 PM" },
-      { who: "Maya", text: "rent + wifi + the costco run = $312.40 each. i did the math twice" },
-      { who: "Josh", text: "wait why is wifi $80 now" },
-      { who: "Maya", text: "because SOMEONE upgraded it “for ranked”" },
-      { me: true, text: "just pay her josh" },
-      { who: "Josh", text: "i get paid friday" },
-      { who: "Maya", text: "you said that last friday" },
-      { who: "Josh", text: "there's a friday every week maya, be specific" },
-      { typing: true, who: "Maya" },
-    ],
-  },
-  {
-    file: "chat-seen.png", title: "Jake", subtitle: null,
-    rows: [
-      { ts: "Today 2:41 PM" },
-      { me: true, text: "hey did you see the $18 i sent you for the pizza" },
-      { text: "yeah lol" },
-      { me: true, text: "…and?" },
-      { text: "😂😂" },
-      { me: true, text: "jake it's been two weeks", status: "Read 2:47 PM" },
-    ],
-  },
-];
-
 // ── fake iMessage chats v3 — forensic iOS fidelity, diegetic reveal ───────────
-// Everything a real group-chat screenshot has: status bar (61% battery), group
-// avatar cluster with per-letter gradient monograms (front circle overlapping
-// the back two), per-sender monogram avatars beside received bubble runs,
-// grouped bubbles with real tails, tapbacks OVERLAPPING the bubble's top corner
-// (with the little tail dots, and a count when 2+ reacted), a "Read h:mm PM"
-// receipt under the last outgoing bubble before the time gap, an iMessage
-// input bar + home indicator at the bottom, and a closing typing indicator.
-// NO watermark: the reveal is a divvy pay-request rendered as a real iMessage
-// small link preview (bold title, gray lowercase domain inside the card, app
-// icon as a rounded square on the right).
-function chatV3Html({ title, members, time, rows }) {
-  const grad = (m) => `linear-gradient(180deg,${m.g[0]},${m.g[1]})`;
-  const byName = (who) => members.find((m) => m.n === who) || { i: (who || "?")[0], g: ["#AAB3BD", "#8E97A1"] };
-  const mav = (who) => { const m = byName(who); return `<div class="mav" style="background:${grad(m)}">${m.i}</div>`; };
-  const tb = (t) => !t ? "" : `<div class="tb-b"><span class="e">${t.e}</span>${t.n ? `<span class="n">${t.n}</span>` : ""}</div>`;
+// Everything a real iMessage screenshot has: status bar, gradient monogram
+// avatars (group header cluster, or a single centered avatar for 1:1 "dm"
+// threads), grouped bubbles with real tails, corner-overlapping tapbacks
+// (mirrored onto the top-LEFT corner for outgoing bubbles, like the real
+// thing), bare oversized emoji-only messages (no bubble), "Delivered" /
+// "Read h:mm PM" receipts under outgoing bubbles (max one per thread — iOS
+// only shows the latest), an iMessage input bar + home indicator, and a
+// closing typing indicator. NO watermark: the reveal is a divvy pay-request
+// rendered as a real iMessage small link preview (bold title, gray lowercase
+// domain inside the card, app icon as a rounded square on the right).
+//
+// Scenarios are DATA — marketing/tiktok-kit/scenarios/*.json (cast, avatar
+// gradients, messages with tapbacks/receipts/pause beats, the pay-card
+// payload, "group" vs "dm"). Each scenario renders BOTH a still PNG
+// (assets/<file>) and a script-player VIDEO (assets/videos/<slug>.webm):
+// typing bubbles (0.8–1.5s, length-varied), bubble pop-ins, tapbacks landing
+// ~0.5s late, receipts fading in, the pay card arriving on a longer dramatic
+// beat, closing typing indicator held ~2s. See GENERATOR.md.
 
-  const out = [];
-  const same = (a, b) => a && b && !a.ts && !b.ts && !!a.me === !!b.me && (a.who || "") === (b.who || "");
-  for (let i = 0; i < rows.length; i++) {
-    const r = rows[i];
-    if (r.ts) { out.push(`<div class="ts">${r.ts.replace(/^Today /, "<b>Today</b> ")}</div>`); continue; }
-    const samePrev = same(rows[i - 1], r), sameNext = same(r, rows[i + 1]);
+const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|[\u200D\uFE0F\s]|[\u{1F3FB}-\u{1F3FF}])+$/u;
+
+function chatV3Parts(scen, { animate = false } = {}) {
+  const { title, members, time, rows } = scen;
+  const dm = scen.kind === "dm";
+  const grad = (m) => `linear-gradient(180deg,${m.g[0]},${m.g[1]})`;
+  const byName = (who) => members.find((m) => m.n === who) || members[0] || { i: (who || "?")[0], g: ["#AAB3BD", "#8E97A1"] };
+  const mav = (who) => { if (dm) return ""; const m = byName(who); return `<div class="mav" style="background:${grad(m)}">${m.i}</div>`; };
+  const tbHtml = (t) => !t ? "" : `<div class="tb-b"><span class="e">${t.e}</span>${t.n ? `<span class="n">${t.n}</span>` : ""}</div>`;
+  const same = (a, b) => !!(a && b && !a.ts && !b.ts && !a.typing && !b.typing && !!a.me === !!b.me && (a.who || "") === (b.who || ""));
+  // "Today 8:03 PM" → bold "Today"; "Mar 12, 2019 at 11:48 PM" → bold the date
+  // (matches how Messages weights its date separators)
+  const tsHtml = (r) => {
+    const fmt = r.ts.startsWith("Today ")
+      ? r.ts.replace(/^Today /, "<b>Today</b> ")
+      : r.ts.replace(/^(.*?)( at .*)$/, "<b>$1</b>$2");
+    return `<div class="ts">${fmt}</div>`;
+  };
+
+  // one message row, rendered as if `last` says whether it closes its run
+  // (tail + avatar live on the LAST bubble of a same-sender run)
+  const rowHtml = (r, samePrev, last) => {
     const cls = ["row", r.me ? "right" : "left"];
     if (samePrev) cls.push("tight");
     if (r.tapback) cls.push("hastb");
-    const who = !r.me && r.who && !samePrev ? `<div class="who">${r.who}</div>` : "";
-    const avatar = !r.me && !sameNext ? mav(r.who) : ""; // avatar sits by the LAST bubble of a run
-    if (r.typing) {
-      out.push(`<div class="${cls.join(" ")}"><div class="bwrap">${avatar}<div class="typing"><i></i><i></i><i></i></div></div></div>`);
-      continue;
-    }
+    const who = !dm && !r.me && r.who && !samePrev ? `<div class="who">${r.who}</div>` : "";
+    const avatar = !r.me && last ? mav(r.who) : "";
+    if (r.typing) return `<div class="${cls.join(" ")}"><div class="bwrap">${avatar}<div class="typing"><i></i><i></i><i></i></div></div></div>`;
+    const status = r.me && r.status ? `<div class="status">${r.status}</div>` : "";
     if (r.card) {
-      out.push(`<div class="${cls.join(" ")}">${who}<div class="bwrap">${avatar}<div class="card">
+      return `<div class="${cls.join(" ")}">${who}<div class="bwrap">${avatar}<div class="card">
           <div class="card-txt">
             <div class="card-title">${r.card.title}</div>
             <div class="card-sub">${r.card.sub}</div>
             <div class="card-dom">${r.card.domain}</div>
           </div>
-          <div class="card-icon"><div class="appic" id="stage"></div></div>
-        </div>${tb(r.tapback)}</div></div>`);
-      continue;
+          <div class="card-icon"><div class="appic"></div></div>
+        </div>${tbHtml(r.tapback)}</div>${status}</div>`;
     }
-    const status = r.me && r.status ? `<div class="status">${r.status}</div>` : "";
-    out.push(`<div class="${cls.join(" ")}">${who}<div class="bwrap">${avatar}<div class="bubble ${r.me ? "blue" : "grey"}${sameNext ? "" : " tail"}">${r.text}</div>${tb(r.tapback)}</div>${status}</div>`);
+    const bare = EMOJI_ONLY.test(r.text || "");
+    const bcls = bare ? "bubble bare" : `bubble ${r.me ? "blue" : "grey"}${last ? " tail" : ""}`;
+    return `<div class="${cls.join(" ")}">${who}<div class="bwrap">${avatar}<div class="${bcls}">${r.text}</div>${tbHtml(r.tapback)}</div>${status}</div>`;
+  };
+  const withV = (html, v) => html.replace(/^<div class="/, `<div class="${v} hidden `);
+
+  let mainHtml = "";
+  const steps = [];
+  let total = 0;
+  if (!animate) {
+    mainHtml = rows.map((r, i) => r.ts ? tsHtml(r) : rowHtml(r, same(rows[i - 1], r), !same(r, rows[i + 1]))).join("\n");
+  } else {
+    // script-player mode: every row is pre-rendered (typing / provisional
+    // run-ender / final variants) and revealed on a server-computed schedule.
+    // Deterministic jitter (seeded on the slug) so re-renders time identically.
+    let seed = 2166136261;
+    for (const ch of scen.slug || title) seed = ((seed * 16777619) ^ ch.charCodeAt(0)) >>> 0;
+    const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+
+    const wraps = [];
+    let t = 900;
+    rows.forEach((r, i) => {
+      const wid = `w${i}`;
+      const samePrev = same(rows[i - 1], r), sameNext = same(r, rows[i + 1]);
+      const vs = [];
+      if (r.ts) {
+        vs.push(withV(tsHtml(r), "v-fin"));
+      } else {
+        if (!r.me && !r.typing) vs.push(withV(rowHtml({ typing: true, who: r.who }, samePrev, true), "v-typ"));
+        if (sameNext) vs.push(withV(rowHtml(r, samePrev, true), "v-prov"));
+        vs.push(withV(rowHtml(r, samePrev, !sameNext), "v-fin"));
+      }
+      wraps.push(`<div id="${wid}" class="wrap">${vs.join("")}</div>`);
+
+      // ── timing ──
+      if (r.beat) t += r.beat;                                   // authored pause
+      if (r.ts) { steps.push([t, "show", wid, "fin"]); t += 1150; return; }
+      if (r.typing) { steps.push([t, "show", wid, "fin"]); t += (r.hold || 2100); return; }
+      if (!r.me) {
+        if (r.card) t += 1100;                                   // beat before the reveal
+        if (samePrev) steps.push([t, "fix", `w${i - 1}`]);       // tail migrates to typing bubble
+        steps.push([t, "show", wid, "typ"]);
+        const len = r.card ? 64 : (r.text || "").length;
+        t += Math.min(Math.max(780 + len * 16 + rnd() * 320, 820), r.card ? 1900 : 1550);
+        steps.push([t, "show", wid, sameNext ? "prov" : "fin"]);
+      } else {
+        t += 430 + rnd() * 400;                                  // "reading" pause
+        if (r.card) t += 1200;                                   // dramatic beat before the pay card
+        if (samePrev) steps.push([t, "fix", `w${i - 1}`]);
+        steps.push([t, "show", wid, sameNext ? "prov" : "fin"]);
+      }
+      if (r.tapback) { steps.push([t + 520, "tb", wid]); t += 280; }
+      if (r.status) { steps.push([t + 650, "st", wid]); t += 200; }
+      t += r.card ? 1650 : 440 + rnd() * 380;                    // gap to the next message
+    });
+    steps.push([t + 700, "done"]);
+    total = t + 1500;
+    mainHtml = wraps.join("\n");
   }
 
-  // header cluster: two back circles, front circle overlapping both
-  const avs = members.slice(0, 3).map((m, i) =>
-    `<div class="av av${i}" style="background:${grad(m)}">${m.i}</div>`).join("");
+  const avs = dm
+    ? `<div class="av dmav" style="background:${grad(members[0])}">${members[0].i}</div>`
+    : members.slice(0, 3).map((m, i) => `<div class="av av${i}" style="background:${grad(m)}">${m.i}</div>`).join("");
 
-  return `<!doctype html><html><head><meta charset="utf-8"><style>
-  ${INTER_CSS}${FREEZE_CSS}
+  const animCss = !animate ? "" : `
+  .wrap{display:contents}
+  .hidden{display:none!important}
+  .fx-pop{animation:bpop .3s cubic-bezier(.18,1.2,.35,1) both}
+  .row.left.fx-pop{transform-origin:0 100%}
+  .row.right.fx-pop{transform-origin:100% 100%}
+  @keyframes bpop{0%{opacity:0;transform:scale(.6) translateY(18px)}100%{opacity:1;transform:none}}
+  .fx-fade{animation:tsf .5s ease both}
+  @keyframes tsf{from{opacity:0}to{opacity:1}}
+  .wrap .tb-b{opacity:0;transform:scale(.2);transition:transform .26s cubic-bezier(.2,1.5,.4,1),opacity .16s}
+  .row.left .tb-b{transform-origin:15% 92%}
+  .row.right .tb-b{transform-origin:85% 92%}
+  .wrap.tb-on .tb-b{opacity:1;transform:none}
+  .wrap .status{opacity:0;transition:opacity .55s ease}
+  .wrap.st-on .status{opacity:1}
+  @keyframes tdot{0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:.85;transform:translateY(-5px)}}
+  .typing i{animation:tdot 1.15s ease-in-out infinite}
+  .typing i:nth-child(2){animation-delay:.14s}
+  .typing i:nth-child(3){animation-delay:.28s}
+  .appic *{animation:none!important;transition:none!important}`;
+
+  const playerJs = !animate ? "" : `<script>
+  window.__STEPS = ${JSON.stringify(steps)};
+  window.__play = () => new Promise((resolve) => {
+    for (const [t, op, a, b] of window.__STEPS) {
+      setTimeout(() => {
+        if (op === "done") { resolve(); return; }
+        const w = document.getElementById(a);
+        if (!w) return;
+        if (op === "show") {
+          for (const el of w.children) el.classList.add("hidden");
+          const v = w.querySelector(".v-" + b) || w.querySelector(".v-fin");
+          v.classList.remove("hidden");
+          v.classList.add(v.classList.contains("ts") ? "fx-fade" : "fx-pop");
+        } else if (op === "fix") {
+          const p = w.querySelector(".v-prov"), f = w.querySelector(".v-fin");
+          if (p && !p.classList.contains("hidden")) { p.classList.add("hidden"); f.classList.remove("hidden"); }
+        } else if (op === "tb") { w.classList.add("tb-on"); }
+        else if (op === "st") { w.classList.add("st-on"); }
+      }, t);
+    }
+  });
+  </script>`;
+
+  const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+  ${INTER_CSS}${animate ? "" : FREEZE_CSS}
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{width:1080px;height:1920px;overflow:hidden}
   body{background:#fff;font-family:${SF};color:#000;display:flex;flex-direction:column;position:relative}
@@ -363,12 +387,15 @@ function chatV3Html({ title, members, time, rows }) {
   header{flex:none;padding:118px 40px 14px;background:rgba(248,248,248,0.94);border-bottom:1px solid rgba(0,0,0,0.10);text-align:center;position:relative}
   .back{position:absolute;left:42px;top:150px}
   .facetime{position:absolute;right:46px;top:162px}
-  .avs{position:relative;height:116px}
+  /* 142px tall so the title clears the front avatar + its 6px backdrop ring —
+     at 116px the ring painted over the ascenders of the name ("tʀip"/"4ƅ") */
+  .avs{position:relative;height:142px}
   .av{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500}
   .av0{width:88px;height:88px;left:calc(50% - 114px);top:0;font-size:38px;z-index:1}
   .av1{width:98px;height:98px;left:calc(50% - 49px);top:30px;font-size:42px;z-index:3;box-shadow:0 0 0 6px rgba(248,248,248,0.94)}
   .av2{width:88px;height:88px;left:calc(50% + 26px);top:0;font-size:38px;z-index:2}
-  .nm{font-size:29px;font-weight:400;color:#000;margin-top:4px}
+  .dmav{width:116px;height:116px;left:calc(50% - 58px);top:8px;font-size:50px}
+  .nm{font-family:${SF};font-size:29px;font-weight:400;color:#000;margin-top:2px}
   .nm span{color:rgba(0,0,0,0.3);font-size:25px;margin-left:6px}
   main{flex:1;padding:2px 40px 12px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
   .ts{text-align:center;font-size:24px;color:rgba(0,0,0,0.38);margin:14px 0 0}
@@ -376,8 +403,9 @@ function chatV3Html({ title, members, time, rows }) {
   .row{display:flex;flex-direction:column;max-width:81%;margin-top:10px}
   .row.tight{margin-top:4px}
   .row.hastb{margin-top:46px}
-  .row.hastb .bubble{padding-right:96px}
-  .row.left{align-self:flex-start;align-items:flex-start;padding-left:70px}
+  .row.left.hastb .bubble{padding-right:96px}
+  .row.right.hastb .bubble{padding-left:96px}
+  .row.left{align-self:flex-start;align-items:flex-start;padding-left:${dm ? 0 : 70}px}
   .row.right{align-self:flex-end;align-items:flex-end}
   .who{font-size:22px;color:rgba(0,0,0,0.4);margin:0 0 4px 26px}
   .bwrap{position:relative;max-width:100%}
@@ -385,6 +413,7 @@ function chatV3Html({ title, members, time, rows }) {
   .bubble{position:relative;padding:13px 24px;border-radius:34px;font-size:33px;line-height:1.3;letter-spacing:0.1px}
   .bubble.grey{background:#E9E9EB;color:#000}
   .bubble.blue{background:#007AFF;color:#fff}
+  .bubble.bare{background:transparent;padding:4px 6px;font-size:64px;line-height:1.15}
   .bubble.tail.grey::before{content:"";position:absolute;bottom:-3px;left:-15px;height:42px;width:42px;background:#E9E9EB;border-bottom-right-radius:32px 28px}
   .bubble.tail.grey::after{content:"";position:absolute;bottom:-3px;left:-39px;width:40px;height:46px;background:#fff;border-bottom-right-radius:24px}
   .bubble.tail.blue::before{content:"";position:absolute;bottom:-3px;right:-15px;height:42px;width:42px;background:#007AFF;border-bottom-left-radius:32px 28px}
@@ -395,15 +424,19 @@ function chatV3Html({ title, members, time, rows }) {
   .typing i{width:17px;height:17px;border-radius:50%;background:rgba(0,0,0,0.28)}
   .typing::before{content:"";position:absolute;left:-4px;bottom:-7px;width:22px;height:22px;border-radius:50%;background:#E9E9EB}
   .typing::after{content:"";position:absolute;left:-19px;bottom:-22px;width:12px;height:12px;border-radius:50%;background:#E9E9EB}
-  /* tapback balloon: overlaps the bubble's top corner, tail dots toward it */
+  /* tapback balloon: overlaps the bubble's top corner, tail dots toward it.
+     On outgoing (right) bubbles it mirrors to the top-LEFT corner. */
   .tb-b{position:absolute;top:-58px;right:-26px;height:78px;min-width:78px;padding:0 18px;border-radius:44px;background:#E9E9EB;box-shadow:0 0 0 6px #fff;display:flex;align-items:center;justify-content:center;gap:8px;z-index:5}
   .tb-b .e{font-size:42px;line-height:1}
   .tb-b .n{font-size:27px;font-weight:600;color:rgba(0,0,0,0.55)}
   .tb-b::before{content:"";position:absolute;left:1px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:#E9E9EB;box-shadow:0 0 0 5px #fff}
   .tb-b::after{content:"";position:absolute;left:-13px;bottom:-15px;width:12px;height:12px;border-radius:50%;background:#E9E9EB;box-shadow:0 0 0 4px #fff}
+  .row.right .tb-b{right:auto;left:-26px}
+  .row.right .tb-b::before{left:auto;right:1px}
+  .row.right .tb-b::after{left:auto;right:-13px}
   /* divvy pay-request as an iMessage SMALL link preview: text left (bold title,
      gray lowercase domain at the bottom, inside the card), app icon right */
-  .card{width:660px;border-radius:34px;overflow:hidden;background:#E9E9EB;display:flex;align-items:stretch}
+  .card{width:660px;max-width:100%;border-radius:34px;overflow:hidden;background:#E9E9EB;display:flex;align-items:stretch}
   .card-txt{flex:1;min-width:0;padding:18px 6px 15px 28px;display:flex;flex-direction:column}
   .card-title{font-size:31px;font-weight:600;line-height:1.28;color:#111}
   .card-sub{font-size:27px;color:rgba(0,0,0,0.5);margin-top:6px}
@@ -414,7 +447,8 @@ function chatV3Html({ title, members, time, rows }) {
   footer{flex:none;background:#fff;padding:8px 34px 54px;display:flex;align-items:center;gap:20px}
   .plus{width:76px;height:76px;border-radius:50%;background:#E9E9EB;flex:none;display:flex;align-items:center;justify-content:center}
   .field{flex:1;height:76px;border:2px solid rgba(0,0,0,0.13);border-radius:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 30px;font-size:31px;color:rgba(0,0,0,0.3)}
-  </style></head><body>
+  ${animCss}
+  </style></head><body class="${dm ? "dm" : ""}">
   ${statusBarHtml(time)}
   <header>
     <div class="back"><svg width="30" height="52" viewBox="0 0 15 26"><path d="M13 2 L3 13 L13 24" stroke="#007AFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
@@ -422,67 +456,97 @@ function chatV3Html({ title, members, time, rows }) {
     <div class="nm">${title}<span>›</span></div>
     <div class="facetime"><svg width="64" height="44" viewBox="0 0 32 22"><rect x="1" y="3" width="20" height="16" rx="5" fill="#007AFF"/><path d="M22 9 L29 4.5 a1.4 1.4 0 0 1 2 1.2 v10.6 a1.4 1.4 0 0 1 -2 1.2 L22 13 Z" fill="#007AFF"/></svg></div>
   </header>
-  <main>${out.join("\n")}</main>
+  <main>${mainHtml}</main>
   <footer>
     <div class="plus"><svg width="38" height="38" viewBox="0 0 19 19"><path d="M9.5 3.2v12.6 M3.2 9.5h12.6" stroke="rgba(0,0,0,0.5)" stroke-width="1.9" stroke-linecap="round"/></svg></div>
     <div class="field"><span>iMessage</span><svg width="34" height="52" viewBox="0 0 17 26"><g stroke="rgba(0,0,0,0.33)" stroke-width="1.5" fill="none" stroke-linecap="round"><rect x="5.4" y="1.4" width="6.2" height="12.2" rx="3.1"/><path d="M2.4 10.8a6.1 6.1 0 0 0 12.2 0M8.5 17.6v3.6M5.6 23.8h5.8"/></g></svg></div>
   </footer>
   ${HOME_BAR}
+  ${playerJs}
   </body></html>`;
+
+  return { html, steps, total };
 }
 
-const CHATS_V2 = [
-  {
-    file: "chat-girls-trip.png",
-    title: "girls trip 🌴",
-    time: "5:09",
-    members: [
-      { n: "Em", i: "E", g: ["#6EB7F7", "#3D8DEB"] },
-      { n: "Sof", i: "S", g: ["#C08CF5", "#985FDE"] },
-      { n: "Liv", i: "L", g: ["#7ED88F", "#43B75C"] },
-    ],
-    rows: [
-      { who: "Sof", text: "the villa was $840 and i paid all of it 🙃" },
-      { who: "Liv", text: "i paid brunch and the boat and the little hats" },
-      { who: "Em", text: "lol not the hats" },
-      { me: true, text: "i don't even know who i owe anymore" },
-      { who: "Sof", text: "should i make a spreadsheet" },
-      { me: true, text: "NOT THE SPREADSHEET", status: "Read 4:41 PM" },
-      { who: "Em", text: "the spreadsheet ended the last trip", tapback: { e: "💀", n: 2 } },
-      { ts: "Today 5:02 PM" },
-      { who: "Sof", text: "wiat." },
-      { who: "Sof", text: "ok try this instead" },
-      { who: "Sof", card: { title: "girls trip 🌴 — your share is $168", sub: "pay in one tap", domain: "divvysol.com" }, tapback: { e: "❤️" } },
-      { who: "Liv", text: "WAIT this is so much better" },
-      { typing: true, who: "Em" },
-    ],
-  },
-  {
-    file: "chat-rent.png",
-    title: "apt 4b 🏠",
-    time: "9:44",
-    members: [
-      { n: "Maya", i: "M", g: ["#F6B356", "#EE8B2E"] },
-      { n: "Josh", i: "J", g: ["#5CC6F2", "#2E9BD6"] },
-      { n: "Priya", i: "P", g: ["#F58FB1", "#E85D8A"] },
-    ],
-    rows: [
-      { who: "Maya", text: "lanlord email just dropped" },
-      { who: "Maya", text: "rent is $2,600 starting october 🙃" },
-      { who: "Josh", text: "he can't just do that??" },
-      { me: true, text: "are we still doing even quarters bc my room fits a bed and one (1) plant" },
-      { who: "Priya", text: "the plant doesn't pay rent so" },
-      { me: true, text: "neither does jake and he's here 6 nights a week", status: "Read 9:18 PM" },
-      { who: "Josh", text: "LEAVE JAKE OUT OF THIS" },
-      { who: "Priya", text: "jake finished my oat milk. jake is in this", tapback: { e: "😂", n: 2 } },
-      { ts: "Today 9:41 PM" },
-      { who: "Maya", text: "ok i did the math by room size" },
-      { who: "Maya", card: { title: "october rent — your share is $612", sub: "pay in one tap", domain: "divvysol.com" }, tapback: { e: "‼️" } },
-      { who: "Josh", text: "finally" },
-      { typing: true, who: "Priya" },
-    ],
-  },
-];
+const chatV3Html = (scen) => chatV3Parts(scen).html;
+
+// scenario configs: marketing/tiktok-kit/scenarios/<slug>.json (see GENERATOR.md)
+const SCENARIO_DIR = join(__dirname, "scenarios");
+const CHAT_SCENARIOS = readdirSync(SCENARIO_DIR).filter((f) => f.endsWith(".json")).sort()
+  .map((f) => ({ slug: f.replace(/\.json$/, ""), ...JSON.parse(readFileSync(join(SCENARIO_DIR, f), "utf8")) }));
+
+// ── fake-text videos: Playwright recordVideo + the script player ─────────────
+const PW_FFMPEG = "/opt/pw-browsers/ffmpeg-1011/ffmpeg-linux";
+
+function ffmpegBins() {
+  const bins = [];
+  if (process.env.FFMPEG_PATH && existsSync(process.env.FFMPEG_PATH)) bins.push(process.env.FFMPEG_PATH);
+  bins.push("ffmpeg"); // whatever is on PATH, if anything
+  if (existsSync(PW_FFMPEG)) bins.push(PW_FFMPEG);
+  return bins;
+}
+function videoDuration(file) {
+  for (const bin of ffmpegBins()) {
+    const r = spawnSync(bin, ["-hide_banner", "-i", file], { encoding: "utf8" });
+    const m = ((r.stderr || "") + (r.stdout || "")).match(/Duration:\s*(\d+):(\d+):([\d.]+)/);
+    if (m) return (+m[1]) * 3600 + (+m[2]) * 60 + parseFloat(m[3]);
+  }
+  return null;
+}
+// mp4 is what TikTok/IG want natively. Playwright's bundled ffmpeg encodes
+// VP8/webm ONLY (no libx264, no vp9, no mp4 muxer) — so we try, in order,
+// $FFMPEG_PATH, any real ffmpeg on PATH, then the bundled one, with libx264
+// first and VP9-in-mp4 as the fallback. If none can do it we ship .webm and
+// say so loudly (see GENERATOR.md for the one-time conversion command).
+function tryMp4(webm, mp4) {
+  for (const bin of ffmpegBins()) {
+    for (const codec of ["libx264", "libvpx-vp9"]) {
+      const args = codec === "libx264"
+        ? ["-y", "-hide_banner", "-loglevel", "error", "-i", webm, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-movflags", "+faststart", "-an", mp4]
+        : ["-y", "-hide_banner", "-loglevel", "error", "-i", webm, "-c:v", "libvpx-vp9", "-b:v", "5M", "-an", mp4];
+      let r;
+      try { r = spawnSync(bin, args, { encoding: "utf8" }); } catch { continue; }
+      if (r.status === 0 && existsSync(mp4)) return `${bin === PW_FFMPEG ? "playwright-ffmpeg" : bin}+${codec}`;
+      try { rmSync(mp4, { force: true }); } catch { }
+    }
+  }
+  return null;
+}
+
+async function recordChatVideo(browser, scen) {
+  const { html, total } = chatV3Parts(scen, { animate: true });
+  const tmp = mkdtempSync(join(tmpdir(), "divvy-vid-"));
+  const ctx = await browser.newContext({
+    viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1,
+    recordVideo: { dir: tmp, size: { width: 1080, height: 1920 } },
+  });
+  const page = await ctx.newPage();
+  await page.setContent(html, { waitUntil: "load" });
+  await page.addScriptTag({ path: MASCOT_JS });
+  await page.evaluate(() => {
+    document.querySelectorAll(".appic").forEach((el) => { el.innerHTML = window.Mascot.mini(72); });
+  });
+  await page.evaluate(async () => { if (document.fonts && document.fonts.ready) await document.fonts.ready; });
+  await page.evaluate(() => window.__play()); // resolves after the "done" step
+  await sleep(800); // hold the closing typing indicator
+  const video = page.video();
+  await page.close();
+  await ctx.close();
+  const dest = join(OUT, "videos", `${scen.slug}.webm`);
+  mkdirSync(dirname(dest), { recursive: true });
+  await video.saveAs(dest);
+  try { rmSync(tmp, { recursive: true, force: true }); } catch { }
+  const size = statSync(dest).size;
+  if (!size) throw new Error(`videos/${scen.slug}.webm is empty`);
+  const secs = videoDuration(dest);
+  if (secs != null && (secs < 20 || secs > 55)) {
+    throw new Error(`videos/${scen.slug}.webm: ${secs.toFixed(1)}s is outside the 20–55s envelope (planned ${(total / 1000).toFixed(1)}s)`);
+  }
+  const mp4 = dest.replace(/\.webm$/, ".mp4");
+  const how = tryMp4(dest, mp4);
+  process.stdout.write(`  ${String(Math.round(size / 1024)).padStart(5)}kB ${(secs != null ? secs.toFixed(1) : "?")}s  videos/${scen.slug}.webm${how ? ` (+ .mp4 via ${how})` : ""}\n`);
+  return { mp4: !!how };
+}
 
 // ── pfp + banner ──────────────────────────────────────────────────────────────
 function pfpHtml() {
@@ -680,6 +744,7 @@ function notesNoteHtml(car) {
     }
     if (s.kind === "reveal") {
       return `<div class="sec" id="s${i}">
+        ${s.h ? `<div class="nh">${s.h}</div>` : ""}
         ${lines}
         <div class="att">
           <div class="att-glow"></div>
@@ -687,6 +752,20 @@ function notesNoteHtml(car) {
           <div class="att-word"><span class="dot"></span>divvy</div>
           <div class="att-tag">split the bill. not the friendship.</div>
         </div>
+      </div>`;
+    }
+    // two dense tips per slide (the founder's hybrid deck shape)
+    if (s.kind === "tips2") {
+      return `<div class="sec" id="s${i}">${s.tips.map((tp, j) =>
+        `<div${j ? ` class="sub-sec"` : ""}><div class="nh">${tp.h}</div>${(tp.lines || []).map((l) => `<div class="ln">${l}</div>`).join("")}</div>`).join("")}</div>`;
+    }
+    // an embedded screenshot "pasted into the note" (read lazily so it picks
+    // up the freshly-rendered chat asset from this same run)
+    if (s.kind === "shot") {
+      const b64 = readFileSync(join(OUT, s.img)).toString("base64");
+      return `<div class="sec" id="s${i}">
+        ${lines}
+        <div class="shot-wrap"><img class="shot" src="data:image/png;base64,${b64}"></div>
       </div>`;
     }
     return `<div class="sec" id="s${i}"><div class="nh">${s.h}</div>${lines}</div>`;
@@ -709,6 +788,9 @@ function notesNoteHtml(car) {
   .nh{font-size:53px;font-weight:700;letter-spacing:-0.3px;color:#111;margin-bottom:10px}
   .ln{font-size:45px;line-height:1.5;color:#222;margin-top:8px;letter-spacing:-0.1px}
   .sec{margin-top:74px}
+  .sub-sec{margin-top:64px}
+  .shot-wrap{margin-top:28px;text-align:center}
+  .shot{height:896px;border-radius:26px;border:1px solid rgba(0,0,0,0.16);box-shadow:0 12px 34px rgba(0,0,0,0.12)}
   .att{margin-top:46px;width:100%;height:620px;border-radius:22px;position:relative;overflow:hidden;
     background:linear-gradient(180deg,#DCF9F0,#BDF2E3);
     background-image:repeating-linear-gradient(180deg,transparent 0 64px,rgba(39,117,202,0.08) 64px 66px),linear-gradient(180deg,#DCF9F0,#BDF2E3);
@@ -777,9 +859,89 @@ const NOTES_CAROUSELS = [
         "next dinner: “i can't front it this time — can everyone pay as we order?”",
         "- if you're always the wallet, the group learned it from you. unlearn them gently.",
       ] },
+      { h: "7. the group-chat assist (public, but gentle)", lines: [
+        "move it from DM to the scene of the crime:",
+        "“ok who do i chase for friday's $34 🫡”",
+        "- public asks resolve faster. nobody wants to be the reason the chat went quiet — and you never named names.",
+      ] },
+      { h: "8. the installment out (broke-friend edition)", lines: [
+        "“no stress — $30 on the next three fridays?”",
+        "- people dodge the whole number, not the money.",
+        "- small chunks get paid. big scary totals get avoided.",
+      ] },
+      { kind: "reveal", h: "9. the app that does 1–8 for you", lines: [
+        "it's called divvy 🐸 — it splits the bill, writes the nudge, and everyone pays their share in one tap.",
+        "early access → divvysol.com",
+      ] },
+    ],
+  },
+  // the founder-designed FLAGSHIP hybrid deck: 8 slides, Notes skin, two dense
+  // tips per slide, the girls-trip chat screenshot as the slide-7 payoff beat,
+  // CTA in the note's own idiom on slide 8.
+  {
+    slug: "travel-with-friends",
+    date: "July 7, 2026 at 9:12 AM",
+    time: "9:14",
+    sections: [
+      { kind: "cover", title: "10 tips for traveling with friends", lines: [
+        "(without a group-chat war)",
+        "- from someone who fronted the villa twice. never again.",
+      ] },
+      { kind: "tips2", tips: [
+        { h: "1. one fronter per lane, not per moment", lines: [
+          "one person books the villa, one covers food runs, one does transport.",
+          "- you come home to 3 clean debts instead of 40 tiny mysteries nobody remembers.",
+        ] },
+        { h: "2. say the number out loud", lines: [
+          "whoever pays announces it at the table and it's written down within 10 seconds.",
+          "- everyone remembers paying MORE than they did. memory inflation is real.",
+        ] },
+      ] },
+      { kind: "tips2", tips: [
+        { h: "3. agree the split before you leave", lines: [
+          "even split? by use? do the non-drinkers subsidize the bar tab?",
+          "- any answer works. deciding AFTER the money is spent is the only wrong one.",
+        ] },
+        { h: "4. money asks are same-day asks", lines: [
+          "“villa came to $168 each” lands fine on day one.",
+          "- it lands weird in month three. ask fast, stay friends.",
+        ] },
+      ] },
+      { kind: "tips2", tips: [
+        { h: "5. price the rooms like rent", lines: [
+          "the master with the ensuite is not the same price as the pull-out couch.",
+          "- can't agree? sealed bids for the big room — the winner pays a number they chose themselves.",
+        ] },
+        { h: "6. kill the spreadsheet — send pay links", lines: [
+          "one link where everyone sees their exact share and taps once to settle.",
+          "- the spreadsheet dies in the chat. the link gets paid the same night.",
+        ] },
+      ] },
+      { kind: "tips2", tips: [
+        { h: "7. set the no-show rule at booking", lines: [
+          "drop out after the villa's booked? your bed is still your share, unless someone fills it.",
+          "- agree it the day you book, while it's still about nobody.",
+        ] },
+        { h: "8. run a day-one kitty for the small stuff", lines: [
+          "$50 each into a pot: tolls, ice, snacks, the 3am pizza.",
+          "- micro-debts are where trips go to die. the kitty eats them.",
+        ] },
+      ] },
+      { kind: "tips2", tips: [
+        { h: "9. net the debts before anyone pays", lines: [
+          "don't do A pays B, B pays C, C pays A.",
+          "- total up who's net up and net down — most trips collapse to one or two transfers.",
+        ] },
+        { h: "10. settle before the airport", lines: [
+          "square up while the sunburn is still fresh — at the gate at the latest.",
+          "- “no rush lol” is a 4-month resentment loop wearing a friendly face.",
+        ] },
+      ] },
+      { kind: "shot", lines: ["tip 6 in the wild:"], img: "chat-girls-trip.png" },
       { kind: "reveal", lines: [
-        "&nbsp;",
-        "btw the app that automates all of this: divvy 🐸",
+        "the app from that screenshot is divvy 🐸",
+        "scan the receipt, everyone pays their share in one tap.",
+        "get early access → divvysol.com",
       ] },
     ],
   },
@@ -928,7 +1090,7 @@ const LISTICLES = [
     slides: [
       {
         kind: "cover", mood: "worried",
-        title: `7 rules for group trips that <span class="hl">don't end friendships</span>`,
+        title: `9 rules for group trips that <span class="hl">don't end friendships</span>`,
         save: "save this for the trip chat",
         receipts: [
           [120, 40, -7, "VILLA", [["7 nights", "$840.00"], ["paid by", "sofia 🙃"]]],
@@ -943,7 +1105,9 @@ const LISTICLES = [
       { n: 4, c: CORAL, mood: "sleepy", h: `set a settle-up date, not <span class="hlc">“whenever”</span>`, b: `“we square up sunday night” gets paid.<br><br>“no rush lol” becomes a <b>4-month loop of low-grade resentment</b>. close the loop while the sunburn is fresh.` },
       { n: 5, c: BLUE, mood: "happy", h: `net the debts <span class="hl">before anyone pays</span>`, b: `don't do A pays B, B pays C, C pays A.<br><br>add up who's net up and net down — most trips collapse to <b>one or two transfers total</b>.` },
       { n: 6, c: "#1FA98C", mood: "worried", h: `don't post the rooftop while <span class="hlc">owing the villa</span>`, b: `everyone saw the story. everyone did the math. 💀<br><br><b>debts to friends jump the queue in public.</b> settle up, then post.` },
-      { kind: "cta", n: 7, mood: "wave", h: `let divvy do <span class="hl">all of this</span> for you`, note: "🐸 splits, nudges, and settling — automatic. app store soon." },
+      { n: 7, c: "#985FDE", mood: "watching", h: `price the no-show <span class="hl">at booking</span>`, b: `if someone drops out after the villa's booked, their share doesn't.<br><br>agree it the day you book: <b>cancel = you still owe your bed</b>, unless someone fills it.` },
+      { n: 8, c: "#E09E2F", mood: "sparkle", h: `run a day-one <span class="hlc">kitty</span> for the small stuff`, b: `everyone puts $50 in a pot on day one — tolls, ice, snacks, the 3am pizza come out of it.<br><br><b>micro-debts are where group trips go to die.</b> the kitty eats them.` },
+      { kind: "cta", n: 9, mood: "wave", h: `let divvy do <span class="hl">all of this</span> for you`, note: "🐸 splits, nudges, and settling — automatic. app store soon." },
     ],
   },
 ];
@@ -997,12 +1161,15 @@ async function shoot(browser, { html, width, height, mood, mascot, file }) {
     // load the REAL rig and drop a frozen frame of it into #stage
     await page.addScriptTag({ path: MASCOT_JS });
     await page.evaluate((cfg) => {
-      const stage = document.getElementById("stage");
       // glow:false — the rig's glow centers itself inside its keyframes, which
       // FREEZE_CSS disables; pages draw their own static glow where wanted.
-      stage.innerHTML = cfg.kind === "mini"
-        ? window.Mascot.mini(cfg.px || 64)
-        : window.Mascot.html({ mood: cfg.mood, size: cfg.size || 118, glow: false });
+      const fill = (el) => {
+        el.innerHTML = cfg.kind === "mini"
+          ? window.Mascot.mini(cfg.px || 64)
+          : window.Mascot.html({ mood: cfg.mood, size: cfg.size || 118, glow: false });
+      };
+      if (cfg.all) document.querySelectorAll(cfg.all).forEach(fill);
+      else fill(document.getElementById("stage"));
     }, mascot || { mood });
   }
   await page.evaluate(async () => { if (document.fonts && document.fonts.ready) await document.fonts.ready; });
@@ -1056,16 +1223,23 @@ async function run() {
       await shoot(browser, { html, width: 1080, height: 1920, mood: s.mood, file: s.file });
     }
 
-    // 2) fake group-chat screenshots (1080×1920) — v1 + v2 renderers
-    for (const c of CHATS) {
-      if (!want(c.file)) continue;
-      await shoot(browser, { html: chatShell(c), width: 1080, height: 1920, file: c.file });
+    // 2) fake iMessage screenshots + fake-text videos (1080×1920) — every
+    //    scenarios/*.json renders a still AND a script-player video
+    const stillsOnly = process.argv.includes("--stills-only");
+    let mp4Missing = false;
+    for (const c of CHAT_SCENARIOS) {
+      if (!want(`${c.slug} ${c.file}`)) continue;
+      // mini head-only Mochi inside the pay-request card's app icon (.appic)
+      await shoot(browser, { html: chatV3Html(c), width: 1080, height: 1920, mascot: { kind: "mini", px: 72, all: ".appic" }, file: c.file });
+      if (!stillsOnly) {
+        const v = await recordChatVideo(browser, c);
+        if (!v.mp4) mp4Missing = true;
+      }
     }
-    for (const c of CHATS_V2) {
-      if (!want(c.file)) continue;
-      // mini head-only Mochi in the pay-request card's app icon (#stage)
-      await shoot(browser, { html: chatV3Html(c), width: 1080, height: 1920, mascot: { kind: "mini", px: 72 }, file: c.file });
-    }
+    if (mp4Missing) process.stdout.write(
+      "  NOTE: no mp4-capable ffmpeg here (playwright's bundle is webm-only) — videos ship as VP8 .webm.\n" +
+      "  One-time conversion on any machine with real ffmpeg (see GENERATOR.md):\n" +
+      "    ffmpeg -i videos/<slug>.webm -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart videos/<slug>.mp4\n");
 
     // 3) value carousels (unbranded until the reveal slide) — 1080×1350
     for (const car of CAROUSELS) {
@@ -1153,7 +1327,7 @@ run().then(
     const carCount = CAROUSELS.length + NOTES_CAROUSELS.length + LISTICLES.length;
     process.stdout.write(ONLY
       ? `=== PASS — rendered only [${ONLY.join(", ")}] in marketing/tiktok-kit/assets ===\n`
-      : `=== PASS — ${SCENES.length + CHATS.length + CHATS_V2.length + MEMES.length + 2} assets + ${carCount} carousels (${slideCount} slides) in marketing/tiktok-kit/assets ===\n`);
+      : `=== PASS — ${SCENES.length + CHAT_SCENARIOS.length + MEMES.length + 2} stills + ${CHAT_SCENARIOS.length} videos + ${carCount} carousels (${slideCount} slides) in marketing/tiktok-kit/assets ===\n`);
     process.exit(0);
   },
   (err) => { process.stderr.write("=== FAIL — " + (err && err.message ? err.message : err) + "\n"); process.exit(1); }

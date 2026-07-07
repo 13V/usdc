@@ -13,11 +13,23 @@ that people tag their group chat in. The app stays almost invisible until launch
   to match (no corporate polish).
 - **Dollars, feelings, friendship.** We talk about money between friends.
   We NEVER talk about the rails (see do-nots).
-- **Two engines, one account.** (1) Mochi comedy gives the account a face and
-  gets tags/comments. (2) **Unbranded value carousels** (concepts 21–26) get
-  saves and shares — pure money-splitting tips with zero branding until the
-  final slide's soft reveal ("we built divvy for this"). Saves are the growth
-  loop; the frog is the retention loop. Roughly half the calendar is carousels.
+- **Two engines, one account.** (1) Mochi comedy + fake-text chat videos give
+  the account a face and get tags/comments. (2) **Unbranded value carousels**
+  (concepts 21–27) get saves and shares — pure money-splitting tips with zero
+  branding until the final slide's reveal. Saves are the growth loop; the frog
+  is the retention loop. Roughly half the calendar is carousels.
+
+## The chat videos (format note)
+The four chat dramas ship as ready-to-post fake-text **videos**
+(`assets/videos/*.webm`, 1080×1920, 25–35s): the thread plays out live —
+typing bubbles, tapbacks, read receipts, the divvy pay-card landing on a beat.
+They're **silent by design**; add a trending sound in-app when posting (that's
+also better for reach). One catch: they're `.webm` files because this build
+machine has no mp4 encoder. **TikTok/IG uploads want mp4 — do the one-time
+conversion on your laptop** (or any machine with ffmpeg):
+`ffmpeg -i in.webm -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart out.mp4`
+(or drop the .webm into any free webm→mp4 converter, quality loss is nil).
+New chat scenarios are one JSON file away — see `GENERATOR.md`.
 
 ## Cadence
 - **Now → launch week:** 2–3 posts/week (Tue / Thu / Sat evenings, 6–10pm your
@@ -66,11 +78,12 @@ that people tag their group chat in. The app stays almost invisible until launch
    dunking on named competitors. Mochi does comedy, not consumer finance.
 
 ## Where everything lives
-- `CONCEPTS.md` — 26 numbered post ideas with hooks, scripts, captions, effort.
+- `CONCEPTS.md` — 27 numbered post ideas with hooks, scripts, captions, effort.
 - `CALENDAR.md` — the 4-week schedule (zero-effort posts front-loaded,
   carousels ≈ half the slots).
-- `assets/` — 15 ready-to-post files + `assets/carousels/` (6 complete
-  carousels, 46 slides, 1080×1350). AirDrop the folder to your phone.
-- Rebuild / remix assets: `node marketing/tiktok-kit/build-assets.mjs`.
+- `assets/` — ready-to-post stills + `assets/videos/` (4 fake-text videos) +
+  `assets/carousels/` (8 complete decks, 1080×1350). AirDrop to your phone.
+- Rebuild / remix assets: `node marketing/tiktok-kit/build-assets.mjs`
+  (scenario/deck configs are data — `GENERATOR.md` shows how to add your own).
 - More raw material: the meme lab (`/memes` on the app) and `design/launch-x/`
   (mochi.webm loop, demo video, X kit for launch day).

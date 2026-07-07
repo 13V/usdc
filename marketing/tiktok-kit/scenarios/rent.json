@@ -1,0 +1,26 @@
+{
+  "file": "chat-rent.png",
+  "kind": "group",
+  "title": "apt 4b 🏠",
+  "time": "9:44",
+  "members": [
+    { "n": "Maya", "i": "M", "g": ["#F6B356", "#EE8B2E"] },
+    { "n": "Josh", "i": "J", "g": ["#5CC6F2", "#2E9BD6"] },
+    { "n": "Priya", "i": "P", "g": ["#F58FB1", "#E85D8A"] }
+  ],
+  "rows": [
+    { "who": "Maya", "text": "lanlord email just dropped" },
+    { "who": "Maya", "text": "rent is $2,600 starting october 🙃" },
+    { "who": "Josh", "text": "he can't just do that??" },
+    { "me": true, "text": "are we still doing even quarters bc my room fits a bed and one (1) plant" },
+    { "who": "Priya", "text": "the plant doesn't pay rent so" },
+    { "me": true, "text": "neither does jake and he's here 6 nights a week", "status": "Read 9:18 PM" },
+    { "who": "Josh", "text": "LEAVE JAKE OUT OF THIS", "beat": 400 },
+    { "who": "Priya", "text": "jake finished my oat milk. jake is in this", "tapback": { "e": "😂", "n": 2 } },
+    { "ts": "Today 9:41 PM", "beat": 900 },
+    { "who": "Maya", "text": "ok i did the math by room size" },
+    { "who": "Maya", "card": { "title": "october rent — your share is $612", "sub": "pay in one tap", "domain": "divvysol.com" }, "tapback": { "e": "‼️" } },
+    { "who": "Josh", "text": "finally" },
+    { "typing": true, "who": "Priya" }
+  ]
+}

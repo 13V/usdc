@@ -1,0 +1,25 @@
+{
+  "file": "chat-2019.png",
+  "kind": "dm",
+  "title": "Dave",
+  "time": "8:14",
+  "members": [
+    { "n": "Dave", "i": "D", "g": ["#9CA5AF", "#7E8894"] }
+  ],
+  "rows": [
+    { "ts": "Mar 12, 2019 at 11:48 PM" },
+    { "me": true, "text": "yo you good for the $23 from the game?" },
+    { "text": "yeah yeah venmo's being weird, i'll get you back 👍" },
+    { "me": true, "text": "all good 🤝" },
+    { "ts": "Today 8:03 PM", "beat": 1000 },
+    { "me": true, "text": "so. about that $23" },
+    { "text": "new phone who dis", "beat": 700 },
+    { "me": true, "text": "DAVE" },
+    { "text": "ok yes hi it's me but my banking app is acting up", "beat": 600 },
+    { "me": true, "card": { "title": "the $23 from the game — est. 2019", "sub": "pay in one tap", "domain": "divvysol.com" }, "tapback": { "e": "‼️" }, "beat": 300 },
+    { "text": "ok fine", "beat": 500 },
+    { "text": "sent." },
+    { "me": true, "text": "7 years, david.", "status": "Read 8:09 PM", "beat": 400 },
+    { "typing": true }
+  ]
+}

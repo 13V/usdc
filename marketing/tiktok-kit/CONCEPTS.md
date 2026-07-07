@@ -1,4 +1,4 @@
-# 26 post concepts — hooks, scripts, captions, effort
+# 27 post concepts — hooks, scripts, captions, effort
 
 Effort levels:
 - **ZERO** — post the provided file as-is (add any trending/lo-fi sound in-app).
@@ -95,23 +95,37 @@ paste all of them: `#splitthebill #adulting #storytime #girlmath #roommates
   while you tell a (true-ish) escalating story; end: "anyway. i remember."
 - Caption: `he has a mortgage now. still no $23. #storytime #payme #friendship`
 
-## Group-chat screenshot dramas (15–18)
+## Chat dramas (15–18) — video-first
 
-**15. New phone who dis** · ZERO · `assets/chat-2019.png`
-- Hook: iMessage thread that starts in Mar 2019 and picks up "Today".
-- Post photo-mode with dramatic zoom on "new phone who dis"; trending drama sound.
+Every chat scenario ships as BOTH a ready-to-post fake-text **video**
+(`assets/videos/<slug>.webm`, 1080×1920, 25–35s, silent — add a trending sound
+in-app) and a **still** (`assets/chat-*.png`). Post the video on TikTok; use
+the still as slide 1 of an IG carousel (or IG photo mode / a community-tab
+repost). New scenarios: write a JSON file in `scenarios/` — see GENERATOR.md.
+
+**15. New phone who dis** · ZERO · video `assets/videos/dave-2019.webm` + still `assets/chat-2019.png`
+- Hook: a 1:1 thread that starts "Mar 12, 2019 at 11:48 PM" and picks up "Today".
+- Arc: $23 from the game → "new phone who dis" → DAVE → a divvy pay-card lands
+  → "ok fine / sent." → "7 years, david." left on Read. Typing bubble outro.
+- TikTok: post the video with a trending drama sound. IG: still as carousel slide 1.
 - Caption: `DAVE. #groupchat #payme #storytime #relatable`
 
-**16. There's a friday every week, maya** · ZERO · `assets/chat-roommates.png`
-- Hook: roommate rent math → "$80 wifi?? " → typing bubble cliffhanger.
-- Caption: `justice for maya #roommates #groupchat #adulting #relatable`
+**16. LEAVE JAKE OUT OF THIS** · ZERO · video `assets/videos/rent.webm` + still `assets/chat-rent.png`
+- Hook: "lanlord email just dropped" — rent jumps to $2,600 and the room-size
+  discourse begins (my room fits a bed and one (1) plant).
+- Arc: uneven-rooms fight → the Jake subplot ("jake finished my oat milk. jake
+  is in this") → Maya does the math by room size → pay-card for $612 → "finally".
+- Caption: `justice for the plant room #roommates #groupchat #adulting #relatable`
 
-**17. NOT THE SPREADSHEET** · ZERO · `assets/chat-girls-trip.png`
-- Hook: villa/uber/brunch chaos → "should i make a spreadsheet".
+**17. NOT THE SPREADSHEET** · ZERO · video `assets/videos/girls-trip.webm` + still `assets/chat-girls-trip.png`
+- Hook: villa/brunch/boat chaos → "should i make a spreadsheet" → NOT THE
+  SPREADSHEET (Read 4:41 PM) → 💀×2 tapback → the $168 pay-card lands instead.
 - Caption: `the spreadsheet ended the last trip 💀 #girlstrip #groupchat #splitthebill #storytime`
 
-**18. Read 2:47 PM** · ZERO · `assets/chat-seen.png`
-- Hook: "...and?" left on read. The punchline is the read receipt.
+**18. Read 2:47 PM** · ZERO · video `assets/videos/jake-seen.webm` + still `assets/chat-seen.png`
+- Hook: "...and?" answered with 😂😂. The punchline is the read receipt.
+- Arc: left on read for two weeks → "jake." → the $18 pizza pay-card → "ok ok
+  the button was literally right there / sent 🫡" → grievance still left on Read.
 - Caption: `jake it's been two weeks. #payme #groupchat #relatable`
 
 ## Quiet product tease (19–20) — no CTA, ever
@@ -127,13 +141,16 @@ paste all of them: `#splitthebill #adulting #storytime #girlmath #roommates
   flips to ✓s. 8–12 seconds, one take, ASMR-ish tap sound.
 - Caption: `everyone square. table happy. frog happy. #splitthebill #adulting #relatable`
 
-## Value carousels (21–26) — the save/share engine
+## Value carousels (21–27) — the save/share engine
 
-All six are FULLY RENDERED in `assets/carousels/<slug>/01.png…NN.png` (1080×1350,
-4:5 — post as an IG carousel or TikTok photo mode, slides in order). Format
-rule: **unbranded until the last slide** — pure useful tips, no logo, no
-mascot, no brand colors; the final slide is the soft reveal (Mochi + wordmark +
-one line, never a CTA). They should read like a sharp friend's notes, not an ad.
+All are FULLY RENDERED in `assets/carousels/<slug>/01.png…NN.png` (1080×1350,
+4:5 — post as an IG carousel or TikTok photo mode, slides in order). Two shapes:
+- **Stealth decks (21–25, 27):** unbranded until the end — pure useful tips, no
+  logo, no mascot, no brand colors. They read like a sharp friend's notes.
+- **The 10-slide shape (23, 27 + the listicle cut of 21):** cover hook + 8
+  genuinely-useful numbered tips + the CTA disguised as the FINAL NUMBERED ITEM
+  ("9. the app that does 1–8 for you → divvysol.com"). Never pad with filler
+  tips to hit a count — 7 strong tips beats 8 with a dud.
 
 **21. 5 ways to stop losing money on group trips** · ZERO · `assets/carousels/group-trips/` (7 slides)
 - Cover hook: "5 ways to stop losing money on group trips — from someone who
@@ -143,6 +160,9 @@ one line, never a CTA). They should read like a sharp friend's notes, not an ad.
   (4) a settle-up date, not "whenever" · (5) net the debts to 1–2 transfers.
 - Reveal: "we built divvy for this. split anything. settle in seconds."
 - Caption: `the $900 taught me everything. save for your next trip 🧳 #grouptrip #travelhacks #splitthebill #moneytips`
+- Alternate branded cut: `assets/carousels/group-trips-listicle/` (10 slides,
+  "mochi's field notes" idiom, 9 rules with the CTA as rule 9) — use it once the
+  account has a face; the unbranded cut above is the stealth version.
 
 **22. How to split rent when the rooms aren't equal** · ZERO · `assets/carousels/rent-split/` (8 slides)
 - Cover hook: "how to split rent when the rooms aren't equal — because the
@@ -154,12 +174,13 @@ one line, never a CTA). They should read like a sharp friend's notes, not an ad.
 - Reveal: "recurring rent splits, zero chasing."
 - Caption: `send this before the lease, not after the fight #roommates #rentsplit #adulting #moneytips`
 
-**23. Texts that get you paid back (copy-paste)** · ZERO · `assets/carousels/get-paid-back/` (8 slides)
+**23. Texts that get you paid back (copy-paste)** · ZERO · `assets/carousels/get-paid-back/` (10 slides, Notes skin)
 - Cover hook: "texts that get you paid back (without it being weird)".
 - Slides: (1) the soft open, same day · (2) name the number and the thing ·
   (3) give a date + reason · (4) the humor nudge ("your $12 is old enough to
-  walk") · (5) the closure discount · (6) the boundary so there's no round 3.
-- Reveal: "or skip the chasing entirely."
+  walk") · (5) the closure discount · (6) the boundary so there's no round 3 ·
+  (7) the group-chat assist · (8) the installment out · (9) the CTA as the
+  final numbered item ("the app that does 1–8 for you" → divvysol.com).
 - Caption: `#4 has a 100% hit rate for me. save these 📌 #payme #textideas #friendship #moneytips #adulting`
 
 **24. How to split the dinner bill without being THAT person** · ZERO · `assets/carousels/dinner-bill/` (7 slides)
@@ -191,12 +212,23 @@ one line, never a CTA). They should read like a sharp friend's notes, not an ad.
 - Reveal: "we built divvy so nobody has to be the bank."
 - Caption: `number 5. i said what i said. #friendship #payme #etiquette #relatable #moneytips`
 
+**27. 10 tips for traveling with friends (FLAGSHIP)** · ZERO · `assets/carousels/travel-with-friends/` (8 slides, Notes skin)
+- The founder-designed hybrid deck: Notes-app note, TWO dense tips per slide
+  (10 tips across slides 2–6), slide 7 is the girls-trip chat screenshot pasted
+  into the note ("tip 6 in the wild:") as the payoff beat, slide 8 is the CTA in
+  the note's own idiom ("the app from that screenshot is divvy 🐸 — get early
+  access → divvysol.com") with Mochi + wordmark.
+- Caption: `how to split costs on a group trip — the 10 rules that kept us friends. save for the trip chat 🧳 #grouptrip #travelhacks #splitthebill #friendship #moneytips`
+- Post IG carousel + TikTok photo mode; this is the save-rate flagship, slot it first.
+
 ---
 
 **Highest viral potential: #11** (the "split it evenly" guy) — it's the most
 universally felt injustice on the list, skit format travels best on TikTok, and
 the comment section writes itself ("tag the steak guy"). Among the zero-effort
-set: **#15** (new phone who dis) — chat dramas with a dated timestamp twist are
-proven shareable, and it front-loads week 1. **Highest save-rate bet: #23**
-(copy-paste texts) — "screenshot-and-use-later" content is what the 2026
-carousel meta rewards, and saves outweigh likes for reach.
+set: **#15** (new phone who dis) — now a full fake-text VIDEO, and fake-text
+drama with a 2019 timestamp twist is a proven TikTok format with real watch
+time (25–35s of hold, built-in rewatch on the receipt punchline). **Highest
+save-rate bets: #27** (the flagship travel deck) and **#23** (copy-paste
+texts) — "screenshot-and-use-later" content is what the 2026 carousel meta
+rewards, and saves outweigh likes for reach.

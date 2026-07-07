@@ -1,0 +1,23 @@
+{
+  "file": "chat-seen.png",
+  "kind": "dm",
+  "title": "Jake",
+  "time": "5:02",
+  "members": [
+    { "n": "Jake", "i": "J", "g": ["#9CA5AF", "#7E8894"] }
+  ],
+  "rows": [
+    { "ts": "Today 2:41 PM" },
+    { "me": true, "text": "hey did you see the $18 i sent you for the pizza" },
+    { "text": "yeah lol" },
+    { "me": true, "text": "…and?", "beat": 800 },
+    { "text": "😂😂", "beat": 900 },
+    { "ts": "Today 4:58 PM", "beat": 1100 },
+    { "me": true, "text": "jake." },
+    { "me": true, "card": { "title": "pizza night 🍕 — you owe $18", "sub": "pay in one tap", "domain": "divvysol.com" }, "tapback": { "e": "😂" }, "beat": 300 },
+    { "text": "ok ok the button was literally right there" },
+    { "text": "sent 🫡" },
+    { "me": true, "text": "it's been two weeks jake", "status": "Read 5:01 PM", "beat": 500 },
+    { "typing": true }
+  ]
+}
