@@ -7,15 +7,23 @@
  *
  *   • 7 Mochi scene cards, 1080×1920 — the REAL mascot rig (public/mascot.js,
  *     loaded verbatim via addScriptTag) over journal paper with big hook text.
- *   • 4 fake group-chat screenshots, 1080×1920 — iMessage-style owed-money drama.
+ *   • fake group-chat screenshots, 1080×1920 — iMessage-style owed-money drama.
+ *     chat-girls-trip.png uses the v2 renderer: status bar, grouped bubbles
+ *     with real tails, SF-adjacent Inter, no watermark — the reveal is a divvy
+ *     pay-request link-preview card INSIDE the thread (diegetic, not a stamp).
+ *   • value carousels, 1080×1350 — get-paid-back/ is rendered as authentic
+ *     Apple-Notes screenshots (one tall note, 8 scroll-position captures);
+ *     the rest still use the v1 "designed" look until they're converted.
  *   • 2 meme-lab outputs, 1080×1080 — boots the actual Express server and drives
  *     the public /memes generator headless (same path as design/launch-x).
  *   • pfp.png 1000×1000 (Mochi face on mint) + banner.png 1500×500.
  *
- * Brand fonts are embedded as base64 data-URIs from public/fonts so pages need
+ * Brand fonts are embedded as base64 data-URIs from public/fonts (plus Inter,
+ * vendored in marketing/tiktok-kit/fonts, standing in for SF Pro) so pages need
  * no network. Every PNG's dimensions are verified before PASS.
  *
  *   node marketing/tiktok-kit/build-assets.mjs
+ *   node marketing/tiktok-kit/build-assets.mjs --only get-paid-back,chat-girls-trip
  */
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
@@ -49,8 +57,45 @@ const FONT_CSS = `
 @font-face{font-family:'General Sans';font-weight:600;font-style:normal;src:url(${fontData("3ZLMEXZEQPLTEPMHTQDAUXP5ZZXCZAEN.woff2")}) format('woff2');}
 `;
 
+// Inter (vendored latin variable font) stands in for SF Pro in the "native iOS
+// screenshot" renderers — closest metrics to Apple's system font we can ship.
+const INTER_CSS = `
+@font-face{font-family:'Inter';font-weight:100 900;font-style:normal;src:url(data:font/woff2;base64,${readFileSync(join(__dirname, "fonts", "Inter-latin-var.woff2")).toString("base64")}) format('woff2');}
+`;
+const SF = `'Inter','SF Pro Text',-apple-system,'Helvetica Neue','Noto Color Emoji',sans-serif`;
+
 // Freeze the rig's idle animations so screenshots are crisp mid-pose.
 const FREEZE_CSS = `*,*::before,*::after{animation:none!important;transition:none!important;}`;
+
+// ── iOS chrome bits shared by the "native screenshot" renderers ───────────────
+// Status bar (time left, signal/wifi/battery right) — no dynamic island: real
+// iPhone screenshots don't capture the cutout.
+function statusBarHtml(time) {
+  return `<div class="sbar">
+    <div class="sbar-time">${time}</div>
+    <div class="sbar-icons">
+      <svg width="52" height="34" viewBox="0 0 26 17"><g fill="#000">
+        <rect x="0" y="10.5" width="4.6" height="6.5" rx="1.4"/><rect x="7" y="7.5" width="4.6" height="9.5" rx="1.4"/>
+        <rect x="14" y="4" width="4.6" height="13" rx="1.4"/><rect x="21" y="0.5" width="4.6" height="16.5" rx="1.4"/>
+      </g></svg>
+      <svg width="50" height="34" viewBox="0 0 25 17"><g stroke="#000" stroke-width="2.5" fill="none" stroke-linecap="round">
+        <path d="M2 6.4 Q12.5 -2.6 23 6.4"/><path d="M5.6 9.9 Q12.5 4.2 19.4 9.9"/><path d="M9.2 13.2 Q12.5 10.5 15.8 13.2"/>
+      </g><circle cx="12.5" cy="15.5" r="1.9" fill="#000"/></svg>
+      <svg width="60" height="34" viewBox="0 0 30 17">
+        <rect x="1" y="2.5" width="23" height="12" rx="3.8" stroke="rgba(0,0,0,0.35)" stroke-width="1.5" fill="none"/>
+        <rect x="3" y="4.5" width="15" height="8" rx="2" fill="#000"/>
+        <rect x="25.6" y="6" width="2.6" height="5" rx="1.3" fill="rgba(0,0,0,0.4)"/>
+      </svg>
+    </div>
+  </div>`;
+}
+const SBAR_CSS = `
+  .sbar{position:absolute;top:0;left:0;right:0;height:118px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 72px 12px 100px;z-index:50}
+  .sbar-time{font-family:${SF};font-weight:600;font-size:44px;color:#000;letter-spacing:0.4px}
+  .sbar-icons{display:flex;align-items:center;gap:16px}
+`;
+// Home indicator, drawn over content like the real one.
+const HOME_BAR = `<div style="position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:370px;height:12px;border-radius:8px;background:rgba(0,0,0,0.88);z-index:40"></div>`;
 
 const TINTS = {
   paper: "transparent",
@@ -244,19 +289,6 @@ const CHATS = [
     ],
   },
   {
-    file: "chat-girls-trip.png", title: "girls trip 🌴", subtitle: "5 people",
-    rows: [
-      { ts: "Today 4:39 PM" },
-      { who: "Sof", text: "ok so the villa was $840 and i paid all of it 🙃" },
-      { who: "Em", text: "i got every single uber tho" },
-      { who: "Liv", text: "i paid brunch AND the boat AND the little hats" },
-      { me: true, text: "i genuinely have no idea who i owe anymore" },
-      { who: "Sof", text: "should i make a spreadsheet" },
-      { me: true, text: "NOT THE SPREADSHEET" },
-      { who: "Em", text: "the spreadsheet ended the last trip 💀" },
-    ],
-  },
-  {
     file: "chat-seen.png", title: "Jake", subtitle: null,
     rows: [
       { ts: "Today 2:41 PM" },
@@ -265,6 +297,126 @@ const CHATS = [
       { me: true, text: "…and?" },
       { text: "😂😂" },
       { me: true, text: "jake it's been two weeks", status: "Read 2:47 PM" },
+    ],
+  },
+];
+
+// ── fake iMessage chats v2 — tighter iOS fidelity, diegetic reveal ────────────
+// Status bar, group-avatar cluster, SF-adjacent Inter, grouped bubbles with
+// real tails, and NO watermark: the brand reveal happens INSIDE the story as a
+// divvy pay-request link-preview card (the way an app link actually renders in
+// iMessage), followed by one reaction. Bottom is cropped above the input bar,
+// like someone actually cropped their screenshot.
+function chatV2Html({ title, members, time, rows }) {
+  const out = [];
+  const same = (a, b) => a && b && !a.ts && !b.ts && !!a.me === !!b.me && (a.who || "") === (b.who || "");
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    if (r.ts) { out.push(`<div class="ts">${r.ts.replace(/^Today /, "<b>Today</b> ")}</div>`); continue; }
+    const samePrev = same(rows[i - 1], r), sameNext = same(r, rows[i + 1]);
+    const side = r.me ? "right" : "left";
+    const who = !r.me && r.who && !samePrev ? `<div class="who">${r.who}</div>` : "";
+    if (r.card) {
+      out.push(`<div class="row ${side}${samePrev ? " tight" : ""}">${who}
+        <div class="cardwrap">
+          <div class="card">
+            <div class="card-top">
+              <div class="card-icon"><div id="stage"></div></div>
+              <div class="card-txt">
+                <div class="card-title">${r.card.title}</div>
+                <div class="card-sub">${r.card.sub}</div>
+              </div>
+            </div>
+            <div class="card-dom">${r.card.domain}</div>
+          </div>
+          ${r.tapback ? `<div class="tapback"><span>${r.tapback}</span></div>` : ""}
+        </div>
+      </div>`);
+      continue;
+    }
+    out.push(`<div class="row ${side}${samePrev ? " tight" : ""}">${who}<div class="bubble ${r.me ? "blue" : "grey"}${sameNext ? "" : " tail"}">${r.text}</div></div>`);
+  }
+
+  const avs = members.map((m, i) =>
+    `<div class="av av${i}" style="background:linear-gradient(180deg,${m.c1},${m.c2})">${m.i}</div>`).join("");
+
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+  ${INTER_CSS}${FREEZE_CSS}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1920px;overflow:hidden}
+  body{background:#fff;font-family:${SF};color:#000;display:flex;flex-direction:column;position:relative}
+  ${SBAR_CSS}
+  header{flex:none;padding:118px 40px 16px;background:rgba(248,248,248,0.94);border-bottom:1px solid rgba(0,0,0,0.10);text-align:center;position:relative}
+  .back{position:absolute;left:42px;top:150px}
+  .facetime{position:absolute;right:46px;top:162px}
+  .avs{position:relative;height:112px;margin-top:2px}
+  .av{position:absolute;top:0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500;box-shadow:0 0 0 5px rgba(248,248,248,0.94)}
+  .av0{width:86px;height:86px;left:calc(50% - 118px);top:16px;font-size:36px;z-index:1}
+  .av1{width:100px;height:100px;left:calc(50% - 50px);top:2px;font-size:42px;z-index:3}
+  .av2{width:86px;height:86px;left:calc(50% + 32px);top:16px;font-size:36px;z-index:2}
+  .nm{font-size:29px;font-weight:400;color:#000;margin-top:2px}
+  .nm span{color:rgba(0,0,0,0.3);font-size:25px;margin-left:6px}
+  main{flex:1;padding:22px 40px 40px;display:flex;flex-direction:column;justify-content:flex-end;gap:16px;overflow:hidden}
+  .ts{text-align:center;font-size:24px;color:rgba(0,0,0,0.4);margin:10px 0 2px}
+  .ts b{font-weight:600}
+  .row{display:flex;flex-direction:column;max-width:80%}
+  .row.tight{margin-top:-10px}
+  .row.left{align-self:flex-start;align-items:flex-start}
+  .row.right{align-self:flex-end;align-items:flex-end}
+  .who{font-size:23px;color:rgba(0,0,0,0.4);margin:2px 0 4px 30px}
+  .bubble{position:relative;padding:16px 28px;border-radius:38px;font-size:38px;line-height:1.28;letter-spacing:0.1px}
+  .bubble.grey{background:#E9E9EB;color:#000}
+  .bubble.blue{background:#007AFF;color:#fff}
+  .bubble.tail.grey::before{content:"";position:absolute;bottom:-3px;left:-15px;height:42px;width:42px;background:#E9E9EB;border-bottom-right-radius:32px 28px}
+  .bubble.tail.grey::after{content:"";position:absolute;bottom:-3px;left:-39px;width:40px;height:46px;background:#fff;border-bottom-right-radius:24px}
+  .bubble.tail.blue::before{content:"";position:absolute;bottom:-3px;right:-15px;height:42px;width:42px;background:#007AFF;border-bottom-left-radius:32px 28px}
+  .bubble.tail.blue::after{content:"";position:absolute;bottom:-3px;right:-39px;width:40px;height:46px;background:#fff;border-bottom-left-radius:24px}
+  /* divvy pay-request as an iMessage app-link preview card */
+  .cardwrap{position:relative;margin-top:6px}
+  .card{width:620px;border-radius:36px;overflow:hidden;background:#fff;border:2px solid rgba(0,0,0,0.09);box-shadow:0 1px 4px rgba(0,0,0,0.05)}
+  .card-top{display:flex;align-items:center;gap:26px;padding:26px 30px 24px}
+  .card-icon{width:104px;height:104px;flex:none;border-radius:24px;background:linear-gradient(180deg,#D9F8EF,#AFF0DE);display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,0.06)}
+  .card-title{font-size:33px;font-weight:600;line-height:1.25;color:#0A0A0A;padding-right:56px}
+  .card-sub{font-size:28px;color:rgba(0,0,0,0.45);margin-top:5px}
+  .card-dom{padding:16px 32px;background:#F2F2F4;font-size:26px;color:rgba(0,0,0,0.45);border-top:1px solid rgba(0,0,0,0.07)}
+  .tapback{position:absolute;top:-54px;right:-16px;width:88px;height:88px;border-radius:50%;background:#E9E9EB;box-shadow:0 0 0 7px #fff;display:flex;align-items:center;justify-content:center}
+  .tapback span{font-size:44px;line-height:1}
+  .tapback::after{content:"";position:absolute;left:-4px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:#E9E9EB;box-shadow:0 0 0 6px #fff}
+  </style></head><body>
+  ${statusBarHtml(time)}
+  <header>
+    <div class="back"><svg width="30" height="52" viewBox="0 0 15 26"><path d="M13 2 L3 13 L13 24" stroke="#007AFF" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="avs">${avs}</div>
+    <div class="nm">${title}<span>›</span></div>
+    <div class="facetime"><svg width="64" height="44" viewBox="0 0 32 22"><rect x="1" y="3" width="20" height="16" rx="5" fill="#007AFF"/><path d="M22 9 L29 4.5 a1.4 1.4 0 0 1 2 1.2 v10.6 a1.4 1.4 0 0 1 -2 1.2 L22 13 Z" fill="#007AFF"/></svg></div>
+  </header>
+  <main>${out.join("\n")}</main>
+  </body></html>`;
+}
+
+const CHATS_V2 = [
+  {
+    file: "chat-girls-trip.png",
+    title: "girls trip 🌴",
+    time: "5:09",
+    members: [
+      { i: "E", c1: "#AAB3BD", c2: "#8E97A1" },
+      { i: "S", c1: "#B3AABD", c2: "#978EA1" },
+      { i: "L", c1: "#AABDB3", c2: "#8EA197" },
+    ],
+    rows: [
+      { ts: "Today 4:39 PM" },
+      { who: "Sof", text: "ok so the villa was $840 and i paid all of it 🙃" },
+      { who: "Em", text: "i got all the ubers" },
+      { who: "Liv", text: "i paid brunch AND the boat AND the little hats" },
+      { me: true, text: "i don't even know who i owe anymore" },
+      { who: "Sof", text: "should i make a spreadsheet" },
+      { me: true, text: "NOT THE SPREADSHEET" },
+      { who: "Em", text: "the spreadsheet ended the last trip 💀" },
+      { ts: "Today 5:02 PM" },
+      { who: "Sof", text: "wait. try this instead" },
+      { who: "Sof", card: { title: "girls trip 🌴 — your share is $168", sub: "pay in one tap", domain: "divvysol.com" }, tapback: "❤️" },
+      { who: "Liv", text: "WAIT this is so much better" },
     ],
   },
 ];
@@ -401,20 +553,6 @@ const CAROUSELS = [
     ],
   },
   {
-    slug: "get-paid-back",
-    kicker: "copy-paste · owed money",
-    slides: [
-      { kind: "cover", title: `texts that get you <span class="u">paid back</span> (without it being weird)`, sub: "copy, paste, receive money. mostly." },
-      { n: 1, h: "the soft open — send it same day", b: `<span class="q">“yo — friday came to $34 each, sending you my details so i don't forget”</span>Asking fast isn't rude. <b>Waiting 3 months and simmering is.</b>` },
-      { n: 2, h: "always name the number and the thing", b: `“the $23 from the game” gets paid.<br>“that thing from that time” dies in the chat.<br><br><b>Specific debts feel real. Vague debts feel optional.</b>` },
-      { n: 3, h: "give a date and a reason", b: `<span class="q">“could you get it to me by friday? rent's due”</span>People don't ignore you out of malice — they ignore <b>open-ended</b> requests. Structure gets action.` },
-      { n: 4, h: "the humor nudge (for round 2)", b: `<span class="q">“update: your $12 is now old enough to walk”</span>A joke reopens a dead thread <b>without shaming anyone</b> — and it screenshots well, which is its own leverage.` },
-      { n: 5, h: "the closure discount (for old debts)", b: `<span class="q">“let's call it $20 even and be done — cool?”</span>Losing $5 to <b>end</b> a $25 saga is a bargain. Resentment compounds worse than money.` },
-      { n: 6, h: "the boundary (so there's no round 3)", b: `Next dinner: <span class="q">“i can't front it this time — can everyone pay as we order?”</span>If you're always the wallet, the group learned it from you. <b>Unlearn them gently.</b>` },
-      { kind: "reveal", line: `or skip the chasing entirely.<br>we built divvy for this. <span class="hl">everyone pays their share.</span>` },
-    ],
-  },
-  {
     slug: "dinner-bill",
     kicker: "dinner · bill etiquette",
     slides: [
@@ -453,6 +591,296 @@ const CAROUSELS = [
       { n: 6, h: "forgive down, never up", b: `Waive what's owed TO you whenever you feel like it — that's grace.<br><br>Deciding a debt you OWE is “basically forgiven” because it's been a while? <b>That's theft with extra steps.</b>` },
       { n: 7, h: "the fronter is doing you a favor", b: `Someone put a group dinner on their card so 9 people didn't queue at the till.<br><br>They're the group's <b>unpaid, unthanked bank</b>. Pay them like you'd want your bank to pay you: instantly.` },
       { kind: "reveal", line: `we built divvy so nobody has to be the bank.<br><span class="hl">split it, settle it, stay friends.</span>` },
+    ],
+  },
+];
+
+// ── notes-style carousels (1080×1350) — authentic Apple Notes screenshots ─────
+// One tall note (status bar + nav chrome fixed on top), captured at N scroll
+// positions. Slide 1 is the note title + first lines; middle slides continue
+// the note (lines cut mid-scroll like a real screenshot); the final slide is
+// the soft reveal written INTO the note ("btw the app that automates all of
+// this: divvy") above a pasted-in Mochi/wordmark image attachment.
+
+const NOTES_GOLD = "#C7A22B";
+const NOTES_CHROME_H = 236;
+
+function notesNoteHtml(car) {
+  const secs = car.sections.map((s, i) => {
+    const lines = (s.lines || []).map((l) => `<div class="ln">${l}</div>`).join("");
+    if (s.kind === "cover") {
+      return `<div class="sec" id="s${i}" style="margin-top:0">
+        <div class="ndate">${car.date}</div>
+        <div class="ntitle">${s.title}</div>
+        ${lines}
+      </div>`;
+    }
+    if (s.kind === "reveal") {
+      return `<div class="sec" id="s${i}">
+        ${lines}
+        <div class="att">
+          <div class="att-glow"></div>
+          <div class="att-stage" id="stage"></div>
+          <div class="att-word"><span class="dot"></span>divvy</div>
+          <div class="att-tag">split the bill. not the friendship.</div>
+        </div>
+      </div>`;
+    }
+    return `<div class="sec" id="s${i}"><div class="nh">${s.h}</div>${lines}</div>`;
+  }).join("\n");
+
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+  ${INTER_CSS}${FONT_CSS}${FREEZE_CSS}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px}
+  body{background:#FBF8EF;font-family:${SF};color:#1C1C1C;padding-top:${NOTES_CHROME_H}px}
+  ${SBAR_CSS}
+  .chrome{position:fixed;top:0;left:0;right:0;height:${NOTES_CHROME_H}px;background:#FBF8EF;z-index:30}
+  .chrome.scrolled{border-bottom:1px solid rgba(0,0,0,0.10);box-shadow:0 1px 0 rgba(0,0,0,0.03)}
+  .nav{position:absolute;top:118px;left:0;right:0;height:110px;display:flex;align-items:center;padding:0 46px}
+  .back{display:flex;align-items:center;gap:14px;color:${NOTES_GOLD};font-size:42px}
+  .nav-right{margin-left:auto;display:flex;align-items:center;gap:52px}
+  .note{padding:34px 78px 150px}
+  .ndate{text-align:center;font-size:29px;color:rgba(0,0,0,0.33);margin-bottom:36px}
+  .ntitle{font-size:70px;font-weight:700;letter-spacing:-0.8px;line-height:1.18;color:#111;margin-bottom:14px}
+  .nh{font-size:53px;font-weight:700;letter-spacing:-0.3px;color:#111;margin-bottom:10px}
+  .ln{font-size:45px;line-height:1.5;color:#222;margin-top:8px;letter-spacing:-0.1px}
+  .sec{margin-top:74px}
+  .att{margin-top:46px;width:100%;height:620px;border-radius:22px;position:relative;overflow:hidden;
+    background:linear-gradient(180deg,#DCF9F0,#BDF2E3);
+    background-image:repeating-linear-gradient(180deg,transparent 0 64px,rgba(39,117,202,0.08) 64px 66px),linear-gradient(180deg,#DCF9F0,#BDF2E3);
+    display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .att-glow{position:absolute;left:50%;top:38%;width:560px;height:560px;border-radius:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(61,232,199,0.5) 0%,rgba(61,232,199,0) 65%)}
+  .att-stage{position:relative;transform:scale(1.8);height:280px;display:flex;align-items:center;justify-content:center}
+  .att-word{position:relative;display:flex;align-items:center;gap:18px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:86px;letter-spacing:-2.5px;color:${INK};margin-top:10px}
+  .att-word .dot{width:46px;height:46px;border-radius:14px;background:${BLUE};border:4px solid ${INK};box-shadow:5px 5px 0 rgba(43,33,24,0.85)}
+  .att-tag{position:relative;font-family:'Space Mono',monospace;font-weight:700;font-size:31px;color:rgba(43,33,24,0.72);margin-top:16px}
+  </style></head><body>
+  <div class="chrome" id="chrome">
+    ${statusBarHtml(car.time)}
+    <div class="nav">
+      <div class="back">
+        <svg width="28" height="50" viewBox="0 0 14 25"><path d="M12 2 L3 12.5 L12 23" stroke="${NOTES_GOLD}" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Folders
+      </div>
+      <div class="nav-right">
+        <svg width="52" height="66" viewBox="0 0 26 33"><g stroke="${NOTES_GOLD}" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3.5" y="12" width="19" height="17.5" rx="3"/><path d="M13 2.5 v16 M8.5 7 L13 2.5 L17.5 7"/>
+        </g></svg>
+        <svg width="58" height="58" viewBox="0 0 29 29"><circle cx="14.5" cy="14.5" r="12.8" stroke="${NOTES_GOLD}" stroke-width="2.1" fill="none"/>
+          <g fill="${NOTES_GOLD}"><circle cx="8.6" cy="14.5" r="1.9"/><circle cx="14.5" cy="14.5" r="1.9"/><circle cx="20.4" cy="14.5" r="1.9"/></g></svg>
+      </div>
+    </div>
+  </div>
+  <div class="note">${secs}</div>
+  ${HOME_BAR}
+  </body></html>`;
+}
+
+const NOTES_CAROUSELS = [
+  {
+    slug: "get-paid-back",
+    date: "July 7, 2026 at 10:43 AM",
+    time: "10:47",
+    sections: [
+      { kind: "cover", title: "texts that get you paid back", lines: [
+        "(without it being weird)",
+        "- copy, paste, receive money. mostly.",
+      ] },
+      { h: "1. the soft open — send it same day", lines: [
+        "“yo — friday came to $34 each, sending you my details so i don't forget”",
+        "- asking fast isn't rude. waiting 3 months and simmering is.",
+      ] },
+      { h: "2. name the number and the thing", lines: [
+        "- “the $23 from the game” gets paid",
+        "- “that thing from that time” dies in the chat",
+        "- specific debts feel real. vague debts feel optional.",
+      ] },
+      { h: "3. give a date and a reason", lines: [
+        "“could you get it to me by friday? rent's due”",
+        "- nobody ignores you out of malice. they ignore open-ended requests. structure gets action.",
+      ] },
+      { h: "4. the humor nudge (for round 2)", lines: [
+        "“update: your $12 is now old enough to walk”",
+        "- a joke reopens a dead thread without shaming anyone",
+        "- also it screenshots well. which is leverage.",
+      ] },
+      { h: "5. the closure discount (old debts)", lines: [
+        "“let's call it $20 even and be done — cool?”",
+        "- losing $5 to END a $25 saga is a bargain. resentment compounds worse than money.",
+      ] },
+      { h: "6. the boundary (so there's no round 3)", lines: [
+        "next dinner: “i can't front it this time — can everyone pay as we order?”",
+        "- if you're always the wallet, the group learned it from you. unlearn them gently.",
+      ] },
+      { kind: "reveal", lines: [
+        "&nbsp;",
+        "btw the app that automates all of this: divvy 🐸",
+      ] },
+    ],
+  },
+];
+
+async function shootNotesCarousel(browser, car) {
+  const ctx = await browser.newContext({ viewport: { width: 1080, height: 1350 }, deviceScaleFactor: 1 });
+  const page = await ctx.newPage();
+  await page.setContent(notesNoteHtml(car), { waitUntil: "load" });
+  await page.addScriptTag({ path: MASCOT_JS });
+  await page.evaluate(() => {
+    const stage = document.getElementById("stage");
+    if (stage) stage.innerHTML = window.Mascot.html({ mood: "wave", size: 118, glow: false });
+  });
+  await page.evaluate(async () => { if (document.fonts && document.fonts.ready) await document.fonts.ready; });
+  await sleep(350);
+
+  const offsets = await page.evaluate(({ n, chromeH }) => {
+    const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const ys = [];
+    for (let i = 0; i < n; i++) {
+      if (i === 0) { ys.push(0); continue; }
+      if (i === n - 1) { ys.push(max); continue; }
+      const el = document.getElementById("s" + i);
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      ys.push(Math.max(0, Math.min(max, Math.round(top - chromeH - 104))));
+    }
+    return ys;
+  }, { n: car.sections.length, chromeH: NOTES_CHROME_H });
+
+  for (let i = 0; i < offsets.length; i++) {
+    await page.evaluate((y) => {
+      window.scrollTo(0, y);
+      document.getElementById("chrome").classList.toggle("scrolled", y > 4);
+    }, offsets[i]);
+    await sleep(90);
+    const buf = await page.screenshot({ type: "png" });
+    const dim = pngSize(buf);
+    if (dim.width !== 1080 || dim.height !== 1350) throw new Error(`${car.slug}/${i + 1}: got ${dim.width}×${dim.height}`);
+    const file = join("carousels", car.slug, `${String(i + 1).padStart(2, "0")}.png`);
+    const out = join(OUT, file);
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, buf);
+    process.stdout.write(`  ${dim.width}×${dim.height}  ${file}\n`);
+  }
+  await ctx.close();
+}
+
+// ── mochi-illustrated listicle carousels (1080×1350) — branded throughout ─────
+// The "Scratch AI" slideshow formula adapted to the divvy journal brand:
+// cover = big title + composed Mochi scene; one numbered rule per slide with a
+// Mochi accent; final slide is the charming hard-CTA (pre-launch: waitlist at
+// divvysol.com + a real app screenshot, no store badge yet).
+
+const APP_SHOT = `data:image/png;base64,${readFileSync(join(REPO, "public", "screenshots", "shot-new.png")).toString("base64")}`;
+
+function receiptHtml(x, y, rot, title, rows, w = 330) {
+  return `<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;transform:rotate(${rot}deg);background:#FFFDF6;border:3px solid rgba(43,33,24,0.3);box-shadow:8px 10px 0 rgba(43,33,24,0.12);padding:24px 26px 28px;font-family:'Space Mono',monospace;font-size:25px;color:rgba(43,33,24,0.78)">
+    <div style="font-weight:700;letter-spacing:3px;text-align:center;border-bottom:3px dashed rgba(43,33,24,0.3);padding-bottom:10px;margin-bottom:12px">${title}</div>
+    ${rows.map(([k, v]) => `<div style="display:flex;justify-content:space-between;margin-top:8px"><span>${k}</span><span>${v}</span></div>`).join("")}
+  </div>`;
+}
+
+function listicleCss() {
+  return `${FONT_CSS}${FREEZE_CSS}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1350px;overflow:hidden}
+  body{background:${PAPER};color:${INK};font-family:'Space Mono',monospace;position:relative;
+    background-image:repeating-linear-gradient(180deg,transparent 0 88px,rgba(39,117,202,0.10) 88px 90px)}
+  body::before{content:"";position:absolute;top:0;bottom:0;left:96px;width:5px;background:rgba(255,107,94,0.26)}
+  .kick{position:absolute;left:0;right:0;top:96px;text-align:center;font-weight:700;font-size:30px;letter-spacing:5px;text-transform:uppercase;color:rgba(43,33,24,0.45)}
+  .cov-title{position:absolute;left:110px;right:110px;top:180px;text-align:center;font-weight:700;font-size:88px;line-height:1.2;letter-spacing:-2px;transform:rotate(-1deg)}
+  .hl{background:linear-gradient(180deg,transparent 8%,rgba(61,232,199,0.55) 12%,rgba(61,232,199,0.55) 88%,transparent 92%);padding:0 8px;border-radius:6px}
+  .hlc{background:linear-gradient(180deg,transparent 8%,rgba(255,198,92,0.6) 12%,rgba(255,198,92,0.6) 88%,transparent 92%);padding:0 8px;border-radius:6px}
+  .scene{position:absolute;left:0;right:0;top:620px;height:560px}
+  .scene-stage{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%) scale(2.9);z-index:3}
+  .scene-glow{position:absolute;left:50%;top:52%;width:640px;height:640px;border-radius:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(61,232,199,0.32) 0%,rgba(61,232,199,0) 65%)}
+  .cov-save{position:absolute;left:320px;right:280px;bottom:92px;text-align:center;font-weight:700;font-size:28px;color:rgba(43,33,24,0.55)}
+  .num{position:absolute;left:110px;top:130px;font-weight:700;font-size:230px;line-height:1;letter-spacing:-8px;text-shadow:9px 9px 0 rgba(43,33,24,0.16)}
+  .rule-h{position:absolute;left:114px;right:100px;top:430px;font-weight:700;font-size:66px;line-height:1.22;letter-spacing:-1.5px}
+  .rule-b{position:absolute;left:114px;right:400px;top:660px;font-family:'General Sans',sans-serif;font-size:43px;line-height:1.55;color:rgba(43,33,24,0.78)}
+  .rule-b b{font-weight:600;color:${INK}}
+  .acc{position:absolute;right:130px;bottom:200px}
+  .acc-stage{position:relative;transform:scale(1.9);transform-origin:bottom right;z-index:3}
+  .acc-glow{position:absolute;right:-80px;bottom:-60px;width:420px;height:420px;border-radius:50%;
+    background:radial-gradient(circle,rgba(61,232,199,0.3) 0%,rgba(61,232,199,0) 65%)}
+  .brand{position:absolute;left:110px;bottom:82px;display:flex;align-items:center;gap:14px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:44px;letter-spacing:-1px;color:rgba(43,33,24,0.85)}
+  .brand .dot{width:26px;height:26px;border-radius:8px;background:${BLUE};border:3px solid ${INK};box-shadow:3px 3px 0 rgba(43,33,24,0.8)}
+  .pager{position:absolute;right:110px;bottom:88px;font-weight:700;font-size:30px;color:rgba(43,33,24,0.42)}
+  /* CTA slide */
+  .cta-num{position:absolute;left:110px;top:112px;font-weight:700;font-size:150px;line-height:1;letter-spacing:-5px;color:${CORAL};text-shadow:7px 7px 0 rgba(43,33,24,0.16)}
+  .cta-h{position:absolute;left:114px;right:100px;top:300px;font-weight:700;font-size:74px;line-height:1.22;letter-spacing:-2px}
+  .cta-pill{position:absolute;left:114px;top:560px;display:inline-block;background:rgba(61,232,199,0.35);border:4px solid ${INK};border-radius:60px;
+    box-shadow:7px 7px 0 rgba(43,33,24,0.85);padding:26px 44px;font-weight:700;font-size:40px}
+  .cta-note{position:absolute;left:118px;top:700px;font-size:30px;color:rgba(43,33,24,0.55)}
+  .phone{position:absolute;left:50%;transform:translateX(-50%);top:800px;width:520px;height:640px;border:12px solid ${INK};border-bottom:none;
+    border-radius:64px 64px 0 0;overflow:hidden;box-shadow:16px 10px 0 rgba(43,33,24,0.18);background:#0B1220}
+  .phone img{width:100%;display:block}
+  .cta-stage{position:absolute;right:44px;top:1020px;transform:scale(1.8);z-index:5}
+  </style>`;
+}
+
+function listicleSlideHtml(car, idx) {
+  const s = car.slides[idx];
+  const total = car.slides.length;
+  let body;
+  if (s.kind === "cover") {
+    body = `
+    <div class="kick">${car.kicker}</div>
+    <div class="cov-title">${s.title}</div>
+    <div class="scene">
+      <div class="scene-glow"></div>
+      ${(s.receipts || []).map((r) => receiptHtml(...r)).join("")}
+      <div class="scene-stage" id="stage"></div>
+    </div>
+    <div class="cov-save">${s.save} →</div>
+    <div class="brand"><span class="dot"></span>divvy</div>
+    <div class="pager">1 / ${total}</div>`;
+  } else if (s.kind === "cta") {
+    body = `
+    <div class="cta-num">${s.n}.</div>
+    <div class="cta-h">${s.h}</div>
+    <div class="cta-pill">get early access → <span class="hlc">divvysol.com</span></div>
+    <div class="cta-note">${s.note}</div>
+    <div class="phone"><img src="${APP_SHOT}"></div>
+    <div class="cta-stage" id="stage"></div>
+    <div class="brand"><span class="dot"></span>divvy</div>
+    <div class="pager">${idx + 1} / ${total}</div>`;
+  } else {
+    body = `
+    <div class="num" style="color:${s.c}">${s.n}.</div>
+    <div class="rule-h">${s.h}</div>
+    <div class="rule-b">${s.b}</div>
+    <div class="acc"><div class="acc-glow"></div><div class="acc-stage" id="stage"></div></div>
+    <div class="brand"><span class="dot"></span>divvy</div>
+    <div class="pager">${idx + 1} / ${total}</div>`;
+  }
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${listicleCss()}</style></head><body>${body}</body></html>`;
+}
+
+const LISTICLES = [
+  {
+    slug: "group-trips-listicle",
+    kicker: "mochi's field notes · no. 1",
+    slides: [
+      {
+        kind: "cover", mood: "worried",
+        title: `7 rules for group trips that <span class="hl">don't end friendships</span>`,
+        save: "save this for the trip chat",
+        receipts: [
+          [120, 40, -7, "VILLA", [["7 nights", "$840.00"], ["paid by", "sofia 🙃"]]],
+          [640, 70, 6, "BRUNCH", [["bottomless", "$184.00"], ["paid by", "liv"]]],
+          [90, 330, 5, "UBERS", [["x 14", "$163.40"], ["paid by", "em"]]],
+          [660, 340, -5, "THE BOAT", [["+ lil hats", "$255.00"], ["paid by", "liv again"]]],
+        ],
+      },
+      { n: 1, c: CORAL, mood: "happy", h: `one fronter per lane, <span class="hl">not per moment</span>`, b: `one person books the villa, one covers food, one does the ubers.<br><br>you end the week with <b>3 clean debts</b> instead of 40 tiny mysteries nobody remembers.` },
+      { n: 2, c: BLUE, mood: "watching", h: `say the number <span class="hlc">out loud</span>`, b: `whoever pays announces it at the table and it gets written down within 10 seconds.<br><br><b>memory inflation is real</b> — everyone remembers paying more than they did.` },
+      { n: 3, c: "#E09E2F", mood: "sparkle", h: `agree the split <span class="hl">before you leave</span>`, b: `even split? by use? do the non-drinkers subsidize the bar tab?<br><br>any answer is fine. <b>deciding after the money is spent is the only wrong answer.</b>` },
+      { n: 4, c: CORAL, mood: "sleepy", h: `set a settle-up date, not <span class="hlc">“whenever”</span>`, b: `“we square up sunday night” gets paid.<br><br>“no rush lol” becomes a <b>4-month loop of low-grade resentment</b>. close the loop while the sunburn is fresh.` },
+      { n: 5, c: BLUE, mood: "happy", h: `net the debts <span class="hl">before anyone pays</span>`, b: `don't do A pays B, B pays C, C pays A.<br><br>add up who's net up and net down — most trips collapse to <b>one or two transfers total</b>.` },
+      { n: 6, c: "#1FA98C", mood: "worried", h: `don't post the rooftop while <span class="hlc">owing the villa</span>`, b: `everyone saw the story. everyone did the math. 💀<br><br><b>debts to friends jump the queue in public.</b> settle up, then post.` },
+      { kind: "cta", n: 7, mood: "wave", h: `let divvy do <span class="hl">all of this</span> for you`, note: "🐸 splits, nudges, and settling — automatic. app store soon." },
     ],
   },
 ];
@@ -499,18 +927,20 @@ function startServer(port, dbPath) {
 }
 function pngSize(buf) { return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) }; }
 
-async function shoot(browser, { html, width, height, mood, file }) {
+async function shoot(browser, { html, width, height, mood, mascot, file }) {
   const page = await (await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 })).newPage();
   await page.setContent(html, { waitUntil: "load" });
-  if (mood) {
+  if (mood || mascot) {
     // load the REAL rig and drop a frozen frame of it into #stage
     await page.addScriptTag({ path: MASCOT_JS });
-    await page.evaluate((m) => {
+    await page.evaluate((cfg) => {
       const stage = document.getElementById("stage");
       // glow:false — the rig's glow centers itself inside its keyframes, which
       // FREEZE_CSS disables; pages draw their own static glow where wanted.
-      stage.innerHTML = window.Mascot.html({ mood: m, size: 118, glow: false });
-    }, mood);
+      stage.innerHTML = cfg.kind === "mini"
+        ? window.Mascot.mini(cfg.px || 64)
+        : window.Mascot.html({ mood: cfg.mood, size: cfg.size || 118, glow: false });
+    }, mascot || { mood });
   }
   await page.evaluate(async () => { if (document.fonts && document.fonts.ready) await document.fonts.ready; });
   await sleep(350);
@@ -526,6 +956,13 @@ async function shoot(browser, { html, width, height, mood, file }) {
   await page.context().close();
 }
 
+// `--only a,b,c` renders just the assets whose file path / slug contains one of
+// the given keys (e.g. `--only get-paid-back,chat-girls-trip`). Everything else
+// on disk is left untouched.
+const onlyIdx = process.argv.indexOf("--only");
+const ONLY = onlyIdx >= 0 ? (process.argv[onlyIdx + 1] || "").split(",").map((s) => s.trim()).filter(Boolean) : null;
+const want = (key) => !ONLY || ONLY.some((k) => key.includes(k));
+
 async function run() {
   mkdirSync(OUT, { recursive: true });
   const chromePath = resolveChrome();
@@ -533,6 +970,7 @@ async function run() {
   try {
     // 1) Mochi scene cards (real rig, journal paper, 1080×1920)
     for (const s of SCENES) {
+      if (!want(s.file)) continue;
       const html = sceneShell({
         tint: s.tint,
         deco: s.deco || "",
@@ -544,13 +982,20 @@ async function run() {
       await shoot(browser, { html, width: 1080, height: 1920, mood: s.mood, file: s.file });
     }
 
-    // 2) fake group-chat screenshots (1080×1920)
+    // 2) fake group-chat screenshots (1080×1920) — v1 + v2 renderers
     for (const c of CHATS) {
+      if (!want(c.file)) continue;
       await shoot(browser, { html: chatShell(c), width: 1080, height: 1920, file: c.file });
+    }
+    for (const c of CHATS_V2) {
+      if (!want(c.file)) continue;
+      // mini head-only Mochi in the pay-request card's app icon (#stage)
+      await shoot(browser, { html: chatV2Html(c), width: 1080, height: 1920, mascot: { kind: "mini", px: 74 }, file: c.file });
     }
 
     // 3) value carousels (unbranded until the reveal slide) — 1080×1350
     for (const car of CAROUSELS) {
+      if (!want(car.slug)) continue;
       for (let i = 0; i < car.slides.length; i++) {
         const isReveal = car.slides[i].kind === "reveal";
         await shoot(browser, {
@@ -562,14 +1007,34 @@ async function run() {
       }
     }
 
+    // 3b) notes-style carousels (authentic Apple Notes screenshots) — 1080×1350
+    for (const car of NOTES_CAROUSELS) {
+      if (!want(car.slug)) continue;
+      await shootNotesCarousel(browser, car);
+    }
+
+    // 3c) mochi-illustrated listicle carousels (branded throughout) — 1080×1350
+    for (const car of LISTICLES) {
+      if (!want(car.slug)) continue;
+      for (let i = 0; i < car.slides.length; i++) {
+        await shoot(browser, {
+          html: listicleSlideHtml(car, i),
+          width: 1080, height: 1350,
+          mood: car.slides[i].mood,
+          file: join("carousels", car.slug, `${String(i + 1).padStart(2, "0")}.png`),
+        });
+      }
+    }
+
     // 4) pfp + banner
-    await shoot(browser, { html: pfpHtml(), width: 1000, height: 1000, mood: "happy", file: "pfp.png" });
-    await shoot(browser, { html: bannerHtml(), width: 1500, height: 500, mood: "wave", file: "banner.png" });
+    if (want("pfp.png")) await shoot(browser, { html: pfpHtml(), width: 1000, height: 1000, mood: "happy", file: "pfp.png" });
+    if (want("banner.png")) await shoot(browser, { html: bannerHtml(), width: 1500, height: 500, mood: "wave", file: "banner.png" });
   } finally {
     await browser.close().catch(() => { });
   }
 
   // 5) meme-lab outputs (real server + public /memes, 1080×1080)
+  if (!MEMES.some((m) => want(m.file))) return;
   const port = await getFreePort();
   const tmp = mkdtempSync(join(tmpdir(), "divvy-tiktok-kit-"));
   const child = startServer(port, join(tmp, "m.db"));
@@ -583,6 +1048,7 @@ async function run() {
     await page.evaluate(async () => { if (document.fonts && document.fonts.ready) await document.fonts.ready; });
     await sleep(600);
     for (const m of MEMES) {
+      if (!want(m.file)) continue;
       const dataUrl = await page.evaluate(async (mm) => {
         const L = window.MemeLab;
         L.state.pose = mm.pose; L.state.tint = mm.tint; L.state.top = mm.top; L.state.bottom = mm.bottom;
@@ -607,8 +1073,13 @@ async function run() {
 
 run().then(
   () => {
-    const slideCount = CAROUSELS.reduce((n, c) => n + c.slides.length, 0);
-    process.stdout.write(`=== PASS — ${SCENES.length + CHATS.length + MEMES.length + 2} assets + ${CAROUSELS.length} carousels (${slideCount} slides) in marketing/tiktok-kit/assets ===\n`);
+    const slideCount = CAROUSELS.reduce((n, c) => n + c.slides.length, 0)
+      + NOTES_CAROUSELS.reduce((n, c) => n + c.sections.length, 0)
+      + LISTICLES.reduce((n, c) => n + c.slides.length, 0);
+    const carCount = CAROUSELS.length + NOTES_CAROUSELS.length + LISTICLES.length;
+    process.stdout.write(ONLY
+      ? `=== PASS — rendered only [${ONLY.join(", ")}] in marketing/tiktok-kit/assets ===\n`
+      : `=== PASS — ${SCENES.length + CHATS.length + CHATS_V2.length + MEMES.length + 2} assets + ${carCount} carousels (${slideCount} slides) in marketing/tiktok-kit/assets ===\n`);
     process.exit(0);
   },
   (err) => { process.stderr.write("=== FAIL — " + (err && err.message ? err.message : err) + "\n"); process.exit(1); }
