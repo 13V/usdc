@@ -1439,6 +1439,61 @@ function photoCtaHtml() {
     </div>`);
 }
 
+// ── CT settle-receipt "PnL cards" (1600×900, X-native) ───────────────────────
+// The crypto-twitter kit's flagship format (see marketing/ct-kit/STRATEGY.md):
+// a parody of the trading-PnL flex card, except the "position" is the group
+// trip and the win is getting paid back. Dark trenches-terminal aesthetic,
+// Space Mono, mint as the profit color, Mochi in the corner. NEVER fake
+// trading gains — the format is the joke, the contents are the product.
+
+const CT_RECEIPTS = [
+  {
+    file: join("ct", "receipt-breakpoint.png"),
+    tag: "POSITION CLOSED",
+    pair: "BREAKPOINT VILLA / USDC",
+    pnl: "+474.50 USDC",
+    sub: "recovered from the boys",
+    stats: [["position", "1 villa · 4 anons"], ["held", "4 days"], ["settled in", "3.1s"], ["network fee", "$0.0004"]],
+  },
+  {
+    file: join("ct", "receipt-dinner.png"),
+    tag: "POSITION CLOSED",
+    pair: "DEGEN DINNER / USDC",
+    pnl: "+86.20 USDC",
+    sub: "jake paid before the food arrived. unprecedented.",
+    stats: [["position", "1 omakase · 5 anons"], ["held", "0 days"], ["settled in", "2.4s"], ["network fee", "$0.0004"]],
+  },
+];
+
+function ctReceiptHtml(r) {
+  const statRows = r.stats.map(([k, v]) =>
+    `<div style="display:flex;flex-direction:column;gap:10px"><span style="color:rgba(243,234,217,0.34);font-size:20px;letter-spacing:3px;text-transform:uppercase">${k}</span><span style="color:rgba(243,234,217,0.88);font-size:27px;font-weight:700">${v}</span></div>`).join("");
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+  ${FONT_CSS}${FREEZE_CSS}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1600px;height:900px;overflow:hidden}
+  body{position:relative;background:#100D09;font-family:'Space Mono',monospace;color:#F3EAD9;
+    background-image:linear-gradient(rgba(61,232,199,0.045) 1px,transparent 1px),linear-gradient(90deg,rgba(61,232,199,0.045) 1px,transparent 1px);
+    background-size:44px 44px}
+  </style></head><body>
+  <div style="position:absolute;left:50%;top:38%;width:900px;height:620px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(ellipse,rgba(61,232,199,0.10) 0%,rgba(61,232,199,0) 62%)"></div>
+  <div style="position:absolute;inset:70px;border:2px solid rgba(61,232,199,0.30);border-radius:26px;background:rgba(16,13,9,0.72);padding:58px 78px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:14px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:42px;letter-spacing:-1px">
+        <span style="width:24px;height:24px;border-radius:8px;background:${BLUE};border:3px solid rgba(243,234,217,0.9)"></span>divvy
+      </div>
+      <div class="mmini" style="width:76px;height:76px"></div>
+    </div>
+    <div style="margin-top:44px;font-size:23px;letter-spacing:6px;color:${MINT}">● ${r.tag}</div>
+    <div style="margin-top:16px;font-size:30px;color:rgba(243,234,217,0.55);letter-spacing:2px">${r.pair}</div>
+    <div style="margin-top:22px;font-weight:700;font-size:118px;letter-spacing:-3px;color:${MINT};text-shadow:0 0 34px rgba(61,232,199,0.35)">${r.pnl}</div>
+    <div style="margin-top:10px;font-family:'General Sans',sans-serif;font-size:29px;color:rgba(243,234,217,0.62)">${r.sub}</div>
+    <div style="margin-top:44px;display:flex;gap:74px">${statRows}</div>
+  </div>
+  <div style="position:absolute;left:148px;bottom:34px;font-size:21px;letter-spacing:2px;color:rgba(243,234,217,0.38)">no token. just settled tabs. → divvysol.com</div>
+  </body></html>`;
+}
+
 async function shoot(browser, { html, width, height, mood, mascot, file }) {
   const page = await (await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 })).newPage();
   await page.setContent(html, { waitUntil: "load" });
@@ -1590,6 +1645,12 @@ async function run() {
         await shoot(browser, { html: photoShotHtml(), width: 1080, height: 1350, file: join(dir, `${String(PHOTO_SLIDES_N - 1).padStart(2, "0")}.png`) });
         await shoot(browser, { html: photoCtaHtml(), width: 1080, height: 1350, mood: "wave", file: join(dir, `${String(PHOTO_SLIDES_N).padStart(2, "0")}.png`) });
       }
+    }
+
+    // 3f) CT settle-receipt PnL cards — 1600×900 (X-native)
+    for (const r of CT_RECEIPTS) {
+      if (!want(r.file)) continue;
+      await shoot(browser, { html: ctReceiptHtml(r), width: 1600, height: 900, mascot: { kind: "mini", px: 76, all: ".mmini" }, file: r.file });
     }
 
     // 4) pfp + banner

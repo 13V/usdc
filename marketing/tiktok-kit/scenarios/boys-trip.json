@@ -1,0 +1,26 @@
+{
+  "file": "chat-boys-trip.png",
+  "kind": "group",
+  "title": "the boys 🗿",
+  "time": "1:37",
+  "members": [
+    { "n": "Jake", "i": "J", "g": ["#6EB7F7", "#3D8DEB"] },
+    { "n": "Ty", "i": "T", "g": ["#F5A96B", "#E07B39"] },
+    { "n": "Dev", "i": "D", "g": ["#7ED88F", "#43B75C"] }
+  ],
+  "rows": [
+    { "ts": "Today 1:24 AM" },
+    { "who": "Jake", "text": "villa for breakpoint is booked" },
+    { "who": "Jake", "text": "1,898 total" },
+    { "who": "Ty", "text": "nice" },
+    { "who": "Dev", "text": "nice" },
+    { "me": true, "text": "how are we splitting it", "status": "Read 1:25 AM", "beat": 600 },
+    { "who": "Jake", "text": "watch this", "beat": 500 },
+    { "who": "Jake", "card": { "title": "the boys 🗿 — your share is $474.50", "sub": "pay in one tap", "domain": "divvysol.com" }, "tapback": { "e": "🫡", "n": 2 } },
+    { "who": "Ty", "text": "paid" },
+    { "who": "Dev", "text": "paid" },
+    { "me": true, "text": "that was the whole conversation??" },
+    { "who": "Jake", "text": "PvE" },
+    { "typing": true, "who": "Dev" }
+  ]
+}
