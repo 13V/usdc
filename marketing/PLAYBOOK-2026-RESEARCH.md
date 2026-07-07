@@ -71,3 +71,30 @@ bio only. NO crypto/USDC reward promises anywhere (also App Store rule 3.1.5(v))
 No credible public views→installs benchmark exists. Account-warming is lore.
 "5x slideshow reach" and per-slide dwell "signals" are vendor inventions.
 Blitzit/Quittr/Rize numbers are founder-circle chatter without primary sources.
+
+---
+
+## Appendix: carousel-meta dossier (named cases + numbers, sourced 2026-07)
+
+- Cases: Cal AI (12+ owned accounts, 10.2M owned views, 700K downloads/mo organic-era,
+  network of 250+ creators — "message 500, 50 reply, 10 post"); Umax (1B+ impressions,
+  organic TikTok/Reddit, users screenshot the app's own score UI = self-replicating
+  reveal); Locket (in-house team posting the same 2-3s format daily); AstroApp
+  (~50M views/mo from text slideshows, 385 posts in 105 days, up to 5/day, language-
+  cloned accounts); StrongerMobile (700K users from gym-tip slideshows); Quittr
+  ($100 meme placement → 10.8M views → $21.7K collected).
+- Format specifics: 5-8 slides sweet spot; 9:16 1080x1920 with ~900x1600 safe zone;
+  hook = specific outcome + implied speed; reveal "earned, not gimmicky", mid-or-end
+  never opening; trending low-use instrumental audio (lyrics compete with slide
+  text); pin the "link in bio" comment; bio = what it does / social proof / CTA.
+- Platform facts: Photo Mode posts are EXCLUDED from TikTok's Creator Rewards
+  (keeps the format populated by promoters, less payout-farm competition);
+  TikTok shipped an AI-content slider + invisible watermarking (Nov 2025) — mass
+  AI-template farms lose distribution when users dial it down; duplicate-content
+  fingerprinting across accounts is the #1 2026 suppression cause (kills the
+  account-cloning tactic; one main account + founder account only).
+- Timing: practitioners estimate 6-12 months to saturation (Feb 2026 est.) —
+  the window is NOW; hand-designed original carousels are exempt from the slop
+  crackdown that's suppressing template farms.
+- Honesty: "5x reach", "70% less reach without audio", ROAS multiples = vendor
+  claims; no credible public views→installs funnel exists for the format.
