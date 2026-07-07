@@ -8,9 +8,11 @@
  *   • 7 Mochi scene cards, 1080×1920 — the REAL mascot rig (public/mascot.js,
  *     loaded verbatim via addScriptTag) over journal paper with big hook text.
  *   • fake group-chat screenshots, 1080×1920 — iMessage-style owed-money drama.
- *     chat-girls-trip.png uses the v2 renderer: status bar, grouped bubbles
- *     with real tails, SF-adjacent Inter, no watermark — the reveal is a divvy
- *     pay-request link-preview card INSIDE the thread (diegetic, not a stamp).
+ *     chat-girls-trip.png + chat-rent.png use the v3 renderer: status bar,
+ *     gradient monogram avatars (header cluster + per-sender), grouped bubbles
+ *     with real tails, corner-overlapping tapbacks, read receipt, input bar +
+ *     home indicator, closing typing indicator, SF-adjacent Inter — the reveal
+ *     is a divvy pay-request link-preview card INSIDE the thread (diegetic).
  *   • value carousels, 1080×1350 — get-paid-back/ is rendered as authentic
  *     Apple-Notes screenshots (one tall note, 8 scroll-position captures);
  *     the rest still use the v1 "designed" look until they're converted.
@@ -83,7 +85,7 @@ function statusBarHtml(time) {
       </g><circle cx="12.5" cy="15.5" r="1.9" fill="#000"/></svg>
       <svg width="60" height="34" viewBox="0 0 30 17">
         <rect x="1" y="2.5" width="23" height="12" rx="3.8" stroke="rgba(0,0,0,0.35)" stroke-width="1.5" fill="none"/>
-        <rect x="3" y="4.5" width="15" height="8" rx="2" fill="#000"/>
+        <rect x="3" y="4.5" width="11.6" height="8" rx="2" fill="#000"/>
         <rect x="25.6" y="6" width="2.6" height="5" rx="1.3" fill="rgba(0,0,0,0.4)"/>
       </svg>
     </div>
@@ -95,7 +97,7 @@ const SBAR_CSS = `
   .sbar-icons{display:flex;align-items:center;gap:16px}
 `;
 // Home indicator, drawn over content like the real one.
-const HOME_BAR = `<div style="position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:370px;height:12px;border-radius:8px;background:rgba(0,0,0,0.88);z-index:40"></div>`;
+const HOME_BAR = `<div style="position:fixed;left:50%;bottom:14px;transform:translateX(-50%);width:420px;height:13px;border-radius:9px;background:rgba(0,0,0,0.88);z-index:40"></div>`;
 
 const TINTS = {
   paper: "transparent",
@@ -301,44 +303,56 @@ const CHATS = [
   },
 ];
 
-// ── fake iMessage chats v2 — tighter iOS fidelity, diegetic reveal ────────────
-// Status bar, group-avatar cluster, SF-adjacent Inter, grouped bubbles with
-// real tails, and NO watermark: the brand reveal happens INSIDE the story as a
-// divvy pay-request link-preview card (the way an app link actually renders in
-// iMessage), followed by one reaction. Bottom is cropped above the input bar,
-// like someone actually cropped their screenshot.
-function chatV2Html({ title, members, time, rows }) {
+// ── fake iMessage chats v3 — forensic iOS fidelity, diegetic reveal ───────────
+// Everything a real group-chat screenshot has: status bar (61% battery), group
+// avatar cluster with per-letter gradient monograms (front circle overlapping
+// the back two), per-sender monogram avatars beside received bubble runs,
+// grouped bubbles with real tails, tapbacks OVERLAPPING the bubble's top corner
+// (with the little tail dots, and a count when 2+ reacted), a "Read h:mm PM"
+// receipt under the last outgoing bubble before the time gap, an iMessage
+// input bar + home indicator at the bottom, and a closing typing indicator.
+// NO watermark: the reveal is a divvy pay-request rendered as a real iMessage
+// small link preview (bold title, gray lowercase domain inside the card, app
+// icon as a rounded square on the right).
+function chatV3Html({ title, members, time, rows }) {
+  const grad = (m) => `linear-gradient(180deg,${m.g[0]},${m.g[1]})`;
+  const byName = (who) => members.find((m) => m.n === who) || { i: (who || "?")[0], g: ["#AAB3BD", "#8E97A1"] };
+  const mav = (who) => { const m = byName(who); return `<div class="mav" style="background:${grad(m)}">${m.i}</div>`; };
+  const tb = (t) => !t ? "" : `<div class="tb-b"><span class="e">${t.e}</span>${t.n ? `<span class="n">${t.n}</span>` : ""}</div>`;
+
   const out = [];
   const same = (a, b) => a && b && !a.ts && !b.ts && !!a.me === !!b.me && (a.who || "") === (b.who || "");
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     if (r.ts) { out.push(`<div class="ts">${r.ts.replace(/^Today /, "<b>Today</b> ")}</div>`); continue; }
     const samePrev = same(rows[i - 1], r), sameNext = same(r, rows[i + 1]);
-    const side = r.me ? "right" : "left";
+    const cls = ["row", r.me ? "right" : "left"];
+    if (samePrev) cls.push("tight");
+    if (r.tapback) cls.push("hastb");
     const who = !r.me && r.who && !samePrev ? `<div class="who">${r.who}</div>` : "";
-    if (r.card) {
-      out.push(`<div class="row ${side}${samePrev ? " tight" : ""}">${who}
-        <div class="cardwrap">
-          <div class="card">
-            <div class="card-top">
-              <div class="card-icon"><div id="stage"></div></div>
-              <div class="card-txt">
-                <div class="card-title">${r.card.title}</div>
-                <div class="card-sub">${r.card.sub}</div>
-              </div>
-            </div>
-            <div class="card-dom">${r.card.domain}</div>
-          </div>
-          ${r.tapback ? `<div class="tapback"><span>${r.tapback}</span></div>` : ""}
-        </div>
-      </div>`);
+    const avatar = !r.me && !sameNext ? mav(r.who) : ""; // avatar sits by the LAST bubble of a run
+    if (r.typing) {
+      out.push(`<div class="${cls.join(" ")}"><div class="bwrap">${avatar}<div class="typing"><i></i><i></i><i></i></div></div></div>`);
       continue;
     }
-    out.push(`<div class="row ${side}${samePrev ? " tight" : ""}">${who}<div class="bubble ${r.me ? "blue" : "grey"}${sameNext ? "" : " tail"}">${r.text}</div></div>`);
+    if (r.card) {
+      out.push(`<div class="${cls.join(" ")}">${who}<div class="bwrap">${avatar}<div class="card">
+          <div class="card-txt">
+            <div class="card-title">${r.card.title}</div>
+            <div class="card-sub">${r.card.sub}</div>
+            <div class="card-dom">${r.card.domain}</div>
+          </div>
+          <div class="card-icon"><div class="appic" id="stage"></div></div>
+        </div>${tb(r.tapback)}</div></div>`);
+      continue;
+    }
+    const status = r.me && r.status ? `<div class="status">${r.status}</div>` : "";
+    out.push(`<div class="${cls.join(" ")}">${who}<div class="bwrap">${avatar}<div class="bubble ${r.me ? "blue" : "grey"}${sameNext ? "" : " tail"}">${r.text}</div>${tb(r.tapback)}</div>${status}</div>`);
   }
 
-  const avs = members.map((m, i) =>
-    `<div class="av av${i}" style="background:linear-gradient(180deg,${m.c1},${m.c2})">${m.i}</div>`).join("");
+  // header cluster: two back circles, front circle overlapping both
+  const avs = members.slice(0, 3).map((m, i) =>
+    `<div class="av av${i}" style="background:${grad(m)}">${m.i}</div>`).join("");
 
   return `<!doctype html><html><head><meta charset="utf-8"><style>
   ${INTER_CSS}${FREEZE_CSS}
@@ -346,42 +360,60 @@ function chatV2Html({ title, members, time, rows }) {
   html,body{width:1080px;height:1920px;overflow:hidden}
   body{background:#fff;font-family:${SF};color:#000;display:flex;flex-direction:column;position:relative}
   ${SBAR_CSS}
-  header{flex:none;padding:118px 40px 16px;background:rgba(248,248,248,0.94);border-bottom:1px solid rgba(0,0,0,0.10);text-align:center;position:relative}
+  header{flex:none;padding:118px 40px 14px;background:rgba(248,248,248,0.94);border-bottom:1px solid rgba(0,0,0,0.10);text-align:center;position:relative}
   .back{position:absolute;left:42px;top:150px}
   .facetime{position:absolute;right:46px;top:162px}
-  .avs{position:relative;height:112px;margin-top:2px}
-  .av{position:absolute;top:0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500;box-shadow:0 0 0 5px rgba(248,248,248,0.94)}
-  .av0{width:86px;height:86px;left:calc(50% - 118px);top:16px;font-size:36px;z-index:1}
-  .av1{width:100px;height:100px;left:calc(50% - 50px);top:2px;font-size:42px;z-index:3}
-  .av2{width:86px;height:86px;left:calc(50% + 32px);top:16px;font-size:36px;z-index:2}
-  .nm{font-size:29px;font-weight:400;color:#000;margin-top:2px}
+  .avs{position:relative;height:116px}
+  .av{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500}
+  .av0{width:88px;height:88px;left:calc(50% - 114px);top:0;font-size:38px;z-index:1}
+  .av1{width:98px;height:98px;left:calc(50% - 49px);top:30px;font-size:42px;z-index:3;box-shadow:0 0 0 6px rgba(248,248,248,0.94)}
+  .av2{width:88px;height:88px;left:calc(50% + 26px);top:0;font-size:38px;z-index:2}
+  .nm{font-size:29px;font-weight:400;color:#000;margin-top:4px}
   .nm span{color:rgba(0,0,0,0.3);font-size:25px;margin-left:6px}
-  main{flex:1;padding:22px 40px 40px;display:flex;flex-direction:column;justify-content:flex-end;gap:16px;overflow:hidden}
-  .ts{text-align:center;font-size:24px;color:rgba(0,0,0,0.4);margin:10px 0 2px}
+  main{flex:1;padding:2px 40px 12px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+  .ts{text-align:center;font-size:24px;color:rgba(0,0,0,0.38);margin:14px 0 0}
   .ts b{font-weight:600}
-  .row{display:flex;flex-direction:column;max-width:80%}
-  .row.tight{margin-top:-10px}
-  .row.left{align-self:flex-start;align-items:flex-start}
+  .row{display:flex;flex-direction:column;max-width:81%;margin-top:10px}
+  .row.tight{margin-top:4px}
+  .row.hastb{margin-top:46px}
+  .row.hastb .bubble{padding-right:96px}
+  .row.left{align-self:flex-start;align-items:flex-start;padding-left:70px}
   .row.right{align-self:flex-end;align-items:flex-end}
-  .who{font-size:23px;color:rgba(0,0,0,0.4);margin:2px 0 4px 30px}
-  .bubble{position:relative;padding:16px 28px;border-radius:38px;font-size:38px;line-height:1.28;letter-spacing:0.1px}
+  .who{font-size:22px;color:rgba(0,0,0,0.4);margin:0 0 4px 26px}
+  .bwrap{position:relative;max-width:100%}
+  .mav{position:absolute;left:-70px;bottom:2px;width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:500;font-size:25px;z-index:6}
+  .bubble{position:relative;padding:13px 24px;border-radius:34px;font-size:33px;line-height:1.3;letter-spacing:0.1px}
   .bubble.grey{background:#E9E9EB;color:#000}
   .bubble.blue{background:#007AFF;color:#fff}
   .bubble.tail.grey::before{content:"";position:absolute;bottom:-3px;left:-15px;height:42px;width:42px;background:#E9E9EB;border-bottom-right-radius:32px 28px}
   .bubble.tail.grey::after{content:"";position:absolute;bottom:-3px;left:-39px;width:40px;height:46px;background:#fff;border-bottom-right-radius:24px}
   .bubble.tail.blue::before{content:"";position:absolute;bottom:-3px;right:-15px;height:42px;width:42px;background:#007AFF;border-bottom-left-radius:32px 28px}
   .bubble.tail.blue::after{content:"";position:absolute;bottom:-3px;right:-39px;width:40px;height:46px;background:#fff;border-bottom-left-radius:24px}
-  /* divvy pay-request as an iMessage app-link preview card */
-  .cardwrap{position:relative;margin-top:6px}
-  .card{width:620px;border-radius:36px;overflow:hidden;background:#fff;border:2px solid rgba(0,0,0,0.09);box-shadow:0 1px 4px rgba(0,0,0,0.05)}
-  .card-top{display:flex;align-items:center;gap:26px;padding:26px 30px 24px}
-  .card-icon{width:104px;height:104px;flex:none;border-radius:24px;background:linear-gradient(180deg,#D9F8EF,#AFF0DE);display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,0.06)}
-  .card-title{font-size:33px;font-weight:600;line-height:1.25;color:#0A0A0A;padding-right:56px}
-  .card-sub{font-size:28px;color:rgba(0,0,0,0.45);margin-top:5px}
-  .card-dom{padding:16px 32px;background:#F2F2F4;font-size:26px;color:rgba(0,0,0,0.45);border-top:1px solid rgba(0,0,0,0.07)}
-  .tapback{position:absolute;top:-54px;right:-16px;width:88px;height:88px;border-radius:50%;background:#E9E9EB;box-shadow:0 0 0 7px #fff;display:flex;align-items:center;justify-content:center}
-  .tapback span{font-size:44px;line-height:1}
-  .tapback::after{content:"";position:absolute;left:-4px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:#E9E9EB;box-shadow:0 0 0 6px #fff}
+  .status{font-size:24px;color:rgba(0,0,0,0.42);font-weight:500;margin:6px 8px 0}
+  /* typing indicator (three dots + trailing tail circles) */
+  .typing{position:relative;display:flex;gap:11px;align-items:center;background:#E9E9EB;border-radius:34px;padding:20px 26px}
+  .typing i{width:17px;height:17px;border-radius:50%;background:rgba(0,0,0,0.28)}
+  .typing::before{content:"";position:absolute;left:-4px;bottom:-7px;width:22px;height:22px;border-radius:50%;background:#E9E9EB}
+  .typing::after{content:"";position:absolute;left:-19px;bottom:-22px;width:12px;height:12px;border-radius:50%;background:#E9E9EB}
+  /* tapback balloon: overlaps the bubble's top corner, tail dots toward it */
+  .tb-b{position:absolute;top:-58px;right:-26px;height:78px;min-width:78px;padding:0 18px;border-radius:44px;background:#E9E9EB;box-shadow:0 0 0 6px #fff;display:flex;align-items:center;justify-content:center;gap:8px;z-index:5}
+  .tb-b .e{font-size:42px;line-height:1}
+  .tb-b .n{font-size:27px;font-weight:600;color:rgba(0,0,0,0.55)}
+  .tb-b::before{content:"";position:absolute;left:1px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:#E9E9EB;box-shadow:0 0 0 5px #fff}
+  .tb-b::after{content:"";position:absolute;left:-13px;bottom:-15px;width:12px;height:12px;border-radius:50%;background:#E9E9EB;box-shadow:0 0 0 4px #fff}
+  /* divvy pay-request as an iMessage SMALL link preview: text left (bold title,
+     gray lowercase domain at the bottom, inside the card), app icon right */
+  .card{width:660px;border-radius:34px;overflow:hidden;background:#E9E9EB;display:flex;align-items:stretch}
+  .card-txt{flex:1;min-width:0;padding:18px 6px 15px 28px;display:flex;flex-direction:column}
+  .card-title{font-size:31px;font-weight:600;line-height:1.28;color:#111}
+  .card-sub{font-size:27px;color:rgba(0,0,0,0.5);margin-top:6px}
+  .card-dom{font-size:26px;color:rgba(0,0,0,0.42);margin-top:auto;padding-top:12px;text-transform:lowercase}
+  .card-icon{flex:none;width:152px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.035);border-left:1px solid rgba(0,0,0,0.07)}
+  .appic{width:106px;height:106px;border-radius:26px;background:linear-gradient(180deg,#D9F8EF,#AFF0DE);display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,0.07)}
+  /* iMessage input bar + home indicator */
+  footer{flex:none;background:#fff;padding:8px 34px 54px;display:flex;align-items:center;gap:20px}
+  .plus{width:76px;height:76px;border-radius:50%;background:#E9E9EB;flex:none;display:flex;align-items:center;justify-content:center}
+  .field{flex:1;height:76px;border:2px solid rgba(0,0,0,0.13);border-radius:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 30px;font-size:31px;color:rgba(0,0,0,0.3)}
   </style></head><body>
   ${statusBarHtml(time)}
   <header>
@@ -391,6 +423,11 @@ function chatV2Html({ title, members, time, rows }) {
     <div class="facetime"><svg width="64" height="44" viewBox="0 0 32 22"><rect x="1" y="3" width="20" height="16" rx="5" fill="#007AFF"/><path d="M22 9 L29 4.5 a1.4 1.4 0 0 1 2 1.2 v10.6 a1.4 1.4 0 0 1 -2 1.2 L22 13 Z" fill="#007AFF"/></svg></div>
   </header>
   <main>${out.join("\n")}</main>
+  <footer>
+    <div class="plus"><svg width="38" height="38" viewBox="0 0 19 19"><path d="M9.5 3.2v12.6 M3.2 9.5h12.6" stroke="rgba(0,0,0,0.5)" stroke-width="1.9" stroke-linecap="round"/></svg></div>
+    <div class="field"><span>iMessage</span><svg width="34" height="52" viewBox="0 0 17 26"><g stroke="rgba(0,0,0,0.33)" stroke-width="1.5" fill="none" stroke-linecap="round"><rect x="5.4" y="1.4" width="6.2" height="12.2" rx="3.1"/><path d="M2.4 10.8a6.1 6.1 0 0 0 12.2 0M8.5 17.6v3.6M5.6 23.8h5.8"/></g></svg></div>
+  </footer>
+  ${HOME_BAR}
   </body></html>`;
 }
 
@@ -400,23 +437,49 @@ const CHATS_V2 = [
     title: "girls trip 🌴",
     time: "5:09",
     members: [
-      { i: "E", c1: "#AAB3BD", c2: "#8E97A1" },
-      { i: "S", c1: "#B3AABD", c2: "#978EA1" },
-      { i: "L", c1: "#AABDB3", c2: "#8EA197" },
+      { n: "Em", i: "E", g: ["#6EB7F7", "#3D8DEB"] },
+      { n: "Sof", i: "S", g: ["#C08CF5", "#985FDE"] },
+      { n: "Liv", i: "L", g: ["#7ED88F", "#43B75C"] },
     ],
     rows: [
-      { ts: "Today 4:39 PM" },
-      { who: "Sof", text: "ok so the villa was $840 and i paid all of it 🙃" },
-      { who: "Em", text: "i got all the ubers" },
-      { who: "Liv", text: "i paid brunch AND the boat AND the little hats" },
+      { who: "Sof", text: "the villa was $840 and i paid all of it 🙃" },
+      { who: "Liv", text: "i paid brunch and the boat and the little hats" },
+      { who: "Em", text: "lol not the hats" },
       { me: true, text: "i don't even know who i owe anymore" },
       { who: "Sof", text: "should i make a spreadsheet" },
-      { me: true, text: "NOT THE SPREADSHEET" },
-      { who: "Em", text: "the spreadsheet ended the last trip 💀" },
+      { me: true, text: "NOT THE SPREADSHEET", status: "Read 4:41 PM" },
+      { who: "Em", text: "the spreadsheet ended the last trip", tapback: { e: "💀", n: 2 } },
       { ts: "Today 5:02 PM" },
-      { who: "Sof", text: "wait. try this instead" },
-      { who: "Sof", card: { title: "girls trip 🌴 — your share is $168", sub: "pay in one tap", domain: "divvysol.com" }, tapback: "❤️" },
+      { who: "Sof", text: "wiat." },
+      { who: "Sof", text: "ok try this instead" },
+      { who: "Sof", card: { title: "girls trip 🌴 — your share is $168", sub: "pay in one tap", domain: "divvysol.com" }, tapback: { e: "❤️" } },
       { who: "Liv", text: "WAIT this is so much better" },
+      { typing: true, who: "Em" },
+    ],
+  },
+  {
+    file: "chat-rent.png",
+    title: "apt 4b 🏠",
+    time: "9:44",
+    members: [
+      { n: "Maya", i: "M", g: ["#F6B356", "#EE8B2E"] },
+      { n: "Josh", i: "J", g: ["#5CC6F2", "#2E9BD6"] },
+      { n: "Priya", i: "P", g: ["#F58FB1", "#E85D8A"] },
+    ],
+    rows: [
+      { who: "Maya", text: "lanlord email just dropped" },
+      { who: "Maya", text: "rent is $2,600 starting october 🙃" },
+      { who: "Josh", text: "he can't just do that??" },
+      { me: true, text: "are we still doing even quarters bc my room fits a bed and one (1) plant" },
+      { who: "Priya", text: "the plant doesn't pay rent so" },
+      { me: true, text: "neither does jake and he's here 6 nights a week", status: "Read 9:18 PM" },
+      { who: "Josh", text: "LEAVE JAKE OUT OF THIS" },
+      { who: "Priya", text: "jake finished my oat milk. jake is in this", tapback: { e: "😂", n: 2 } },
+      { ts: "Today 9:41 PM" },
+      { who: "Maya", text: "ok i did the math by room size" },
+      { who: "Maya", card: { title: "october rent — your share is $612", sub: "pay in one tap", domain: "divvysol.com" }, tapback: { e: "‼️" } },
+      { who: "Josh", text: "finally" },
+      { typing: true, who: "Priya" },
     ],
   },
 ];
@@ -944,6 +1007,17 @@ async function shoot(browser, { html, width, height, mood, mascot, file }) {
   }
   await page.evaluate(async () => { if (document.fonts && document.fonts.ready) await document.fonts.ready; });
   await sleep(350);
+  // chat pages: main is justify-content:flex-end + overflow:hidden, so extra
+  // content silently clips off the TOP. Fail loudly instead.
+  const clipped = await page.evaluate(() => {
+    const m = document.querySelector("main");
+    if (!m) return 0;
+    const first = m.firstElementChild;
+    if (!first) return 0;
+    const pad = parseFloat(getComputedStyle(m).paddingTop) || 0;
+    return Math.max(0, Math.round(m.getBoundingClientRect().top + pad - first.getBoundingClientRect().top));
+  });
+  if (clipped > 0) throw new Error(`${file}: chat content overflows the top by ${clipped}px — trim the thread`);
   const buf = await page.screenshot({ type: "png" });
   const dim = pngSize(buf);
   if (dim.width !== width || dim.height !== height) {
@@ -990,7 +1064,7 @@ async function run() {
     for (const c of CHATS_V2) {
       if (!want(c.file)) continue;
       // mini head-only Mochi in the pay-request card's app icon (#stage)
-      await shoot(browser, { html: chatV2Html(c), width: 1080, height: 1920, mascot: { kind: "mini", px: 74 }, file: c.file });
+      await shoot(browser, { html: chatV3Html(c), width: 1080, height: 1920, mascot: { kind: "mini", px: 72 }, file: c.file });
     }
 
     // 3) value carousels (unbranded until the reveal slide) — 1080×1350
