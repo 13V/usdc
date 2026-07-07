@@ -548,6 +548,218 @@ async function recordChatVideo(browser, scen) {
   return { mp4: !!how };
 }
 
+// ── mascot films: scripted "found footage" videos (1080×1920) ─────────────────
+// The scroll-stopper tier: motion + story + absurdity in the first second,
+// instead of static tip decks. Each film is a self-contained HTML page with a
+// JS timeline (window.__play resolves when the cut ends) recorded by the same
+// harness as the chat videos. Silent — post with a trending suspense/true-crime
+// sound. First film: COLD CASE Nº 047 — a true-crime parody about the $23 from
+// 2019, using the real dave-2019 chat still as EXHIBIT A.
+
+const GRAIN_URI = "data:image/svg+xml," + encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='240' height='240' filter='url(%23n)'/></svg>`);
+
+function coldCaseHtml() {
+  const evidence = readFileSync(join(OUT, "chat-2019.png")).toString("base64");
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+  ${FONT_CSS}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1080px;height:1920px;overflow:hidden;background:#0B0908}
+  body{font-family:'Space Mono',monospace;color:#EDE6D6}
+  .scene{position:absolute;inset:0;opacity:0;transition:opacity .55s ease;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .scene.on{opacity:1}
+  .grain{position:fixed;inset:-60px;background-image:url("${GRAIN_URI}");opacity:.09;z-index:60;pointer-events:none;animation:jit .28s steps(2) infinite}
+  @keyframes jit{0%{transform:translate(0,0)}50%{transform:translate(-26px,18px)}100%{transform:translate(14px,-22px)}}
+  .vig{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 46%,rgba(0,0,0,0.62) 100%);z-index:55;pointer-events:none}
+  .topbar{position:fixed;top:64px;left:70px;right:70px;display:flex;justify-content:space-between;z-index:50;font-size:26px;letter-spacing:5px;color:rgba(237,230,214,0.55)}
+  .rec{color:#D2372E;animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .cap{position:fixed;left:60px;right:60px;bottom:200px;text-align:center;z-index:50;font-family:'Clash Display',sans-serif;font-weight:700;font-size:58px;line-height:1.2;color:#fff;text-shadow:0 3px 0 #000,0 0 26px rgba(0,0,0,0.9);opacity:0;transition:opacity .3s}
+  .cap.on{opacity:1}
+  .type{font-size:38px;letter-spacing:3px;color:#EDE6D6;min-height:56px}
+  .stamp{position:absolute;font-family:'Clash Display',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:6px;color:#D2372E;border:9px solid #D2372E;border-radius:10px;padding:14px 40px;transform:rotate(-12deg) scale(2.8);opacity:0}
+  .stamp.green{color:#1FA355;border-color:#1FA355}
+  .stamp.slam{animation:slam .38s cubic-bezier(.2,1.8,.4,1) forwards}
+  @keyframes slam{from{transform:rotate(-12deg) scale(2.8);opacity:0}60%{opacity:1}to{transform:rotate(-12deg) scale(1);opacity:.94}}
+  .h-title{font-family:'Clash Display',sans-serif;font-weight:700;font-size:104px;letter-spacing:2px;color:#EDE6D6}
+  .exhibit{background:#F5F0E4;padding:26px 26px 66px;box-shadow:0 40px 90px rgba(0,0,0,0.7);position:relative}
+  .exhibit img{display:block;width:640px}
+  .etag{position:absolute;bottom:18px;left:26px;font-size:24px;letter-spacing:3px;color:#5B4A33}
+  .zoomwrap{width:1080px;height:1920px;display:flex;align-items:center;justify-content:center;transform:scale(1);transition:transform 6.4s linear}
+  .quote{font-family:'Clash Display',sans-serif;font-weight:700;font-size:96px;line-height:1.22;color:#fff;text-align:center;padding:0 90px}
+  .quote .ul{position:relative;white-space:nowrap}
+  .quote .ul::after{content:"";position:absolute;left:0;bottom:-14px;height:9px;width:0;background:#D2372E;transition:width 1.1s ease}
+  .quote.mark .ul::after{width:100%}
+  .attrib{margin-top:44px;font-size:30px;letter-spacing:4px;color:rgba(237,230,214,0.55)}
+  .board{position:absolute;inset:0;background:linear-gradient(180deg,#8B6A46,#77573A);}
+  .board::after{content:"";position:absolute;inset:0;background-image:url("${GRAIN_URI}");opacity:.35}
+  .pola{position:absolute;background:#F5F0E4;padding:18px 18px 58px;box-shadow:0 24px 50px rgba(0,0,0,0.55);opacity:0;z-index:5}
+  .pola .ph{width:340px;height:300px;background:#1B150F;display:flex;align-items:center;justify-content:center;font-size:96px}
+  .pola .pcap{position:absolute;bottom:14px;left:18px;right:18px;font-size:22px;letter-spacing:1px;color:#3A2E1E;text-align:center}
+  .pola .pin{position:absolute;top:-14px;left:50%;width:28px;height:28px;border-radius:50%;background:#D2372E;box-shadow:0 4px 8px rgba(0,0,0,0.5)}
+  .pola.drop{animation:drop .4s cubic-bezier(.2,1.6,.4,1) forwards}
+  @keyframes drop{from{opacity:0;transform:scale(1.7) rotate(0deg)}to{opacity:1;transform:scale(1) rotate(var(--rot))}}
+  .string{position:absolute;height:5px;background:#C4302B;transform-origin:0 50%;opacity:0;transition:opacity .5s;z-index:6;box-shadow:0 2px 4px rgba(0,0,0,0.4)}
+  .paycard{width:760px;background:#E9E9EB;border-radius:26px;overflow:hidden;display:flex;box-shadow:0 40px 90px rgba(0,0,0,0.7);transform:translateY(320px);opacity:0;transition:transform .6s cubic-bezier(.2,1.4,.4,1),opacity .4s}
+  .paycard.up{transform:translateY(0);opacity:1}
+  .paycard .txt{flex:1;padding:36px 30px;font-family:'Inter',sans-serif;color:#111}
+  .paycard .t1{font-weight:700;font-size:34px}
+  .paycard .t2{font-size:28px;color:#555;margin-top:10px}
+  .paycard .t3{font-size:26px;color:#8A8A8E;margin-top:8px}
+  .paycard .appic-box{width:210px;background:#DCDCE0;display:flex;align-items:center;justify-content:center}
+  .appic{width:120px;height:120px;border-radius:30px;background:linear-gradient(180deg,#CFF6EA,#9FEFD8);display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,0,0,0.08)}
+  .wordrow{display:flex;align-items:center;gap:20px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:96px;letter-spacing:-2.5px;color:#EDE6D6}
+  .wordrow .dot{width:46px;height:46px;border-radius:15px;background:${BLUE};border:4px solid rgba(237,230,214,0.9)}
+  .pill{margin-top:44px;background:${MINT};color:#0B0908;border-radius:999px;padding:26px 54px;font-weight:700;font-size:32px}
+  </style></head><body>
+  <div class="grain"></div><div class="vig"></div>
+  <div class="topbar"><span>CASE FILE Nº 047</span><span class="rec">● REC</span></div>
+  <div class="cap" id="cap"></div>
+
+  <div class="scene on" id="s1">
+    <div class="h-title">COLD CASE</div>
+    <div class="type" id="t1" style="margin-top:38px"></div>
+    <div class="stamp" id="st1" style="margin-top:90px;position:static">reopened</div>
+  </div>
+
+  <div class="scene" id="s2">
+    <div class="zoomwrap" id="zoom">
+      <div class="exhibit" style="transform:rotate(-1.6deg)">
+        <img src="data:image/png;base64,${evidence}">
+        <div class="etag">EXHIBIT A — THE THREAD</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene" id="s3">
+    <div class="quote" id="q">“yeah yeah venmo's being weird,<br><span class="ul">i'll get you back</span> 👍”</div>
+    <div class="attrib">— D., MARCH 12, 2019. 11:48 PM.</div>
+  </div>
+
+  <div class="scene" id="s4">
+    <div class="board"></div>
+    <div class="pola" id="p1" style="--rot:-6deg;left:90px;top:420px"><span class="pin"></span><div class="ph">📵</div><div class="pcap">the request — ignored</div></div>
+    <div class="pola" id="p2" style="--rot:4deg;right:100px;top:640px"><span class="pin"></span><div class="ph">👟</div><div class="pcap">new kicks. $180.</div></div>
+    <div class="pola" id="p3" style="--rot:-3deg;left:250px;top:1030px"><span class="pin"></span><div class="ph">📱</div><div class="pcap">“new phone who dis”</div></div>
+    <div class="string" id="l1" style="left:430px;top:600px;width:300px;transform:rotate(34deg)"></div>
+    <div class="string" id="l2" style="left:520px;top:1080px;width:360px;transform:rotate(-24deg)"></div>
+  </div>
+
+  <div class="scene" id="s5"><div class="type" id="t5" style="font-size:44px;padding:0 100px;text-align:center;line-height:1.7"></div></div>
+
+  <div class="scene" id="s6">
+    <div class="paycard" id="pc">
+      <div class="txt">
+        <div class="t1">the $23 from the game — est. 2019</div>
+        <div class="t2">pay in one tap</div>
+        <div class="t3">divvysol.com</div>
+      </div>
+      <div class="appic-box"><div class="appic"></div></div>
+    </div>
+    <div class="stamp green" id="st2" style="top:44%;left:50%;margin-left:-190px">paid</div>
+    <div class="stamp" id="st3" style="top:56%;left:50%;margin-left:-330px;font-size:74px">case closed</div>
+  </div>
+
+  <div class="scene" id="s7">
+    <div id="stage" style="height:190px;display:flex;align-items:center;justify-content:center"></div>
+    <div class="wordrow" style="margin-top:20px"><span class="dot"></span>divvy</div>
+    <div style="font-size:30px;letter-spacing:2px;color:rgba(237,230,214,0.6);margin-top:26px">split the bill. not the friendship.</div>
+    <div class="pill">divvysol.com</div>
+    <div style="font-size:24px;letter-spacing:4px;color:rgba(237,230,214,0.35);margin-top:60px">CASE Nº 047: CLOSED</div>
+  </div>
+
+  <script>
+  const $ = (id) => document.getElementById(id);
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function type(el, text, cps) {
+    for (const ch of text) { el.textContent += ch; await wait(1000 / (cps || 16)); }
+  }
+  function scene(n) {
+    document.querySelectorAll(".scene").forEach((s) => s.classList.remove("on"));
+    $("s" + n).classList.add("on");
+  }
+  async function cap(text, ms) {
+    const c = $("cap"); c.textContent = text; c.classList.add("on");
+    await wait(ms); c.classList.remove("on"); await wait(320);
+  }
+  window.__play = async () => {
+    // S1 — title card
+    await wait(700);
+    await type($("t1"), "case nº 047 — the twenty-three dollars", 22);
+    await wait(500); $("st1").classList.add("slam");
+    await wait(1600);
+    // S2 — exhibit A slow zoom
+    scene(2); await wait(400);
+    $("zoom").style.transform = "scale(1.45) translateY(120px)";
+    await cap("march 12, 2019. 11:48 pm.", 2400);
+    await cap("a man borrows $23 at the game.", 2600);
+    // S3 — the quote
+    scene(3); await wait(800); $("q").classList.add("mark");
+    await cap("he said — and i quote:", 3200);
+    // S4 — evidence board
+    scene(4); await wait(300);
+    $("p1").classList.add("drop"); await wait(650);
+    $("p2").classList.add("drop"); await wait(650);
+    $("p3").classList.add("drop"); await wait(500);
+    $("l1").style.opacity = 1; $("l2").style.opacity = 1;
+    await cap("the evidence mounted for seven years.", 3400);
+    await wait(400);
+    // S5 — the turn
+    scene(5); await wait(500);
+    await type($("t5"), "then, on july 7, 2026...", 18); await wait(700);
+    $("t5").textContent += "\\n"; await type($("t5"), "the suspect received a link.", 18);
+    await wait(1100);
+    // S6 — resolution
+    scene(6); await wait(500); $("pc").classList.add("up");
+    await wait(1400); $("st2").classList.add("slam");
+    await wait(1200); $("st3").classList.add("slam");
+    await cap("paid in one tap. after 7 years.", 3000);
+    await wait(500);
+    // S7 — closer
+    scene(7); await wait(2800);
+  };
+  </script>
+  </body></html>`;
+}
+
+const FILMS = [
+  { slug: "cold-case-23", make: coldCaseHtml },
+];
+
+async function recordFilm(browser, film) {
+  const tmp = mkdtempSync(join(tmpdir(), "divvy-film-"));
+  const ctx = await browser.newContext({
+    viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1,
+    recordVideo: { dir: tmp, size: { width: 1080, height: 1920 } },
+  });
+  const page = await ctx.newPage();
+  await page.setContent(film.make(), { waitUntil: "load" });
+  await page.addScriptTag({ path: MASCOT_JS });
+  await page.evaluate(() => {
+    document.querySelectorAll(".appic").forEach((el) => { el.innerHTML = window.Mascot.mini(84); });
+    const stage = document.getElementById("stage");
+    if (stage) stage.innerHTML = window.Mascot.html({ mood: "wave", size: 170, glow: false });
+  });
+  await page.evaluate(async () => { if (document.fonts && document.fonts.ready) await document.fonts.ready; });
+  await page.evaluate(() => window.__play());
+  await sleep(600);
+  const video = page.video();
+  await page.close();
+  await ctx.close();
+  const dest = join(OUT, "videos", `${film.slug}.webm`);
+  mkdirSync(dirname(dest), { recursive: true });
+  await video.saveAs(dest);
+  try { rmSync(tmp, { recursive: true, force: true }); } catch { }
+  const size = statSync(dest).size;
+  if (!size) throw new Error(`videos/${film.slug}.webm is empty`);
+  const secs = videoDuration(dest);
+  if (secs != null && (secs < 15 || secs > 60)) throw new Error(`videos/${film.slug}.webm: ${secs.toFixed(1)}s is outside the 15–60s envelope`);
+  const mp4 = dest.replace(/\.webm$/, ".mp4");
+  const how = tryMp4(dest, mp4);
+  process.stdout.write(`  ${String(Math.round(size / 1024)).padStart(5)}kB ${(secs != null ? secs.toFixed(1) : "?")}s  videos/${film.slug}.webm${how ? ` (+ .mp4 via ${how})` : ""}\n`);
+  return { mp4: !!how };
+}
+
 // ── pfp + banner ──────────────────────────────────────────────────────────────
 function pfpHtml() {
   return `<!doctype html><html><head><meta charset="utf-8"><style>
@@ -1776,6 +1988,14 @@ async function run() {
       "  NOTE: no mp4-capable ffmpeg here (playwright's bundle is webm-only) — videos ship as VP8 .webm.\n" +
       "  One-time conversion on any machine with real ffmpeg (see GENERATOR.md):\n" +
       "    ffmpeg -i videos/<slug>.webm -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart videos/<slug>.mp4\n");
+
+    // 2b) mascot films — scripted "found footage" videos (1080×1920)
+    if (!stillsOnly) {
+      for (const f of FILMS) {
+        if (!want(f.slug)) continue;
+        await recordFilm(browser, f);
+      }
+    }
 
     // 3) value carousels (unbranded until the reveal slide) — 1080×1350
     for (const car of CAROUSELS) {

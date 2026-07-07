@@ -319,3 +319,18 @@ rewards, and saves outweigh likes for reach.
 - Post IG carousel + TikTok photo mode; pairs with the boys-trip chat VIDEO
   (scenarios/boys-trip.json renders one on the next full build) as the
   same-week follow-up.
+
+**32. COLD CASE Nº 047: the twenty-three dollars (film)** · ZERO · `assets/videos/cold-case-23.mp4` (38s, 1080×1920, silent)
+- The scroll-stopper tier: a true-crime parody FILM, not a tip deck. Film
+  grain + vignette + "● REC", typewriter title card ("COLD CASE — case nº 047"
+  + REOPENED stamp), slow zoom over the real dave-2019 chat as "EXHIBIT A —
+  THE THREAD", the verbatim quote ("i'll get you back 👍" — D., 2019) with a
+  red underline, a corkboard evidence wall (polaroids + red string: the
+  ignored request, the $180 kicks, "new phone who dis"), then the divvy
+  pay-card lands → PAID stamp → CASE CLOSED slam → Mochi closer.
+- Post with a trending true-crime/suspense narration sound; caption:
+  `episode 1 of cold cases from the group chat. justice for the $23 🕯️ #storytime #truecrime #payme #relatable`
+- This is a FORMAT: `FILMS` in build-assets.mjs — new episodes are new
+  timelines (the $87 "venmo pending" mystery, the roommate who "fixed" the
+  thermostat, the bachelor party black hole). One episode/week as the anchor
+  post; the static decks are the b-side, not the lead.
