@@ -944,6 +944,75 @@ const NOTES_CAROUSELS = [
       ] },
     ],
   },
+  // the BRO version of the flagship for TikTok/IG: same proven Notes-app
+  // camouflage + identity-call-out hook, boys-trip voice (plain language, no
+  // CT slang — that stays on X), the boys chat as the slide-7 payoff.
+  {
+    slug: "boys-trip-notes",
+    date: "July 7, 2026 at 1:52 AM",
+    time: "1:58",
+    sections: [
+      { kind: "cover", title: "if you're the one who always books the airbnb", lines: [
+        "- 10 rules so the boys actually pay you back.",
+      ] },
+      { kind: "tips2", tips: [
+        { h: "1. everyone owes the day you book", lines: [
+          "not after the trip. not “when i get paid.” booking day.",
+          "- “i'll get you back” has a half-life of about 72 hours.",
+        ] },
+        { h: "2. say the number in the chat, not in person", lines: [
+          "texts are receipts. conversations are vibes.",
+          "- “$480 each for the house” in writing gets paid. a nod at the gym does not.",
+        ] },
+      ] },
+      { kind: "tips2", tips: [
+        { h: "3. you're not the group's bank", lines: [
+          "if you front the house, someone else fronts the car, someone else food.",
+          "- one guy carrying everything is how resentment compounds.",
+        ] },
+        { h: "4. rooms aren't equal. prices aren't either.", lines: [
+          "master with the ensuite ≠ the air mattress by the AC unit.",
+          "- price the rooms before you land, or auction the big one.",
+        ] },
+      ] },
+      { kind: "tips2", tips: [
+        { h: "5. the no-show rule gets set at booking", lines: [
+          "dropping out two weeks before doesn't delete your share.",
+          "- agree it the day you book, while it's about nobody.",
+        ] },
+        { h: "6. send a pay link, not a reminder speech", lines: [
+          "one tap beats “yo did you ever see my request.”",
+          "- links get paid the same night. speeches get “my bad, monday.”",
+        ] },
+      ] },
+      { kind: "tips2", tips: [
+        { h: "7. day-one pot for the small stuff", lines: [
+          "$50 each: gas, ice, tolls, the 2am food run.",
+          "- the $7 debts are the ones that actually end friendships.",
+        ] },
+        { h: "8. net it out at the end", lines: [
+          "don't do six transfers in a circle.",
+          "- total up who's up and who's down — most trips collapse to one payment.",
+        ] },
+      ] },
+      { kind: "tips2", tips: [
+        { h: "9. settle at the airport, not “next week”", lines: [
+          "square up at the gate while everyone's still there.",
+          "- “no rush” is how $38 follows a friendship around for a year.",
+        ] },
+        { h: "10. keep score somewhere neutral", lines: [
+          "the guy who remembers every debt becomes the villain. don't be the ledger.",
+          "- let an app be the bad guy. it never forgets and nobody argues with it.",
+        ] },
+      ] },
+      { kind: "shot", lines: ["rule 6 in the wild:"], img: "chat-boys-trip.png" },
+      { kind: "reveal", lines: [
+        "the app from that screenshot is divvy 🐸",
+        "scan the receipt, the boys pay their share in one tap.",
+        "get early access → divvysol.com",
+      ] },
+    ],
+  },
 ];
 
 async function shootNotesCarousel(browser, car) {

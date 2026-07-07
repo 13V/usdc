@@ -307,3 +307,15 @@ rewards, and saves outweigh likes for reach.
   friend debt. rule 2 hurts because it's true. no token. just settled tabs 🫡`
 - Every slide footers "no token. just settled tabs." — the memecoin-signal
   disclaimer IS the brand line.
+
+**31. if you're the one who always books the airbnb (boys-trip flagship)** · ZERO · `assets/carousels/boys-trip-notes/` (8 slides, Notes skin)
+- The TikTok/IG-native deck for the young-male audience (the CT deck, concept
+  30, is for X only — terminal skin + CT slang doesn't convert on TikTok/IG).
+  Same proven flagship shape: identity-call-out cover (top-scoring hook
+  pattern) → 10 rules in plain bro voice, two per slide → the boys-trip chat
+  as slide 7 ("rule 6 in the wild:") → reveal slide 8. No crypto slang in the
+  note body; the crypto lives in the screenshot's pay-card and the product.
+- Caption: `rule 1 is non-negotiable. send this to the group accountant 🧾 #boystrip #grouptrip #splitthebill #airbnb #adulting`
+- Post IG carousel + TikTok photo mode; pairs with the boys-trip chat VIDEO
+  (scenarios/boys-trip.json renders one on the next full build) as the
+  same-week follow-up.
