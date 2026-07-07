@@ -139,6 +139,16 @@ humor. Cute art + cute caption = normie app.
 
 ## 6. Content formats (ranked) + the asset machine
 
+0. **THE TOY — divvysol.com/bags (SHIPPED).** The pump.fun/Polymarket lesson:
+   users' own artifacts are the ad. `/bags` is the Friend Debt Portfolio
+   generator — anyone on CT types in who owes them what ("JAKE/USDC −$38 ·
+   held 247 days · ▼ DOWN BAD"), gets a trenches-terminal portfolio card,
+   posts it. No account, no wallet, pure client (nothing uploaded), divvy is
+   the "recovery protocol" footer and the tweet-intent links back to the
+   page. This is the launch post: founder shares their own card + the link.
+   Preview: `bags-page-preview.png`. Code: `src/bags.ts` + `public/bags.js`
+   (same architecture as /memes).
+
 1. **The settle-receipt "PnL card"** — CT's native format is the screenshot
    flex; ours is the parody: "POSITION CLOSED: breakpoint airbnb · +412.50
    USDC recovered from the boys · settled in 3.1s · network fee $0.0004".

@@ -164,6 +164,9 @@ import { legalRouter } from "./legal";
 // Public Mochi meme generator (GET /memes). Standalone shell + public/memes.js,
 // no auth, pure client after load. See src/memes.ts.
 import { memesRouter } from "./memes";
+// Public Friend Debt Portfolio generator (GET /bags) — the CT growth toy.
+// Same shape as /memes: server-rendered shell + public/bags.js, pure client.
+import { bagsRouter } from "./bags";
 import { waitlistRouter } from "./waitlist";
 
 const PORT = Number(process.env.PORT || 3000);
@@ -440,6 +443,8 @@ app.use(referralsRouter);
 app.use(legalRouter);
 // Public Mochi meme generator page: /memes (server-rendered shell, no auth).
 app.use(memesRouter);
+// Public friend-debt portfolio card generator: /bags (no auth, pure client).
+app.use(bagsRouter);
 // Pre-launch waitlist (POST /api/waitlist) — called cross-origin by the static
 // marketing site; carries its own narrow CORS allowance. See src/waitlist.ts.
 app.use(waitlistRouter);
