@@ -12,7 +12,7 @@
     "build:web": "vite build -c web/vite.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:web": "tsc -p web/tsconfig.json --noEmit",
-    "test": "ts-node src/split.selftest.ts && ts-node src/itemized.selftest.ts && ts-node src/fx.selftest.ts && ts-node src/simplify.selftest.ts && ts-node src/tabs.selftest.ts && ts-node src/settleOutside.selftest.ts && ts-node src/subscriptions.selftest.ts && ts-node src/household.selftest.ts && ts-node src/autonudge.selftest.ts && ts-node src/mochi.selftest.ts && ts-node src/journal.selftest.ts && ts-node src/security.selftest.ts && ts-node src/mainnet.selftest.ts && ts-node src/handoff.selftest.ts && ts-node src/appleauth.selftest.ts && ts-node src/telemetry.selftest.ts",
+    "test": "ts-node src/split.selftest.ts && ts-node src/itemized.selftest.ts && ts-node src/fx.selftest.ts && ts-node src/simplify.selftest.ts && ts-node src/tabs.selftest.ts && ts-node src/settleOutside.selftest.ts && ts-node src/subscriptions.selftest.ts && ts-node src/household.selftest.ts && ts-node src/autonudge.selftest.ts && ts-node src/mochi.selftest.ts && ts-node src/journal.selftest.ts && ts-node src/security.selftest.ts && ts-node src/mainnet.selftest.ts && ts-node src/handoff.selftest.ts && ts-node src/appleauth.selftest.ts && ts-node src/telemetry.selftest.ts && ts-node src/waitlist.selftest.ts",
     "test:sec": "ts-node src/security.selftest.ts",
     "test:handoff": "ts-node src/handoff.selftest.ts",
     "test:apple": "ts-node src/appleauth.selftest.ts",

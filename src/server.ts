@@ -164,6 +164,7 @@ import { legalRouter } from "./legal";
 // Public Mochi meme generator (GET /memes). Standalone shell + public/memes.js,
 // no auth, pure client after load. See src/memes.ts.
 import { memesRouter } from "./memes";
+import { waitlistRouter } from "./waitlist";
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -439,6 +440,9 @@ app.use(referralsRouter);
 app.use(legalRouter);
 // Public Mochi meme generator page: /memes (server-rendered shell, no auth).
 app.use(memesRouter);
+// Pre-launch waitlist (POST /api/waitlist) — called cross-origin by the static
+// marketing site; carries its own narrow CORS allowance. See src/waitlist.ts.
+app.use(waitlistRouter);
 // First-party error + analytics ingest. Reuses the shared IP rate limiter
 // (12/min per IP). authOptional (above) sets req.userId; telemetry stores only
 // a hash of it, never the id. See src/telemetry.ts.

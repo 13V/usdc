@@ -626,6 +626,17 @@
         <a href="#top" class="magnetic" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;background:var(--acc);color:#04121a;font-weight:600;font-size:17px;padding:17px 30px;border-radius:13px">Split a bill <span style="font-family:'JetBrains Mono',monospace">→</span></a>
         <a href="#top" class="ghostbtn" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:rgba(246,241,231,0.85);font-weight:500;font-size:17px;padding:17px 26px;border-radius:13px;border:1px solid rgba(246,241,231,0.16);font-family:'JetBrains Mono',monospace">★ Star on GitHub</a>
       </div>
+
+      <!-- waitlist: email capture (wired by the plain script after the template — see #waitlist-form handler) -->
+      <div data-reveal style="margin:56px auto 0;max-width:460px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.18em;color:rgba(246,241,231,0.5);margin-bottom:14px">GET EARLY ACCESS</div>
+        <form id="waitlist-form" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          <input id="waitlist-email" type="email" name="email" required maxlength="254" placeholder="you@example.com" autocomplete="email" inputmode="email" style="flex:1 1 220px;min-width:0;background:#081c28;border:1px solid rgba(246,241,231,0.16);border-radius:12px;padding:15px 16px;color:#F6F1E7;font-family:'JetBrains Mono',monospace;font-size:15px;outline:none">
+          <button id="waitlist-btn" type="submit" style="flex:0 0 auto;background:var(--acc);color:#04121a;border:none;border-radius:12px;padding:15px 22px;font-family:'Space Grotesk',system-ui,sans-serif;font-weight:600;font-size:15px;cursor:pointer;letter-spacing:-0.01em">Join the waitlist</button>
+        </form>
+        <div id="waitlist-msg" role="status" style="min-height:20px;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:rgba(246,241,231,0.55)"></div>
+        <div style="margin-top:2px;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(246,241,231,0.3)">one email when the app ships. nothing else, ever.</div>
+      </div>
       <div data-reveal style="margin-top:clamp(70px,10vw,120px);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:20px;border-top:1px solid rgba(246,241,231,0.1);padding-top:28px;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:rgba(246,241,231,0.4)">
         <span style="display:flex;align-items:center;gap:10px"><img src="uploads/divvy-icon-blue-1024.png" alt="" style="width:22px;height:22px;border-radius:5px;display:block"><img src="uploads/divvy-wordmark-white.png" alt="Divvy" style="height:15px;width:auto;display:block"></span>
         <span>MIT · open source · built on Solana</span>
@@ -1102,6 +1113,59 @@ class Component extends DCLogic {
     // reserved for future inline counters; hero handles its own
   }
 }
+</script>
+<script>
+/* Waitlist form → the app API. Plain script (outside the x-dc template) using
+   document-level delegation, so it keeps working no matter when — or how many
+   times — the DC runtime re-renders the footer form. Graceful on failure: the
+   site never blocks or navigates, it just tells you to try again. */
+(function () {
+  var API = 'https://usdc-production-ecba.up.railway.app/api/waitlist';
+  var busy = false;
+  function say(msg, tone) {
+    var el = document.getElementById('waitlist-msg');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = tone === 'ok' ? '#3DE8C7' : tone === 'err' ? '#FF6B5E' : 'rgba(246,241,231,0.55)';
+  }
+  document.addEventListener('submit', function (e) {
+    var form = e.target && e.target.closest && e.target.closest('#waitlist-form');
+    if (!form) return;
+    e.preventDefault();
+    if (busy) return;
+    var input = document.getElementById('waitlist-email');
+    var btn = document.getElementById('waitlist-btn');
+    var email = input ? String(input.value || '').trim() : '';
+    if (!email || email.indexOf('@') < 1 || email.length > 254) {
+      say("that doesn't look like an email", 'err');
+      return;
+    }
+    busy = true;
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+    say('adding you…');
+    fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    }).then(function (r) {
+      if (r.ok) {
+        say("you're on the list — see you at launch 🐸", 'ok');
+        if (input) input.value = '';
+        return;
+      }
+      return r.json().then(function (j) {
+        say((j && j.error) || "couldn't save that — try again in a minute", 'err');
+      }, function () {
+        say("couldn't save that — try again in a minute", 'err');
+      });
+    }).catch(function () {
+      say("couldn't reach the server — try again in a minute", 'err');
+    }).finally(function () {
+      busy = false;
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+    });
+  }, true);
+})();
 </script>
 </body>
 </html>

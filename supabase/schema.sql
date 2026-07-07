@@ -382,6 +382,15 @@ create table if not exists auto_nudge_sends (
 );
 create index if not exists auto_nudge_sends_config_idx on auto_nudge_sends (config_id);
 
+-- Pre-launch waitlist (src/waitlist.ts): "get early access" emails captured by
+-- the static marketing site via POST /api/waitlist. Email is the primary key —
+-- duplicate signups are a silent no-op (ignoreDuplicates upsert).
+create table if not exists waitlist (
+  email      text primary key,
+  created_at text not null,
+  source     text
+);
+
 -- ---- additive column patches ----------------------------------------------
 -- `create table if not exists` above will NOT add columns to a table that
 -- already exists, so these idempotent ALTERs bring an older Supabase project up
