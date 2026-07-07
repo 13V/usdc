@@ -28,4 +28,8 @@ divvy.db-wal
 !ios/App/App/Assets.xcassets/**
 !public/apple-touch-icon.png
 !public/og.png
+
+# TikTok/Reels starter kit — ready-to-post assets ARE the deliverable; keep
+# them despite *.png above (the founder posts these straight from the repo).
+!marketing/tiktok-kit/assets/**
 _itest.js
