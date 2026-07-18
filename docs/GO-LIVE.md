@@ -20,9 +20,11 @@ npm run preflight:mainnet -- --env-file .env.mainnet --ping-webhooks
 
 ## 0. Before you start (external prerequisites)
 
-- [ ] MoonPay production KYB approved → `pk_live_…` + secret key in the
-      dashboard. Without it, launch with rails DARK (see §2 — this is fine:
-      add-money/cash-out show "coming soon", wallet-to-wallet still works).
+- [ ] ~~MoonPay production KYB approved~~ **OPTIONAL for launch.** Fiat
+      onramps are no longer a launch prerequisite (see §2): the crypto-native
+      beachhead loads by USDC transfer, and with rails dark the app leads with
+      receive-first UX everywhere. Sort MoonPay KYB (and any future
+      Stripe/CDP rail) in the "mainstream expansion" phase, later.
 - [ ] A paid mainnet RPC (Helius recommended — same key as devnet, hostname
       flip: `https://mainnet.helius-rpc.com/?api-key=KEY`).
 - [ ] The collector wallet decision reviewed by counsel (see the compliance
@@ -64,14 +66,29 @@ a live hazard):
 - `PAYER_SECRET_KEY` — live-devnet payer keypair
 - `CONSUMED_SIG_FAIL_OPEN` — must never be set on mainnet (double-credit guard would fail open)
 
-## 2. Rails decision (MoonPay)
+## 2. Rails decision (MoonPay) — onramps are OPTIONAL at launch
 
-- **KYB approved:** set `pk_live_` + secret, optionally `RAILS_REQUIRE_LIVE=1`.
-  `/healthz` should then report `railsLive:true`.
-- **KYB not approved yet:** leave both MoonPay vars **unset**. The UI degrades
-  to "coming soon" on add-money/cash-out; settling with existing USDC and
-  receiving USDC by QR/address still work. Do NOT ship the test key: the boot
-  gate refuses it, and `ramsConfigured()` would treat it as dark anyway.
+The default launch posture is **rails dark**. The crypto-native beachhead
+already holds USDC; they load the wallet by transfer, and everything money-
+critical works without a fiat rail:
+
+- **Deposit sheet flips receive-first.** `/api/auth/config` reports
+  `onramp:false` when no provider keys are configured; the add-money sheet
+  then leads with the wallet QR + copyable address (with an exchange-transfer
+  note) and hides the card rail entirely — no "coming soon" dead end.
+- **Public settle links.** Every pending 1:1 tab settlement / IOU request has
+  a no-login pay page at `/s/<reference>` (Solana Pay QR, open-in-wallet, and
+  an exchange-transfer fallback). Debtors need zero fiat rail to pay.
+- Settling with existing USDC and receiving USDC by QR/address work as before.
+
+Concretely:
+
+- **Rails dark (default for launch):** leave both MoonPay vars **unset**.
+  Do NOT ship the test key: the boot gate refuses it, and `ramsConfigured()`
+  would treat it as dark anyway.
+- **KYB approved (mainstream expansion, later):** set `pk_live_` + secret,
+  optionally `RAILS_REQUIRE_LIVE=1`. `/healthz` should then report
+  `railsLive:true`. Stripe/CDP rails, if added, belong to this phase too.
 
 ## 3. Data decision (make it deliberately, before the flip)
 
@@ -145,7 +162,7 @@ devnet rows so the choice is conscious.
      "rpc": true, "railsLive": <true iff live keys>, "time": "…" }
    ```
 6. **Verify the client got the flip:** open the app fresh (or after the SW
-   updates — cache is `divvy-v62`): the "you" screen network row shows a quiet
+   updates — cache is `divvy-v63`): the "you" screen network row shows a quiet
    `mainnet` tag (no mint-green devnet badge); `GET /api/auth/config` returns
    `"cluster":"mainnet-beta"`.
 7. **Verify the burner gate:** signed-out "try a demo account" /
@@ -183,7 +200,7 @@ devnet rows so the choice is conscious.
   refuses each of them individually.
 - If you truncated (Option B), rollback does not resurrect the devnet ledger.
   Keep the pre-flip Supabase backup/snapshot until you're sure.
-- The service worker caches by version (`divvy-v62`); a rollback deploy should
+- The service worker caches by version (`divvy-v63`); a rollback deploy should
   bump the version again so clients don't hold the mainnet copy.
 
 ## 7. Open risks accepted at launch (sign off consciously)
