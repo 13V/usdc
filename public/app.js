@@ -1031,16 +1031,24 @@
   // entry + "add with card"; tapping fetches /api/me/onramp/<cents> and navigates
   // to the provider. A lower-emphasis "or receive USDC directly" reveals the
   // original QR + address block for crypto-native users.
+  // When the server reports onramp:false (/api/auth/config — no provider keys
+  // configured), the sheet flips receive-FIRST: the QR + address block is the
+  // expanded primary and the card rail is hidden entirely.
   async function depositSheet(opts) {
     opts = opts || {};
-    var wallet = null, cluster = "devnet", baselineCents = null;
+    var wallet = null, cluster = "devnet", baselineCents = null, onrampOn = true;
     try {
-      var w = await api.get("/api/me/wallet");
+      var res = await Promise.all([
+        api.get("/api/me/wallet").catch(function () { return null; }),
+        fetch("/api/auth/config").then(function (r) { return r.json(); }).catch(function () { return null; }),
+      ]);
+      var w = res[0], cfg = res[1];
       if (w) {
         wallet = w.wallet || null;
         if (w.cluster) cluster = w.cluster;
         if (typeof w.usdcCents === "number") baselineCents = w.usdcCents;
       }
+      if (cfg && cfg.onramp === false) onrampOn = false;
     } catch (_) {}
     if (!wallet) {
       sheet('<div style="padding:8px 20px 26px; text-align:center;">' +
@@ -1062,6 +1070,66 @@
       : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>';
     var payLabel = apple ? "add with apple pay" : "add money";
 
+    // crypto-native receive block (QR + copyable address). Collapsed secondary
+    // when the card rail is live; the expanded PRIMARY when rails are dark.
+    function recvHtml(display) {
+      return '<div id="depRecv" style="display:' + display + '; margin-top:6px;">' +
+        '<div style="text-align:center;">' +
+          '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.5);">receive usdc · ' + esc(cluster) + '</div>' +
+        '</div>' +
+        '<div id="depQrWrap" style="width:206px; margin:14px auto 0; background:#fff; border-radius:16px; padding:8px;">' +
+          '<img id="depQr" alt="your wallet qr" width="190" height="190" style="display:block; border-radius:8px;" src="' + esc(qrImg(solUrl)) + '">' +
+        '</div>' +
+        '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:16px auto 0; max-width:300px; background:var(--card); border:2px solid var(--border-ink); border-radius:13px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:12px 14px; cursor:pointer;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(var(--ink-rgb),0.85);">' + esc(short) + '</span>' +
+          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
+        '</div>' +
+        '<div style="text-align:center; margin-top:12px;">' +
+          '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.6);">send usdc to this address — it shows up in your balance.</span>' +
+        '</div>' +
+      '</div>';
+    }
+    // Shared wiring: tap-to-copy address + a plain-text fallback if the QR 404s.
+    function wireRecv() {
+      var addr = document.getElementById("depAddr");
+      if (addr) addr.onclick = function () {
+        copy(wallet).then(function () {
+          toast("address copied 📋");
+        }).catch(function () { toast(wallet); });
+      };
+      var qr = document.getElementById("depQr");
+      if (qr) qr.onerror = function () {
+        var wrap = document.getElementById("depQrWrap");
+        if (!wrap) return;
+        wrap.style.background = "var(--card)";
+        wrap.style.border = "1px solid rgba(var(--ink-rgb),0.1)";
+        wrap.style.width = "auto";
+        wrap.style.padding = "16px";
+        wrap.innerHTML =
+          '<div style="font-family:\'Space Mono\',monospace; font-size:11px; line-height:1.5; ' +
+          'word-break:break-all; text-align:center; color:rgba(var(--ink-rgb),0.9);">' + esc(wallet) + '</div>';
+      };
+    }
+
+    if (!onrampOn) {
+      // Receive-first: no card rail configured — lead with the address + QR and
+      // skip the top-up UI entirely (crypto-native beachhead loads by transfer).
+      sheet(
+        '<div style="padding:4px 20px 26px;">' +
+          '<div style="text-align:center; margin-bottom:6px;">' +
+            '<div style="font-family:\'Clash Display\',\'General Sans\',sans-serif; font-weight:600; font-size:21px; letter-spacing:-0.3px; color:var(--ink);">add money</div>' +
+            '<div style="font-family:\'General Sans\',sans-serif; font-size:13px; color:rgba(var(--ink-rgb),0.55); margin-top:4px;">send usdc to your wallet — it lands in your balance.</div>' +
+          '</div>' +
+          recvHtml("block") +
+          '<div style="margin:16px auto 0; max-width:320px; background:var(--card-2); border:1px solid rgba(var(--ink-rgb),0.12); border-radius:13px; padding:11px 13px;">' +
+            '<span style="font-family:\'General Sans\',sans-serif; font-size:12px; line-height:1.5; color:rgba(var(--ink-rgb),0.6);">sending from an exchange or another wallet: usdc on solana. also send ~0.02 sol if you want to pay friends from this wallet (network fees).</span>' +
+          '</div>' +
+        '</div>'
+      );
+      wireRecv();
+      return;
+    }
+
     sheet(
       '<div style="padding:4px 20px 26px;">' +
         '<div style="text-align:center; margin-bottom:6px;">' +
@@ -1079,21 +1147,7 @@
         '<div id="depTestNote"></div>' +
         '<button id="depMore" type="button" style="appearance:none; border:none; cursor:pointer; background:transparent; display:block; width:100%; text-align:center; margin-top:16px; padding:6px; font-family:\'Space Mono\',monospace; font-size:11px; letter-spacing:.3px; color:rgba(39,117,202,0.75);">or receive usdc directly ▾</button>' +
         // crypto-native receive block — hidden until "more options" is tapped.
-        '<div id="depRecv" style="display:none; margin-top:6px;">' +
-          '<div style="text-align:center;">' +
-            '<div style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.5px; color:rgba(var(--ink-rgb),0.5);">receive usdc · ' + esc(cluster) + '</div>' +
-          '</div>' +
-          '<div id="depQrWrap" style="width:206px; margin:14px auto 0; background:#fff; border-radius:16px; padding:8px;">' +
-            '<img id="depQr" alt="your wallet qr" width="190" height="190" style="display:block; border-radius:8px;" src="' + esc(qrImg(solUrl)) + '">' +
-          '</div>' +
-          '<div id="depAddr" style="display:flex; align-items:center; gap:9px; justify-content:center; margin:16px auto 0; max-width:300px; background:var(--card); border:2px solid var(--border-ink); border-radius:13px; box-shadow:3px 4px 0 rgba(var(--shadow-rgb),0.85); padding:12px 14px; cursor:pointer;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:13px; color:rgba(var(--ink-rgb),0.85);">' + esc(short) + '</span>' +
-            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(var(--ink-rgb),0.55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
-          '</div>' +
-          '<div style="text-align:center; margin-top:12px;">' +
-            '<span style="font-family:\'Space Mono\',monospace; font-size:10px; letter-spacing:.3px; color:rgba(var(--ink-rgb),0.6);">send usdc to this address — it shows up in your balance.</span>' +
-          '</div>' +
-        '</div>' +
+        recvHtml("none") +
       '</div>'
     );
 
@@ -1153,25 +1207,7 @@
       more.innerHTML = open ? "or receive usdc directly ▾" : "hide receive address ▴";
     };
 
-    var addr = document.getElementById("depAddr");
-    if (addr) addr.onclick = function () {
-      copy(wallet).then(function () {
-        toast("address copied 📋");
-      }).catch(function () { toast(wallet); });
-    };
-    // If the QR image fails to load, show the full address prominently instead.
-    var qr = document.getElementById("depQr");
-    if (qr) qr.onerror = function () {
-      var wrap = document.getElementById("depQrWrap");
-      if (!wrap) return;
-      wrap.style.background = "var(--card)";
-      wrap.style.border = "1px solid rgba(var(--ink-rgb),0.1)";
-      wrap.style.width = "auto";
-      wrap.style.padding = "16px";
-      wrap.innerHTML =
-        '<div style="font-family:\'Space Mono\',monospace; font-size:11px; line-height:1.5; ' +
-        'word-break:break-all; text-align:center; color:rgba(var(--ink-rgb),0.9);">' + esc(wallet) + '</div>';
-    };
+    wireRecv();
   }
 
   // ---- delight primitives ----

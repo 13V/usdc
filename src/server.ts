@@ -462,7 +462,10 @@ app.get("/api/auth/config", (_req: Request, res: Response) => {
   // `cluster` is public, non-secret config: the client gates devnet-only UX
   // (burner wallets, faucet copy, devnet badges) on it. Server-pinned — the
   // client can never choose the chain, only render honestly for it.
-  res.json({ siws: true, privy: privyConfigured(), cluster: CLUSTER });
+  // `onramp` mirrors /api/me/onramp's live flag (ramsConfigured): when the
+  // fiat rails are dark, the deposit sheet leads with receive-USDC instead of
+  // a dead card button. Non-secret — it's the same bit /healthz reports.
+  res.json({ siws: true, privy: privyConfigured(), cluster: CLUSTER, onramp: ramsConfigured() });
 });
 
 // Readiness probe for uptime monitoring: liveness + a cheap data-store ping +
