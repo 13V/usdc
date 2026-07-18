@@ -120,8 +120,9 @@ db.exec(`
 }
 
 /** The cluster a settlement row was created on. NULL-safe: any pre-migration
- *  row is devnet-era by definition. */
-function rowCluster(row: { cluster?: string | null }): string {
+ *  row is devnet-era by definition. Exported for the public settle-link routes
+ *  (settleLink.ts), which must apply the exact same B4/H1 guard. */
+export function rowCluster(row: { cluster?: string | null }): string {
   return row.cluster || "devnet";
 }
 
@@ -144,7 +145,7 @@ export interface TabEntryRow {
   created_at: string;
 }
 
-interface TabSettlementRow {
+export interface TabSettlementRow {
   id: string;
   payer_user_id: string;
   payee_user_id: string;
@@ -594,6 +595,49 @@ async function getOpenSettlement(
     .get(meId, friendId, friendId, meId) as TabSettlementRow | undefined;
 }
 
+/**
+ * Look up a settlement by its throwaway reference pubkey (any status). The
+ * reference is an unguessable capability token, so this backs the public
+ * no-login settle page (settleLink.ts) the same way a /pay link backs a bill.
+ */
+export async function getSettlementByReference(
+  reference: string
+): Promise<TabSettlementRow | undefined> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("tab_settlements")
+      .select("*")
+      .eq("reference", reference)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(`tabs.getSettlementByReference: ${error.message}`);
+    return (data as TabSettlementRow | null) ?? undefined;
+  }
+  return db
+    .prepare(
+      `SELECT * FROM tab_settlements WHERE reference = ?
+       ORDER BY created_at DESC, rowid DESC LIMIT 1`
+    )
+    .get(reference) as TabSettlementRow | undefined;
+}
+
+/**
+ * The public /s/<reference> settle-link reference for what `debtorId` owes
+ * `creditorId`, if a payable open settlement exists on THIS cluster. Used by
+ * nudges.ts so a payment reminder can deep-link straight to the no-login pay
+ * page instead of the generic activity feed. Read-only.
+ */
+export async function pendingSettleLinkReference(
+  debtorId: string,
+  creditorId: string
+): Promise<string | null> {
+  const row = await getOpenSettlement(creditorId, debtorId);
+  if (!row || row.payer_user_id !== debtorId) return null;
+  if (rowCluster(row) !== cluster || !row.reference || !row.pay_wallet) return null;
+  return row.reference;
+}
+
 /** Cancel a stale unpaid settlement (superseded by a fresh net). */
 async function cancelSettlement(id: string): Promise<void> {
   if (usingSupabase) {
@@ -662,7 +706,7 @@ function serializeEntry(row: TabEntryRow, meId: string) {
  * different cluster must never produce a URL — a devnet-era open settlement
  * would otherwise become a real mainnet payment request after the flip.
  */
-function settlementUrl(row: TabSettlementRow): string | null {
+export function settlementUrl(row: TabSettlementRow): string | null {
   if (!row.reference || !row.pay_wallet) return null;
   if (rowCluster(row) !== cluster) return null;
   return buildSolanaPayUrl({
@@ -714,6 +758,108 @@ async function callerLabel(userId: string): Promise<string> {
     /* generic label */
   }
   return "Someone";
+}
+
+// ---- Shared verify core (authed route + public /s/ settle link) --------------
+
+export interface SettleVerifyOutcome {
+  verified: boolean;
+  /** The settling signature when verified; null otherwise. */
+  signature: string | null;
+  reason?: string;
+  partial: boolean;
+}
+
+/**
+ * Check the chain for payment of an OPEN settlement and apply the ledger
+ * effects exactly once. This is the single implementation shared by the authed
+ * POST /api/tabs/:friendUserId/settle/verify and the public no-login
+ * POST /api/s/:reference/verify (settleLink.ts), so the atomic signature
+ * dedupe (claimSignature) and the entry flips live in exactly one place.
+ *
+ * `actorId` is the participant on whose behalf verification runs — the caller
+ * for the authed route, the PAYER for the public link. It only shapes the
+ * best-effort push (who gets it, which tab it deep-links to), never the
+ * ledger writes: settlePairEntries is symmetric in the pair.
+ *
+ * PRECONDITIONS (each caller enforces with its own status codes): row status
+ * is open/open_partial, row cluster matches THIS server (B4/H1), and
+ * reference + pay_wallet are present.
+ */
+export async function settleVerifyCore(
+  row: TabSettlementRow,
+  actorId: string
+): Promise<SettleVerifyOutcome> {
+  const friendId = row.payer_user_id === actorId ? row.payee_user_id : row.payer_user_id;
+  const isPartial = row.status === "open_partial";
+
+  const connection = new Connection(rpcUrl, "confirmed");
+  const result = await validatePayment(connection, {
+    reference: row.reference as string,
+    recipient: row.pay_wallet as string,
+    splToken: USDC_MINT[cluster],
+    amountCents: row.amount_cents,
+  });
+
+  let verified = result.ok;
+  if (result.ok && result.signature) {
+    // Global guard: one on-chain signature settles at most ONE debt across
+    // the whole system (bills, trips, ious, AND tabs). See ious.ts.
+    const claimed = await claimSignature(result.signature, `tab:${row.id}`);
+    if (!claimed) {
+      alert("high", "signature_reuse_blocked", {
+        context: "tab",
+        settlementId: row.id,
+        signature: result.signature,
+      });
+      verified = false; // already consumed elsewhere — do not double-discharge
+    } else if (isPartial) {
+      await markSettlementPaid(row.id, result.signature);
+      // A partial doesn't close any entries — it leaves a "payment" offset
+      // row carrying the settlement id, so the net drops by the paid amount
+      // and the ledger shows the payment. A later full settle covers exactly
+      // the remainder (and flips this row along with the rest).
+      await insertEntry(
+        paymentEntry(
+          row.payer_user_id,
+          row.payee_user_id,
+          row.amount_cents,
+          row.id,
+          new Date().toISOString()
+        )
+      );
+      const payerLabel = await callerLabel(row.payer_user_id);
+      void sendPush(friendId, {
+        title: "Tab payment 💸",
+        body: `${payerLabel} paid ${fmt(row.amount_cents)} toward the tab — the rest stays on it`,
+        url: `/#/tab/${actorId}`,
+        tag: `tab-settle:${row.id}`,
+      });
+    } else {
+      await markSettlementPaid(row.id, result.signature);
+      // Only entries that existed when the request was built are covered —
+      // anything added since stays open on the fresh tab.
+      await settlePairEntries(actorId, friendId, row.created_at, row.id);
+      const fromLabel = await callerLabel(actorId);
+      void sendPush(friendId, {
+        title: "Tab settled 🎉",
+        body: `${fromLabel} settled your tab — ${fmt(row.amount_cents)}`,
+        url: `/#/tab/${actorId}`,
+        tag: `tab-settle:${row.id}`,
+      });
+    }
+  }
+
+  return {
+    verified,
+    signature: verified ? result.signature || null : null,
+    reason: verified
+      ? result.reason
+      : result.ok
+        ? "payment already used to settle another debt"
+        : result.reason,
+    partial: isPartial,
+  };
 }
 
 // ---- Router ------------------------------------------------------------------
@@ -1005,75 +1151,21 @@ tabsRouter.post(
     if (!row.reference || !row.pay_wallet) {
       return res.status(400).json({ error: "this settlement has no payable request to verify" });
     }
-    const isPartial = row.status === "open_partial";
 
-    const connection = new Connection(rpcUrl, "confirmed");
-    const result = await validatePayment(connection, {
-      reference: row.reference,
-      recipient: row.pay_wallet,
-      splToken: USDC_MINT[cluster],
-      amountCents: row.amount_cents,
-    });
+    // The chain check + ledger effects live in settleVerifyCore — shared with
+    // the public no-login /api/s/:reference/verify (settleLink.ts).
+    const out = await settleVerifyCore(row, meId);
 
-    let verified = result.ok;
-    if (result.ok && result.signature) {
-      // Global guard: one on-chain signature settles at most ONE debt across
-      // the whole system (bills, trips, ious, AND tabs). See ious.ts.
-      const claimed = await claimSignature(result.signature, `tab:${row.id}`);
-      if (!claimed) {
-        alert("high", "signature_reuse_blocked", {
-          context: "tab",
-          settlementId: row.id,
-          signature: result.signature,
-        });
-        verified = false; // already consumed elsewhere — do not double-discharge
-      } else if (isPartial) {
-        await markSettlementPaid(row.id, result.signature);
-        // A partial doesn't close any entries — it leaves a "payment" offset
-        // row carrying the settlement id, so the net drops by the paid amount
-        // and the ledger shows the payment. A later full settle covers exactly
-        // the remainder (and flips this row along with the rest).
-        await insertEntry(
-          paymentEntry(
-            row.payer_user_id,
-            row.payee_user_id,
-            row.amount_cents,
-            row.id,
-            new Date().toISOString()
-          )
-        );
-        const payerLabel = await callerLabel(row.payer_user_id);
-        void sendPush(friendId, {
-          title: "Tab payment 💸",
-          body: `${payerLabel} paid ${fmt(row.amount_cents)} toward the tab — the rest stays on it`,
-          url: `/#/tab/${meId}`,
-          tag: `tab-settle:${row.id}`,
-        });
-      } else {
-        await markSettlementPaid(row.id, result.signature);
-        // Only entries that existed when the request was built are covered —
-        // anything added since stays open on the fresh tab.
-        await settlePairEntries(meId, friendId, row.created_at, row.id);
-        const fromLabel = await callerLabel(meId);
-        void sendPush(friendId, {
-          title: "Tab settled 🎉",
-          body: `${fromLabel} settled your tab — ${fmt(row.amount_cents)}`,
-          url: `/#/tab/${meId}`,
-          tag: `tab-settle:${row.id}`,
-        });
-      }
-    }
-
-    const updated = { ...row, status: verified ? "paid" : row.status, signature: verified ? result.signature || null : row.signature };
+    const updated = {
+      ...row,
+      status: out.verified ? "paid" : row.status,
+      signature: out.verified ? out.signature : row.signature,
+    };
     return res.json({
       ...serializeSettlement(updated as TabSettlementRow, meId),
-      partial: isPartial,
-      verified,
-      reason: verified
-        ? result.reason
-        : result.ok
-          ? "payment already used to settle another debt"
-          : result.reason,
+      partial: out.partial,
+      verified: out.verified,
+      reason: out.reason,
     });
   }
 );

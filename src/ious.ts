@@ -73,8 +73,10 @@ db.exec(`
   db.exec("UPDATE ious SET cluster = 'devnet' WHERE cluster IS NULL");
 }
 
-/** The cluster an IOU row was created on (NULL = pre-migration = devnet-era). */
-function rowCluster(row: { cluster?: string | null }): string {
+/** The cluster an IOU row was created on (NULL = pre-migration = devnet-era).
+ *  Exported for the public settle-link routes (settleLink.ts), which must
+ *  apply the exact same B4/H1 guard. */
+export function rowCluster(row: { cluster?: string | null }): string {
   return row.cluster || "devnet";
 }
 
@@ -82,7 +84,7 @@ function rowCluster(row: { cluster?: string | null }): string {
 
 type Direction = "i_owe" | "they_owe";
 
-interface IouRow {
+export interface IouRow {
   id: string;
   owner_user_id: string;
   direction: string;
@@ -107,7 +109,7 @@ interface IouRow {
  * different cluster must never produce a URL — a devnet-era open IOU would
  * otherwise become a real mainnet payment request after the flip.
  */
-function rebuildUrl(row: IouRow): string | null {
+export function rebuildUrl(row: IouRow): string | null {
   if (!row.reference || !row.pay_wallet) return null;
   if (rowCluster(row) !== cluster) return null;
   return buildSolanaPayUrl({
@@ -161,6 +163,68 @@ async function getOwnedIou(
     .prepare("SELECT * FROM ious WHERE id = ? AND owner_user_id = ?")
     .get(id, userId) as IouRow | undefined;
   return row;
+}
+
+/**
+ * Look up an IOU by its throwaway reference pubkey (any status). The reference
+ * is an unguessable capability token, so this backs the public no-login settle
+ * page (settleLink.ts) the same way a /pay link backs a bill.
+ */
+export async function getIouByReference(reference: string): Promise<IouRow | undefined> {
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("ious")
+      .select("*")
+      .eq("reference", reference)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(`ious.getIouByReference: ${error.message}`);
+    return (data as IouRow | null) ?? undefined;
+  }
+  return db
+    .prepare(
+      "SELECT * FROM ious WHERE reference = ? ORDER BY created_at DESC, rowid DESC LIMIT 1"
+    )
+    .get(reference) as IouRow | undefined;
+}
+
+/**
+ * The public /s/<reference> settle-link reference for an open money REQUEST
+ * ("they_owe") this owner has out at `counterpartyWallet`, if it's payable on
+ * THIS cluster. Used by nudges.ts so a payment reminder can deep-link straight
+ * to the no-login pay page. Read-only.
+ */
+export async function pendingIouLinkReference(
+  ownerUserId: string,
+  counterpartyWallet: string
+): Promise<string | null> {
+  let row: IouRow | undefined;
+  if (usingSupabase) {
+    const { data, error } = await supabase()
+      .from("ious")
+      .select("*")
+      .eq("owner_user_id", ownerUserId)
+      .eq("direction", "they_owe")
+      .eq("status", "open")
+      .eq("counterparty_wallet", counterpartyWallet)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(`ious.pendingIouLinkReference: ${error.message}`);
+    row = (data as IouRow | null) ?? undefined;
+  } else {
+    row = db
+      .prepare(
+        `SELECT * FROM ious
+         WHERE owner_user_id = ? AND direction = 'they_owe' AND status = 'open'
+           AND counterparty_wallet = ?
+         ORDER BY created_at DESC, rowid DESC LIMIT 1`
+      )
+      .get(ownerUserId, counterpartyWallet) as IouRow | undefined;
+  }
+  if (!row || rowCluster(row) !== cluster || !row.reference || !row.pay_wallet) return null;
+  return row.reference;
 }
 
 /** Insert a new IOU row. */
@@ -260,6 +324,60 @@ async function deleteIou(id: string, userId: string): Promise<boolean> {
     .prepare("DELETE FROM ious WHERE id = ? AND owner_user_id = ?")
     .run(id, userId);
   return info.changes > 0;
+}
+
+// ---- Shared verify core (authed route + public /s/ settle link) --------------
+
+export interface IouVerifyOutcome {
+  verified: boolean;
+  /** The settling signature when verified; null otherwise. */
+  signature: string | null;
+  reason?: string;
+}
+
+/**
+ * Check the chain for payment of an OPEN IOU and mark it paid exactly once.
+ * The single implementation shared by the authed POST /api/ious/:id/settle/verify
+ * and the public no-login POST /api/s/:reference/verify (settleLink.ts), so the
+ * atomic signature dedupe (claimSignature) lives in exactly one place.
+ *
+ * PRECONDITIONS (each caller enforces with its own status codes): row status
+ * is open, row cluster matches THIS server (B4/H1), and reference + pay_wallet
+ * are present.
+ */
+export async function iouVerifyCore(row: IouRow): Promise<IouVerifyOutcome> {
+  const connection = new Connection(rpcUrl, "confirmed");
+  const result = await validatePayment(connection, {
+    reference: row.reference as string,
+    recipient: row.pay_wallet as string,
+    splToken: USDC_MINT[cluster],
+    amountCents: row.amount_cents,
+  });
+
+  let verified = result.ok;
+  if (result.ok && result.signature) {
+    // Global guard: one on-chain signature settles at most ONE debt across the
+    // whole system (bills, trips, AND ious). Without this an IOU could be
+    // discharged by a signature already spent on a bill/trip to the same
+    // wallet+amount, shorting the creditor. Mark paid only after we claim it.
+    const claimed = await claimSignature(result.signature, `iou:${row.id}`);
+    if (!claimed) {
+      alert("high", "signature_reuse_blocked", { context: "iou", iouId: row.id, signature: result.signature });
+      verified = false; // already consumed elsewhere — do not double-discharge
+    } else {
+      await markIouPaid(row.id, row.owner_user_id, result.signature);
+    }
+  }
+
+  return {
+    verified,
+    signature: verified ? result.signature || null : null,
+    reason: verified
+      ? result.reason
+      : result.ok
+        ? "payment already used to settle another debt"
+        : result.reason,
+  };
 }
 
 // ---- Router ----------------------------------------------------------------
@@ -398,31 +516,12 @@ iouRouter.post(
         .json({ error: "this IOU has no payable request to verify" });
     }
 
-    const connection = new Connection(rpcUrl, "confirmed");
-    const result = await validatePayment(connection, {
-      reference: row.reference,
-      recipient: row.pay_wallet,
-      splToken: USDC_MINT[cluster],
-      amountCents: row.amount_cents,
-    });
-
-    let verified = result.ok;
-    if (result.ok && result.signature) {
-      // Global guard: one on-chain signature settles at most ONE debt across the
-      // whole system (bills, trips, AND ious). Without this an IOU could be
-      // discharged by a signature already spent on a bill/trip to the same
-      // wallet+amount, shorting the creditor. Mark paid only after we claim it.
-      const claimed = await claimSignature(result.signature, `iou:${row.id}`);
-      if (!claimed) {
-        alert("high", "signature_reuse_blocked", { context: "iou", iouId: row.id, signature: result.signature });
-        verified = false; // already consumed elsewhere — do not double-discharge
-      } else {
-        await markIouPaid(row.id, userId, result.signature);
-      }
-    }
+    // The chain check + paid flip live in iouVerifyCore — shared with the
+    // public no-login /api/s/:reference/verify (settleLink.ts).
+    const out = await iouVerifyCore(row);
 
     const updated = (await getOwnedIou(row.id, userId)) as IouRow;
-    return res.json({ ...serialize(updated), verified, reason: verified ? result.reason : (result.ok ? "payment already used to settle another debt" : result.reason) });
+    return res.json({ ...serialize(updated), verified: out.verified, reason: out.reason });
   }
 );
 

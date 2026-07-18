@@ -500,6 +500,9 @@
       partialHtml +
       qr +
       (iPay && s.url ? '<button class="btn" id="t1Pay" style="margin-top:16px;">open in wallet</button>' : '') +
+      // creditor side: share the public no-login settle page (/s/<reference>) —
+      // a normal https link the friend can open anywhere, no app, no sign-in.
+      (!iPay && s.url && s.reference ? '<button class="btn" id="t1Share" style="margin-top:16px;">send them the link 🔗</button>' : '') +
       (s.url ? '<button class="btn ghost" id="t1Copy" style="margin-top:10px;">copy payment link</button>' : '') +
       '<button class="btn ghost" id="t1Check" style="margin-top:10px;">' + (iPay ? "i paid — check ✓" : "check for payment ✓") + '</button>' +
       (iPay
@@ -553,6 +556,15 @@
 
     var pay = document.getElementById("t1Pay");
     if (pay) pay.onclick = function () { try { window.location.href = s.url; } catch (_) {} };
+    var shareBtn = document.getElementById("t1Share");
+    if (shareBtn) shareBtn.onclick = function () {
+      // navigator.share via app.share; falls back to copying the link.
+      app.share({
+        title: "divvy",
+        text: "settle up on divvy — takes a minute, no app needed",
+        url: location.origin + "/s/" + encodeURIComponent(s.reference),
+      });
+    };
     var cp = document.getElementById("t1Copy");
     if (cp) cp.onclick = function () {
       app.copy(s.url).then(function () { app.toast("link copied 📋"); }, function () { app.toast(s.url); });

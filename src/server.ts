@@ -126,6 +126,8 @@ import {
 import { dashboardRouter } from "./dashboard";
 import { iouRouter } from "./ious";
 import { tabsRouter } from "./tabs";
+// Public no-login settle pages for 1:1 tab settlements + IOUs (/s/:reference).
+import { settleLinkRouter } from "./settleLink";
 import { activityRouter } from "./activity";
 import { recurringRouter } from "./recurring";
 import { subscriptionsRouter } from "./subscriptions";
@@ -423,6 +425,7 @@ app.use(
 app.use(dashboardRouter);
 app.use(iouRouter);
 app.use(tabsRouter);
+app.use(settleLinkRouter);
 app.use(activityRouter);
 app.use(recurringRouter);
 app.use(subscriptionsRouter);

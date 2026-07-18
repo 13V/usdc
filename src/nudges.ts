@@ -21,8 +21,13 @@ import { Router, Request, Response } from "express";
 import { db } from "./db";
 import { usingSupabase, supabase } from "./supabase";
 import { requireAuth } from "./auth";
-import { getUser, serializeUser } from "./users";
+import { getUser, getPrimaryWallet, serializeUser } from "./users";
 import { sendPush } from "./push";
+// Read-only lookups: does the nudged debt already have a payable request with a
+// reference? If so the push deep-links to the public no-login settle page
+// (/s/<reference>, settleLink.ts) instead of the generic activity feed.
+import { pendingSettleLinkReference } from "./tabs";
+import { pendingIouLinkReference } from "./ious";
 
 // ---- Schema (idempotent) ---------------------------------------------------
 
@@ -376,10 +381,22 @@ nudgesRouter.post(
         if (u) { const su = await serializeUser(u); fromLabel = su.displayName || su.handle || "Someone"; }
       } catch { /* generic label */ }
       try { nudgeNumber = await priorNudgeCount(fromUserId, toUserId); } catch { /* stays 1 */ }
+      // Land the recipient on the public settle page when the debt already has
+      // a payable request (open tab settlement, or an IOU money request at
+      // their wallet). Best-effort; the activity feed stays the fallback.
+      let url = "/#/activity";
+      try {
+        let ref = await pendingSettleLinkReference(toUserId, fromUserId);
+        if (!ref) {
+          const wallet = await getPrimaryWallet(toUserId);
+          if (wallet) ref = await pendingIouLinkReference(fromUserId, wallet);
+        }
+        if (ref) url = `/s/${ref}`;
+      } catch { /* keep the activity-feed fallback */ }
       void sendPush(toUserId, {
         title: nudgeNumber >= 4 ? "🦆 Payment reminder" : "Payment reminder 👋",
         body: nudgeBody(fromLabel, nudgeNumber),
-        url: "/#/activity",
+        url,
         tag: `nudge:${row.id}`,
       });
     }
